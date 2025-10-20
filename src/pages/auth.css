@@ -1,0 +1,92 @@
+/* Estilos mínimos para pantallas de autenticación y notificaciones */
+.auth-bg {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  /* background is set inline in Login.tsx to allow using public auth-bg.jpg with overlay */
+  background-image: none; /* Removed background image */
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+
+.auth-card {
+  width: 520px;
+  background: white;
+  border-radius: 8px;
+  padding: 18px 28px 54px 28px; /* more bottom padding so links fit */
+  box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+  position: relative;
+  border: 2px solid rgba(0,0,0,0.02);
+}
+.auth-logo {
+  display: block;
+  margin: 0 auto 6px;
+  max-width: 220px;
+}
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center; /* center inputs horizontally */
+}
+.auth-input-wrapper { position: relative; width: 420px }
+.auth-input {
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  width: 100%;
+  font-size: 14px;
+}
+
+.field-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+.field-stack .field-label { align-self: flex-start; width: auto; margin-left: calc(50% - 210px + 6px); /* align label under the input's left edge */ }
+.field-label {
+  font-weight: 700;
+  margin-top: 6px;
+  align-self: flex-start;
+  width: 420px; /* keep label aligned with inputs */
+}
+.primary-btn { background: linear-gradient(180deg,#0b5fd7,#034bb0); color: white; padding: 10px 28px; border-radius: 22px; border: none; cursor: pointer; margin-top: 12px; box-shadow: 0 6px 0 rgba(11,95,215,0.15); }
+.auth-links { display:flex; justify-content: space-between; margin-top: 18px; font-size: 0.95rem; width: 100% }
+.auth-links a { color:#064aa6; text-decoration: underline; font-weight:700 }
+.auth-links a.support { color:#064aa6; font-weight:700 }
+.auth-links a.forgot { color:#064aa6; font-weight:700 }
+
+/* position links at the bottom corners of the card */
+.auth-card .auth-links { position: absolute; left: 50%; transform: translateX(-50%); bottom: 18px; width: 420px; display:flex; justify-content: space-between }
+
+/* placeholder color */
+::placeholder { color: #8e9097 }
+
+/* logo spacing tweak */
+.auth-logo { margin-bottom: 14px }
+.eye-btn { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; padding: 6px; }
+
+/* make card slightly translucent on small screens */
+@media (max-width: 600px) {
+  .auth-card { width: 92%; padding: 18px }
+}
+
+/* Notification */
+.notif { position: fixed; right: 28px; bottom: 28px; min-width: 320px; padding: 18px 20px; border-radius: 14px; color: white; display:flex; align-items:center; gap:14px; box-shadow: 0 10px 40px rgba(0,0,0,0.28); }
+.notif-content { flex:1 }
+.notif-title { display:block; font-weight:700; font-size:1.05rem }
+.notif-message { font-size: 0.95rem; opacity: 0.98 }
+.notif-close { background: transparent; border: none; color: white; font-size: 14px; cursor:pointer }
+.notif-success { background: linear-gradient(90deg,#12b7d8,#006db3) }
+.notif-error { background: linear-gradient(90deg,#ff6b8a,#e84a7a) }
+.notif-info { background: linear-gradient(90deg,#5b8cff,#2b6ad6) }
+.notif-warning { background: linear-gradient(90deg,#ffaf3b,#e26a2b) }
+
+.notif .notif-icon { width:56px; height:56px; border-radius:50%; background: rgba(255,255,255,0.12); display:flex; align-items:center; justify-content:center; font-size:24px }
+.notif .notif-body { flex:1 }
+
