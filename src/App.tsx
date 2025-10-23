@@ -1,25 +1,36 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 import Login from './pages/Login';
 import PasswordRecovery from './pages/PasswordRecovery';
 import Navbar from './pages/Navbar';
+import { UserProvider, useUser } from './contexts/userContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        {/* Ruta para el inicio de sesión */}
-        <Route path="/" element={<Login />} /> 
-        
-        {/* Ruta para "Olvidé mi contraseña" */}
-        <Route path="/PasswordRecovery" element={<PasswordRecovery/>} /> 
-
-        {/* Ruta para "Olvidé mi contraseña" */}
-        <Route path="/Navbar" element={<Navbar/>} /> 
-      </Routes>
+      <NotificationProvider>
+      <UserProvider>
+        <Routes>
+          <Route path="/" element={<Login />} />
+          <Route path="/PasswordRecovery" element={<PasswordRecovery/>} />
+          <Route
+            path="/Navbar"
+            element={<ProtectedRoute><Navbar/></ProtectedRoute>}
+          />
+        </Routes>
+      </UserProvider>
+      </NotificationProvider>
     </BrowserRouter>
   );
 }
 
 export default App;
+
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, loading } = useUser();
+  if (loading) return <div>Loading...</div>;
+  if (!user) return <Navigate to="/" replace />;
+  return <>{children}</>;
+};

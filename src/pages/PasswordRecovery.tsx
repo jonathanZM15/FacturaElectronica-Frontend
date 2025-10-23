@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from '../services/api';
+import { useNotification } from '../contexts/NotificationContext';
 import logo from '../assets/maximofactura.png';
 import bgAsset from '../assets/factura-inicio.jpg';
 import whatsappIcon from '../assets/icon-whatsapp.jpeg';
@@ -8,6 +10,7 @@ import './PasswordRecovery.css';
 const PasswordRecovery: React.FC = () => {
  const [email, setEmail] = useState('');
  const [error, setError] = useState('');
+ const { show } = useNotification();
  const navigate = useNavigate();
 
  // Efecto para limpiar el mensaje de error después de 4 segundos
@@ -43,21 +46,21 @@ const PasswordRecovery: React.FC = () => {
         return;
     }
 
-    try {
-      // Simulación de API
-      await new Promise(resolve => setTimeout(resolve, 800)); 
-      
-      // Simular éxito/error
-      if (email === 'test@admin.com') {
-          alert('Se han enviado las instrucciones a tu correo electrónico.');
-          navigate('/');
-      } else {
-          setError('Usuario inválido. El email no se encuentra registrado.');
-      }
-      
-    } catch (error) {
-      setError('Ocurrió un error de red. Intente de nuevo.');
-    }
+        try {
+            const res = await api.post('/api/password-recovery', { email });
+                    if (res.status === 200) {
+                        show({ title: 'Contraseña actualizada', message: 'Se actualizó contraseña de usuario exitosamente, inicie sesión', type: 'success' });
+                        navigate('/');
+                    }
+        } catch (err: any) {
+                    if (err.response && err.response.status === 404) {
+                        show({ title: 'Usuario inválido', message: 'El email no se encuentra registrado.', type: 'error' });
+                    } else if (err.response && err.response.data && err.response.data.errors) {
+                        show({ title: 'Error', message: Object.values(err.response.data.errors).join(', '), type: 'error' });
+                    } else {
+                        show({ title: 'Error de red', message: 'Ocurrió un error de red. Intente de nuevo.', type: 'error' });
+                    }
+        }
   };
 
   return (

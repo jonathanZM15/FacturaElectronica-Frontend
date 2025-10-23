@@ -1,30 +1,26 @@
-import React from 'react';
-import { Link,useNavigate } from 'react-router-dom'; // IMPORTANTE: Para la navegación interna
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom'; // IMPORTANTE: Para la navegación interna
 import './Navbar.css'; // Importa los estilos
 // Asegúrate de que esta ruta sea correcta para tu logo
 import logo from '../assets/maximofactura.png'; 
+import { useUser } from '../contexts/userContext';
 
 const Navbar: React.FC = () => {
-  // Inicializa la función de navegación
-  const navigate = useNavigate();
+  const { user, logout } = useUser();
+  // Start with menu open by default (matches current layout). Toggle will hide/show.
+  const [menuOpen, setMenuOpen] = useState(true);
 
-  // Función para manejar el clic de 'Salir'
-  const handleLogout = () => {
-    // 1. Lógica de limpieza (en una aplicación real)
-    // - Eliminar el token JWT de localStorage o sessionStorage
-    // localStorage.removeItem('authToken'); 
-    
-    console.log('Saliendo de la sesión y redirigiendo a /');
-    
-    // 2. Redirige al Login (ruta '/')
-    navigate('/'); 
+  const handleLogout = async () => {
+    await logout();
   };
+
+  const toggleMenu = () => setMenuOpen((v) => !v);
 
   return (
     <header className="navbar-container">
       {/* 1. Sección Izquierda: Menú y Logo */}
       <div className="navbar-left">
-        <button className="menu-toggle-btn" aria-label="Abrir Menú">
+        <button className="menu-toggle-btn" aria-label="Abrir Menú" onClick={toggleMenu}>
           ☰
         </button>
         <img src={logo} alt="Máximo Facturas Logo" className="navbar-logo" />
@@ -33,7 +29,7 @@ const Navbar: React.FC = () => {
       {/* 2. Sección Derecha: Usuario y Botón de Salir */}
       <div className="navbar-right">
         <span className="user-info">
-          RBFORTY <span className="dropdown-arrow">▼</span>
+          {user?.name ?? 'Usuario'} <span className="dropdown-arrow">▼</span>
         </span>
         
         <button 
@@ -45,7 +41,7 @@ const Navbar: React.FC = () => {
       </div>
 
       {/* 3. Sidebar o Menú Lateral (Implementación de Rutas con Link) */}
-      <nav className="sidebar">
+      <nav className={`sidebar ${menuOpen ? 'open' : ''}`}>
         <ul className="nav-list">
           {/* Dashboard */}
           <li className="nav-item">

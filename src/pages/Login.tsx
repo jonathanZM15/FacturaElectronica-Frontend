@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import logo from '../assets/maximofactura.png';
-import { useNavigate } from 'react-router-dom';
 import bgAsset from '../assets/factura-inicio.jpg';
 import './auth.css';
 import { AuthCredentials } from '../types/interfaces';
-import Notification from '../components/Notification/Notification';
+import { useUser } from '../contexts/userContext';
+import { useNotification } from '../contexts/NotificationContext';
 import whatsappIcon from '../assets/icon-whatsapp.jpeg';
 
 // Constantes de límites
@@ -14,24 +14,25 @@ const PASSWORD_MAX_LENGTH = 30;
 const Login: React.FC = () => {
   const [creds, setCreds] = useState<AuthCredentials>({ username: '', password: '' });
   const [showPass, setShowPass] = useState(false);
-  const [notif, setNotif] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
+  const { login, register } = useUser();
+  const { show } = useNotification();
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [name, setName] = useState('');
 
-  const navigate = useNavigate();
+  // navigate provided by context after login
   
   const [userError, setUserError] = useState<string | null>(null); 
   const [passError, setPassError] = useState<string | null>(null);
 
   const fakeAuth = async (c: AuthCredentials) => {
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 900));
-    setLoading(false);
-    
-    if (c.username === 'admin' && c.password === 'Admin123!') {
-      setNotif({ title: 'Inicio de sesión', message: 'Bienvenido de vuelta', type: 'success' });
-      navigate('/Navbar');
-    } else {
-      setNotif({ title: 'Credenciales Incorrectas', message: 'Verifique por favor su usuario o contraseña. Reintente iniciar sesión', type: 'error' });
+    try {
+      await login(c.username, c.password);
+    } catch (err: any) {
+      show({ title: 'Credenciales Incorrectas', message: 'Verifique por favor su usuario o contraseña. Reintente iniciar sesión', type: 'error' });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -65,7 +66,14 @@ const Login: React.FC = () => {
       return; 
     }
 
-    fakeAuth(creds);
+    if (isRegistering) {
+      // register flow uses name and email
+      register(name, creds.username, creds.password)
+        .then(() => show({ title: 'Registro correcto', message: 'Cuenta creada correctamente. Bienvenido', type: 'success' }))
+        .catch(() => show({ title: 'Error', message: 'Error al registrar', type: 'error' }));
+    } else {
+      fakeAuth(creds);
+    }
   };
 
   const finalUrl = bgAsset;
@@ -81,7 +89,25 @@ const Login: React.FC = () => {
       <div className="auth-card">
         <img src={logo} alt="logo" className="auth-logo" />
 
+        <div className="auth-tabs">
+          <button type="button" className={`auth-tab ${!isRegistering ? 'active' : ''}`} onClick={() => setIsRegistering(false)}>Iniciar sesión</button>
+          <button type="button" className={`auth-tab ${isRegistering ? 'active' : ''}`} onClick={() => setIsRegistering(true)}>Registrarse</button>
+        </div>
+
         <form className="auth-form" onSubmit={onSubmit}>
+          {isRegistering && (
+            <div className="field-stack">
+              <div className="auth-input-wrapper">
+                <input
+                  className={`auth-input`}
+                  placeholder="Nombre completo"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+              <label className="field-label">Nombre:</label>
+            </div>
+          )}
           
           {/* CAMPO EMAIL O USUARIO */}
           <div className="field-stack">
@@ -128,11 +154,14 @@ const Login: React.FC = () => {
             {passError && <p className="validation-error">⚠️ {passError}</p>}
           </div>
 
-          <button className="primary-btn" type="submit" disabled={loading}>
-            {loading ? 'Cargando...' : 'INICIAR SESIÓN'}
-          </button>
+          {/* Buttons row: primary action */}
+          <div className="buttons-row">
+            <button className="primary-btn" type="submit" disabled={loading}>
+              {loading ? 'Cargando...' : (isRegistering ? 'REGISTRARSE' : 'INICIAR SESIÓN')}
+            </button>
+          </div>
 
-          {/* 💡 Nuevo contenedor para el pie de página que se manejará con CSS */}
+          {/* Nuevo contenedor para el pie de página */}
           <div className="auth-links-footer">
             <a href="https://wa.me/tunumero" target="_blank" rel="noopener noreferrer" className="support-link">
               Soporte <img src={whatsappIcon} alt="WhatsApp" className="whatsapp-icon" />

@@ -33,6 +33,30 @@
   width: 100%; /* Ocupa el 100% del padding de la tarjeta */
 }
 
+/* Pestañas para alternar Login / Registrarse */
+.auth-tabs {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  justify-content: center;
+  margin-bottom: 6px;
+}
+.auth-tab {
+  flex: 1 1 50%;
+  text-align: center;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-weight: 800;
+  color: #5b5b5b;
+  border-bottom: 2px solid transparent;
+}
+.auth-tab.active {
+  color: #0d6efd;
+  border-bottom: 3px solid #0d6efd;
+}
+
 /* 💡 Los field-stack ahora se alinean a la izquierda para replicar el diseño */
 .field-stack {
   display: flex;
@@ -81,6 +105,22 @@
   box-shadow: 0 4px 0 rgba(0,0,0,0.1); /* Sombra sutil */
   transition: background-color 0.2s;
 }
+
+.secondary-btn { 
+  background: #ffffff; 
+  border: 1px solid #dcdcdc; 
+  padding: 8px 12px; 
+  border-radius: 6px; 
+  cursor: pointer; 
+  font-weight: 700; 
+}
+
+.secondary-btn:hover { background: #f5f5f5 }
+
+.buttons-row{
+  display:flex;gap:12px;align-items:center;justify-content:center;width:100%;margin-top:8px;margin-bottom:12px
+}
+.primary-btn{width:100%;}
 
 .primary-btn:hover {
     background-color: #0b5fd7;
