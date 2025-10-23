@@ -1,0 +1,113 @@
+/* Factura-Frontend\src\styles\Navbar.css */
+
+/* --- BARRA SUPERIOR (HEADER) --- */
+.navbar-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #ffffff;
+  height: 60px; 
+  padding: 0 30px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  /* Posición fija para que se mantenga arriba */
+  position: fixed;
+  top: 0;
+  left: 0; 
+  width: 100%;
+  z-index: 1000;
+}
+
+.navbar-left {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.menu-toggle-btn {
+  font-size: 24px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+}
+
+.navbar-logo {
+  height: 35px; /* Ajusta el tamaño del logo */
+  width: auto;
+}
+
+.navbar-right {
+  display: flex;
+  align-items: center; /* Centrado vertical */
+  gap: 25px;
+  padding: 50px;
+}
+
+/* BOTÓN SALIR */
+.logout-btn {
+  display: flex;
+  align-items: center; 
+  gap: 5px;
+  background-color: #0c2de7; 
+  color: white; 
+  border: none;
+  padding: 8px 15px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.logout-icon {
+  font-size: 1.2em; 
+  transform: rotate(180deg);
+  
+}
+
+
+/* --- SIDEBAR (MENÚ LATERAL) --- */
+.sidebar {
+  /* Fija la posición a la izquierda, justo debajo del header */
+  position: fixed;
+  top: 60px; /* Altura del navbar */
+  left: 0;
+  width: 250px; /* Ancho del menú lateral */
+  height: calc(100vh - 60px); /* Ocupa el resto de la altura */
+  background-color: #f8f8f8;
+  padding-top: 20px;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+}
+
+.nav-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.nav-item {
+  margin: 5px 0;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  text-decoration: none;
+  color: #333;
+  font-weight: 500;
+  border-left: 5px solid transparent; /* Para el borde activo */
+  transition: all 0.2s;
+}
+
+.nav-link .icon {
+  margin-right: 10px;
+}
+
+/* Estilo para la ruta activa (Emisores en tu imagen) */
+.nav-item.active .nav-link,
+.nav-link:hover {
+  background-color: #e6e6e6;
+  color: #0c2de7; /* Color principal */
+  border-left-color: #ff8c00; /* Color naranja del borde activo */
+  font-weight: bold;
+}

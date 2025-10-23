@@ -9,7 +9,7 @@ interface Props {
   onClose?: () => void;
 }
 
-const Notification: React.FC<Props> = ({ title, message, type = 'info', duration = 4500, onClose }) => {
+const Notification: React.FC<Props> = ({ title, message, type = 'info', duration = 3000, onClose }) => {
   useEffect(() => {
     const t = setTimeout(() => onClose && onClose(), duration);
     return () => clearTimeout(t);
