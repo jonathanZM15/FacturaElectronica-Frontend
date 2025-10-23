@@ -113,7 +113,7 @@ const PasswordRecovery: React.FC = () => {
         {/* 💡 Soporte se saca del formulario y se posiciona de forma absoluta */}
         <div className="support-footer-recovery">
             <a
-                href="https://wa.me/tunumero"
+                href="https://wa.me/message/72PVPYUWIIPOG1"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="support-link"

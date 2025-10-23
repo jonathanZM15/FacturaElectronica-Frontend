@@ -163,7 +163,7 @@ const Login: React.FC = () => {
 
           {/* Nuevo contenedor para el pie de página */}
           <div className="auth-links-footer">
-            <a href="https://wa.me/tunumero" target="_blank" rel="noopener noreferrer" className="support-link">
+            <a href="https://wa.me/message/72PVPYUWIIPOG1" target="_blank" rel="noopener noreferrer" className="support-link">
               Soporte <img src={whatsappIcon} alt="WhatsApp" className="whatsapp-icon" />
             </a>
             <a className="forgot" href="/PasswordRecovery">Olvidé mi contraseña</a>
