@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import logo from '../assets/maximofactura.png';
 import whatsappIcon from '../assets/icon-whatsapp.jpeg';
 import './cambiarPassword.css';
+import { useNavigate } from 'react-router-dom';
+import { useNotification } from '../contexts/NotificationContext';
 
 interface UpdatePasswordProps {
   onSubmit?: (newPassword: string) => Promise<void>;
@@ -33,22 +35,31 @@ const CambiarPassword: React.FC<UpdatePasswordProps> = ({ onSubmit, onCancel }) 
     return hasMinLength && hasUpperCase && hasLowerCase && hasNumber && hasSpecial;
   };
 
+  const navigate = useNavigate();
+  const { show } = useNotification();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validatePassword(password)) {
-      // La validación fallida se maneja en la UI con el mensaje existente
-      return;
-    }
+    // Validaciones: mostrar notificaciones temporales en la esquina inferior derecha
     if (password !== confirmPassword) {
-      // La validación de coincidencia se maneja en la UI
+      show({ title: 'Error', message: 'Las contraseñas no coinciden.', type: 'error' }, 4000);
       return;
     }
-    
+    if (!validatePassword(password)) {
+      show({ title: 'Error', message: 'La contraseña no cumple los requisitos mínimos.', type: 'error' }, 4000);
+      return;
+    }
+
     setLoading(true);
     try {
       if (onSubmit) {
         await onSubmit(password);
       }
+      // Mostrar notificación de éxito por 4 segundos y redirigir al login
+      show({ title: 'Contraseña actualizada', message: 'Se actualizó contraseña de usuario exitosamente, inicie sesión', type: 'success' }, 4000);
+      navigate('/');
+    } catch (err) {
+      show({ title: 'Error', message: 'Ocurrió un error al actualizar la contraseña.', type: 'error' }, 4000);
     } finally {
       setLoading(false);
     }
@@ -109,6 +120,7 @@ const CambiarPassword: React.FC<UpdatePasswordProps> = ({ onSubmit, onCancel }) 
           </div>
 
           <div className="form-actions">
+            {/* los mensajes de error ahora se muestran como notificaciones temporales (NotificationContext) */}
             <button 
               type="submit" 
               className="update-button"
