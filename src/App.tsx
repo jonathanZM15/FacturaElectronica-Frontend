@@ -15,6 +15,10 @@ function App() {
       <UserProvider>
         <Routes>
           <Route path="/" element={<Login />} />
+          {/* Rutas temporales para probar la pantalla de cambio de contraseña */}
+          <Route path="/cambiar-password" element={<CambiarPassword/>} />
+          {/* Variante con mayúscula (acepta la URL que abriste en el navegador) */}
+          <Route path="/cambiar-Password" element={<CambiarPassword/>} />
           <Route path="/PasswordRecovery" element={<PasswordRecovery/>} />
           <Route
             path="/Navbar"

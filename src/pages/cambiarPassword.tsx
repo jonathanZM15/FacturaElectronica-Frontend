@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import logo from '../../assets/maximofactura.png';
-import whatsappIcon from '../../assets/icon-whatsapp.jpeg';
+import logo from '../assets/maximofactura.png';
+import whatsappIcon from '../assets/icon-whatsapp.jpeg';
 import './cambiarPassword.css';
 
 interface UpdatePasswordProps {
