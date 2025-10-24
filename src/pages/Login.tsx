@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import logo from '../assets/maximofactura.png';
+import api from '../services/api';
 import bgAsset from '../assets/factura-inicio.jpg';
 import './auth.css';
 import { AuthCredentials } from '../types/interfaces';
@@ -87,7 +88,8 @@ const Login: React.FC = () => {
   return (
     <div className="auth-bg" style={bgStyle}>
       <div className="auth-card">
-        <img src={logo} alt="logo" className="auth-logo" />
+  {/* Always show the static login image; do NOT use the company uploaded logo here */}
+  <img src={logo} alt="logo" className="auth-logo" />
 
         <div className="auth-tabs">
           <button type="button" className={`auth-tab ${!isRegistering ? 'active' : ''}`} onClick={() => setIsRegistering(false)}>Iniciar sesión</button>
