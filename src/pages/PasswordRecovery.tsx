@@ -20,27 +20,27 @@ const PasswordRecovery: React.FC = () => {
    timeoutId = setTimeout(() => {
   setError('');
      }, 4000); 
-    }
-    return () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    };
-  }, [error]);
+  }
+ return () => {
+ if (timeoutId) {
+clearTimeout(timeoutId);
+ }
+ };
+ }, [error]);
 
-  const bgStyle: React.CSSProperties = {
-      backgroundImage: `linear-gradient(90deg, rgba(12, 45, 231, 0.8), rgba(63,8,143,0.55)), url('${bgAsset}')`,
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center'
-  };
+ const bgStyle: React.CSSProperties = {
+ backgroundImage: `linear-gradient(90deg, rgba(12, 45, 231, 0.8), rgba(63,8,143,0.55)), url('${bgAsset}')`,
+ backgroundSize: 'cover',
+ backgroundPosition: 'center',
+ minHeight: '100vh',
+ display: 'flex',
+ alignItems: 'center',
+justifyContent: 'center'
+ };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    // Validación simple de email (puedes mejorar esto)
+ const handleSubmit = async (e: React.FormEvent) => {
+ e.preventDefault();
+ // Validación simple de email (puedes mejorar esto)
     if (!email || !email.includes('@')) {
         setError('Por favor, ingrese un email válido.');
         return;
@@ -49,7 +49,7 @@ const PasswordRecovery: React.FC = () => {
         try {
             const res = await api.post('/api/password-recovery', { email });
                     if (res.status === 200) {
-                        show({ title: 'Contraseña actualizada', message: 'Se actualizó contraseña de usuario exitosamente, inicie sesión', type: 'success' });
+                        show({ title: 'Se envió correo de recuperación', message: 'revise su bandeja de entrada', type: 'success' });
                         navigate('/');
                     }
         } catch (err: any) {
@@ -61,15 +61,15 @@ const PasswordRecovery: React.FC = () => {
                         show({ title: 'Error de red', message: 'Ocurrió un error de red. Intente de nuevo.', type: 'error' });
                     }
         }
-  };
+ };
 
-  return (
-    <div className="auth-bg" style={bgStyle}>
-      <div className="auth-card">
-        <img src={logo} alt="Máximo Facturas Logo" className="auth-logo" />
-        
+ return (
+ <div className="auth-bg" style={bgStyle}>
+ <div className="auth-card">
+ <img src={logo} alt="Máximo Facturas Logo" className="auth-logo" />
+
         {/* Usamos una clase de título que podemos alinear con CSS */}
-        <h2 className="recovery-title">Recuperar contraseña</h2> 
+ <h2 className="recovery-title">Recuperar contraseña</h2> 
         
         <form className="auth-form" onSubmit={handleSubmit}>
             {/* 💡 Envolver en field-stack para el diseño */}
@@ -122,20 +122,20 @@ const PasswordRecovery: React.FC = () => {
                 <img src={whatsappIcon} alt="WhatsApp" className="whatsapp-icon" />
             </a>
         </div>
-      </div>
+         </div>
 
-      {/* 💡 El mensaje de error flotante ya está bien y se mantiene */}
-      {error && (
-        <div className="floating-error-container">
-          <div className="error-content">
-            <div className="error-title">Error de validación</div>
-            <div className="error-description">{error}</div>
-          </div>
-          <div className="error-icon" onClick={() => setError('')}>✕</div>
-        </div>
-      )}
-    </div>
-  );
+      {/* 💡 El mensaje de error flotante ya está bien y se mantiene */}
+ {error && (
+            <div className="floating-error-container">
+            <div className="error-content">
+            <div className="error-title">Error de validación</div>
+            <div className="error-description">{error}</div>
+            </div>
+            <div className="error-icon" onClick={() => setError('')}>✕</div>
+            </div>
+            )}
+        </div>
+     );
 };
 
 export default PasswordRecovery;

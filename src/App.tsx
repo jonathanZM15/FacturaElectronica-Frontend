@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 import Login from './pages/Login';
+import CambiarPassword from './pages/cambiarPassword';
 import PasswordRecovery from './pages/PasswordRecovery';
 import Navbar from './pages/Navbar';
 import { UserProvider, useUser } from './contexts/userContext';
@@ -14,6 +15,10 @@ function App() {
       <UserProvider>
         <Routes>
           <Route path="/" element={<Login />} />
+          {/* Rutas temporales para probar la pantalla de cambio de contraseña */}
+          <Route path="/cambiar-password" element={<CambiarPassword/>} />
+          {/* Variante con mayúscula (acepta la URL que abriste en el navegador) */}
+          <Route path="/cambiar-Password" element={<CambiarPassword/>} />
           <Route path="/PasswordRecovery" element={<PasswordRecovery/>} />
           <Route
             path="/Navbar"
