@@ -132,7 +132,7 @@ const CambiarPassword: React.FC<UpdatePasswordProps> = ({ onSubmit, onCancel }) 
         </form>
 
         <a 
-          href="https://wa.me/tunumero"
+          href="https://wa.me/message/72PVPYUWIIPOG1"
           target="_blank"
           rel="noopener noreferrer"
           className="support-link"
