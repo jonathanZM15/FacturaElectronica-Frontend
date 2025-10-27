@@ -32,8 +32,10 @@
 }
 
 .navbar-logo {
-  height: 35px; /* Ajusta el tamaño del logo */
-  width: auto;
+  width: 80px;
+  height: 50px;
+  object-fit: cover; /* fill the square and crop if needed */
+  border-radius: 6px; /* subtle rounding */
 }
 
 .navbar-right {
