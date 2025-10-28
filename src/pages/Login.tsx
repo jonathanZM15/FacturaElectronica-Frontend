@@ -85,10 +85,13 @@ const Login: React.FC = () => {
     backgroundPosition: 'center',
   };
 
+  // The login screen must always show the static brand image.
+  // We intentionally do NOT fetch the company logo here so it won't change when users upload a navbar logo.
+  // Use the imported `logo` variable above (maximofactura.png).
+
   return (
     <div className="auth-bg" style={bgStyle}>
       <div className="auth-card">
-  {/* Always show the static login image; do NOT use the company uploaded logo here */}
   <img src={logo} alt="logo" className="auth-logo" />
 
         <div className="auth-tabs">

@@ -32,10 +32,12 @@
 }
 
 .navbar-logo {
-  width: 80px;
-  height: 50px;
+  /* FRONTEND DISPLAY SIZE - change these values to increase/decrease displayed logo size */
+  width: 40px; /* edit this to make the logo wider */
+  height: 40px; /* edit this to make the logo taller */
   object-fit: cover; /* fill the square and crop if needed */
   border-radius: 6px; /* subtle rounding */
+  display: inline-block;
 }
 
 .navbar-right {
