@@ -1,65 +1,154 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import logo from '../assets/maximofactura.png';
 import whatsappIcon from '../assets/icon-whatsapp.jpeg';
 import './cambiarPassword.css';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useUser } from '../contexts/userContext';
+import { auth } from '../services/api';
 import { useNotification } from '../contexts/NotificationContext';
 
-interface UpdatePasswordProps {
+type Props = {
   onSubmit?: (newPassword: string) => Promise<void>;
-  onCancel?: () => void;
+};
+
+function useQuery() {
+  return new URLSearchParams(useLocation().search);
 }
 
-/**
- * Componente para actualización de contraseña.
- * Incluye validación de coincidencia entre campos y requisitos mínimos.
- * 
- * @param onSubmit - Callback opcional para manejar el envío del formulario
- * @param onCancel - Callback opcional para manejar cancelación
- */
-const CambiarPassword: React.FC<UpdatePasswordProps> = ({ onSubmit, onCancel }) => {
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+// Regex: al menos una minúscula, una mayúscula, un dígito y un carácter especial, mínimo 8
+const passwordRules = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
 
-  // Validación de requisitos de contraseña
-  const validatePassword = (pass: string): boolean => {
-    const hasMinLength = pass.length >= 8;
-    const hasUpperCase = /[A-Z]/.test(pass);
-    const hasLowerCase = /[a-z]/.test(pass);
-    const hasNumber = /\d/.test(pass);
-    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(pass);
-    
-    return hasMinLength && hasUpperCase && hasLowerCase && hasNumber && hasSpecial;
-  };
-
+const CambiarPassword: React.FC<Props> = ({ onSubmit }) => {
+  const query = useQuery();
   const navigate = useNavigate();
+
+  const token = query.get('token') || '';
+  const email = query.get('email') || '';
+  const [emailState, setEmailState] = useState(email);
+  // aceptar token solo (sin email) para mayor compatibilidad con enlaces que solo incluyan token
+  const hasToken = Boolean(token);
+  const { user, logout } = useUser();
+  const isAuthenticated = Boolean(user);
+  // modulos de uso: modo público (link con token) o modo autenticado (usuario logueado)
+  const publicMode = hasToken;
+  const authedMode = !hasToken && isAuthenticated;
+
+  const [password, setPassword] = useState('');
+  const [passwordConfirmation, setPasswordConfirmation] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string,string>>({});
+  const [showPassword, setShowPassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
   const { show } = useNotification();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    // Validaciones: mostrar notificaciones temporales en la esquina inferior derecha
-    if (password !== confirmPassword) {
-      show({ title: 'Error', message: 'Las contraseñas no coinciden.', type: 'error' }, 4000);
-      return;
-    }
-    if (!validatePassword(password)) {
-      show({ title: 'Error', message: 'La contraseña no cumple los requisitos mínimos.', type: 'error' }, 4000);
-      return;
-    }
+  useEffect(() => {
+    setMessage(null);
+    setErrors({});
+  }, [password, passwordConfirmation]);
 
+  const validate = () => {
+    const errs: Record<string,string> = {};
+    if (!passwordRules.test(password)) {
+      errs.password = 'La contraseña debe tener mínimo 8 caracteres, incluyendo mayúscula, minúscula, número y carácter especial.';
+    }
+    if (password !== passwordConfirmation) {
+      errs.password_confirmation = 'Las contraseñas no coinciden.';
+    }
+    return errs;
+  };
+
+  const handleSubmitPublic = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMessage(null);
+    // el backend valida token + email, así que pedimos email si no viene en la query
+    if (!emailState) {
+      setErrors({ general: 'Por favor ingrese el correo asociado a su cuenta.' });
+      return;
+    }
+    const v = validate();
+    if (Object.keys(v).length) {
+      setErrors(v);
+      return;
+    }
+    setLoading(true);
+    try {
+      const apiBase = process.env.REACT_APP_API_URL || '';
+      const url = (apiBase ? apiBase : '') + '/api/password-reset';
+      console.debug('[CambiarPassword] POST', url, { email: emailState, token, password });
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: emailState,
+          token,
+          password,
+          password_confirmation: passwordConfirmation,
+        }),
+      });
+
+      // Manejo robusto: si la respuesta no es JSON (por ejemplo HTML de error), leer texto
+      const contentType = res.headers.get('content-type') || '';
+      let json: any = null;
+      if (contentType.includes('application/json')) {
+        json = await res.json();
+      } else {
+        const text = await res.text();
+        json = { message: text.substring(0, 1000) };
+        console.debug('[CambiarPassword] response text (non-json):', text.substring(0, 2000));
+      }
+
+      if (res.ok) {
+        setMessage('Contraseña actualizada correctamente. Serás redirigido al login.');
+        // mostrar notificación bonita en esquina inferior derecha
+        try { show({ title: 'Contraseña actualizada', message: 'Se redirigirá al login', type: 'success' }, 3000); } catch {}
+        setTimeout(() => navigate('/'), 2000);
+      } else {
+        const msg = json?.message || 'Error al restablecer contraseña';
+        setErrors({ general: msg });
+        try { show({ title: 'Error', message: String(msg), type: 'error' }, 5000); } catch {}
+      }
+    } catch (err: any) {
+      const msg = err?.message || 'Error de red';
+      setErrors({ general: msg });
+      try { show({ title: 'Error de red', message: String(msg), type: 'error' }, 5000); } catch {}
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmitAuthed = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMessage(null);
+    const v = validate();
+    if (Object.keys(v).length) {
+      setErrors(v);
+      return;
+    }
+    // Si se pasó onSubmit (via wrapper en App) usarlo, si no, usar auth directamente
     setLoading(true);
     try {
       if (onSubmit) {
         await onSubmit(password);
+      } else {
+        // flujo cuando el componente se usa en ruta protegida pero sin prop onSubmit
+        if (!currentPassword) {
+          setErrors({ general: 'Por favor ingrese su contraseña actual.' });
+          setLoading(false);
+          return;
+        }
+        // llamar al endpoint autenticado
+        await auth.cambiarPassword(currentPassword, password);
+        // forzar logout para que el usuario vuelva a iniciar sesión
+        await logout();
       }
-      // Mostrar notificación de éxito por 4 segundos y redirigir al login
-      show({ title: 'Contraseña actualizada', message: 'Se actualizó contraseña de usuario exitosamente, inicie sesión', type: 'success' }, 4000);
-      navigate('/');
-    } catch (err) {
-      show({ title: 'Error', message: 'Ocurrió un error al actualizar la contraseña.', type: 'error' }, 4000);
+      setMessage('Contraseña actualizada correctamente. Serás redirigido al login.');
+      try { show({ title: 'Contraseña actualizada', message: 'Se redirigirá al login', type: 'success' }, 3000); } catch {}
+      setTimeout(() => navigate('/'), 1200);
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || 'Error al cambiar contraseña';
+      setErrors({ general: msg });
+      try { show({ title: 'Error', message: String(msg), type: 'error' }, 5000); } catch {}
     } finally {
       setLoading(false);
     }
@@ -76,7 +165,22 @@ const CambiarPassword: React.FC<UpdatePasswordProps> = ({ onSubmit, onCancel }) 
           minúscula, un número y un caracter especial.
         </p>
 
-        <form onSubmit={handleSubmit} className="update-password-form">
+        <form onSubmit={publicMode ? handleSubmitPublic : handleSubmitAuthed} className="update-password-form">
+          {/* Si es modo público y no tenemos email en la query, pedir email al usuario */}
+          {publicMode && !emailState && (
+            <div className="password-field">
+              <div className="input-group">
+                <input
+                  type="email"
+                  value={emailState}
+                  onChange={(e) => setEmailState(e.target.value)}
+                  className="password-input"
+                  placeholder="Ingrese el correo asociado a su cuenta"
+                />
+              </div>
+              <label className="password-label">Email</label>
+            </div>
+          )}
           <div className="password-field">
             <div className="input-group">
               <input
@@ -96,37 +200,57 @@ const CambiarPassword: React.FC<UpdatePasswordProps> = ({ onSubmit, onCancel }) 
               </button>
             </div>
             <label className="password-label">Contraseña</label>
+            {errors.password && <div className="field-error">{errors.password}</div>}
           </div>
 
           <div className="password-field">
             <div className="input-group">
               <input
-                type={showConfirmPassword ? "text" : "password"}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                type={showPassword ? "text" : "password"}
+                value={passwordConfirmation}
+                onChange={(e) => setPasswordConfirmation(e.target.value)}
                 className="password-input"
                 placeholder="Vuelva a ingresar la nueva contraseña"
               />
               <button
                 type="button"
                 className="toggle-visibility"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                aria-label={showConfirmPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
               >
-                {showConfirmPassword ? "👁" : "👁"}
+                {showPassword ? "👁" : "👁"}
               </button>
             </div>
             <label className="password-label">Confirmación de contraseña:</label>
+            {errors.password_confirmation && <div className="field-error">{errors.password_confirmation}</div>}
           </div>
 
+          {/* Si estamos en modo autenticado mostrar campo de contraseña actual */}
+          {authedMode && (
+            <div className="password-field">
+              <div className="input-group">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  className="password-input"
+                  placeholder="Contraseña actual"
+                />
+              </div>
+              <label className="password-label">Contraseña actual</label>
+            </div>
+          )}
+
+          {errors.general && <div className="form-error">{errors.general}</div>}
+          {message && <div className="form-success">{message}</div>}
+
           <div className="form-actions">
-            {/* los mensajes de error ahora se muestran como notificaciones temporales (NotificationContext) */}
             <button 
               type="submit" 
               className="update-button"
-              disabled={loading || !password || !confirmPassword}
+              disabled={loading || !password || !passwordConfirmation}
             >
-              {loading ? 'Actualizando...' : 'ACTUALIZAR'}
+              {loading ? (publicMode ? 'Procesando...' : 'Procesando...') : (publicMode ? 'Actualizar contraseña' : 'ACTUALIZAR')}
             </button>
           </div>
         </form>

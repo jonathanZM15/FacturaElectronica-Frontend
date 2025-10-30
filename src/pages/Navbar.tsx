@@ -129,6 +129,11 @@ const Navbar: React.FC = () => {
               <span className="icon">🧾</span> Impuestos
             </Link>
           </li>
+          <li className="nav-item">
+            <Link to="/cambiarPassword" className="nav-link">
+              <span className="icon">🔒</span> Cambiar Contraseña
+            </Link>
+          </li>
         </ul>
       </nav>
 
