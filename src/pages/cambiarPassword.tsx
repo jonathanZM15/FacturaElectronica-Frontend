@@ -38,7 +38,10 @@ const CambiarPassword: React.FC<Props> = ({ onSubmit }) => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string,string>>({});
+  // Estados de visibilidad independientes por campo
   const [showPassword, setShowPassword] = useState(false);
+  const [showPasswordConfirmation, setShowPasswordConfirmation] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const { show } = useNotification();
 
@@ -196,7 +199,7 @@ const CambiarPassword: React.FC<Props> = ({ onSubmit }) => {
                 onClick={() => setShowPassword(!showPassword)}
                 aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
               >
-                {showPassword ? "👁" : "👁"}
+                {showPassword ? "🙈" : "🙉"}
               </button>
             </div>
             <label className="password-label">Contraseña</label>
@@ -206,7 +209,7 @@ const CambiarPassword: React.FC<Props> = ({ onSubmit }) => {
           <div className="password-field">
             <div className="input-group">
               <input
-                type={showPassword ? "text" : "password"}
+                type={showPasswordConfirmation ? "text" : "password"}
                 value={passwordConfirmation}
                 onChange={(e) => setPasswordConfirmation(e.target.value)}
                 className="password-input"
@@ -215,10 +218,10 @@ const CambiarPassword: React.FC<Props> = ({ onSubmit }) => {
               <button
                 type="button"
                 className="toggle-visibility"
-                onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                onClick={() => setShowPasswordConfirmation(!showPasswordConfirmation)}
+                aria-label={showPasswordConfirmation ? "Ocultar contraseña" : "Mostrar contraseña"}
               >
-                {showPassword ? "👁" : "👁"}
+                {showPasswordConfirmation ? "🙈" : "🙉"}
               </button>
             </div>
             <label className="password-label">Confirmación de contraseña:</label>
@@ -229,14 +232,22 @@ const CambiarPassword: React.FC<Props> = ({ onSubmit }) => {
           {authedMode && (
             <div className="password-field">
               <div className="input-group">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="password-input"
-                  placeholder="Contraseña actual"
-                />
-              </div>
+                  <input
+                    type={showCurrentPassword ? 'text' : 'password'}
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    className="password-input"
+                    placeholder="Contraseña actual"
+                  />
+                  <button
+                    type="button"
+                    className="toggle-visibility"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                    aria-label={showCurrentPassword ? 'Ocultar contraseña actual' : 'Mostrar contraseña actual'}
+                  >
+                    {showCurrentPassword ? '🙈' : '🙉'}
+                  </button>
+                </div>
               <label className="password-label">Contraseña actual</label>
             </div>
           )}
