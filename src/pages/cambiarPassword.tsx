@@ -199,7 +199,7 @@ const CambiarPassword: React.FC<Props> = ({ onSubmit }) => {
                 onClick={() => setShowPassword(!showPassword)}
                 aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
               >
-                {showPassword ? "🙈" : "🙉"}
+                {showPassword ? "🙉" : "🙈"}
               </button>
             </div>
             <label className="password-label">Contraseña</label>
@@ -221,7 +221,7 @@ const CambiarPassword: React.FC<Props> = ({ onSubmit }) => {
                 onClick={() => setShowPasswordConfirmation(!showPasswordConfirmation)}
                 aria-label={showPasswordConfirmation ? "Ocultar contraseña" : "Mostrar contraseña"}
               >
-                {showPasswordConfirmation ? "🙈" : "🙉"}
+                {showPasswordConfirmation ? "🙉" : "🙈"}
               </button>
             </div>
             <label className="password-label">Confirmación de contraseña:</label>
@@ -245,7 +245,7 @@ const CambiarPassword: React.FC<Props> = ({ onSubmit }) => {
                     onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                     aria-label={showCurrentPassword ? 'Ocultar contraseña actual' : 'Mostrar contraseña actual'}
                   >
-                    {showCurrentPassword ? '🙈' : '🙉'}
+                    {showCurrentPassword ? '🙉' : '🙈'}
                   </button>
                 </div>
               <label className="password-label">Contraseña actual</label>

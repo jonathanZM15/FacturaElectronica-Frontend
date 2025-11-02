@@ -151,7 +151,7 @@ const Login: React.FC = () => {
               />
               <button type="button" className="eye-btn" onClick={() => setShowPass(!showPass)} aria-label="toggle">
                 {/* 💡 El ícono de ojo/ojo tachado es más limpio */}
-                <span className="eye-icon">{showPass ? '🙈' : '🙉'}</span> 
+                <span className="eye-icon">{showPass ? '🙉' : '🙈'}</span> 
               </button>
             </div>
             {/* 💡 Label "Contraseña:" debajo del input */}
