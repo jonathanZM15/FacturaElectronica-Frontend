@@ -1,29 +1,26 @@
 import React, { useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import './Navbar.css';
 import logo from '../assets/maximofactura.png';
 import api, { company } from '../services/api';
 import { useNotification } from '../contexts/NotificationContext';
 import { useUser } from '../contexts/userContext';
+import { useSidebar } from '../contexts/SidebarContext';
 import ConfirmDialog from './ConfirmDialog';
 
 const Navbar: React.FC = () => {
   const { user, logout } = useUser();
-  const [menuOpen, setMenuOpen] = useState(true);
+  const { menuOpen, toggleMenu } = useSidebar();
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const { show } = useNotification();
 
-  // NUEVO: estado del modal de confirmación
   const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
 
   React.useEffect(() => {
     let mounted = true;
     api.get('/api/companies/1/logo')
-      .then((res) => {
-        if (!mounted) return;
-        setLogoUrl(res?.data?.url || null);
-      })
+      .then((res) => { if (mounted) setLogoUrl(res?.data?.url || null); })
       .catch(() => {})
       .finally(() => {});
     return () => { mounted = false; };
@@ -52,29 +49,15 @@ const Navbar: React.FC = () => {
     }
   };
 
-  // MODIFICADO: ahora solo abre el modal
-  const handleLogout = () => {
-    setConfirmLogoutOpen(true);
-  };
-
-  const confirmLogout = async () => {
-    setConfirmLogoutOpen(false);
-    await logout(); // userContext ya hace navigate('/') y limpia storage
-  };
-
+  const handleLogout = () => setConfirmLogoutOpen(true);
+  const confirmLogout = async () => { setConfirmLogoutOpen(false); await logout(); };
   const cancelLogout = () => setConfirmLogoutOpen(false);
-
-  const toggleMenu = () => setMenuOpen((v) => !v);
 
   return (
     <header className="navbar-container">
-      {/* 1. Sección Izquierda: Menú y Logo */}
       <div className="navbar-left">
-        <button className="menu-toggle-btn" aria-label="Abrir Menú" onClick={toggleMenu}>
-          ☰
-        </button>
+        <button className="menu-toggle-btn" aria-label="Abrir Menú" onClick={toggleMenu}>☰</button>
 
-        {/* Logo (clic para subir) */}
         <img
           onClick={handleLogoClick}
           src={logoUrl || logo}
@@ -82,16 +65,9 @@ const Navbar: React.FC = () => {
           className="navbar-logo"
           style={{ cursor: 'pointer' }}
         />
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          style={{ display: 'none' }}
-          onChange={onFileChange}
-        />
+        <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={onFileChange} />
       </div>
 
-      {/* 2. Sección Derecha: Usuario y Botón de Salir */}
       <div className="navbar-right">
         <span className="user-info">
           {user?.name ?? 'Usuario'} <span className="dropdown-arrow">▼</span>
@@ -101,43 +77,41 @@ const Navbar: React.FC = () => {
         </button>
       </div>
 
-      {/* 3. Sidebar o Menú Lateral */}
       <nav className={`sidebar ${menuOpen ? 'open' : ''}`}>
         <ul className="nav-list">
           <li className="nav-item">
-            <Link to="/dashboard" className="nav-link">
+            <NavLink to="/dashboard" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
               <span className="icon">👤</span> Dashboard Administrativo
-            </Link>
+            </NavLink>
           </li>
-          <li className="nav-item active">
-            <Link to="/emisores" className="nav-link">
+          <li className="nav-item">
+            <NavLink to="/emisores" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
               <span className="icon">📧</span> Emisores
-            </Link>
+            </NavLink>
           </li>
           <li className="nav-item">
-            <Link to="/usuarios" className="nav-link">
+            <NavLink to="/usuarios" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
               <span className="icon">👥</span> Usuarios
-            </Link>
+            </NavLink>
           </li>
           <li className="nav-item">
-            <Link to="/planes" className="nav-link">
+            <NavLink to="/planes" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
               <span className="icon">📊</span> Planes
-            </Link>
+            </NavLink>
           </li>
           <li className="nav-item">
-            <Link to="/impuestos" className="nav-link">
+            <NavLink to="/impuestos" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
               <span className="icon">🧾</span> Impuestos
-            </Link>
+            </NavLink>
           </li>
           <li className="nav-item">
-            <Link to="/cambiarPassword" className="nav-link">
+            <NavLink to="/cambiarPassword" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
               <span className="icon">🔒</span> Cambiar Contraseña
-            </Link>
+            </NavLink>
           </li>
         </ul>
       </nav>
 
-      {/* Modal de confirmación (como en la imagen) */}
       <ConfirmDialog
         open={confirmLogoutOpen}
         title="Cerrar Sesión"

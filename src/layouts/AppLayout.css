@@ -1,0 +1,21 @@
+.app-content {
+  /* Desplaza el contenido para no quedar debajo del header/Sidebar fijos */
+  margin-top: 60px;      /* altura del header */
+  margin-left: 250px;    /* ancho del sidebar cuando está abierto */
+  padding: 16px;
+  min-height: calc(100vh - 60px);
+  background: #fff;
+  box-sizing: border-box;
+  transition: margin-left 200ms ease; /* Transición suave al cambiar el margen */
+}
+
+/* Cuando el sidebar está cerrado, el contenido ocupa todo el ancho */
+.app-content.sidebar-closed {
+  margin-left: 0;
+}
+
+@media (max-width: 900px) {
+  .app-content {
+    margin-left: 0;
+  }
+}

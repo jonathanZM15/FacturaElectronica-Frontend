@@ -69,7 +69,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem('authToken', token);
         localStorage.setItem('authUser', JSON.stringify(u));
         setUser(u);
-        navigate('/Navbar');
+        navigate('/emisores'); // ← ir directo a Emisores
       }
     } finally {
       setLoading(false);
@@ -85,7 +85,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem('authToken', token);
         localStorage.setItem('authUser', JSON.stringify(u));
         setUser(u);
-        navigate('/Navbar');
+        navigate('/emisores'); // ← ir directo a Emisores
       }
     } finally {
       setLoading(false);

@@ -35,4 +35,9 @@ export const company = {
   uploadLogo: (companyId: number, formData: FormData) => api.post(`/api/companies/${companyId}/logo`, formData),
 };
 
+// NUEVO: endpoint de Emisores
+export const emisores = {
+  list: (params?: Record<string, any>) => api.get('/api/emisores', { params }),
+};
+
 export default api;

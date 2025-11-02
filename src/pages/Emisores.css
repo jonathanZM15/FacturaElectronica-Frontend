@@ -1,0 +1,160 @@
+.emisores-page { display: flex; flex-direction: column; gap: 10px; }
+.emisores-header { display: flex; flex-direction: column; gap: 8px; }
+
+.filtros { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.filtros .fechas input[type="date"] { padding: 6px; }
+.filtros select,
+.filtros input[type="text"],
+.filtros input[type="date"] {
+  border: 1px solid #ccc; border-radius: 4px; padding: 6px 8px;
+}
+.filtros .btn-nuevo {
+  margin-left: auto; background: #0d6efd; color: #fff; border: none;
+  border-radius: 6px; padding: 8px 14px; cursor: pointer; font-weight: 600;
+}
+
+.alert-error {
+  background: #ffe9e9; color: #9b1c1c; border: 1px solid #f5c2c2;
+  padding: 8px 10px; border-radius: 6px;
+}
+
+/* Contenedor principal sin scroll - las columnas fijas no deben scrollear */
+.tabla-wrapper {
+  --col-ruc: 150px;
+  --col-razon: 200px;
+  --col-actions: 100px;
+
+  border: 2px solid #ff8c00;
+  position: relative;
+  background: #fff;
+  overflow: hidden; /* Sin scroll en el contenedor principal */
+}
+
+.tabla-emisores {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Headers y body usan flexbox para mantener columnas fijas */
+.tabla-emisores thead,
+.tabla-emisores tbody {
+  display: block;
+}
+
+.tabla-emisores thead tr,
+.tabla-emisores tbody tr {
+  display: flex;
+  width: 100%;
+}
+
+/* Columnas fijas: RUC, Razón Social */
+.th-sticky.sticky-left-1,
+.td-sticky.sticky-left-1 {
+  flex: 0 0 var(--col-ruc);
+  min-width: var(--col-ruc);
+  max-width: var(--col-ruc);
+}
+
+.th-sticky.sticky-left-2,
+.td-sticky.sticky-left-2 {
+  flex: 0 0 var(--col-razon);
+  min-width: var(--col-razon);
+  max-width: var(--col-razon);
+}
+
+/* Contenedor scrollable para columnas dinámicas */
+.scrollable-columns {
+  flex: 1;
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* Scrollbar personalizado */
+.scrollable-columns::-webkit-scrollbar {
+  height: 10px;
+}
+.scrollable-columns::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+.scrollable-columns::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 6px;
+}
+.scrollable-columns::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Columnas dinámicas dentro del scroll */
+.th-dyn,
+.td-dyn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* Columna de Acciones fija a la derecha */
+.th-sticky.sticky-right,
+.td-sticky.sticky-right {
+  flex: 0 0 var(--col-actions);
+  min-width: var(--col-actions);
+  max-width: var(--col-actions);
+}
+
+/* Estilos de headers */
+thead th {
+  background: #2931a8;
+  color: #fff;
+  padding: 10px;
+  text-align: left;
+  border: 2px solid #ff8c00;
+  font-weight: 600;
+  font-size: 13px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+/* Estilos de celdas */
+tbody td {
+  border: 2px solid #ff8c00;
+  padding: 8px 10px;
+  background: #fff;
+  vertical-align: middle;
+  font-size: 13px;
+}
+
+.loading-row {
+  text-align: center;
+  padding: 16px;
+  color: #666;
+  display: block;
+  width: 100%;
+}
+
+/* Estilos especiales */
+.link-ruc { color: #1b4ab4; text-decoration: underline; }
+.num { text-align: right; font-weight: 700; color: #1b4ab4; }
+.num.red { color: #e24444; }
+
+.logo-cell {
+  display: block; width: 48px; height: 32px; object-fit: contain;
+  border: 1px solid #ddd; border-radius: 4px; background: #fafafa;
+}
+.logo-placeholder { opacity: 0.7; }
+
+.acciones { display: flex; gap: 6px; align-items: center; justify-content: center; }
+.acciones button {
+  border: none; background: transparent; cursor: pointer; font-size: 16px; padding: 4px;
+}
+
+/* Footer visual */
+.tabla-footer {
+  display: flex; gap: 12px; align-items: center; justify-content: flex-end;
+  padding: 8px;
+}
+.tabla-footer .pager button {
+  border: 1px solid #ccc; padding: 4px 8px; background: #fff; border-radius: 4px; cursor: pointer;
+}
