@@ -110,6 +110,43 @@ export interface PaginatedResponse<T> {
   };
 }
 
+/**
+ * Emisor (Company/Tenant) visible en la pantalla de Emisores
+ * Incluye campos base y otros opcionales que el backend podría enviar
+ */
+export interface Emisor {
+  id: number | string;
+  ruc: string;
+  razon_social: string;
+
+  estado?: string;
+  tipo_plan?: string;
+  fecha_inicio_plan?: string;
+  fecha_fin_plan?: string;
+  cantidad_creados?: number;
+  cantidad_restantes?: number;
+
+  nombre_comercial?: string;
+  direccion_matriz?: string;
+  correo_remitente?: string;
+  logo_url?: string;
+  regimen_tributario?: string;
+
+  obligado_contabilidad?: string; // "SI" | "NO"
+  contribuyente_especial?: string; // "SI" | "NO"
+  agente_retencion?: string; // "SI" | "NO"
+  codigo_artesano?: string;
+  tipo_persona?: string; // Natural | Jurídica
+  ambiente?: string; // Producción | Pruebas
+  tipo_emision?: string; // Normal | Indisponibilidad
+
+  fecha_creacion?: string;
+  fecha_actualizacion?: string;
+  registrador?: string;
+  ultimo_login?: string;
+  ultimo_comprobante?: string;
+}
+
 // Export por defecto opcional (no obligatorio, se prefieren exports nombrados)
 export default {
   // sólo para permitir importación rápida si alguien lo desea

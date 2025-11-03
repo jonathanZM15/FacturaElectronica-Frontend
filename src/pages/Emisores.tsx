@@ -1,40 +1,8 @@
 import React from 'react';
 import './Emisores.css';
-import { emisores as emisoresApi } from '../services/api';
-
-type Emisor = {
-  id: number | string;
-  ruc: string;
-  razon_social: string;
-
-  // columnas dinámicas (opcionales, vienen de tu Laravel)
-  estado?: string;
-  tipo_plan?: string;
-  fecha_inicio_plan?: string;
-  fecha_fin_plan?: string;
-  cantidad_creados?: number;
-  cantidad_restantes?: number;
-
-  nombre_comercial?: string;
-  direccion_matriz?: string;
-  correo_remitente?: string;
-  logo_url?: string;
-  regimen_tributario?: string;
-
-  obligado_contabilidad?: string;        // "SI"/"NO"
-  contribuyente_especial?: string;        // "SI"/"NO"
-  agente_retencion?: string;              // "SI"/"NO"
-  codigo_artesano?: string;
-  tipo_persona?: string;                  // Natural / Jurídica
-  ambiente?: string;                      // Producción / Pruebas
-  tipo_emision?: string;                  // Normal / Indisponibilidad
-
-  fecha_creacion?: string;
-  fecha_actualizacion?: string;
-  registrador?: string;
-  ultimo_login?: string;
-  ultimo_comprobante?: string;
-};
+import { emisoresApi } from '../services/emisoresApi';
+import EmisorFormModal from './EmisorFormModal';
+import { Emisor } from '../types/emisor';
 
 const dynamicColumns: Array<{
   key: keyof Emisor | 'logo';
@@ -58,7 +26,16 @@ const dynamicColumns: Array<{
     width: 130,
     render: (row) =>
       row.logo_url ? (
-        <img className="logo-cell" src={row.logo_url} alt="logo" />
+        <img 
+          className="logo-cell" 
+          src={row.logo_url} 
+          alt="logo"
+          onError={(e) => {
+            console.error('Error cargando imagen:', row.logo_url);
+            e.currentTarget.style.display = 'none';
+          }}
+          onLoad={() => console.log('Imagen cargada correctamente:', row.logo_url)}
+        />
       ) : (
         <span className="logo-placeholder">🖼️</span>
       ),
@@ -88,6 +65,58 @@ const Emisores: React.FC = () => {
   const [desde, setDesde] = React.useState<string>('');
   const [hasta, setHasta] = React.useState<string>('');
   const [error, setError] = React.useState<string | null>(null);
+  const [openNew, setOpenNew] = React.useState(false);
+  const [dateOpen, setDateOpen] = React.useState(false);
+  const dateRef = React.useRef<HTMLDivElement | null>(null);
+  const desdeInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  const formatDate = React.useCallback((iso: string) => {
+    if (!iso) return '';
+    // Expecting yyyy-mm-dd
+    const [y, m, d] = iso.split('-');
+    if (!y || !m || !d) return iso;
+    return `${d}/${m}/${y}`;
+  }, []);
+
+  // Scroll sync refs para columnas dinámicas
+  const headScrollRef = React.useRef<HTMLTableCellElement | null>(null);
+  const bodyScrollRefs = React.useRef<Array<HTMLTableCellElement | null>>([]);
+  const footScrollRef = React.useRef<HTMLDivElement | null>(null);
+  const isSyncingRef = React.useRef(false);
+
+  const syncAll = React.useCallback((x: number) => {
+    if (isSyncingRef.current) return;
+    isSyncingRef.current = true;
+    bodyScrollRefs.current.forEach((el) => { if (el) el.scrollLeft = x; });
+    if (headScrollRef.current) headScrollRef.current.scrollLeft = x;
+    if (footScrollRef.current) footScrollRef.current.scrollLeft = x;
+    // allow event loop to settle before unlocking
+    setTimeout(() => { isSyncingRef.current = false; }, 0);
+  }, []);
+
+  const onFootScroll = React.useCallback(() => {
+    if (isSyncingRef.current) return;
+    const x = footScrollRef.current?.scrollLeft || 0;
+    syncAll(x);
+  }, [syncAll]);
+
+  // Close date popover on outside click and focus first input on open
+  React.useEffect(() => {
+    if (!dateOpen) return;
+    const onDocClick = (e: MouseEvent) => {
+      if (dateRef.current && !dateRef.current.contains(e.target as Node)) {
+        setDateOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDocClick);
+    setTimeout(() => desdeInputRef.current?.focus(), 0);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [dateOpen]);
+
+  const dynTotalWidth = React.useMemo(
+    () => dynamicColumns.reduce((sum, c) => sum + (c.width ?? 200), 0),
+    []
+  );
 
   const load = React.useCallback(async () => {
     setLoading(true);
@@ -99,7 +128,14 @@ const Emisores: React.FC = () => {
         fecha_inicio: desde || undefined,
         fecha_fin: hasta || undefined,
       });
-      setData(res.data?.data ?? res.data ?? []);
+      const emisores = res.data?.data ?? res.data ?? [];
+      console.log('Emisores recibidos:', emisores);
+      emisores.forEach((e: any) => {
+        if (e.logo_url) {
+          console.log(`Emisor ${e.ruc} - Logo URL:`, e.logo_url);
+        }
+      });
+      setData(emisores);
     } catch (e: any) {
       setError(e?.response?.data?.message || 'No se pudo cargar emisores');
     } finally {
@@ -112,150 +148,201 @@ const Emisores: React.FC = () => {
   }, [load]);
 
   return (
+    <>
     <div className="emisores-page">
       <div className="emisores-header">
         <h2>Emisores</h2>
         <div className="filtros">
-          <div className="fechas">
-            <input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} />
-            <span> - </span>
-            <input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} />
+          {/* Date range pill */}
+          <div className="date-range" ref={dateRef}>
+            <button
+              type="button"
+              className="date-range-display"
+              onClick={() => setDateOpen((v) => !v)}
+              aria-haspopup="dialog"
+              aria-expanded={dateOpen}
+              title="Seleccionar rango de fechas"
+            >
+              <span className={`start ${desde ? 'has' : ''}`}>{desde ? formatDate(desde) : 'Fecha Inicial'}</span>
+              <span className="arrow">→</span>
+              <span className={`end ${hasta ? 'has' : ''}`}>{hasta ? formatDate(hasta) : 'Fecha Final'}</span>
+              <span className="icon" aria-hidden>📅</span>
+            </button>
+            {dateOpen && (
+              <div className="date-range-popover" role="dialog">
+                <div className="row">
+                  <label>Desde
+                    <input ref={desdeInputRef} type="date" value={desde} onChange={(e) => setDesde(e.target.value)} />
+                  </label>
+                  <label>Hasta
+                    <input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} />
+                  </label>
+                </div>
+                <div className="actions">
+                  <button type="button" onClick={() => { setDesde(''); setHasta(''); setDateOpen(false); }}>Limpiar</button>
+                  <button type="button" className="primary" onClick={() => setDateOpen(false)}>Aplicar</button>
+                </div>
+              </div>
+            )}
           </div>
-          <select value={estado} onChange={(e) => setEstado(e.target.value)}>
-            <option value="">Todos</option>
-            <option value="ACTIVO">ACTIVO</option>
-            <option value="INACTIVO">INACTIVO</option>
-          </select>
-          <div className="busqueda">
-            <input
-              placeholder="Buscando por Estado"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-            />
+
+          {/* Estado select with search icon and caption */}
+          <div className="estado-search">
+            <div className="input-wrap">
+              <select value={estado} onChange={(e) => setEstado(e.target.value)}>
+                <option value="">Todos</option>
+                <option value="ACTIVO">ACTIVO</option>
+                <option value="INACTIVO">INACTIVO</option>
+              </select>
+              <span className="icon">🔍</span>
+            </div>
+            <small className="caption">Buscando por Estado</small>
           </div>
-          <button className="btn-nuevo" onClick={() => alert('Nuevo emisor')}>Nuevo +</button>
+
+          <button className="btn-nuevo" onClick={() => setOpenNew(true)}>Nuevo +</button>
         </div>
       </div>
 
       {error && <div className="alert-error">⚠ {error}</div>}
 
       <div className="tabla-wrapper">
-        <table className="tabla-emisores">
-          <thead>
-            <tr>
-              {/* Fijos izquierda */}
-              <th className="th-sticky sticky-left-1">RUC ▾</th>
-              <th className="th-sticky sticky-left-2">Razón Social ▾</th>
-
-              {/* Contenedor scrollable para columnas dinámicas */}
-              <th className="scrollable-columns" style={{ padding: 0, border: 'none' }}>
-                <div style={{ display: 'flex' }}>
-                  {dynamicColumns.map((c) => (
-                    <div
-                      key={String(c.key)}
-                      className="th-dyn"
-                      style={{
-                        minWidth: c.width ?? 200,
-                        padding: '10px',
-                        background: '#2931a8',
-                        color: '#fff',
-                        border: '2px solid #ff8c00',
-                        fontWeight: 600,
-                        fontSize: '13px',
-                        whiteSpace: 'nowrap'
-                      }}
-                      title={c.label}
-                    >
-                      {c.label} ▾
-                    </div>
-                  ))}
-                </div>
-              </th>
-
-              {/* Fijo derecha */}
-              <th className="th-sticky sticky-right">Acciones</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {loading ? (
+          <table className="tabla-emisores">
+            <thead>
               <tr>
-                <td className="loading-row" colSpan={4}>
-                  Cargando…
-                </td>
+                {/* Fijos izquierda */}
+                <th className="th-sticky sticky-left-1">RUC ▾</th>
+                <th className="th-sticky sticky-left-2">Razón Social ▾</th>
+
+                {/* Contenedor scrollable para columnas dinámicas */}
+                <th
+                  ref={headScrollRef}
+                  className="scrollable-columns scrollable-head"
+                  style={{ padding: 0, border: 'none' }}
+                >
+                  <div style={{ display: 'flex' }}>
+                    {dynamicColumns.map((c) => (
+                      <div
+                        key={String(c.key)}
+                        className="th-dyn"
+                        style={{
+                          minWidth: c.width ?? 200,
+                          padding: '10px',
+                          background: '#2931a8',
+                          color: '#fff',
+                          border: '2px solid #ff8c00',
+                          fontWeight: 600,
+                          fontSize: '13px',
+                          whiteSpace: 'nowrap'
+                        }}
+                        title={c.label}
+                      >
+                        {c.label} ▾
+                      </div>
+                    ))}
+                  </div>
+                </th>
+
+                {/* Fijo derecha */}
+                <th className="th-sticky sticky-right">Acciones</th>
               </tr>
-            ) : data.length ? (
-              data.map((row) => (
-                <tr key={row.id}>
-                  {/* Fijos izquierda */}
-                  <td className="td-sticky sticky-left-1">
-                    <a className="link-ruc" href="#">{row.ruc}</a>
-                  </td>
-                  <td className="td-sticky sticky-left-2">
-                    {row.razon_social}
-                  </td>
+            </thead>
 
-                  {/* Contenedor scrollable para celdas dinámicas */}
-                  <td className="scrollable-columns" style={{ padding: 0, border: 'none' }}>
-                    <div style={{ display: 'flex' }}>
-                      {dynamicColumns.map((c) => {
-                        const content =
-                          c.render
-                            ? c.render(row)
-                            : (row[c.key as keyof Emisor] as any) ?? '-';
-
-                        const isNumber = typeof (row[c.key as keyof Emisor] as any) === 'number';
-                        const isRestantes = c.key === 'cantidad_restantes';
-
-                        return (
-                          <div
-                            key={String(c.key)}
-                            className="td-dyn"
-                            style={{
-                              minWidth: c.width ?? 200,
-                              padding: '8px 10px',
-                              border: '2px solid #ff8c00',
-                              background: '#fff',
-                              textAlign: isNumber ? 'right' : 'left',
-                              fontWeight: isNumber ? 700 : 'normal',
-                              color: isRestantes ? '#e24444' : (isNumber ? '#1b4ab4' : 'inherit')
-                            }}
-                          >
-                            {content ?? '-'}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </td>
-
-                  {/* Fijo derecha */}
-                  <td className="td-sticky sticky-right acciones">
-                    <button title="Editar">✏️</button>
-                    <button title="Eliminar">🗑️</button>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td className="loading-row" colSpan={4}>
+                    Cargando…
                   </td>
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={4} style={{ textAlign: 'center', padding: 12, display: 'block', width: '100%' }}>
-                  Sin resultados
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+              ) : data.length ? (
+                data.map((row, idx) => (
+                  <tr key={row.id}>
+                    {/* Fijos izquierda */}
+                    <td className="td-sticky sticky-left-1">
+                      <a className="link-ruc" href="#">{row.ruc}</a>
+                    </td>
+                    <td className="td-sticky sticky-left-2">
+                      {row.razon_social}
+                    </td>
 
-      {/* Pie de tabla fuera del cuadro naranja */}
-      <div className="tabla-footer">
-        <span>Filas por página: 5</span>
-        <span>1–5 de {Math.max(data.length, 5)}</span>
-        <div className="pager">
-          <button disabled>{'<'}</button>
-          <button disabled>{'>'}</button>
-        </div>
+                    {/* Contenedor scrollable para celdas dinámicas */}
+                    <td
+                      className="scrollable-columns scrollable-body"
+                      style={{ padding: 0, border: 'none' }}
+                      ref={(el) => { bodyScrollRefs.current[idx] = el; }}
+                    >
+                      <div style={{ display: 'flex' }}>
+                        {dynamicColumns.map((c) => {
+                          const content =
+                            c.render
+                              ? c.render(row)
+                              : (row[c.key as keyof Emisor] as any) ?? '-';
+
+                          const isNumber = typeof (row[c.key as keyof Emisor] as any) === 'number';
+                          const isRestantes = c.key === 'cantidad_restantes';
+
+                          return (
+                            <div
+                              key={String(c.key)}
+                              className="td-dyn"
+                              style={{
+                                minWidth: c.width ?? 200,
+                                padding: '8px 10px',
+                                border: '2px solid #ff8c00',
+                                background: '#fff',
+                                textAlign: isNumber ? 'right' : 'left',
+                                fontWeight: isNumber ? 700 : 'normal',
+                                color: isRestantes ? '#e24444' : (isNumber ? '#1b4ab4' : 'inherit')
+                              }}
+                            >
+                              {content ?? '-'}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </td>
+
+                    {/* Fijo derecha */}
+                    <td className="td-sticky sticky-right acciones">
+                      <button title="Editar">✏️</button>
+                      <button title="Eliminar">🗑️</button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={4} style={{ textAlign: 'center', padding: 12, display: 'block', width: '100%' }}>
+                    Sin resultados
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+          {/* Barra de desplazamiento inferior alineada solo con columnas dinámicas */}
+          <div
+            className="dyn-scrollbar"
+            ref={footScrollRef}
+            onScroll={onFootScroll}
+            aria-label="Deslizar columnas"
+          >
+            <div style={{ width: dynTotalWidth, height: 1 }} />
+          </div>
       </div>
     </div>
+    <EmisorFormModal
+      open={openNew}
+      onClose={() => setOpenNew(false)}
+      onCreated={(created) => {
+        // añadir en tiempo real; si prefieres recargar desde servidor, usa load()
+        setData((prev) => [created, ...prev]);
+        // mantener scroll sincronizado para la fila recién agregada
+        requestAnimationFrame(() => {
+          const x = footScrollRef.current?.scrollLeft || headScrollRef.current?.scrollLeft || 0;
+          syncAll(x);
+        });
+      }}
+    />
+    </>
   );
 };
 

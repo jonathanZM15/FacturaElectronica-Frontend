@@ -38,6 +38,7 @@ export const company = {
 // NUEVO: endpoint de Emisores
 export const emisores = {
   list: (params?: Record<string, any>) => api.get('/api/emisores', { params }),
+  create: (payload: Record<string, any>) => api.post('/api/emisores', payload),
 };
 
 export default api;
