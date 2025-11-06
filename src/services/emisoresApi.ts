@@ -41,4 +41,11 @@ export const emisoresApi = {
     // axios allows a request body on DELETE via the `data` option
     return api.delete(`/api/emisores/${id}`, { data: { password } });
   },
+  prepareDeletion(id: number | string) {
+    return api.post(`/api/emisores/${id}/prepare-deletion`);
+  },
+
+  deletePermanent(id: number | string, password: string) {
+    return api.delete(`/api/emisores/${id}/permanent`, { data: { password } });
+  },
 };

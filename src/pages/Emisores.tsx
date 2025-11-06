@@ -79,6 +79,9 @@ const Emisores: React.FC = () => {
   const [deleteLoading, setDeleteLoading] = React.useState(false);
   const [deleteError, setDeleteError] = React.useState<string | null>(null);
   const [deletePasswordOpen, setDeletePasswordOpen] = React.useState(false);
+  const [deletingWithHistory, setDeletingWithHistory] = React.useState(false);
+  const [historyPreparedOpen, setHistoryPreparedOpen] = React.useState(false);
+  const [backupUrl, setBackupUrl] = React.useState<string | null>(null);
   const [dateOpen, setDateOpen] = React.useState(false);
   const dateRef = React.useRef<HTMLDivElement | null>(null);
   const desdeInputRef = React.useRef<HTMLInputElement | null>(null);
@@ -336,6 +339,22 @@ const Emisores: React.FC = () => {
                         setDeleteError(null);
                         setDeleteOpen(true); // open confirmation first
                       }}>🗑️</button>
+                      {/** Show 'prepare deletion' for emisores inactive >=1 year */}
+                      {((row.estado === 'INACTIVO') && ((row.updated_at && new Date(row.updated_at) <= new Date(Date.now() - 365*24*60*60*1000)) || (row.fecha_actualizacion && new Date(row.fecha_actualizacion) <= new Date(Date.now() - 365*24*60*60*1000)))) && (
+                        <button title="Eliminar (con historial)" onClick={async () => {
+                          try {
+                            const res = await emisoresApi.prepareDeletion(row.id!);
+                            const backup = res.data?.backup_url ?? res.data?.backupUrl ?? null;
+                            setDeletingId(row.id || null);
+                            setDeletingName(row.razon_social || null);
+                            setBackupUrl(backup);
+                            setHistoryPreparedOpen(true);
+                            show({ title: 'Respaldo creado', message: 'Se generó un respaldo y se envió notificación al cliente (si aplica).', type: 'info' });
+                          } catch (err: any) {
+                            show({ title: 'Error', message: err?.response?.data?.message || 'No se pudo generar el respaldo', type: 'error' });
+                          }
+                        }}>🗄️</button>
+                      )}
                     </td>
                   </tr>
                 ))
@@ -407,6 +426,26 @@ const Emisores: React.FC = () => {
       </div>
     )}
 
+    {/* History prepared modal: shows backup link and allows admin to proceed to deletion */}
+    {historyPreparedOpen && (
+      <div className="mf-modal-overlay" role="dialog" aria-modal="true">
+        <div className="mf-modal" style={{ width: 'min(620px,92vw)', padding: 22 }}>
+          <h3 style={{ margin: 0, color: '#1a63d6', fontSize: 22, textAlign: 'center' }}>Respaldo generado</h3>
+          <div style={{ height: 12 }} />
+          <p style={{ textAlign: 'center', fontSize: 15, margin: '0 0 12px' }}>Se generó un respaldo con la información del emisor y se envió una notificación al cliente (si aplica).</p>
+          {backupUrl && (
+            <p style={{ textAlign: 'center', marginBottom: 12 }}>
+              <a href={backupUrl} target="_blank" rel="noreferrer">Descargar respaldo</a>
+            </p>
+          )}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
+            <button className="mf-btn-cancel" onClick={() => setHistoryPreparedOpen(false)} style={{ padding: '10px 22px', borderRadius: 20 }}>CANCELAR</button>
+            <button className="mf-btn-confirm" onClick={() => { setHistoryPreparedOpen(false); setDeletingWithHistory(true); setDeletePassword(''); setDeleteError(null); setDeletePasswordOpen(true); }} style={{ padding: '10px 22px', borderRadius: 20, background: '#ff6b6b' }}>ELIMINAR PERMANENTEMENTE</button>
+          </div>
+        </div>
+      </div>
+    )}
+
     {/* Step 2: Password entry modal */}
     {deletePasswordOpen && (
       <div className="mf-modal-overlay" role="dialog" aria-modal="true">
@@ -434,10 +473,15 @@ const Emisores: React.FC = () => {
               setDeleteLoading(true);
               setDeleteError(null);
               try {
-                await emisoresApi.delete(deletingId, deletePassword);
+                if (deletingWithHistory) {
+                  await emisoresApi.deletePermanent(deletingId, deletePassword);
+                } else {
+                  await emisoresApi.delete(deletingId, deletePassword);
+                }
                 // remove from list
                 setData((prev) => prev.filter(p => p.id !== deletingId));
                 setDeletePasswordOpen(false);
+                setDeletingWithHistory(false);
                 show({ title: 'Éxito', message: 'Emisor eliminado correctamente', type: 'success' });
               } catch (err: any) {
                 const msg = err?.response?.data?.message || 'No se pudo eliminar el emisor';
