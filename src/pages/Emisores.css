@@ -155,7 +155,9 @@
 .th-dyn,
 .td-dyn {
   flex: 0 0 auto;
-  white-space: nowrap;
+  white-space: normal;
+  word-wrap: break-word;
+  word-break: break-word;
 }
 
 /* Columna de Acciones fija a la derecha */
@@ -180,6 +182,14 @@ thead th {
   z-index: 10;
 }
 
+/* Columnas fijas con fondo gris */
+.th-sticky.sticky-left-1,
+.th-sticky.sticky-left-2,
+.th-sticky.sticky-right {
+  background: #cccccc !important;
+  color: #000 !important;
+}
+
 /* Estilos de celdas */
 tbody td {
   border: 2px solid #ff8c00;
@@ -188,6 +198,9 @@ tbody td {
   vertical-align: middle;
   text-align: center; /* Centrar contenido de celdas */
   font-size: 13px;
+  white-space: normal;
+  word-wrap: break-word;
+  word-break: break-word;
 }
 
 .loading-row {
