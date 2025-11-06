@@ -61,7 +61,7 @@
 .field-stack {
   display: flex;
   flex-direction: column;
-  align-items: flex-start; /* 💡 Alinea el contenido del stack (input, label, error) a la izquierda */
+  align-items: center; /* Centrar el contenido del stack */
   width: 100%;
 }
 
@@ -177,7 +177,7 @@
 }
 
 /* ... (mantener el resto de estilos de validación, errores y notificaciones) ... */
-.validation-error { color: #ff4d4f; font-size: 0.85rem; margin-top: 5px; text-align: left; }
+.validation-error { color: #ff4d4f; font-size: 0.85rem; margin-top: 5px; text-align: center; }
 .input-error { border-color: #ff4d4f !important; box-shadow: 0 0 0 2px rgba(255, 77, 77, 0.2); }
 
 /* @media para pantallas pequeñas */
@@ -200,9 +200,9 @@
   color: #1a237e;
   font-size: 1.5rem;
   margin-bottom: 1.5rem;
-  text-align: left;
+  text-align: center;
   width: 100%;
-  padding-left: calc(50% - 210px);
+  padding-left: 0;
 }
 
 .floating-error-container {

@@ -5,9 +5,32 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Centrar por defecto el texto en toda la aplicación */
+  text-align: center;
 }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+/* Reglas adicionales para centrar contenido de tablas y elementos comunes */
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+table th,
+table td {
+  text-align: center;
+  vertical-align: middle;
+  padding: 8px;
+}
+
+/* Utilidad para centrar bloques (puede aplicarse a contenedores específicos) */
+.center-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
 }

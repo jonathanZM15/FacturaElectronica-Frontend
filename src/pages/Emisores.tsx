@@ -307,7 +307,7 @@ const Emisores: React.FC = () => {
                                 padding: '8px 10px',
                                 border: '2px solid #ff8c00',
                                 background: '#fff',
-                                textAlign: isNumber ? 'right' : 'left',
+                                textAlign: 'center',
                                 fontWeight: isNumber ? 700 : 'normal',
                                 color: isRestantes ? '#e24444' : (isNumber ? '#1b4ab4' : 'inherit')
                               }}
