@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import './Emisores.css';
 import { emisoresApi } from '../services/emisoresApi';
 import EmisorFormModal from './EmisorFormModal';
@@ -275,7 +276,7 @@ const Emisores: React.FC = () => {
                   <tr key={row.id}>
                     {/* Fijos izquierda */}
                     <td className="td-sticky sticky-left-1">
-                      <a className="link-ruc" href="#">{row.ruc}</a>
+                      <Link className="link-ruc" to={`/emisores/${row.id}`}>{row.ruc}</Link>
                     </td>
                     <td className="td-sticky sticky-left-2">
                       {row.razon_social}

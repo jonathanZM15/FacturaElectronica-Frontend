@@ -11,6 +11,7 @@ import { SidebarProvider } from './contexts/SidebarContext';
 
 import AppLayout from './layouts/AppLayout';
 import Emisores from './pages/Emisores';
+import EmisorInfo from './pages/EmisorInfo';
 import Blank from './pages/Blank';
 
 const ChangePasswordAuthed: React.FC = () => {
@@ -44,6 +45,7 @@ function App() {
               >
                 {/* Ruta inicial autenticada */}
                 <Route path="/emisores" element={<Emisores />} />
+                <Route path="/emisores/:id" element={<EmisorInfo />} />
                 {/* Compatibilidad: redirige /Navbar a /emisores */}
                 <Route path="/Navbar" element={<Navigate to="/emisores" replace />} />
 
