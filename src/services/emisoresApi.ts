@@ -6,6 +6,10 @@ export const emisoresApi = {
     return api.get('/api/emisores', { params });
   },
 
+  checkRuc(ruc: string) {
+    return api.get(`/api/emisores/check-ruc/${ruc}`);
+  },
+
   create(payload: Partial<Emisor> & { logoFile?: File | null }) {
     const hasFile = !!payload.logoFile;
     if (hasFile) {
