@@ -1,11 +1,17 @@
 import React from 'react';
 import { emisoresApi } from '../services/emisoresApi';
 import { Emisor } from '../types/emisor';
+import { validateRucEcuador } from '../helpers/validateRuc';
 
 type Props = {
   open: boolean;
   onClose: () => void;
-  onCreated: (e: Emisor) => void;
+  onCreated?: (e: Emisor) => void;
+  // Optional props for edit mode
+  editingId?: number | string | null;
+  initialData?: Emisor | null;
+  rucEditable?: boolean;
+  onUpdated?: (e: Emisor) => void;
 };
 
 const initial: Emisor = {
@@ -25,26 +31,42 @@ const initial: Emisor = {
   tipo_emision: 'NORMAL',
 };
 
-const EmisorFormModal: React.FC<Props> = ({ open, onClose, onCreated }) => {
+const EmisorFormModal: React.FC<Props> = (props) => {
+  const { open, onClose, onCreated, editingId, initialData, rucEditable, onUpdated } = props;
   const [v, setV] = React.useState<Emisor>(initial);
   const [logoFile, setLogoFile] = React.useState<File | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [emailError, setEmailError] = React.useState<string | null>(null);
   const [logoError, setLogoError] = React.useState<string | null>(null);
+  const [localRucEditable, setLocalRucEditable] = React.useState<boolean>(true);
+  const [rucError, setRucError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (open) {
-      setV(initial);
+      setV(initialData ?? initial);
       setLogoFile(null);
       setEmailError(null);
       setLogoError(null);
+      setLocalRucEditable(rucEditable ?? true);
     }
   }, [open]);
 
   const onChange = (k: keyof Emisor, value: any) => setV(prev => ({ ...prev, [k]: value }));
 
+  // Validate RUC in real time
+  React.useEffect(() => {
+    if (!v.ruc || !v.ruc.toString().trim()) { setRucError(null); return; }
+    if (!validateRucEcuador(v.ruc)) setRucError('RUC no válido según reglas del SRI');
+    else setRucError(null);
+  }, [v.ruc]);
+
   const validate = () => {
     if (!v.ruc.trim() || !v.razon_social.trim()) return false;
+    if (!validateRucEcuador(v.ruc)) {
+      setRucError('RUC no válido según reglas del SRI');
+      return false;
+    }
+    setRucError(null);
     if (v.correo_remitente && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.correo_remitente)) {
       setEmailError('formato inválido de correo');
       return false;
@@ -58,13 +80,30 @@ const EmisorFormModal: React.FC<Props> = ({ open, onClose, onCreated }) => {
     return true;
   };
 
+  // Pure validation used for enabling/disabling the submit button (no state side-effects)
+  const isFormValid = () => {
+    if (!v.ruc || !v.ruc.trim()) return false;
+    if (!v.razon_social || !v.razon_social.trim()) return false;
+    if (v.correo_remitente && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.correo_remitente)) return false;
+    if (logoFile && !/\.jpe?g$|\.png$/i.test(logoFile.name)) return false;
+    if (rucError) return false;
+    return true;
+  };
+
   const submit = async () => {
     if (!validate()) return;
     setLoading(true);
     try {
-      const res = await emisoresApi.create({ ...v, logoFile });
-      const created: Emisor = res.data?.data ?? res.data;
-      onCreated(created);
+      let res;
+      if (editingId) {
+        res = await emisoresApi.update(editingId, { ...v, logoFile });
+        const updated: Emisor = res.data?.data ?? res.data;
+        onUpdated && onUpdated(updated);
+      } else {
+        res = await emisoresApi.create({ ...v, logoFile });
+        const created: Emisor = res.data?.data ?? res.data;
+        onCreated && onCreated(created);
+      }
       onClose();
     } catch (e: any) {
       const apiMsg: string | undefined = e?.response?.data?.message || e?.message;
@@ -97,9 +136,11 @@ const EmisorFormModal: React.FC<Props> = ({ open, onClose, onCreated }) => {
         <div className="mf-body scrollable">
           <section>
             <h3>Datos del RUC</h3>
-            <label>RUC
-              <input value={v.ruc} onChange={e => onChange('ruc', e.target.value)} />
-            </label>
+              <label>RUC
+                  <input value={v.ruc} onChange={e => onChange('ruc', e.target.value)} disabled={!localRucEditable} />
+                  {!localRucEditable && <small style={{color:'#666'}}>El RUC no puede ser modificado porque existen comprobantes autorizados.</small>}
+                  {rucError && <span className="err">{rucError}</span>}
+              </label>
             <label>Razón Social
               <input value={v.razon_social} onChange={e => onChange('razon_social', e.target.value)} />
             </label>
@@ -173,7 +214,7 @@ const EmisorFormModal: React.FC<Props> = ({ open, onClose, onCreated }) => {
 
         <div className="mf-footer">
           <button onClick={onClose} disabled={loading}>Cancelar</button>
-          <button onClick={submit} disabled={loading}>Registrar</button>
+          <button onClick={submit} disabled={loading || !isFormValid()}>{props.editingId ? 'Guardar cambios' : 'Registrar'}</button>
         </div>
       </div>
 

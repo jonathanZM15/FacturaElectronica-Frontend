@@ -66,6 +66,10 @@ const Emisores: React.FC = () => {
   const [hasta, setHasta] = React.useState<string>('');
   const [error, setError] = React.useState<string | null>(null);
   const [openNew, setOpenNew] = React.useState(false);
+  const [openEdit, setOpenEdit] = React.useState(false);
+  const [editingId, setEditingId] = React.useState<number | string | null>(null);
+  const [editingInitial, setEditingInitial] = React.useState<Emisor | null>(null);
+  const [editingRucEditable, setEditingRucEditable] = React.useState<boolean>(true);
   const [dateOpen, setDateOpen] = React.useState(false);
   const dateRef = React.useRef<HTMLDivElement | null>(null);
   const desdeInputRef = React.useRef<HTMLInputElement | null>(null);
@@ -304,7 +308,18 @@ const Emisores: React.FC = () => {
 
                     {/* Fijo derecha */}
                     <td className="td-sticky sticky-right acciones">
-                      <button title="Editar">✏️</button>
+                      <button title="Editar" onClick={async () => {
+                        try {
+                          const res = await emisoresApi.get(row.id!);
+                          const em = res.data?.data ?? res.data;
+                          setEditingId(row.id || null);
+                          setEditingInitial(em);
+                          setEditingRucEditable(em.ruc_editable ?? true);
+                          setOpenEdit(true);
+                        } catch (e: any) {
+                          alert('No se pudo cargar el emisor para edición');
+                        }
+                      }}>✏️</button>
                       <button title="Eliminar">🗑️</button>
                     </td>
                   </tr>
@@ -340,6 +355,18 @@ const Emisores: React.FC = () => {
           const x = footScrollRef.current?.scrollLeft || headScrollRef.current?.scrollLeft || 0;
           syncAll(x);
         });
+      }}
+    />
+    <EmisorFormModal
+      open={openEdit}
+      onClose={() => setOpenEdit(false)}
+      editingId={editingId}
+      initialData={editingInitial ?? undefined}
+      rucEditable={editingRucEditable}
+      onUpdated={(updated) => {
+        // replace in place
+        setData((prev) => prev.map(p => (p.id === updated.id ? updated : p)));
+        setOpenEdit(false);
       }}
     />
     </>

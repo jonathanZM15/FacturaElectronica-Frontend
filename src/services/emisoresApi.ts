@@ -20,4 +20,21 @@ export const emisoresApi = {
     }
     return api.post('/api/emisores', payload);
   },
+  get(id: number | string) {
+    return api.get(`/api/emisores/${id}`);
+  },
+
+  update(id: number | string, payload: Partial<Emisor> & { logoFile?: File | null }) {
+    const hasFile = !!payload.logoFile;
+    if (hasFile) {
+      const fd = new FormData();
+      Object.entries(payload).forEach(([k, v]) => {
+        if (k === 'logoFile') return;
+        if (v !== undefined && v !== null) fd.append(k, String(v));
+      });
+      if (payload.logoFile) fd.append('logo', payload.logoFile);
+      return api.put(`/api/emisores/${id}`, fd);
+    }
+    return api.put(`/api/emisores/${id}`, payload);
+  },
 };
