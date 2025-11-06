@@ -8,6 +8,8 @@ type Props = {
   confirmText?: string;
   onCancel: () => void;
   onConfirm: () => void;
+  // optional inline style to apply to the modal container (e.g., to control width)
+  modalStyle?: React.CSSProperties;
 };
 
 const ConfirmDialog: React.FC<Props> = ({
@@ -18,6 +20,7 @@ const ConfirmDialog: React.FC<Props> = ({
   confirmText = 'CONFIRMAR',
   onCancel,
   onConfirm,
+  modalStyle,
 }) => {
   useEffect(() => {
     if (!open) return;
@@ -33,7 +36,7 @@ const ConfirmDialog: React.FC<Props> = ({
 
   return (
     <div className="mf-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="mf-modal-title">
-      <div className="mf-modal">
+      <div className="mf-modal" style={modalStyle}>
         <h3 id="mf-modal-title" className="mf-modal-title">{title}</h3>
         <p className="mf-modal-message">{message}</p>
         <div className="mf-modal-actions">

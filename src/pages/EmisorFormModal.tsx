@@ -244,6 +244,7 @@ const EmisorFormModal: React.FC<Props> = (props) => {
         confirmText="CONFIRMAR"
         onCancel={() => setShowConfirm(false)}
         onConfirm={() => doSubmit()}
+        modalStyle={{ width: 'min(520px, 86vw)' }}
       />
 
       <style>{`
