@@ -2,6 +2,7 @@ import React from 'react';
 import { emisoresApi } from '../services/emisoresApi';
 import { Emisor } from '../types/emisor';
 import { validateRucEcuador } from '../helpers/validateRuc';
+import ConfirmDialog from './ConfirmDialog';
 
 type Props = {
   open: boolean;
@@ -40,6 +41,7 @@ const EmisorFormModal: React.FC<Props> = (props) => {
   const [logoError, setLogoError] = React.useState<string | null>(null);
   const [localRucEditable, setLocalRucEditable] = React.useState<boolean>(true);
   const [rucError, setRucError] = React.useState<string | null>(null);
+  const [showConfirm, setShowConfirm] = React.useState(false);
 
   React.useEffect(() => {
     if (open) {
@@ -90,7 +92,7 @@ const EmisorFormModal: React.FC<Props> = (props) => {
     return true;
   };
 
-  const submit = async () => {
+  const doSubmit = async () => {
     if (!validate()) return;
     setLoading(true);
     try {
@@ -121,6 +123,16 @@ const EmisorFormModal: React.FC<Props> = (props) => {
       alert(friendly || firstValidation || apiMsg || 'No se pudo registrar');
     } finally {
       setLoading(false);
+      setShowConfirm(false);
+    }
+  };
+
+  const submit = () => {
+    if (editingId) {
+      // ask for confirmation before saving changes
+      setShowConfirm(true);
+    } else {
+      doSubmit();
     }
   };
 
@@ -130,7 +142,7 @@ const EmisorFormModal: React.FC<Props> = (props) => {
     <div className="mf-backdrop" onClick={onClose}>
       <div className="mf-modal" onClick={(e) => e.stopPropagation()}>
         <div className="mf-header">
-          <h2>Registro de nuevo emisor</h2>
+          <h2>{editingId ? 'Editar emisor' : 'Registro de nuevo emisor'}</h2>
         </div>
 
         <div className="mf-body scrollable">
@@ -214,13 +226,29 @@ const EmisorFormModal: React.FC<Props> = (props) => {
 
         <div className="mf-footer">
           <button onClick={onClose} disabled={loading}>Cancelar</button>
-          <button onClick={submit} disabled={loading || !isFormValid()}>{props.editingId ? 'Guardar cambios' : 'Registrar'}</button>
+          <button onClick={submit} disabled={loading || !isFormValid()}>{editingId ? 'Guardar cambios' : 'Registrar'}</button>
         </div>
+
+        {loading && (
+          <div className="mf-loading-overlay" aria-hidden>
+            <div className="mf-spinner" />
+          </div>
+        )}
       </div>
+
+      <ConfirmDialog
+        open={showConfirm}
+        title="Guardar cambios"
+        message="¿Desea guardar los cambios?"
+        cancelText="CANCELAR"
+        confirmText="CONFIRMAR"
+        onCancel={() => setShowConfirm(false)}
+        onConfirm={() => doSubmit()}
+      />
 
       <style>{`
         .mf-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:1000}
-        .mf-modal{width:min(880px,92vw);max-height:86vh;background:#fff;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,.25);display:flex;flex-direction:column;overflow:hidden}
+  .mf-modal{position:relative;width:min(880px,92vw);max-height:86vh;background:#fff;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,.25);display:flex;flex-direction:column;overflow:hidden}
         .mf-header{padding:16px 20px;border-bottom:1px solid #eceff4}
         .mf-body{padding:16px 20px}
         .scrollable{overflow-y:auto}
@@ -233,6 +261,9 @@ const EmisorFormModal: React.FC<Props> = (props) => {
         .mf-footer{display:flex;gap:12px;justify-content:flex-end;padding:12px 20px;border-top:1px solid #eceff4}
         .mf-footer button{padding:8px 14px;border-radius:8px;border:1px solid #cbd5e1;background:#1e3a8a;color:#fff}
         .mf-footer button:first-child{background:#fff;color:#0f172a;border-color:#cbd5e1}
+        .mf-loading-overlay{position:absolute;inset:0;background:rgba(255,255,255,0.6);display:flex;align-items:center;justify-content:center;border-radius:12px}
+        .mf-spinner{width:48px;height:48px;border-radius:50%;border:6px solid rgba(0,0,0,0.08);border-top-color:#1e3a8a;animation:spin 1s linear infinite}
+        @keyframes spin{to{transform:rotate(360deg)}}
       `}</style>
     </div>
   );

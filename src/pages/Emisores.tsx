@@ -3,6 +3,7 @@ import './Emisores.css';
 import { emisoresApi } from '../services/emisoresApi';
 import EmisorFormModal from './EmisorFormModal';
 import { Emisor } from '../types/emisor';
+import { useNotification } from '../contexts/NotificationContext';
 
 const dynamicColumns: Array<{
   key: keyof Emisor | 'logo';
@@ -59,6 +60,7 @@ const dynamicColumns: Array<{
 
 const Emisores: React.FC = () => {
   const [data, setData] = React.useState<Emisor[]>([]);
+  const { show } = useNotification();
   const [loading, setLoading] = React.useState(false);
   const [estado, setEstado] = React.useState('ACTIVO');
   const [q, setQ] = React.useState('');
@@ -355,6 +357,8 @@ const Emisores: React.FC = () => {
           const x = footScrollRef.current?.scrollLeft || headScrollRef.current?.scrollLeft || 0;
           syncAll(x);
         });
+        // mostrar notificación temporal
+  show({ title: 'Éxito', message: 'Emisor creado correctamente', type: 'success' });
       }}
     />
     <EmisorFormModal
@@ -367,8 +371,11 @@ const Emisores: React.FC = () => {
         // replace in place
         setData((prev) => prev.map(p => (p.id === updated.id ? updated : p)));
         setOpenEdit(false);
+  show({ title: 'Éxito', message: 'Emisor actualizado correctamente', type: 'success' });
       }}
     />
+
+    {/* notifications handled by NotificationProvider */}
     </>
   );
 };
