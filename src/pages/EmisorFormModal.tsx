@@ -42,6 +42,9 @@ const EmisorFormModal: React.FC<Props> = (props) => {
   const [localRucEditable, setLocalRucEditable] = React.useState<boolean>(true);
   const [rucError, setRucError] = React.useState<string | null>(null);
   const [showConfirm, setShowConfirm] = React.useState(false);
+  const [rucDuplicateError, setRucDuplicateError] = React.useState<string | null>(null);
+  const [checkingRuc, setCheckingRuc] = React.useState(false);
+  const [fieldErrors, setFieldErrors] = React.useState<Record<string, string>>({});
 
   React.useEffect(() => {
     if (open) {
@@ -50,25 +53,142 @@ const EmisorFormModal: React.FC<Props> = (props) => {
       setEmailError(null);
       setLogoError(null);
       setLocalRucEditable(rucEditable ?? true);
+      setRucDuplicateError(null);
+      setFieldErrors({});
     }
   }, [open]);
 
-  const onChange = (k: keyof Emisor, value: any) => setV(prev => ({ ...prev, [k]: value }));
+  const onChange = (k: keyof Emisor, value: any) => {
+    setV(prev => ({ ...prev, [k]: value }));
+    // Clear field error when user starts typing
+    setFieldErrors(prev => ({ ...prev, [k]: '' }));
+  };
+
+  // Validate required fields in real time
+  React.useEffect(() => {
+    // Solo validar campos obligatorios si NO estamos editando
+    if (editingId) {
+      setFieldErrors({});
+      return;
+    }
+
+    const errors: Record<string, string> = {};
+    
+    if (!v.ruc?.trim()) errors.ruc = 'El RUC es obligatorio';
+    if (!v.razon_social?.trim()) errors.razon_social = 'La Razón Social es obligatoria';
+    if (!v.nombre_comercial?.trim()) errors.nombre_comercial = 'El Nombre Comercial es obligatorio';
+    if (!v.direccion_matriz?.trim()) errors.direccion_matriz = 'La Dirección Matriz es obligatoria';
+    if (!v.correo_remitente?.trim()) errors.correo_remitente = 'El Correo Remitente es obligatorio';
+    
+    setFieldErrors(errors);
+  }, [v.ruc, v.razon_social, v.nombre_comercial, v.direccion_matriz, v.correo_remitente, editingId]);
 
   // Validate RUC in real time
   React.useEffect(() => {
-    if (!v.ruc || !v.ruc.toString().trim()) { setRucError(null); return; }
-    if (!validateRucEcuador(v.ruc)) setRucError('RUC no válido según reglas del SRI');
-    else setRucError(null);
+    if (!v.ruc || !v.ruc.toString().trim()) { 
+      setRucError(null); 
+      setRucDuplicateError(null);
+      return; 
+    }
+    if (!validateRucEcuador(v.ruc)) {
+      setRucError('RUC no válido según reglas del SRI');
+      setRucDuplicateError(null);
+    } else {
+      setRucError(null);
+    }
   }, [v.ruc]);
 
+  // Check RUC duplicate in real time (only for new emisores)
+  React.useEffect(() => {
+    if (editingId) return; // Don't check for duplicates when editing
+    if (!v.ruc || !v.ruc.toString().trim()) {
+      setRucDuplicateError(null);
+      return;
+    }
+    if (rucError) return; // Don't check if RUC format is invalid
+
+    const timer = setTimeout(async () => {
+      setCheckingRuc(true);
+      try {
+        const res = await emisoresApi.checkRuc(v.ruc);
+        const exists = res.data?.exists;
+        if (exists) {
+          setRucDuplicateError('Este RUC ya está registrado en el sistema');
+        } else {
+          setRucDuplicateError(null);
+        }
+      } catch (e) {
+        console.error('Error checking RUC:', e);
+        setRucDuplicateError(null);
+      } finally {
+        setCheckingRuc(false);
+      }
+    }, 600); // Debounce de 600ms
+
+    return () => clearTimeout(timer);
+  }, [v.ruc, rucError, editingId]);
+
   const validate = () => {
-    if (!v.ruc.trim() || !v.razon_social.trim()) return false;
+    // En modo edición, solo validar los campos que fueron modificados
+    if (editingId) {
+      // Validar RUC solo si tiene valor y si es editable
+      if (localRucEditable && v.ruc && v.ruc.trim() && !validateRucEcuador(v.ruc)) {
+        setRucError('RUC no válido según reglas del SRI');
+        return false;
+      }
+      setRucError(null);
+      
+      // Validar correo solo si tiene valor
+      if (v.correo_remitente && v.correo_remitente.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.correo_remitente)) {
+        setEmailError('formato inválido de correo');
+        return false;
+      }
+      setEmailError(null);
+      
+      // Validar logo solo si se seleccionó uno nuevo
+      if (logoFile && !/\.jpe?g$|\.png$/i.test(logoFile.name)) {
+        setLogoError('Formato no permitido. Use .jpg, .jpeg o .png');
+        return false;
+      }
+      setLogoError(null);
+      
+      return true;
+    }
+
+    // En modo creación, validar todos los campos obligatorios
+    if (!v.ruc.trim()) {
+      alert('El RUC es obligatorio');
+      return false;
+    }
+    if (!v.razon_social.trim()) {
+      alert('La Razón Social es obligatoria');
+      return false;
+    }
+    if (!v.nombre_comercial?.trim()) {
+      alert('El Nombre Comercial es obligatorio');
+      return false;
+    }
+    if (!v.direccion_matriz?.trim()) {
+      alert('La Dirección Matriz es obligatoria');
+      return false;
+    }
+    if (!v.correo_remitente?.trim()) {
+      alert('El Correo Remitente es obligatorio');
+      return false;
+    }
+    if (!logoFile) {
+      alert('El Logo es obligatorio');
+      return false;
+    }
     if (!validateRucEcuador(v.ruc)) {
       setRucError('RUC no válido según reglas del SRI');
       return false;
     }
     setRucError(null);
+    if (rucDuplicateError) {
+      alert('Este RUC ya está registrado en el sistema');
+      return false;
+    }
     if (v.correo_remitente && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.correo_remitente)) {
       setEmailError('formato inválido de correo');
       return false;
@@ -84,11 +204,31 @@ const EmisorFormModal: React.FC<Props> = (props) => {
 
   // Pure validation used for enabling/disabling the submit button (no state side-effects)
   const isFormValid = () => {
+    // En modo edición, el formulario es válido si no hay errores activos
+    if (editingId) {
+      // Si hay un error de RUC activo, deshabilitar
+      if (rucError) return false;
+      // Si hay un error de email activo, deshabilitar
+      if (emailError) return false;
+      // Si hay un error de logo activo, deshabilitar
+      if (logoError) return false;
+      // Si se está verificando el RUC, deshabilitar
+      if (checkingRuc) return false;
+      return true;
+    }
+
+    // En modo creación, validar todos los campos obligatorios
     if (!v.ruc || !v.ruc.trim()) return false;
     if (!v.razon_social || !v.razon_social.trim()) return false;
+    if (!v.nombre_comercial || !v.nombre_comercial.trim()) return false;
+    if (!v.direccion_matriz || !v.direccion_matriz.trim()) return false;
+    if (!v.correo_remitente || !v.correo_remitente.trim()) return false;
+    if (!logoFile) return false;
     if (v.correo_remitente && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.correo_remitente)) return false;
     if (logoFile && !/\.jpe?g$|\.png$/i.test(logoFile.name)) return false;
     if (rucError) return false;
+    if (rucDuplicateError) return false;
+    if (checkingRuc) return false;
     return true;
   };
 
@@ -148,19 +288,42 @@ const EmisorFormModal: React.FC<Props> = (props) => {
         <div className="mf-body scrollable">
           <section>
             <h3>Datos del RUC</h3>
-              <label>RUC
-                  <input value={v.ruc} onChange={e => onChange('ruc', e.target.value)} disabled={!localRucEditable} />
+              <label>RUC {!editingId && <span className="required">*</span>}
+                  <input 
+                    value={v.ruc} 
+                    onChange={e => onChange('ruc', e.target.value)} 
+                    disabled={!localRucEditable}
+                    className={rucError || rucDuplicateError ? 'error-input' : ''}
+                  />
                   {!localRucEditable && <small style={{color:'#666'}}>El RUC no puede ser modificado porque existen comprobantes autorizados.</small>}
                   {rucError && <span className="err">{rucError}</span>}
+                  {!rucError && checkingRuc && <span className="info">Verificando RUC...</span>}
+                  {!rucError && !checkingRuc && rucDuplicateError && <span className="err">{rucDuplicateError}</span>}
+                  {!editingId && fieldErrors.ruc && !v.ruc && <span className="err">{fieldErrors.ruc}</span>}
               </label>
-            <label>Razón Social
-              <input value={v.razon_social} onChange={e => onChange('razon_social', e.target.value)} />
+            <label>Razón Social {!editingId && <span className="required">*</span>}
+              <input 
+                value={v.razon_social} 
+                onChange={e => onChange('razon_social', e.target.value)}
+                className={!editingId && fieldErrors.razon_social && !v.razon_social ? 'error-input' : ''}
+              />
+              {!editingId && fieldErrors.razon_social && !v.razon_social && <span className="err">{fieldErrors.razon_social}</span>}
             </label>
-            <label>Nombre comercial
-              <input value={v.nombre_comercial || ''} onChange={e => onChange('nombre_comercial', e.target.value)} />
+            <label>Nombre comercial {!editingId && <span className="required">*</span>}
+              <input 
+                value={v.nombre_comercial || ''} 
+                onChange={e => onChange('nombre_comercial', e.target.value)}
+                className={!editingId && fieldErrors.nombre_comercial && !v.nombre_comercial ? 'error-input' : ''}
+              />
+              {!editingId && fieldErrors.nombre_comercial && !v.nombre_comercial && <span className="err">{fieldErrors.nombre_comercial}</span>}
             </label>
-            <label>Dirección Matriz
-              <input value={v.direccion_matriz || ''} onChange={e => onChange('direccion_matriz', e.target.value)} />
+            <label>Dirección Matriz {!editingId && <span className="required">*</span>}
+              <input 
+                value={v.direccion_matriz || ''} 
+                onChange={e => onChange('direccion_matriz', e.target.value)}
+                className={!editingId && fieldErrors.direccion_matriz && !v.direccion_matriz ? 'error-input' : ''}
+              />
+              {!editingId && fieldErrors.direccion_matriz && !v.direccion_matriz && <span className="err">{fieldErrors.direccion_matriz}</span>}
             </label>
           </section>
 
@@ -185,16 +348,25 @@ const EmisorFormModal: React.FC<Props> = (props) => {
                 <label key={opt}><input type="radio" checked={v.tipo_persona===opt} onChange={()=>onChange('tipo_persona', opt as any)} /> {opt}</label>
               ))}
               <label style={{marginLeft:12}}>Código Artesano
-                <input value={v.codigo_artesano || ''} onChange={e => onChange('codigo_artesano', e.target.value)} />
+                <input 
+                  value={v.codigo_artesano || ''} 
+                  onChange={e => onChange('codigo_artesano', e.target.value)}
+                  placeholder="Opcional - Ej: PICHINCHA-17-1234-2024"
+                />
               </label>
             </div>
           </section>
 
           <section>
             <h3>Datos de configuración</h3>
-            <label>Correo Remitente
-              <input value={v.correo_remitente || ''} onChange={e => onChange('correo_remitente', e.target.value)} />
+            <label>Correo Remitente {!editingId && <span className="required">*</span>}
+              <input 
+                value={v.correo_remitente || ''} 
+                onChange={e => onChange('correo_remitente', e.target.value)}
+                className={emailError || (!editingId && fieldErrors.correo_remitente && !v.correo_remitente) ? 'error-input' : ''}
+              />
               {emailError && <span className="err">{emailError}</span>}
+              {!emailError && !editingId && fieldErrors.correo_remitente && !v.correo_remitente && <span className="err">{fieldErrors.correo_remitente}</span>}
             </label>
             <div className="row">
               <label>Estado
@@ -216,10 +388,11 @@ const EmisorFormModal: React.FC<Props> = (props) => {
               </label>
             </div>
 
-            <label>Logo
+            <label>Logo {!editingId && <span className="required">*</span>}
               <input type="text" readOnly value={logoFile?.name || ''} placeholder="logo.jpg" />
               <input type="file" accept=".jpg,.jpeg,.png" onChange={e => setLogoFile(e.target.files?.[0] || null)} />
               {logoError && <span className="err">{logoError}</span>}
+              {!editingId && !logoFile && <span className="err">El logo es obligatorio</span>}
             </label>
           </section>
         </div>
@@ -258,7 +431,10 @@ const EmisorFormModal: React.FC<Props> = (props) => {
         label{display:block;margin:8px 0}
         input,select{padding:8px 10px;border:1px solid #d0d7e2;border-radius:6px;width:100%;max-width:100%}
         .row{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
-        .err{color:#c53030;margin-left:8px;font-size:12px}
+        .err{color:#c53030;margin-left:8px;font-size:12px;display:block;margin-top:4px}
+        .info{color:#2563eb;margin-left:8px;font-size:12px;display:block;margin-top:4px}
+        .required{color:#c53030;font-weight:bold;margin-left:2px}
+        .error-input{border-color:#c53030 !important;background-color:#fff5f5}
         .mf-footer{display:flex;gap:12px;justify-content:flex-end;padding:12px 20px;border-top:1px solid #eceff4}
         .mf-footer button{padding:8px 14px;border-radius:8px;border:1px solid #cbd5e1;background:#1e3a8a;color:#fff}
         .mf-footer button:first-child{background:#fff;color:#0f172a;border-color:#cbd5e1}

@@ -52,9 +52,32 @@ const dynamicColumns: Array<{
   { key: 'ambiente', label: 'Ambiente', width: 150 },
   { key: 'tipo_emision', label: 'Tipo de Emisión', width: 160 },
 
-  { key: 'fecha_creacion', label: 'Fecha de creación', width: 180 },
-  { key: 'fecha_actualizacion', label: 'Fecha de actualización', width: 200 },
-  { key: 'registrador', label: 'Nombre del registrador', width: 240 },
+  { 
+    key: 'created_at', 
+    label: 'Fecha de creación', 
+    width: 180,
+    render: (row) => {
+      if (!row.created_at) return '-';
+      const date = new Date(row.created_at);
+      return date.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+  },
+  { 
+    key: 'updated_at', 
+    label: 'Fecha de actualización', 
+    width: 200,
+    render: (row) => {
+      if (!row.updated_at) return '-';
+      const date = new Date(row.updated_at);
+      return date.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+  },
+  { 
+    key: 'created_by_name', 
+    label: 'Nombre del registrador', 
+    width: 240,
+    render: (row) => row.created_by_name || '-'
+  },
   { key: 'ultimo_login', label: 'Fecha de último inicio de sesión', width: 240 },
   { key: 'ultimo_comprobante', label: 'Fecha de ultimo comprobante creado', width: 260 },
 ];
