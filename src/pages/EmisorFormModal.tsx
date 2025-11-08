@@ -43,6 +43,9 @@ const EmisorFormModal: React.FC<Props> = (props) => {
   const [localRucEditable, setLocalRucEditable] = React.useState<boolean>(true);
   const [rucError, setRucError] = React.useState<string | null>(null);
   const [showConfirm, setShowConfirm] = React.useState(false);
+  const [fieldErrors, setFieldErrors] = React.useState<Record<string, string>>({});
+  const [rucDuplicateError, setRucDuplicateError] = React.useState<string | null>(null);
+  const [checkingRuc, setCheckingRuc] = React.useState(false);
 
   React.useEffect(() => {
     if (open) {
@@ -53,17 +56,36 @@ const EmisorFormModal: React.FC<Props> = (props) => {
       setLocalRucEditable(rucEditable ?? true);
       setRucDuplicateError(null);
       setFieldErrors({});
+      setCheckingRuc(false);
     }
-  }, [open]);
+  }, [open, initialData, rucEditable]);
 
-  const onChange = (k: keyof Emisor, value: any) => setV(prev => ({ ...prev, [k]: value }));
+  // Enhanced onChange: set value and clear field-specific errors live
+  const onChange = (k: keyof Emisor, value: any) => {
+    setV(prev => ({ ...prev, [k]: value }));
+    const ks = k as string;
+    setFieldErrors(prev => {
+      if (!prev || !(ks in prev)) return prev;
+      const copy = { ...prev };
+      delete copy[ks];
+      return copy;
+    });
+    if (ks === 'ruc') {
+      setRucError(null);
+      setRucDuplicateError(null);
+    }
+    if (ks === 'correo_remitente') setEmailError(null);
+    if (ks === 'codigo_artesano') {
+      // nothing else
+    }
+  };
 
   // Validate RUC in real time
   React.useEffect(() => {
-    if (!v.ruc || !v.ruc.toString().trim()) { 
-      setRucError(null); 
+    if (!v.ruc || !v.ruc.toString().trim()) {
+      setRucError(null);
       setRucDuplicateError(null);
-      return; 
+      return;
     }
     if (!validateRucEcuador(v.ruc)) {
       setRucError('RUC no válido según reglas del SRI');
@@ -98,48 +120,51 @@ const EmisorFormModal: React.FC<Props> = (props) => {
       } finally {
         setCheckingRuc(false);
       }
-    }, 600); // Debounce de 600ms
+    }, 600);
 
     return () => clearTimeout(timer);
   }, [v.ruc, rucError, editingId]);
 
   const validate = () => {
-    if (!v.ruc.trim() || !v.razon_social.trim()) return false;
-    if (!validateRucEcuador(v.ruc)) {
-      setRucError('RUC no válido según reglas del SRI');
-      return false;
-    }
-    setRucError(null);
-    if (v.correo_remitente && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.correo_remitente)) {
-      setEmailError('formato inválido de correo');
-      return false;
-    }
-    setEmailError(null);
+    // Basic required checks align with backend
+    if (!v.ruc || !v.ruc.toString().trim()) { setRucError('RUC es obligatorio'); return false; }
+    if (!v.razon_social || !v.razon_social.toString().trim()) return false;
+    if (!v.direccion_matriz || !v.direccion_matriz.toString().trim()) return false;
+    if (!v.codigo_artesano || !v.codigo_artesano.toString().trim()) return false;
 
-    // ambiente and tipo_emision should be present
+    // RUC format
+    if (!validateRucEcuador(v.ruc)) { setRucError('RUC no válido según reglas del SRI'); return false; }
+    if (rucDuplicateError) return false;
+
+    // correo
+    if (!v.correo_remitente || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.correo_remitente)) { setEmailError('Correo remitente obligatorio y debe ser válido'); return false; }
+
+    // ambiente / tipo emision
     if (!v.ambiente) return false;
     if (!v.tipo_emision) return false;
 
-    // logo: required on create, optional on edit
-    if (!editingId) {
-      if (!logoFile) { setLogoError('Logo obligatorio al registrar un emisor'); return false; }
-    }
+    // logo required on create
+    if (!editingId && !logoFile) { setLogoError('Logo obligatorio al registrar un emisor'); return false; }
+    if (logoFile && !/\.jpe?g$|\.png$/i.test(logoFile.name)) { setLogoError('Formato no permitido. Use .jpg, .jpeg o .png'); return false; }
 
-    if (logoFile && !/\.jpe?g$|\.png$/i.test(logoFile.name)) {
-      setLogoError('Formato no permitido. Use .jpg, .jpeg o .png');
-      return false;
-    }
+    // clear transient errors
+    setRucError(null);
+    setEmailError(null);
     setLogoError(null);
     return true;
   };
 
   // Pure validation used for enabling/disabling the submit button (no state side-effects)
   const isFormValid = () => {
-    if (!v.ruc || !v.ruc.trim()) return false;
-    if (!v.razon_social || !v.razon_social.trim()) return false;
-    if (v.correo_remitente && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.correo_remitente)) return false;
+    if (!v.ruc || !v.ruc.toString().trim()) return false;
+    if (!v.razon_social || !v.razon_social.toString().trim()) return false;
+    if (!v.direccion_matriz || !v.direccion_matriz.toString().trim()) return false;
+    if (!v.codigo_artesano || !v.codigo_artesano.toString().trim()) return false;
+    if (!v.correo_remitente || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.correo_remitente)) return false;
+    if (!v.ambiente || !v.tipo_emision) return false;
+    if (rucError || rucDuplicateError || checkingRuc) return false;
+    if (!editingId && !logoFile) return false;
     if (logoFile && !/\.jpe?g$|\.png$/i.test(logoFile.name)) return false;
-    if (rucError) return false;
     return true;
   };
 
@@ -201,15 +226,16 @@ const EmisorFormModal: React.FC<Props> = (props) => {
     const e: Record<string,string> = {};
     if (!v.ruc || !v.ruc.toString().trim()) e.ruc = 'RUC es obligatorio';
     else if (!validateRucEcuador(v.ruc)) e.ruc = 'RUC no válido según reglas del SRI';
-    if (!v.razon_social || !v.razon_social.toString().trim()) e.razon_social = 'Razón Social es obligatoria';
-    if (!v.direccion_matriz || !v.direccion_matriz.toString().trim()) e.direccion_matriz = 'Dirección Matriz es obligatoria';
+    if (rucDuplicateError) e.ruc = rucDuplicateError;
+  if (!v.razon_social || !v.razon_social.toString().trim()) e.razon_social = 'Razón Social es obligatoria';
+  if (!v.direccion_matriz || !v.direccion_matriz.toString().trim()) e.direccion_matriz = 'Dirección Matriz es obligatoria';
     if (!v.regimen_tributario) e.regimen_tributario = 'Seleccione Régimen Tributario';
     const yn = (x: any) => x === 'SI' || x === 'NO';
     if (!yn(v.obligado_contabilidad)) e.obligado_contabilidad = 'Indique si está obligado a llevar contabilidad';
     if (!yn(v.contribuyente_especial)) e.contribuyente_especial = 'Indique si es contribuyente especial';
     if (!yn(v.agente_retencion)) e.agente_retencion = 'Indique si es agente de retención';
-    if (!v.tipo_persona) e.tipo_persona = 'Seleccione Tipo de Persona';
-    if (!v.codigo_artesano || !v.codigo_artesano.toString().trim()) e.codigo_artesano = 'Código Artesano es obligatorio';
+  if (!v.tipo_persona) e.tipo_persona = 'Seleccione Tipo de Persona';
+  if (!v.codigo_artesano || !v.codigo_artesano.toString().trim()) e.codigo_artesano = 'Código Artesano es obligatorio';
     if (!v.correo_remitente || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.correo_remitente)) e.correo_remitente = 'Correo remitente obligatorio y debe ser válido';
     if (!v.ambiente) e.ambiente = 'Seleccione ambiente';
     if (!v.tipo_emision) e.tipo_emision = 'Seleccione tipo de emisión';
@@ -217,6 +243,29 @@ const EmisorFormModal: React.FC<Props> = (props) => {
     setFieldErrors(e);
     return e;
   };
+
+  // Helper: which fields are required (used to show asterisk)
+  const requiredKeys = React.useMemo(() => new Set<string>([
+  'ruc','razon_social','direccion_matriz','regimen_tributario','obligado_contabilidad','contribuyente_especial','agente_retencion','tipo_persona','codigo_artesano','correo_remitente','estado','ambiente','tipo_emision','logo'
+  ]), []);
+
+  const isFieldValid = (key: string) => {
+    const val = (v as any)[key];
+    switch (key) {
+      case 'ruc': return !!val && validateRucEcuador(val) && !rucDuplicateError;
+      case 'nombre_comercial': return !!val && typeof val === 'string' && val.trim().length > 0;
+      case 'razon_social': return !!val && typeof val === 'string' && val.trim().length > 0;
+      case 'direccion_matriz': return !!val && typeof val === 'string' && val.trim().length > 0;
+      case 'codigo_artesano': return !!val && typeof val === 'string' && val.trim().length > 0;
+      case 'correo_remitente': return !!val && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+      case 'ambiente': return !!val;
+      case 'tipo_emision': return !!val;
+      case 'logo': return editingId ? true : !!logoFile;
+      default: return val !== null && val !== undefined && (typeof val !== 'string' || val.trim() !== '');
+    }
+  };
+
+  const isMissing = (key: string) => requiredKeys.has(key) && !isFieldValid(key);
 
   if (!open) return null;
 
@@ -230,24 +279,40 @@ const EmisorFormModal: React.FC<Props> = (props) => {
         <div className="mf-body scrollable">
           <section>
             <h3>Datos del RUC</h3>
-              <label>RUC
-                  <input value={v.ruc} onChange={e => onChange('ruc', e.target.value)} disabled={!localRucEditable} />
+              <label>RUC {requiredKeys.has('ruc') && <span className="required">*</span>}
+                  <input
+                    value={v.ruc}
+                    onChange={e => onChange('ruc', e.target.value)}
+                    disabled={!localRucEditable}
+                    className={isMissing('ruc') || rucError || rucDuplicateError ? 'error-input' : ''}
+                  />
                   {!localRucEditable && <small style={{color:'#666'}}>El RUC no puede ser modificado porque existen comprobantes autorizados.</small>}
                   {rucError && <span className="err">{rucError}</span>}
+                  {rucDuplicateError && <span className="err">{rucDuplicateError}</span>}
               </label>
-            <label>Razón Social
-              <input value={v.razon_social} onChange={e => onChange('razon_social', e.target.value)} />
+            <label>Razón Social {requiredKeys.has('razon_social') && <span className="required">*</span>}
+              <input
+                value={v.razon_social}
+                onChange={e => onChange('razon_social', e.target.value)}
+                className={isMissing('razon_social') ? 'error-input' : ''}
+              />
+              {fieldErrors.razon_social && <span className="err">{fieldErrors.razon_social}</span>}
             </label>
-            <label>Nombre comercial {!editingId && <span className="required">*</span>}
+            <label>Nombre comercial {requiredKeys.has('nombre_comercial') && <span className="required">*</span>}
               <input 
                 value={v.nombre_comercial || ''} 
                 onChange={e => onChange('nombre_comercial', e.target.value)}
-                className={!editingId && fieldErrors.nombre_comercial && !v.nombre_comercial ? 'error-input' : ''}
+                className={isMissing('nombre_comercial') ? 'error-input' : ''}
               />
-              {!editingId && fieldErrors.nombre_comercial && !v.nombre_comercial && <span className="err">{fieldErrors.nombre_comercial}</span>}
+              {fieldErrors.nombre_comercial && <span className="err">{fieldErrors.nombre_comercial}</span>}
             </label>
-            <label>Dirección Matriz
-              <input value={v.direccion_matriz || ''} onChange={e => onChange('direccion_matriz', e.target.value)} />
+            <label>Dirección Matriz {requiredKeys.has('direccion_matriz') && <span className="required">*</span>}
+              <input
+                value={v.direccion_matriz || ''}
+                onChange={e => onChange('direccion_matriz', e.target.value)}
+                className={isMissing('direccion_matriz') ? 'error-input' : ''}
+              />
+              {fieldErrors.direccion_matriz && <span className="err">{fieldErrors.direccion_matriz}</span>}
             </label>
           </section>
 
@@ -276,23 +341,22 @@ const EmisorFormModal: React.FC<Props> = (props) => {
               {['NATURAL','JURIDICA'].map(opt => (
                 <label key={opt}><input type="radio" checked={v.tipo_persona===opt} onChange={()=>onChange('tipo_persona', opt as any)} /> {opt}</label>
               ))}
-              <label style={{marginLeft:12}}>Código Artesano
-                <input value={v.codigo_artesano || ''} onChange={e => onChange('codigo_artesano', e.target.value)} />
-              </label>
             </div>
-            <label>Código Artesano
+            <label>Código Artesano {requiredKeys.has('codigo_artesano') && <span className="required">*</span>}
               <input 
                 value={v.codigo_artesano || ''} 
                 onChange={e => onChange('codigo_artesano', e.target.value)}
                 placeholder="Opcional - Ej: PICHINCHA-17-1234-2024"
+                className={isMissing('codigo_artesano') ? 'error-input' : ''}
               />
+              {fieldErrors.codigo_artesano && <span className="err">{fieldErrors.codigo_artesano}</span>}
             </label>
           </section>
 
           <section>
             <h3>Datos de configuración</h3>
-            <label>Correo Remitente
-              <input value={v.correo_remitente || ''} onChange={e => onChange('correo_remitente', e.target.value)} />
+            <label>Correo Remitente {requiredKeys.has('correo_remitente') && <span className="required">*</span>}
+              <input value={v.correo_remitente || ''} onChange={e => onChange('correo_remitente', e.target.value)} className={isMissing('correo_remitente') ? 'error-input' : ''} />
               {emailError && <span className="err">{emailError}</span>}
             </label>
             <div className="row config-row">
@@ -301,14 +365,14 @@ const EmisorFormModal: React.FC<Props> = (props) => {
               </label>
 
               <label>Ambiente{isMissing('ambiente') && <span className="req">*</span>}
-                <select value={v.ambiente} onChange={e => onChange('ambiente', e.target.value as any)}>
+                <select value={v.ambiente} onChange={e => onChange('ambiente', e.target.value as any)} className={isMissing('ambiente') ? 'error-input' : ''}>
                   <option value="PRODUCCION">Producción</option>
                   <option value="PRUEBAS">Pruebas</option>
                 </select>
               </label>
 
               <label>Tipo de Emisión{isMissing('tipo_emision') && <span className="req">*</span>}
-                <select value={v.tipo_emision} onChange={e => onChange('tipo_emision', e.target.value as any)}>
+                <select value={v.tipo_emision} onChange={e => onChange('tipo_emision', e.target.value as any)} className={isMissing('tipo_emision') ? 'error-input' : ''}>
                   <option value="NORMAL">Normal</option>
                   <option value="INDISPONIBILIDAD">Indisponibilidad del SRI</option>
                 </select>
@@ -316,8 +380,8 @@ const EmisorFormModal: React.FC<Props> = (props) => {
               </label>
             </div>
 
-            <label>Logo
-              <input type="text" readOnly value={logoFile?.name || ''} placeholder="logo.jpg" />
+            <label>Logo {requiredKeys.has('logo') && <span className="required">*</span>}
+              <input type="text" readOnly value={logoFile?.name || ''} placeholder="logo.jpg" className={isMissing('logo') ? 'error-input' : ''} />
               <input type="file" accept=".jpg,.jpeg,.png" onChange={e => setLogoFile(e.target.files?.[0] || null)} />
               {logoError && <span className="err">{logoError}</span>}
             </label>
@@ -358,10 +422,20 @@ const EmisorFormModal: React.FC<Props> = (props) => {
         label{display:block;margin:8px 0}
         input,select{padding:8px 10px;border:1px solid #d0d7e2;border-radius:6px;width:100%;max-width:100%}
         .row{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
-        .err{color:#c53030;margin-left:8px;font-size:12px}
+  .err{color:#c53030;margin-left:8px;font-size:12px}
+  .required{color:#c53030;margin-left:6px;font-weight:600}
+  .req{color:#c53030;margin-left:6px}
+  .error-input{border-color:#c53030;background:#fff6f6}
         .mf-footer{display:flex;gap:12px;justify-content:flex-end;padding:12px 20px;border-top:1px solid #eceff4}
-        .mf-footer button{padding:8px 14px;border-radius:8px;border:1px solid #cbd5e1;background:#1e3a8a;color:#fff}
-        .mf-footer button:first-child{background:#fff;color:#0f172a;border-color:#cbd5e1}
+  .mf-footer button{padding:8px 14px;border-radius:8px;border:1px solid #cbd5e1;background:#1e3a8a;color:#fff;transition:all .12s ease;cursor:pointer}
+  .mf-footer button:first-child{background:#fff;color:#0f172a;border-color:#cbd5e1}
+  /* Hover/active animations for buttons */
+  .mf-footer button:hover{transform:translateY(-3px);box-shadow:0 6px 14px rgba(16,24,40,0.08)}
+  .mf-footer button:active{transform:translateY(-1px);opacity:.95}
+  .mf-footer button.btn-primary:hover{background:#15306b}
+  .mf-footer button.btn-primary:active{background:#122a5f}
+  .mf-footer button.btn-secondary:hover{background:#f3f4f6}
+  .mf-footer button.btn-secondary:active{background:#e6e9ef}
         .mf-loading-overlay{position:absolute;inset:0;background:rgba(255,255,255,0.6);display:flex;align-items:center;justify-content:center;border-radius:12px}
         .mf-spinner{width:48px;height:48px;border-radius:50%;border:6px solid rgba(0,0,0,0.08);border-top-color:#1e3a8a;animation:spin 1s linear infinite}
         @keyframes spin{to{transform:rotate(360deg)}}

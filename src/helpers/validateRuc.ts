@@ -20,8 +20,8 @@ export function validateRucEcuador(input: string): boolean {
   // Limpiar y validar solo dígitos
   const ruc = input.replace(/\D/g, '');
   
-  // Debe tener exactamente 13 dígitos
-  if (ruc.length !== 13) return false;
+  // Aceptamos cédula de 10 dígitos o RUC completo de 13 dígitos
+  if (ruc.length !== 10 && ruc.length !== 13) return false;
   
   // Validar código de provincia (01-24)
   const province = parseInt(ruc.substring(0, 2), 10);
@@ -108,8 +108,9 @@ export function validateRucEcuador(input: string): boolean {
     // Los primeros 10 dígitos deben formar una cédula válida
     const cedula = ruc.substring(0, 10);
     if (!validateCedula(cedula)) return false;
-    
-    // Los últimos 3 dígitos deben ser 001
+    // Si el usuario ingresó solo la cédula (10 dígitos), consideramos válido
+    if (ruc.length === 10) return true;
+    // Si es RUC completo de 13 dígitos, los últimos 3 dígitos deben ser 001
     return ruc.substring(10) === '001';
   }
   
@@ -137,9 +138,10 @@ export function validateRucEcuador(input: string): boolean {
  * Obtiene el tipo de RUC según el formato
  */
 export function getTipoRuc(ruc: string): string {
-  if (!ruc || ruc.length !== 13) return 'Inválido';
-  
-  const thirdDigit = parseInt(ruc.charAt(2), 10);
+  if (!ruc) return 'Inválido';
+  const cleaned = ruc.replace(/\D/g, '');
+  if (cleaned.length !== 10 && cleaned.length !== 13) return 'Inválido';
+  const thirdDigit = parseInt(cleaned.charAt(2), 10);
   
   if (thirdDigit >= 0 && thirdDigit <= 5) {
     return 'Persona Natural';
