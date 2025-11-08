@@ -1,5 +1,5 @@
 import api from './api';
-import { Establecimiento } from '../types/establecimiento';
+import type { Establecimiento } from '../types/establecimiento';
 
 export const establecimientosApi = {
   list(companyId: number | string) {
