@@ -7,6 +7,8 @@ type Props = {
   onClose: () => void;
   companyId: number | string;
   onCreated?: (e: Establecimiento) => void;
+  editingEst?: Establecimiento | null;
+  onUpdated?: (e: Establecimiento) => void;
 };
 
 const initial: Establecimiento = {
@@ -19,7 +21,7 @@ const initial: Establecimiento = {
   telefono: '',
 };
 
-const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onCreated }) => {
+const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onCreated, editingEst, onUpdated }) => {
   const [v, setV] = React.useState<Establecimiento>(initial);
   const [logoFile, setLogoFile] = React.useState<File | null>(null);
   const [fieldErrors, setFieldErrors] = React.useState<Record<string,string>>({});
@@ -28,12 +30,16 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
 
   React.useEffect(() => {
     if (open) {
-      setV(initial);
+      if (editingEst) {
+        setV({ ...initial, ...editingEst });
+      } else {
+        setV(initial);
+      }
       setLogoFile(null);
       setFieldErrors({});
       setCodeDuplicateError(null);
     }
-  }, [open]);
+  }, [open, editingEst]);
 
   const onChange = (k: keyof Establecimiento, value: any) => {
     setV(prev => ({ ...prev, [k]: value }));
@@ -80,14 +86,20 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
   const submit = async () => {
     if (!validate()) return;
     try {
-      const res = await establecimientosApi.create(companyId, { ...v, logoFile });
-      const created: Establecimiento = res.data?.data ?? res.data;
-      onCreated && onCreated(created);
+      if (editingEst && editingEst.id) {
+        const res = await establecimientosApi.update(companyId, editingEst.id, { ...v, logoFile });
+        const updated: Establecimiento = res.data?.data ?? res.data;
+        onUpdated && onUpdated(updated);
+      } else {
+        const res = await establecimientosApi.create(companyId, { ...v, logoFile });
+        const created: Establecimiento = res.data?.data ?? res.data;
+        onCreated && onCreated(created);
+      }
       onClose();
     } catch (err: any) {
       const apiMsg = err?.response?.data;
       if (apiMsg?.errors) setFieldErrors(Object.fromEntries(Object.entries(apiMsg.errors).map(([k,v])=>[k, (v as string[])[0]])));
-      else alert(apiMsg?.message || 'No se pudo crear establecimiento');
+      else alert(apiMsg?.message || 'No se pudo procesar la solicitud');
     }
   };
 
@@ -96,7 +108,7 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
   return (
     <div className="mf-backdrop" onClick={onClose}>
       <div className="mf-modal" onClick={(e)=>e.stopPropagation()} style={{ width: 'min(720px, 92vw)' }}>
-        <div className="mf-header"><h2>Registro de nuevo establecimiento</h2></div>
+  <div className="mf-header"><h2>{editingEst ? 'Editar establecimiento' : 'Registro de nuevo establecimiento'}</h2></div>
         <div className="mf-body scrollable">
           {/* Top row: compact Código on left, Estado switch on right */}
           <div className="top-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
@@ -166,7 +178,7 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
 
         <div className="mf-footer">
           <button className="btn btn-secondary" onClick={onClose}>CANCELAR</button>
-          <button className="btn btn-primary" onClick={submit}>REGISTRAR</button>
+          <button className="btn btn-primary" onClick={submit}>{editingEst ? 'GUARDAR' : 'REGISTRAR'}</button>
         </div>
 
         <style>{`

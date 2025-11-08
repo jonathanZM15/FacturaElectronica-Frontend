@@ -8,6 +8,9 @@ export const establecimientosApi = {
   checkCode(companyId: number | string, code: string) {
     return api.get(`/api/emisores/${companyId}/establecimientos/check-code/${encodeURIComponent(code)}`);
   },
+  show(companyId: number | string, id: number | string) {
+    return api.get(`/api/emisores/${companyId}/establecimientos/${id}`);
+  },
   create(companyId: number | string, payload: Partial<Establecimiento> & { logoFile?: File | null }) {
     const hasFile = !!payload.logoFile;
     if (hasFile) {

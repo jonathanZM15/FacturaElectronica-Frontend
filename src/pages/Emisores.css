@@ -69,8 +69,9 @@
   border: 2px solid #ff8c00;
   position: relative;
   background: #fff;
-  overflow: hidden; /* Sin scroll en el contenedor principal */
-  padding-bottom: 16px; /* espacio para la barra inferior */
+  /* allow native scrollbars inside the dynamic area */
+  overflow: visible;
+  padding-bottom: 16px;
 }
 
 .tabla-emisores {
@@ -112,7 +113,8 @@
 .scrollable-columns {
   flex: 1;
   display: flex;
-  overflow: hidden;
+  /* don't hide overflow here; dynamic body will show native scroll */
+  overflow: visible;
 }
 
 /* El encabezado NO muestra barra; sólo refleja el scroll por JS */
@@ -122,34 +124,11 @@
 
 /* El body no muestra barra; sincronizamos su scrollLeft por JS */
 .scrollable-body {
-  overflow: hidden;
-}
-
-/* Barra inferior visible y control principal del desplazamiento */
-.dyn-scrollbar {
-  position: absolute;
-  left: calc(var(--col-ruc) + var(--col-razon));
-  right: var(--col-actions);
-  bottom: 0;
-  height: 14px;
+  /* allow native horizontal scrolling inside the dynamic columns area */
   overflow-x: auto;
-  overflow-y: hidden;
 }
 
-/* Scrollbar personalizado */
-.dyn-scrollbar::-webkit-scrollbar {
-  height: 10px;
-}
-.dyn-scrollbar::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-.dyn-scrollbar::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 6px;
-}
-.dyn-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #555;
-}
+/* Removed custom bottom scrollbar - native scrollbar inside .scrollable-body is used instead */
 
 /* Columnas dinámicas dentro del scroll */
 .th-dyn,
@@ -188,6 +167,39 @@ thead th {
 .th-sticky.sticky-right {
   background: #cccccc !important;
   color: #000 !important;
+}
+
+/* Special case: establishments table should show all headers in blue like the main header style */
+.tabla-wrapper.estab-table thead th,
+.tabla-wrapper.estab-table .th-dyn {
+  background: #2931a8 !important;
+  color: #fff !important;
+  border: 2px solid #ff8c00 !important;
+  font-weight: 600 !important;
+}
+
+/* Ensure the right/left sticky header cells inside estab-table also show blue */
+.tabla-wrapper.estab-table .th-sticky.sticky-left-1,
+.tabla-wrapper.estab-table .th-sticky.sticky-left-2,
+.tabla-wrapper.estab-table .th-sticky.sticky-right {
+  background: #2931a8 !important;
+  color: #fff !important;
+  border: 2px solid #ff8c00 !important;
+}
+
+/* Make ONLY the 'Estado' header (4th dynamic column) gray in the establishments table,
+   and give its body cells a light gray background. The dynamic columns order is:
+   1) Nombre Comercial, 2) Dirección, 3) Logo, 4) Estado */
+/* The 'Estado' column should remain blue like other headers;
+   make the right 'Acciones' column header and its cells gray instead. */
+.tabla-wrapper.estab-table .th-sticky.sticky-right {
+  background: #cccccc !important;
+  color: #000 !important;
+  border: 2px solid #ff8c00 !important;
+}
+.tabla-wrapper.estab-table .td-sticky.sticky-right {
+  background: #f3f4f6 !important;
+  color: #374151 !important;
 }
 
 /* Estilos de celdas */

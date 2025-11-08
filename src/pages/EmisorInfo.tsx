@@ -1,5 +1,5 @@
 import React from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { emisoresApi } from '../services/emisoresApi';
 import EmisorFormModal from './EmisorFormModal';
 import EstablishmentFormModal from './EstablishmentFormModal';
@@ -15,6 +15,7 @@ const EmisorInfo: React.FC = () => {
   const [tab, setTab] = React.useState<'emisor'|'establecimientos'|'usuarios'|'planes'>('emisor');
   const [openEdit, setOpenEdit] = React.useState(false);
   const [openNewEst, setOpenNewEst] = React.useState(false);
+  const [editEst, setEditEst] = React.useState<any | null>(null);
   const [establecimientos, setEstablecimientos] = React.useState<any[]>([]);
   const [rucEditable, setRucEditable] = React.useState(true);
 
@@ -53,6 +54,26 @@ const EmisorInfo: React.FC = () => {
 
   React.useEffect(() => { load(); }, [load]);
   React.useEffect(() => { if (company?.id) loadEstablecimientos(company.id); }, [company, loadEstablecimientos]);
+
+  // Re-sync header with the dynamic body scroll so header cells (Logo/Estado) stay above their columns
+  const bodyScrollRef = React.useRef<HTMLTableCellElement | null>(null);
+  const headInnerRef = React.useRef<HTMLDivElement | null>(null);
+
+  React.useEffect(() => {
+    const bodyEl = bodyScrollRef.current as unknown as HTMLElement | null;
+    const headInner = headInnerRef.current;
+    if (!bodyEl || !headInner) return;
+    const onScroll = () => {
+      try {
+        const x = bodyEl.scrollLeft || 0;
+        headInner.style.transform = `translateX(${-x}px)`;
+      } catch (e) {}
+    };
+    bodyEl.addEventListener('scroll', onScroll, { passive: true });
+    // initial sync
+    onScroll();
+    return () => { bodyEl.removeEventListener('scroll', onScroll); };
+  }, [establecimientos]);
 
   if (!id) return <div>Emisor no especificado</div>;
 
@@ -172,37 +193,74 @@ const EmisorInfo: React.FC = () => {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                 <h4 style={{ margin: 0 }}>Establecimientos</h4>
                 <div>
-                  <button onClick={() => setOpenNewEst(true)} style={{ padding: '8px 12px', borderRadius: 8, background: '#1e40af', color: '#fff', border: 'none', cursor: 'pointer' }}>Nuevo</button>
+                  <button onClick={() => { setEditEst(null); setOpenNewEst(true); }} style={{ padding: '8px 12px', borderRadius: 8, background: '#1e40af', color: '#fff', border: 'none', cursor: 'pointer' }}>Nuevo</button>
                 </div>
               </div>
 
-              {establecimientos.length === 0 ? (
-                <div style={{ padding: 18, border: '1px dashed #e5e7eb', borderRadius: 8 }}>No hay establecimientos registrados.</div>
-              ) : (
-                <div style={{ display: 'grid', gap: 8 }}>
-                  {establecimientos.map((est) => (
-                    <div key={est.id} style={{ border: '1px solid #e6e6e6', padding: 12, borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <div style={{ fontWeight: 800 }}>{est.nombre} <small style={{ marginLeft: 8, fontWeight: 600 }}>{est.codigo}</small></div>
-                        <div style={{ color: '#6b7280' }}>{est.direccion}</div>
-                      </div>
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <button onClick={() => { /* TODO: open edit modal */ }} style={{ padding: '6px 10px', borderRadius: 8 }}>Editar</button>
-                        <button onClick={async () => {
-                          if (!window.confirm('Eliminar establecimiento?')) return;
-                          try {
-                            await establecimientosApi.delete(company?.id, est.id);
-                            show({ title: 'Éxito', message: 'Establecimiento eliminado', type: 'success' });
-                            loadEstablecimientos(company?.id);
-                          } catch (err:any) {
-                            show({ title: 'Error', message: err?.response?.data?.message || 'No se pudo eliminar', type: 'error' });
-                          }
-                        }} style={{ padding: '6px 10px', borderRadius: 8, background: '#fee2e2', border: '1px solid #fecaca' }}>Eliminar</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <div className="tabla-wrapper estab-table">
+                <table className="tabla-emisores">
+                  <thead>
+                    <tr>
+                      <th className="th-sticky sticky-left-1" style={{ background: '#2931a8', color: '#fff', border: '2px solid #ff8c00', fontWeight: 600 }}>Codigo ▾</th>
+                      <th className="th-sticky sticky-left-2" style={{ background: '#2931a8', color: '#fff', border: '2px solid #ff8c00', fontWeight: 600 }}>Nombre ▾</th>
+                      <th className="scrollable-columns scrollable-head" style={{ padding: 0, border: 'none' }}>
+                        <div style={{ display: 'flex', transform: 'translateX(0)' }} ref={headInnerRef}>
+                          <div className="th-dyn" style={{ minWidth: 200, padding: '10px', background: '#2931a8', color: '#fff', border: '2px solid #ff8c00', fontWeight: 600 }}>Nombre Comercial ▾</div>
+                          <div className="th-dyn" style={{ minWidth: 300, padding: '10px', background: '#2931a8', color: '#fff', border: '2px solid #ff8c00', fontWeight: 600 }}>Dirección ▾</div>
+                          <div className="th-dyn" style={{ minWidth: 120, padding: '10px', background: '#2931a8', color: '#fff', border: '2px solid #ff8c00', fontWeight: 600 }}>Logo ▾</div>
+                          <div className="th-dyn" style={{ minWidth: 120, padding: '10px', background: '#2931a8', color: '#fff', border: '2px solid #ff8c00', fontWeight: 600 }}>Estado ▾</div>
+                        </div>
+                      </th>
+                      <th className="th-sticky sticky-right" style={{ background: '#939497ff', color: '#fff', border: '2px solid #ff8c00', fontWeight: 600 }}>Acciones</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {establecimientos.length === 0 ? (
+                      <tr><td className="loading-row" colSpan={4}>No hay establecimientos registrados.</td></tr>
+                    ) : establecimientos.map((est) => (
+                      <tr key={est.id}>
+                        <td className="td-sticky sticky-left-1"><Link className="link-ruc" to={`/emisores/${company?.id}/establecimientos/${est.id}`}>{est.codigo}</Link></td>
+                        <td className="td-sticky sticky-left-2">{est.nombre}</td>
+
+                        <td className="scrollable-columns scrollable-body" style={{ padding: 0, border: 'none' }} ref={(el) => { bodyScrollRef.current = el; }}>
+                          <div style={{ display: 'flex' }}>
+                            <div className="td-dyn" style={{ minWidth: 200, padding: '8px 10px', textAlign: 'center' }}>{est.nombre_comercial || '-'}</div>
+                            <div className="td-dyn" style={{ minWidth: 300, padding: '8px 10px', textAlign: 'center' }}>{est.direccion || '-'}</div>
+                            <div className="td-dyn" style={{ minWidth: 120, padding: '8px 10px', textAlign: 'center' }}>
+                              {(
+                                est.logo_url || est.logo_path || est.logo
+                              ) ? (
+                                <img className="logo-cell" src={est.logo_url || est.logo_path || est.logo} alt="logo" onClick={() => window.open(est.logo_url || est.logo_path || est.logo, '_blank')} />
+                              ) : (
+                                <span className="logo-placeholder">—</span>
+                              )}
+                            </div>
+                            <div className="td-dyn" style={{ minWidth: 120, padding: '8px 10px', textAlign: 'center' }}>
+                              <div style={{ background: est.estado === 'ABIERTO' ? '#bbf7d0' : '#f3f4f6', padding: '6px 8px', borderRadius: 6, color: est.estado === 'ABIERTO' ? '#059669' : '#374151', fontWeight: 700 }}>{est.estado === 'ABIERTO' ? 'Activo' : 'Cerrado'}</div>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="td-sticky sticky-right acciones">
+                          <button title="Editar" onClick={() => { setEditEst(est); setOpenNewEst(true); }}>✏️</button>
+                          <button title="Eliminar" onClick={async () => {
+                            if (!window.confirm('Eliminar establecimiento?')) return;
+                            try {
+                              await establecimientosApi.delete(company?.id, est.id);
+                              show({ title: 'Éxito', message: 'Establecimiento eliminado', type: 'success' });
+                              loadEstablecimientos(company?.id);
+                            } catch (err:any) {
+                              show({ title: 'Error', message: err?.response?.data?.message || 'No se pudo eliminar', type: 'error' });
+                            }
+                          }}>🗑️</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {/* Removed custom bottom scrollbar to restore native scrollbar inside the dynamic columns */}
+              </div>
             </div>
           )}
 
