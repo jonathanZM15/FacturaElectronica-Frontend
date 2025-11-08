@@ -76,12 +76,17 @@ const CambiarPassword: React.FC<Props> = ({ onSubmit }) => {
     }
     setLoading(true);
     try {
-      const apiBase = process.env.REACT_APP_API_URL || '';
-      const url = (apiBase ? apiBase : '') + '/api/password-reset';
-      console.debug('[CambiarPassword] POST', url, { email: emailState, token, password });
+      const apiBase = process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000';
+      const url = apiBase + '/api/password-reset';
+      console.log('[CambiarPassword] Enviando POST a:', url);
+      console.log('[CambiarPassword] Datos:', { email: emailState, token, password: '***', password_confirmation: '***' });
+      
       const res = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify({
           email: emailState,
           token,
@@ -89,6 +94,8 @@ const CambiarPassword: React.FC<Props> = ({ onSubmit }) => {
           password_confirmation: passwordConfirmation,
         }),
       });
+      
+      console.log('[CambiarPassword] Respuesta status:', res.status);
 
       // Manejo robusto: si la respuesta no es JSON (por ejemplo HTML de error), leer texto
       const contentType = res.headers.get('content-type') || '';

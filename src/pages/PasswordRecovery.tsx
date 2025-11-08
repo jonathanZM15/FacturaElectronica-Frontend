@@ -38,32 +38,100 @@ const PasswordRecovery: React.FC = () => {
       justifyContent: 'center'
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    // Validación simple de email (puedes mejorar esto)
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validación simple de email
     if (!email || !email.includes('@')) {
         setError('Por favor, ingrese un email válido.');
         return;
     }
 
-        try {
-            const res = await api.post('/api/password-recovery', { email });
-                    if (res.status === 200) {
-                        show({ title: 'Contraseña actualizada', message: 'Se actualizó contraseña de usuario exitosamente, inicie sesión', type: 'success' });
-                        navigate('/');
-                    }
-        } catch (err: any) {
-                    if (err.response && err.response.status === 404) {
-                        show({ title: 'Usuario inválido', message: 'El email no se encuentra registrado.', type: 'error' });
-                    } else if (err.response && err.response.data && err.response.data.errors) {
-                        show({ title: 'Error', message: Object.values(err.response.data.errors).join(', '), type: 'error' });
-                    } else {
-                        show({ title: 'Error de red', message: 'Ocurrió un error de red. Intente de nuevo.', type: 'error' });
-                    }
-        }
-  };
-
-  return (
+    try {
+      const apiBase = process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000';
+      const response = await fetch(apiBase + '/api/password-recovery', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ email })
+      });
+      
+      const data = await response.json();
+      
+      // CASO 1: ÉXITO - Correo enviado
+      if (response.ok) {
+        show({ 
+          title: 'Correo enviado', 
+          message: `Se ha enviado un enlace de recuperación a ${email}. Por favor revisa tu bandeja de entrada y carpeta de spam. El enlace expirará en 60 minutos.`, 
+          type: 'success' 
+        }, 5000);
+        
+        setTimeout(() => {
+          navigate('/');
+        }, 3000);
+        return;
+      }
+      
+      // CASO 2: THROTTLING - Usuario intentó muy rápido (< 60 segundos)
+      if (response.status === 429) {
+        // Procesar el mensaje para quitar decimales de los segundos
+        // Ejemplo: "Por favor espera 54.222915 segundos" → "Por favor espera 54 segundos"
+        let message = data.message;
+        message = message.replace(/(\d+)\.\d+\s+segundos/g, '$1 segundos');
+        
+        show({ 
+          title: 'Solicitud muy frecuente', 
+          message: message, 
+          type: 'info' 
+        }, 5000);
+        // NO llamar a setError() para evitar el mensaje rojo de fondo
+        return;
+      }
+      
+      // CASO 3: Email no encontrado
+      if (response.status === 404) {
+        show({ 
+          title: 'Usuario no encontrado', 
+          message: 'No existe una cuenta registrada con ese correo electrónico', 
+          type: 'error' 
+        }, 5000);
+        setError('No existe una cuenta registrada con ese correo electrónico');
+        return;
+      }
+      
+      // CASO 4: Error del servidor
+      if (response.status === 500) {
+        show({ 
+          title: 'Error del servidor', 
+          message: 'Error al enviar el correo. Por favor intenta más tarde.', 
+          type: 'error' 
+        }, 5000);
+        setError('Error al enviar el correo. Por favor intenta más tarde.');
+        return;
+      }
+      
+      // CASO 5: Otro error
+      const errorMsg = data.message || 'No se pudo enviar el correo de recuperación';
+      show({ 
+        title: 'Error', 
+        message: errorMsg, 
+        type: 'error' 
+      }, 5000);
+      setError(errorMsg);
+      
+    } catch (error: any) {
+      console.error('[PasswordRecovery] Error:', error);
+      const errorMsg = 'Error de conexión con el servidor. Verifica que el backend esté en funcionamiento.';
+      show({ 
+        title: 'Error de conexión', 
+        message: errorMsg, 
+        type: 'error' 
+      }, 5000);
+      setError(errorMsg);
+    }
+  };  return (
     <div className="auth-bg" style={bgStyle}>
       <div className="auth-card">
         <img src={logo} alt="Máximo Facturas Logo" className="auth-logo" />

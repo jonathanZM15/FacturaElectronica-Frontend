@@ -12,15 +12,34 @@ const dynamicColumns: Array<{
   width?: number;
   render?: (row: Emisor) => React.ReactNode;
 }> = [
-  { key: 'estado', label: 'Estado' },
+  { 
+    key: 'estado', 
+    label: 'Estado',
+    width: 120,
+    render: (row) => {
+      const isActivo = row.estado === 'ACTIVO';
+      return (
+        <span style={{
+          display: 'inline-block',
+          padding: '6px 12px',
+          borderRadius: '20px',
+          fontWeight: 600,
+          color: '#fff',
+          background: isActivo ? '#22c55e' : '#9ca3af'
+        }}>
+          {row.estado}
+        </span>
+      );
+    }
+  },
   { key: 'tipo_plan', label: 'Tipo de plan' },
   { key: 'fecha_inicio_plan', label: 'Fecha inicio de plan' },
   { key: 'fecha_fin_plan', label: 'Fecha final del plan' },
   { key: 'cantidad_creados', label: 'Cantidad de comprobantes creados', width: 240 },
   { key: 'cantidad_restantes', label: 'Cantidad de comprobantes restantes', width: 240 },
 
-  { key: 'nombre_comercial', label: 'Nombre comercial' },
-  { key: 'direccion_matriz', label: 'Dirección Matriz', width: 260 },
+  { key: 'nombre_comercial', label: 'Nombre comercial', width: 150 },
+  { key: 'direccion_matriz', label: 'Dirección Matriz', width: 150 },
   { key: 'correo_remitente', label: 'Correo Remitente', width: 220 },
   {
     key: 'logo',
@@ -44,17 +63,40 @@ const dynamicColumns: Array<{
   },
   { key: 'regimen_tributario', label: 'Régimen Tributario', width: 200 },
 
-  { key: 'obligado_contabilidad', label: 'Obligado a llevar contabilidad', width: 260 },
-  { key: 'contribuyente_especial', label: 'Contribuyente Especial', width: 220 },
-  { key: 'agente_retencion', label: 'Agente de retención', width: 200 },
+  { key: 'obligado_contabilidad', label: 'Obligado a llevar contabilidad', width: 200 },
+  { key: 'contribuyente_especial', label: 'Contribuyente Especial', width: 200 },
+  { key: 'agente_retencion', label: 'Agente de retención', width: 170 },
   { key: 'codigo_artesano', label: 'Código Artesano', width: 180 },
   { key: 'tipo_persona', label: 'Tipo de persona', width: 160 },
   { key: 'ambiente', label: 'Ambiente', width: 150 },
   { key: 'tipo_emision', label: 'Tipo de Emisión', width: 160 },
 
-  { key: 'fecha_creacion', label: 'Fecha de creación', width: 180 },
-  { key: 'fecha_actualizacion', label: 'Fecha de actualización', width: 200 },
-  { key: 'registrador', label: 'Nombre del registrador', width: 240 },
+  { 
+    key: 'created_at', 
+    label: 'Fecha de creación', 
+    width: 130,
+    render: (row) => {
+      if (!row.created_at) return '-';
+      const date = new Date(row.created_at);
+      return date.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+  },
+  { 
+    key: 'updated_at', 
+    label: 'Fecha de actualización', 
+    width: 150,
+    render: (row) => {
+      if (!row.updated_at) return '-';
+      const date = new Date(row.updated_at);
+      return date.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+  },
+  { 
+    key: 'created_by_name', 
+    label: 'Nombre del registrador', 
+    width: 230,
+    render: (row) => row.created_by_name || '-'
+  },
   { key: 'ultimo_login', label: 'Fecha de último inicio de sesión', width: 240 },
   { key: 'ultimo_comprobante', label: 'Fecha de ultimo comprobante creado', width: 260 },
 ];
@@ -110,6 +152,12 @@ const Emisores: React.FC = () => {
     // allow event loop to settle before unlocking
     setTimeout(() => { isSyncingRef.current = false; }, 0);
   }, []);
+
+  const onHeadScroll = React.useCallback(() => {
+    if (isSyncingRef.current) return;
+    const x = headScrollRef.current?.scrollLeft || 0;
+    syncAll(x);
+  }, [syncAll]);
 
   const onFootScroll = React.useCallback(() => {
     if (isSyncingRef.current) return;
@@ -234,6 +282,7 @@ const Emisores: React.FC = () => {
                 <th
                   ref={headScrollRef}
                   className="scrollable-columns scrollable-head"
+                  onScroll={onHeadScroll}
                   style={{ padding: 0, border: 'none' }}
                 >
                   <div style={{ display: 'flex' }}>
@@ -287,6 +336,11 @@ const Emisores: React.FC = () => {
                       className="scrollable-columns scrollable-body"
                       style={{ padding: 0, border: 'none' }}
                       ref={(el) => { bodyScrollRefs.current[idx] = el; }}
+                      onScroll={(e) => {
+                        if (isSyncingRef.current) return;
+                        const x = (e.target as HTMLTableCellElement).scrollLeft || 0;
+                        syncAll(x);
+                      }}
                     >
                       <div style={{ display: 'flex' }}>
                         {dynamicColumns.map((c) => {
@@ -307,7 +361,7 @@ const Emisores: React.FC = () => {
                                 padding: '8px 10px',
                                 border: '2px solid #ff8c00',
                                 background: '#fff',
-                                textAlign: isNumber ? 'right' : 'left',
+                                textAlign: 'center',
                                 fontWeight: isNumber ? 700 : 'normal',
                                 color: isRestantes ? '#e24444' : (isNumber ? '#1b4ab4' : 'inherit')
                               }}

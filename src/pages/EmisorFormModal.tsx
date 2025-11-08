@@ -36,60 +36,13 @@ const EmisorFormModal: React.FC<Props> = (props) => {
   const { open, onClose, onCreated, editingId, initialData, rucEditable, onUpdated } = props;
   const [v, setV] = React.useState<Emisor>(initial);
   const [logoFile, setLogoFile] = React.useState<File | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [emailError, setEmailError] = React.useState<string | null>(null);
   const [logoError, setLogoError] = React.useState<string | null>(null);
   const [localRucEditable, setLocalRucEditable] = React.useState<boolean>(true);
   const [rucError, setRucError] = React.useState<string | null>(null);
   const [showConfirm, setShowConfirm] = React.useState(false);
-  const [fieldErrors, setFieldErrors] = React.useState<Record<string, string>>({});
-  // Which fields are required for the form. We show '*' for these from the start.
-  const requiredKeys = React.useMemo(() => new Set<string>([
-    'ruc','razon_social','direccion_matriz','regimen_tributario','obligado_contabilidad','contribuyente_especial','agente_retencion','tipo_persona','codigo_artesano','correo_remitente','estado','ambiente','tipo_emision','logo'
-  ]), []);
-  // returns true when a required field is currently missing/invalid so the '*' should show
-  const isFieldValid = (key: string) => {
-    const val = (v as any)[key];
-    if (key === 'logo') {
-      if (editingId) return true; // logo optional on edit
-      return !!logoFile;
-    }
-    if (key === 'obligado_contabilidad' || key === 'contribuyente_especial' || key === 'agente_retencion') {
-      return val === 'SI' || val === 'NO';
-    }
-    if (key === 'correo_remitente') {
-      return !!val && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
-    }
-    if (key === 'ruc') {
-      return !!val && validateRucEcuador(val);
-    }
-    if (key === 'codigo_artesano' || key === 'razon_social' || key === 'direccion_matriz') {
-      return !!val && typeof val === 'string' && val.trim().length > 0;
-    }
-    if (key === 'regimen_tributario' || key === 'tipo_persona' || key === 'ambiente' || key === 'tipo_emision' || key === 'estado') {
-      return !!val;
-    }
-    // default: consider present
-    return val !== null && val !== undefined && (typeof val !== 'string' || val.trim() !== '');
-  };
-
-  const isMissing = (key: string) => requiredKeys.has(key) && !isFieldValid(key);
-
-  // Enhanced onChange that clears per-field errors live
-  const onChange = (k: keyof Emisor, value: any) => {
-    setV(prev => ({ ...prev, [k]: value }));
-    const ks = k as string;
-    setFieldErrors(prev => {
-      if (!prev) return prev;
-      if (!(ks in prev)) return prev;
-      const copy = { ...prev } as Record<string,string>;
-      delete copy[ks];
-      return copy;
-    });
-    if (ks === 'ruc') setRucError(null);
-    if (ks === 'correo_remitente') setEmailError(null);
-    if (ks === 'logo') setLogoError(null);
-  };
 
   React.useEffect(() => {
     if (open) {
@@ -98,43 +51,67 @@ const EmisorFormModal: React.FC<Props> = (props) => {
       setEmailError(null);
       setLogoError(null);
       setLocalRucEditable(rucEditable ?? true);
+      setRucDuplicateError(null);
+      setFieldErrors({});
     }
-  }, [open, initialData, rucEditable]);
+  }, [open]);
+
+  const onChange = (k: keyof Emisor, value: any) => setV(prev => ({ ...prev, [k]: value }));
 
   // Validate RUC in real time
   React.useEffect(() => {
-    if (!v.ruc || !v.ruc.toString().trim()) { setRucError(null); return; }
-    if (!validateRucEcuador(v.ruc)) setRucError('RUC no válido según reglas del SRI');
-    else setRucError(null);
+    if (!v.ruc || !v.ruc.toString().trim()) { 
+      setRucError(null); 
+      setRucDuplicateError(null);
+      return; 
+    }
+    if (!validateRucEcuador(v.ruc)) {
+      setRucError('RUC no válido según reglas del SRI');
+      setRucDuplicateError(null);
+    } else {
+      setRucError(null);
+    }
   }, [v.ruc]);
 
-  const validate = () => {
-    // Required core fields
-    if (!v.ruc || !v.ruc.toString().trim()) { setRucError('RUC es obligatorio'); return false; }
-    if (!v.razon_social || !v.razon_social.trim()) { return false; }
-    if (!v.direccion_matriz || !v.direccion_matriz.trim()) { return false; }
+  // Check RUC duplicate in real time (only for new emisores)
+  React.useEffect(() => {
+    if (editingId) return; // Don't check for duplicates when editing
+    if (!v.ruc || !v.ruc.toString().trim()) {
+      setRucDuplicateError(null);
+      return;
+    }
+    if (rucError) return; // Don't check if RUC format is invalid
 
-    // RUC validation
+    const timer = setTimeout(async () => {
+      setCheckingRuc(true);
+      try {
+        const res = await emisoresApi.checkRuc(v.ruc);
+        const exists = res.data?.exists;
+        if (exists) {
+          setRucDuplicateError('Este RUC ya está registrado en el sistema');
+        } else {
+          setRucDuplicateError(null);
+        }
+      } catch (e) {
+        console.error('Error checking RUC:', e);
+        setRucDuplicateError(null);
+      } finally {
+        setCheckingRuc(false);
+      }
+    }, 600); // Debounce de 600ms
+
+    return () => clearTimeout(timer);
+  }, [v.ruc, rucError, editingId]);
+
+  const validate = () => {
+    if (!v.ruc.trim() || !v.razon_social.trim()) return false;
     if (!validateRucEcuador(v.ruc)) {
       setRucError('RUC no válido según reglas del SRI');
       return false;
     }
     setRucError(null);
-
-    // Regimen tributario
-    if (!v.regimen_tributario) return false;
-
-    // Obligaciones (must be 'SI' or 'NO')
-    const yn = (x: any) => x === 'SI' || x === 'NO';
-    if (!yn(v.obligado_contabilidad) || !yn(v.contribuyente_especial) || !yn(v.agente_retencion)) return false;
-
-    // Tipo persona and codigo_artesano required
-    if (!v.tipo_persona || (v.tipo_persona !== 'NATURAL' && v.tipo_persona !== 'JURIDICA')) return false;
-    if (!v.codigo_artesano || !v.codigo_artesano.toString().trim()) return false;
-
-    // Correo remitente required and validated
-    if (!v.correo_remitente || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.correo_remitente)) {
-      setEmailError('Correo remitente obligatorio y debe tener formato válido');
+    if (v.correo_remitente && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.correo_remitente)) {
+      setEmailError('formato inválido de correo');
       return false;
     }
     setEmailError(null);
@@ -158,15 +135,11 @@ const EmisorFormModal: React.FC<Props> = (props) => {
 
   // Pure validation used for enabling/disabling the submit button (no state side-effects)
   const isFormValid = () => {
-    if (!v.ruc || !v.ruc.toString().trim()) return false;
-    if (!v.razon_social || !v.razon_social.toString().trim()) return false;
-    if (!v.direccion_matriz || !v.direccion_matriz.toString().trim()) return false;
-    if (!v.codigo_artesano || !v.codigo_artesano.toString().trim()) return false;
-    if (!v.correo_remitente || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.correo_remitente)) return false;
-    if (!v.regimen_tributario) return false;
-    if (rucError) return false;
+    if (!v.ruc || !v.ruc.trim()) return false;
+    if (!v.razon_social || !v.razon_social.trim()) return false;
+    if (v.correo_remitente && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.correo_remitente)) return false;
     if (logoFile && !/\.jpe?g$|\.png$/i.test(logoFile.name)) return false;
-    if (!editingId && !logoFile) return false;
+    if (rucError) return false;
     return true;
   };
 
@@ -257,21 +230,24 @@ const EmisorFormModal: React.FC<Props> = (props) => {
         <div className="mf-body scrollable">
           <section>
             <h3>Datos del RUC</h3>
-              <label>RUC{isMissing('ruc') && <span className="req">*</span>}
-                  <input className={fieldErrors.ruc ? 'invalid' : ''} value={v.ruc} onChange={e => onChange('ruc', e.target.value)} disabled={!localRucEditable} />
+              <label>RUC
+                  <input value={v.ruc} onChange={e => onChange('ruc', e.target.value)} disabled={!localRucEditable} />
                   {!localRucEditable && <small style={{color:'#666'}}>El RUC no puede ser modificado porque existen comprobantes autorizados.</small>}
-                  {(rucError || fieldErrors.ruc) && <span className="err">{fieldErrors.ruc ?? rucError}</span>}
+                  {rucError && <span className="err">{rucError}</span>}
               </label>
-            <label>Razón Social{isMissing('razon_social') && <span className="req">*</span>}
-              <input className={fieldErrors.razon_social ? 'invalid' : ''} value={v.razon_social} onChange={e => onChange('razon_social', e.target.value)} />
-              {fieldErrors.razon_social && <span className="err">{fieldErrors.razon_social}</span>}
+            <label>Razón Social
+              <input value={v.razon_social} onChange={e => onChange('razon_social', e.target.value)} />
             </label>
-            <label>Nombre comercial
-              <input value={v.nombre_comercial || ''} onChange={e => onChange('nombre_comercial', e.target.value)} />
+            <label>Nombre comercial {!editingId && <span className="required">*</span>}
+              <input 
+                value={v.nombre_comercial || ''} 
+                onChange={e => onChange('nombre_comercial', e.target.value)}
+                className={!editingId && fieldErrors.nombre_comercial && !v.nombre_comercial ? 'error-input' : ''}
+              />
+              {!editingId && fieldErrors.nombre_comercial && !v.nombre_comercial && <span className="err">{fieldErrors.nombre_comercial}</span>}
             </label>
-            <label>Dirección Matriz{isMissing('direccion_matriz') && <span className="req">*</span>}
-              <input className={fieldErrors.direccion_matriz ? 'invalid' : ''} value={v.direccion_matriz || ''} onChange={e => onChange('direccion_matriz', e.target.value)} />
-              {fieldErrors.direccion_matriz && <span className="err">{fieldErrors.direccion_matriz}</span>}
+            <label>Dirección Matriz
+              <input value={v.direccion_matriz || ''} onChange={e => onChange('direccion_matriz', e.target.value)} />
             </label>
           </section>
 
@@ -300,21 +276,26 @@ const EmisorFormModal: React.FC<Props> = (props) => {
               {['NATURAL','JURIDICA'].map(opt => (
                 <label key={opt}><input type="radio" checked={v.tipo_persona===opt} onChange={()=>onChange('tipo_persona', opt as any)} /> {opt}</label>
               ))}
-              <label style={{marginLeft:12}}>Código Artesano{isMissing('codigo_artesano') && <span className="req">*</span>}
-                <input className={fieldErrors.codigo_artesano ? 'invalid' : ''} value={v.codigo_artesano || ''} onChange={e => onChange('codigo_artesano', e.target.value)} />
-                {fieldErrors.codigo_artesano && <span className="err">{fieldErrors.codigo_artesano}</span>}
+              <label style={{marginLeft:12}}>Código Artesano
+                <input value={v.codigo_artesano || ''} onChange={e => onChange('codigo_artesano', e.target.value)} />
               </label>
-              {fieldErrors.tipo_persona && <span className="err">{fieldErrors.tipo_persona}</span>}
             </div>
+            <label>Código Artesano
+              <input 
+                value={v.codigo_artesano || ''} 
+                onChange={e => onChange('codigo_artesano', e.target.value)}
+                placeholder="Opcional - Ej: PICHINCHA-17-1234-2024"
+              />
+            </label>
           </section>
 
           <section>
             <h3>Datos de configuración</h3>
-            <label>Correo Remitente{isMissing('correo_remitente') && <span className="req">*</span>}
-              <input className={fieldErrors.correo_remitente ? 'invalid' : ''} value={v.correo_remitente || ''} onChange={e => onChange('correo_remitente', e.target.value)} />
-              {(emailError || fieldErrors.correo_remitente) && <span className="err">{fieldErrors.correo_remitente ?? emailError}</span>}
+            <label>Correo Remitente
+              <input value={v.correo_remitente || ''} onChange={e => onChange('correo_remitente', e.target.value)} />
+              {emailError && <span className="err">{emailError}</span>}
             </label>
-            <div className="row">
+            <div className="row config-row">
               <label>Estado
                 <input type="checkbox" checked={v.estado==='ACTIVO'} onChange={e => onChange('estado', e.target.checked?'ACTIVO':'INACTIVO')} />
               </label>
@@ -336,19 +317,9 @@ const EmisorFormModal: React.FC<Props> = (props) => {
             </div>
 
             <label>Logo
-              <input type="text" readOnly value={logoFile?.name || ''} placeholder="logo.jpg" className={fieldErrors.logo ? 'invalid' : ''} />
-              <input type="file" accept=".jpg,.jpeg,.png" onChange={e => {
-                const f = e.target.files?.[0] || null;
-                setLogoFile(f);
-                setFieldErrors(prev => {
-                  if (!prev) return prev;
-                  const copy = { ...prev } as Record<string,string>;
-                  delete copy.logo;
-                  return copy;
-                });
-                setLogoError(null);
-              }} />
-              {(logoError || fieldErrors.logo) && <span className="err">{fieldErrors.logo ?? logoError}</span>}
+              <input type="text" readOnly value={logoFile?.name || ''} placeholder="logo.jpg" />
+              <input type="file" accept=".jpg,.jpeg,.png" onChange={e => setLogoFile(e.target.files?.[0] || null)} />
+              {logoError && <span className="err">{logoError}</span>}
             </label>
           </section>
         </div>
@@ -386,19 +357,29 @@ const EmisorFormModal: React.FC<Props> = (props) => {
         section h3{margin:10px 0;font-size:16px}
         label{display:block;margin:8px 0}
         input,select{padding:8px 10px;border:1px solid #d0d7e2;border-radius:6px;width:100%;max-width:100%}
-        input.invalid, select.invalid{border-color:#c53030;box-shadow:0 0 0 4px rgba(197,48,48,0.06)}
         .row{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
         .err{color:#c53030;margin-left:8px;font-size:12px}
         .mf-footer{display:flex;gap:12px;justify-content:flex-end;padding:12px 20px;border-top:1px solid #eceff4}
-        .mf-footer .btn{padding:8px 14px;border-radius:8px;border:1px solid #cbd5e1;cursor:pointer;transition:transform .12s ease,box-shadow .12s ease,opacity .12s}
-        .mf-footer .btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
-        .mf-footer .btn:hover:not(:disabled){transform:translateY(-3px);box-shadow:0 8px 24px rgba(15,23,42,0.12)}
-        .mf-footer .btn:active:not(:disabled){transform:translateY(0) scale(.985)}
-        .mf-footer .btn-primary{background:#1e3a8a;color:#fff;border-color:#16307a}
-        .mf-footer .btn-secondary{background:#fff;color:#0f172a;border-color:#cbd5e1}
+        .mf-footer button{padding:8px 14px;border-radius:8px;border:1px solid #cbd5e1;background:#1e3a8a;color:#fff}
+        .mf-footer button:first-child{background:#fff;color:#0f172a;border-color:#cbd5e1}
         .mf-loading-overlay{position:absolute;inset:0;background:rgba(255,255,255,0.6);display:flex;align-items:center;justify-content:center;border-radius:12px}
         .mf-spinner{width:48px;height:48px;border-radius:50%;border:6px solid rgba(0,0,0,0.08);border-top-color:#1e3a8a;animation:spin 1s linear infinite}
         @keyframes spin{to{transform:rotate(360deg)}}
+  /* File input personalizado */
+  /* Alinear a la izquierda y truncar nombre de archivo si es muy largo */
+  .file-wrapper{display:flex;gap:12px;align-items:center;justify-content:flex-start;flex-wrap:wrap;max-width:100%;margin:6px 0}
+        .file-btn{padding:8px 12px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;color:#0f172a;cursor:pointer}
+    .file-name{font-size:0.95rem;color:#374151;max-width:360px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        @media (max-width:480px){
+          .row{grid-template-columns:repeat(1,1fr)}
+          input,select,textarea{max-width:100%}
+          .mf-modal{width:calc(100vw - 32px)}
+          /* En pantallas pequeñas, labels pasan a bloque para evitar columnas muy estrechas */
+          label{grid-template-columns:1fr;align-items:flex-start}
+          label > input,label > select,label > textarea,label > .file-wrapper{grid-column:1;width:100%}
+          /* Mover el asterisco junto al label en móvil */
+          label > .required{grid-column:1;justify-self:flex-start;margin-left:6px}
+        }
       `}</style>
     </div>
   );

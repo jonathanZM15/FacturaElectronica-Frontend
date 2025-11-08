@@ -32,4 +32,9 @@ export interface Emisor {
   ultimo_comprobante?: string;
   created_at?: string;
   updated_at?: string;
+  created_by?: number;
+  updated_by?: number;
+  created_by_name?: string;
+  updated_by_name?: string;
+  ruc_editable?: boolean;
 }
