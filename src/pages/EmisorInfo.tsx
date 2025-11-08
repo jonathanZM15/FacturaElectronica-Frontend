@@ -2,6 +2,8 @@ import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { emisoresApi } from '../services/emisoresApi';
 import EmisorFormModal from './EmisorFormModal';
+import EstablishmentFormModal from './EstablishmentFormModal';
+import { establecimientosApi } from '../services/establecimientosApi';
 import { useNotification } from '../contexts/NotificationContext';
 
 const EmisorInfo: React.FC = () => {
@@ -12,6 +14,8 @@ const EmisorInfo: React.FC = () => {
   const [company, setCompany] = React.useState<any | null>(null);
   const [tab, setTab] = React.useState<'emisor'|'establecimientos'|'usuarios'|'planes'>('emisor');
   const [openEdit, setOpenEdit] = React.useState(false);
+  const [openNewEst, setOpenNewEst] = React.useState(false);
+  const [establecimientos, setEstablecimientos] = React.useState<any[]>([]);
   const [rucEditable, setRucEditable] = React.useState(true);
 
   // Delete flow states
@@ -36,7 +40,19 @@ const EmisorInfo: React.FC = () => {
     } finally { setLoading(false); }
   }, [id]);
 
+  const loadEstablecimientos = React.useCallback(async (companyId?: number | string) => {
+    if (!companyId) return;
+    try {
+      const r = await establecimientosApi.list(companyId);
+      const data = r.data?.data ?? r.data ?? [];
+      setEstablecimientos(Array.isArray(data) ? data : []);
+    } catch (e) {
+      setEstablecimientos([]);
+    }
+  }, []);
+
   React.useEffect(() => { load(); }, [load]);
+  React.useEffect(() => { if (company?.id) loadEstablecimientos(company.id); }, [company, loadEstablecimientos]);
 
   if (!id) return <div>Emisor no especificado</div>;
 
@@ -152,7 +168,42 @@ const EmisorInfo: React.FC = () => {
           )}
 
           {tab === 'establecimientos' && (
-            <div>Listado de establecimientos (pendiente integrar)</div>
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <h4 style={{ margin: 0 }}>Establecimientos</h4>
+                <div>
+                  <button onClick={() => setOpenNewEst(true)} style={{ padding: '8px 12px', borderRadius: 8, background: '#1e40af', color: '#fff', border: 'none', cursor: 'pointer' }}>Nuevo</button>
+                </div>
+              </div>
+
+              {establecimientos.length === 0 ? (
+                <div style={{ padding: 18, border: '1px dashed #e5e7eb', borderRadius: 8 }}>No hay establecimientos registrados.</div>
+              ) : (
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {establecimientos.map((est) => (
+                    <div key={est.id} style={{ border: '1px solid #e6e6e6', padding: 12, borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontWeight: 800 }}>{est.nombre} <small style={{ marginLeft: 8, fontWeight: 600 }}>{est.codigo}</small></div>
+                        <div style={{ color: '#6b7280' }}>{est.direccion}</div>
+                      </div>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button onClick={() => { /* TODO: open edit modal */ }} style={{ padding: '6px 10px', borderRadius: 8 }}>Editar</button>
+                        <button onClick={async () => {
+                          if (!window.confirm('Eliminar establecimiento?')) return;
+                          try {
+                            await establecimientosApi.delete(company?.id, est.id);
+                            show({ title: 'Éxito', message: 'Establecimiento eliminado', type: 'success' });
+                            loadEstablecimientos(company?.id);
+                          } catch (err:any) {
+                            show({ title: 'Error', message: err?.response?.data?.message || 'No se pudo eliminar', type: 'error' });
+                          }
+                        }} style={{ padding: '6px 10px', borderRadius: 8, background: '#fee2e2', border: '1px solid #fecaca' }}>Eliminar</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
 
           {tab === 'usuarios' && (
@@ -176,6 +227,17 @@ const EmisorInfo: React.FC = () => {
           setCompany(u);
           setOpenEdit(false);
           show({ title: 'Éxito', message: 'Emisor actualizado', type: 'success' });
+        }}
+      />
+
+      <EstablishmentFormModal
+        open={openNewEst}
+        onClose={() => setOpenNewEst(false)}
+        companyId={company?.id}
+        onCreated={(est) => {
+          show({ title: 'Éxito', message: 'Establecimiento registrado', type: 'success' });
+          setOpenNewEst(false);
+          loadEstablecimientos(company?.id);
         }}
       />
 
