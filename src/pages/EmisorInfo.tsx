@@ -2,6 +2,7 @@ import React from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { emisoresApi } from '../services/emisoresApi';
 import EmisorFormModal from './EmisorFormModal';
+import EstablishmentFormModal from './EstablishmentFormModal';
 import { establecimientosApi } from '../services/establecimientosApi';
 import { useNotification } from '../contexts/NotificationContext';
 
@@ -13,6 +14,8 @@ const EmisorInfo: React.FC = () => {
   const [company, setCompany] = React.useState<any | null>(null);
   const [tab, setTab] = React.useState<'emisor'|'establecimientos'|'usuarios'|'planes'>('emisor');
   const [openEdit, setOpenEdit] = React.useState(false);
+  const [openNewEst, setOpenNewEst] = React.useState(false);
+  const [editEst, setEditEst] = React.useState<any | null>(null);
   const [establecimientos, setEstablecimientos] = React.useState<any[]>([]);
   const [rucEditable, setRucEditable] = React.useState(true);
 
@@ -189,6 +192,9 @@ const EmisorInfo: React.FC = () => {
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                 <h4 style={{ margin: 0 }}>Establecimientos</h4>
+                <div>
+                  <button onClick={() => { setEditEst(null); setOpenNewEst(true); }} style={{ padding: '8px 12px', borderRadius: 8, background: '#1e40af', color: '#fff', border: 'none', cursor: 'pointer' }}>Nuevo</button>
+                </div>
               </div>
 
               <div className="tabla-wrapper estab-table">
@@ -279,6 +285,17 @@ const EmisorInfo: React.FC = () => {
           setCompany(u);
           setOpenEdit(false);
           show({ title: 'Éxito', message: 'Emisor actualizado', type: 'success' });
+        }}
+      />
+
+      <EstablishmentFormModal
+        open={openNewEst}
+        onClose={() => setOpenNewEst(false)}
+        companyId={company?.id}
+        onCreated={(est) => {
+          show({ title: 'Éxito', message: 'Establecimiento registrado', type: 'success' });
+          setOpenNewEst(false);
+          loadEstablecimientos(company?.id);
         }}
       />
 
