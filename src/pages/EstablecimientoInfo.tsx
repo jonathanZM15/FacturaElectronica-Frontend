@@ -2,7 +2,6 @@ import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { establecimientosApi } from '../services/establecimientosApi';
 import { emisoresApi } from '../services/emisoresApi';
-import EstablishmentFormModal from './EstablishmentFormModal';
 import { useNotification } from '../contexts/NotificationContext';
 
 const EstablecimientoInfo: React.FC = () => {
@@ -12,7 +11,6 @@ const EstablecimientoInfo: React.FC = () => {
   const [loading, setLoading] = React.useState(false);
   const [est, setEst] = React.useState<any | null>(null);
   const [company, setCompany] = React.useState<any | null>(null);
-  const [openEdit, setOpenEdit] = React.useState(false);
   const [actionsOpen, setActionsOpen] = React.useState(false);
 
   React.useEffect(() => {
@@ -67,7 +65,7 @@ const EstablecimientoInfo: React.FC = () => {
             </button>
             {actionsOpen && (
               <div role="menu" style={{ position: 'absolute', right: 0, top: '110%', background: '#fff', border: '1px solid #ddd', boxShadow: '0 6px 18px rgba(0,0,0,.08)', borderRadius: 6, zIndex: 50 }}>
-                <button role="menuitem" onClick={() => { setOpenEdit(true); setActionsOpen(false); }} className="menu-item" style={{ display: 'block', padding: 8, width: 220, textAlign: 'left', background: 'transparent', border: 'none', cursor: 'pointer' }}>✏️ Editar establecimiento</button>
+                <button role="menuitem" onClick={() => { setActionsOpen(false); navigate(`/emisores/${id}/establecimientos/${estId}/edit`); }} className="menu-item" style={{ display: 'block', padding: 8, width: 220, textAlign: 'left', background: 'transparent', border: 'none', cursor: 'pointer' }}>✏️ Editar establecimiento</button>
                 <button role="menuitem" onClick={() => { setActionsOpen(false); handleDeleteEst(); }} className="menu-item" style={{ display: 'block', padding: 8, width: 220, textAlign: 'left', background: 'transparent', border: 'none', cursor: 'pointer' }}>🗑️ Eliminar establecimiento</button>
               </div>
             )}
@@ -174,16 +172,6 @@ const EstablecimientoInfo: React.FC = () => {
           }
         `}</style>
       </div>
-
-      {openEdit && (
-        <EstablishmentFormModal
-          open={openEdit}
-          companyId={id!}
-          editingEst={est}
-          onClose={() => { setOpenEdit(false); }}
-          onUpdated={(updated:any) => { setEst(updated); setOpenEdit(false); }}
-        />
-      )}
     </div>
   );
 };

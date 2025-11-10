@@ -13,6 +13,7 @@ import AppLayout from './layouts/AppLayout';
 import Emisores from './pages/Emisores';
 import EmisorInfo from './pages/EmisorInfo';
 import EstablecimientoInfo from './pages/EstablecimientoInfo';
+import EstablecimientoEditInfo from './pages/EstablecimientoEditInfo';
 import Blank from './pages/Blank';
 
 const ChangePasswordAuthed: React.FC = () => {
@@ -48,6 +49,7 @@ function App() {
                 <Route path="/emisores" element={<Emisores />} />
                 <Route path="/emisores/:id" element={<EmisorInfo />} />
                 <Route path="/emisores/:id/establecimientos/:estId" element={<EstablecimientoInfo />} />
+                <Route path="/emisores/:id/establecimientos/:estId/edit" element={<EstablecimientoEditInfo />} />
                 {/* Compatibilidad: redirige /Navbar a /emisores */}
                 <Route path="/Navbar" element={<Navigate to="/emisores" replace />} />
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import { establecimientosApi } from '../services/establecimientosApi';
 import { Establecimiento } from '../types/establecimiento';
+import ConfirmDialog from './ConfirmDialog';
 
 type Props = {
   open: boolean;
@@ -8,6 +9,7 @@ type Props = {
   companyId: number | string;
   onCreated?: (e: Establecimiento) => void;
   editingEst?: Establecimiento | null;
+  codigoEditable?: boolean;
   onUpdated?: (e: Establecimiento) => void;
 };
 
@@ -21,35 +23,56 @@ const initial: Establecimiento = {
   telefono: '',
 };
 
-const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onCreated, editingEst, onUpdated }) => {
+const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onCreated, editingEst, codigoEditable, onUpdated }) => {
   const [v, setV] = React.useState<Establecimiento>(initial);
   const [logoFile, setLogoFile] = React.useState<File | null>(null);
   const [fieldErrors, setFieldErrors] = React.useState<Record<string,string>>({});
   const [checkingCode, setCheckingCode] = React.useState(false);
   const [codeDuplicateError, setCodeDuplicateError] = React.useState<string | null>(null);
+  const [loading, setLoading] = React.useState(false);
+  const [showConfirm, setShowConfirm] = React.useState(false);
+  const [localCodigoEditable, setLocalCodigoEditable] = React.useState<boolean>(true);
 
   React.useEffect(() => {
     if (open) {
       if (editingEst) {
         setV({ ...initial, ...editingEst });
+        setLocalCodigoEditable(codigoEditable ?? true);
       } else {
         setV(initial);
+        setLocalCodigoEditable(true);
       }
       setLogoFile(null);
       setFieldErrors({});
       setCodeDuplicateError(null);
     }
-  }, [open, editingEst]);
+  }, [open, editingEst, codigoEditable]);
 
   const onChange = (k: keyof Establecimiento, value: any) => {
     setV(prev => ({ ...prev, [k]: value }));
-    setFieldErrors(prev => { const copy = { ...prev }; delete copy[k as string]; return copy; });
+    const ks = k as string;
+    setFieldErrors(prev => { 
+      if (!prev || !(ks in prev)) return prev;
+      const copy = { ...prev }; 
+      delete copy[ks]; 
+      return copy; 
+    });
     if (k === 'codigo') setCodeDuplicateError(null);
   };
 
-  // check code uniqueness (debounce)
+  // Check code uniqueness (debounce) - solo si estamos creando o si el código cambió
   React.useEffect(() => {
-    if (!v.codigo || !v.codigo.trim()) return;
+    if (!v.codigo || !v.codigo.trim()) {
+      setCodeDuplicateError(null);
+      return;
+    }
+    
+    // Si estamos editando y el código no cambió, no verificar
+    if (editingEst && v.codigo === editingEst.codigo) {
+      setCodeDuplicateError(null);
+      return;
+    }
+
     const t = setTimeout(async () => {
       setCheckingCode(true);
       try {
@@ -61,7 +84,7 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
       } finally { setCheckingCode(false); }
     }, 600);
     return () => clearTimeout(t);
-  }, [v.codigo, companyId]);
+  }, [v.codigo, companyId, editingEst]);
 
   const isMissing = (key: string) => {
     switch (key) {
@@ -83,8 +106,19 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
     return Object.keys(e).length === 0;
   };
 
-  const submit = async () => {
+  const isFormValid = () => {
+    if (!v.codigo || !v.codigo.trim()) return false;
+    if (!v.nombre || !v.nombre.trim()) return false;
+    if (!v.direccion || !v.direccion.trim()) return false;
+    if (v.correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.correo)) return false;
+    if (codeDuplicateError || checkingCode) return false;
+    if (logoFile && !/\.jpe?g$|\.png$/i.test(logoFile.name)) return false;
+    return true;
+  };
+
+  const doSubmit = async () => {
     if (!validate()) return;
+    setLoading(true);
     try {
       if (editingEst && editingEst.id) {
         const res = await establecimientosApi.update(companyId, editingEst.id, { ...v, logoFile });
@@ -100,21 +134,47 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
       const apiMsg = err?.response?.data;
       if (apiMsg?.errors) setFieldErrors(Object.fromEntries(Object.entries(apiMsg.errors).map(([k,v])=>[k, (v as string[])[0]])));
       else alert(apiMsg?.message || 'No se pudo procesar la solicitud');
+    } finally {
+      setLoading(false);
+      setShowConfirm(false);
     }
   };
+
+  const submit = () => {
+    if (!validate()) return;
+    if (editingEst) {
+      // Pedir confirmación al editar
+      setShowConfirm(true);
+    } else {
+      doSubmit();
+    }
+  };
+
+  const requiredKeys = React.useMemo(() => new Set<string>([
+    'codigo','nombre','direccion','estado'
+  ]), []);
 
   if (!open) return null;
 
   return (
     <div className="mf-backdrop" onClick={onClose}>
       <div className="mf-modal" onClick={(e)=>e.stopPropagation()} style={{ width: 'min(720px, 92vw)' }}>
-  <div className="mf-header"><h2>{editingEst ? 'Editar establecimiento' : 'Registro de nuevo establecimiento'}</h2></div>
+        <div className="mf-header">
+          <h2>{editingEst ? 'Editar establecimiento' : 'Registro de nuevo establecimiento'}</h2>
+        </div>
+
         <div className="mf-body scrollable">
           {/* Top row: compact Código on left, Estado switch on right */}
           <div className="top-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <label style={{ marginBottom: 6 }}>Código {isMissing('codigo') && <span className="required">*</span>}</label>
-              <input className={isMissing('codigo') || !!fieldErrors.codigo ? 'error-input codigo-input' : 'codigo-input'} value={v.codigo || ''} onChange={e=>onChange('codigo', e.target.value)} />
+              <label style={{ marginBottom: 6 }}>Código {requiredKeys.has('codigo') && <span className="required">*</span>}</label>
+              <input 
+                className={isMissing('codigo') || !!fieldErrors.codigo ? 'error-input codigo-input' : 'codigo-input'} 
+                value={v.codigo || ''} 
+                onChange={e=>onChange('codigo', e.target.value)}
+                disabled={!!(editingEst && !localCodigoEditable)}
+              />
+              {editingEst && !localCodigoEditable && <small style={{color:'#666'}}>El código no puede ser modificado porque existen comprobantes autorizados.</small>}
               {checkingCode && <small>Verificando código…</small>}
               {fieldErrors.codigo && <span className="err">{fieldErrors.codigo}</span>}
             </div>
@@ -131,7 +191,7 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
             </div>
           </div>
 
-          <label>Nombre {isMissing('nombre') && <span className="required">*</span>}
+          <label>Nombre {requiredKeys.has('nombre') && <span className="required">*</span>}
             <input value={v.nombre || ''} onChange={e=>onChange('nombre', e.target.value)} className={isMissing('nombre') ? 'error-input' : ''} />
             {fieldErrors.nombre && <span className="err">{fieldErrors.nombre}</span>}
           </label>
@@ -140,7 +200,7 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
             <input value={v.nombre_comercial || ''} onChange={e=>onChange('nombre_comercial', e.target.value)} />
           </label>
 
-          <label>Dirección {isMissing('direccion') && <span className="required">*</span>}
+          <label>Dirección {requiredKeys.has('direccion') && <span className="required">*</span>}
             <input value={v.direccion || ''} onChange={e=>onChange('direccion', e.target.value)} className={isMissing('direccion') ? 'error-input' : ''} />
             {fieldErrors.direccion && <span className="err">{fieldErrors.direccion}</span>}
           </label>
@@ -177,9 +237,15 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
         </div>
 
         <div className="mf-footer">
-          <button className="btn btn-secondary" onClick={onClose}>CANCELAR</button>
-          <button className="btn btn-primary" onClick={submit}>{editingEst ? 'GUARDAR' : 'REGISTRAR'}</button>
+          <button className="btn btn-secondary" onClick={onClose} disabled={loading}>CANCELAR</button>
+          <button className="btn btn-primary" onClick={submit} disabled={loading || !isFormValid()}>{editingEst ? 'GUARDAR' : 'REGISTRAR'}</button>
         </div>
+
+        {loading && (
+          <div className="mf-loading-overlay" aria-hidden>
+            <div className="mf-spinner" />
+          </div>
+        )}
 
         <style>{`
           .mf-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:1000}
@@ -204,11 +270,31 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
           .switch input:checked + .slider{ background:#34d399 }
           .switch input:checked + .slider:before{ transform: translateX(20px) }
           .mf-footer{display:flex;gap:12px;justify-content:flex-end;padding:12px 20px;border-top:1px solid #eceff4}
-          .mf-footer button{padding:8px 14px;border-radius:8px;border:1px solid #cbd5e1;background:#1e3a8a;color:#fff;transition:all .12s ease}
+          .mf-footer button{padding:8px 14px;border-radius:8px;border:1px solid #cbd5e1;background:#1e3a8a;color:#fff;transition:all .12s ease;cursor:pointer}
           .mf-footer button:first-child{background:#fff;color:#0f172a;border-color:#cbd5e1}
           .mf-footer button:hover{transform:translateY(-3px);box-shadow:0 6px 14px rgba(16,24,40,0.08)}
+          .mf-footer button:active{transform:translateY(-1px);opacity:.95}
+          .mf-footer button.btn-primary:hover{background:#15306b}
+          .mf-footer button.btn-primary:active{background:#122a5f}
+          .mf-footer button.btn-secondary:hover{background:#f3f4f6}
+          .mf-footer button.btn-secondary:active{background:#e6e9ef}
+          .mf-footer button:disabled{opacity:0.6;cursor:not-allowed;transform:none}
+          .mf-loading-overlay{position:absolute;inset:0;background:rgba(255,255,255,0.6);display:flex;align-items:center;justify-content:center;border-radius:12px}
+          .mf-spinner{width:48px;height:48px;border-radius:50%;border:6px solid rgba(0,0,0,0.08);border-top-color:#1e3a8a;animation:spin 1s linear infinite}
+          @keyframes spin{to{transform:rotate(360deg)}}
         `}</style>
       </div>
+
+      <ConfirmDialog
+        open={showConfirm}
+        title="Guardar cambios"
+        message="¿Desea guardar los cambios del establecimiento?"
+        cancelText="CANCELAR"
+        confirmText="CONFIRMAR"
+        onCancel={() => setShowConfirm(false)}
+        onConfirm={() => doSubmit()}
+        modalStyle={{ width: 'min(520px, 86vw)' }}
+      />
     </div>
   );
 };
