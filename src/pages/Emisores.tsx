@@ -105,8 +105,30 @@ const Emisores: React.FC = () => {
   const [data, setData] = React.useState<Emisor[]>([]);
   const { show } = useNotification();
   const [loading, setLoading] = React.useState(false);
+  // Dynamic filtering
+  type FilterField = 'ruc'|'razon_social'|'estado'|'tipo_plan'|'cantidad_creados_gt'|'cantidad_restantes_lt'|'nombre_comercial'|'direccion_matriz'|'correo_remitente'|'regimen_tributario'|'tipo_persona'|'ambiente'|'tipo_emision'|'registrador';
+  const [activeFilter, setActiveFilter] = React.useState<FilterField | null>(null);
+  const [filterValue, setFilterValue] = React.useState<string>('');
   const [estado, setEstado] = React.useState('ACTIVO');
   const [q, setQ] = React.useState('');
+
+  // Pretty labels to show consistent "Buscando por ..." caption like the Estado filter design
+  const filterLabels: Record<FilterField, string> = {
+    ruc: 'RUC',
+    razon_social: 'Razón Social',
+    estado: 'Estado',
+    tipo_plan: 'Tipo de Plan',
+    cantidad_creados_gt: 'Cantidad de Comprobantes Creados (>)',
+    cantidad_restantes_lt: 'Cantidad de Comprobantes Restantes (<)',
+    nombre_comercial: 'Nombre Comercial',
+    direccion_matriz: 'Dirección Matriz',
+    correo_remitente: 'Correo Remitente',
+    regimen_tributario: 'Régimen Tributario',
+    tipo_persona: 'Tipo de Persona',
+    ambiente: 'Ambiente',
+    tipo_emision: 'Tipo de Emisión',
+    registrador: 'Nombre del registrador',
+  };
   const [desde, setDesde] = React.useState<string>('');
   const [hasta, setHasta] = React.useState<string>('');
   const [error, setError] = React.useState<string | null>(null);
@@ -166,12 +188,19 @@ const Emisores: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await emisoresApi.list({
-        estado: estado || undefined,
+      const params: Record<string, any> = {
         q: q || undefined,
         fecha_inicio: desde || undefined,
         fecha_fin: hasta || undefined,
-      });
+        page: 1,
+        per_page: 200,
+      };
+      if (activeFilter && filterValue.trim()) {
+        params[activeFilter] = filterValue.trim();
+      } else if (!activeFilter && estado) {
+        params.estado = estado;
+      }
+      const res = await emisoresApi.list(params);
       const emisores = res.data?.data ?? res.data ?? [];
       console.log('Emisores recibidos:', emisores);
       emisores.forEach((e: any) => {
@@ -179,19 +208,35 @@ const Emisores: React.FC = () => {
           console.log(`Emisor ${e.ruc} - Logo URL:`, e.logo_url);
         }
       });
-      setData(emisores);
-      setTotalItems(emisores.length);
+      // Client-side filter for tipo_plan if requested (backend doesn't accept this filter)
+      let list = emisores as Emisor[];
+      if (activeFilter === 'tipo_plan' && filterValue.trim()) {
+        const term = filterValue.trim().toLowerCase();
+        list = list.filter((e) => (e as any).tipo_plan && String((e as any).tipo_plan).toLowerCase().includes(term));
+      }
+  setData(list);
+  setTotalItems(list.length);
       setCurrentPage(1); // Reset to first page when filters change
     } catch (e: any) {
       setError(e?.response?.data?.message || 'No se pudo cargar emisores');
     } finally {
       setLoading(false);
     }
-  }, [estado, q, desde, hasta]);
+  }, [activeFilter, filterValue, estado, q, desde, hasta]);
 
   React.useEffect(() => {
     load();
   }, [load]);
+
+  // Debounce reload when typing filter
+  React.useEffect(() => {
+    const t = setTimeout(() => {
+      if (activeFilter !== null) {
+        load();
+      }
+    }, 400);
+    return () => clearTimeout(t);
+  }, [filterValue, activeFilter]);
 
   // Sorting function
   const handleSort = (column: keyof Emisor | 'logo') => {
@@ -294,17 +339,84 @@ const Emisores: React.FC = () => {
             )}
           </div>
 
-          {/* Estado select with search icon and caption */}
+          {/* Dynamic filter input (activated by clicking column headers) */}
           <div className="estado-search">
             <div className="input-wrap">
-              <select value={estado} onChange={(e) => setEstado(e.target.value)}>
-                <option value="">Todos</option>
-                <option value="ACTIVO">ACTIVO</option>
-                <option value="INACTIVO">INACTIVO</option>
-              </select>
+              {activeFilter === 'estado' ? (
+                <select value={filterValue} onChange={(e) => setFilterValue(e.target.value)}>
+                  <option value="">Todos</option>
+                  <option value="ACTIVO">ACTIVO</option>
+                  <option value="INACTIVO">INACTIVO</option>
+                </select>
+              ) : activeFilter === 'tipo_plan' ? (
+                <select value={filterValue} onChange={(e) => setFilterValue(e.target.value)}>
+                  <option value="">Todos</option>
+                  <option value="BASICO">Básico</option>
+                  <option value="ESTANDAR">Estándar</option>
+                  <option value="PREMIUM">Premium</option>
+                </select>
+              ) : activeFilter === 'regimen_tributario' ? (
+                <select value={filterValue} onChange={(e) => setFilterValue(e.target.value)}>
+                  <option value="">Todos</option>
+                  <option value="GENERAL">GENERAL</option>
+                  <option value="RIMPE_POPULAR">RIMPE_POPULAR</option>
+                  <option value="RIMPE_EMPRENDEDOR">RIMPE_EMPRENDEDOR</option>
+                  <option value="MICRO_EMPRESA">MICRO_EMPRESA</option>
+                </select>
+              ) : activeFilter === 'tipo_persona' ? (
+                <select value={filterValue} onChange={(e) => setFilterValue(e.target.value)}>
+                  <option value="">Todos</option>
+                  <option value="NATURAL">NATURAL</option>
+                  <option value="JURIDICA">JURIDICA</option>
+                </select>
+              ) : activeFilter === 'ambiente' ? (
+                <select value={filterValue} onChange={(e) => setFilterValue(e.target.value)}>
+                  <option value="">Todos</option>
+                  <option value="PRODUCCION">PRODUCCION</option>
+                  <option value="PRUEBAS">PRUEBAS</option>
+                </select>
+              ) : activeFilter === 'tipo_emision' ? (
+                <select value={filterValue} onChange={(e) => setFilterValue(e.target.value)}>
+                  <option value="">Todos</option>
+                  <option value="NORMAL">NORMAL</option>
+                  <option value="INDISPONIBILIDAD">INDISPONIBILIDAD</option>
+                </select>
+              ) : activeFilter === 'cantidad_creados_gt' || activeFilter === 'cantidad_restantes_lt' ? (
+                <input
+                  type="number"
+                  placeholder={activeFilter === 'cantidad_creados_gt' ? 'Mayor que…' : 'Menor que…'}
+                  value={filterValue}
+                  onChange={(e) => setFilterValue(e.target.value)}
+                />
+              ) : (
+                <input
+                  type="text"
+                  placeholder={activeFilter ? `Filtrar por ${filterLabels[activeFilter]}` : 'Haz clic en un encabezado para filtrar'}
+                  value={filterValue}
+                  onChange={(e) => setFilterValue(e.target.value)}
+                />
+              )}
               <span className="icon">🔍</span>
+              {activeFilter && filterValue && (
+                <button
+                  type="button"
+                  className="clear-filter-btn"
+                  onClick={() => setFilterValue('')}
+                  aria-label="Limpiar filtro"
+                  title="Limpiar filtro"
+                >×</button>
+              )}
             </div>
-            <small className="caption">Buscando por Estado</small>
+            <small className="caption">
+              {activeFilter ? `Buscando por ${filterLabels[activeFilter]}` : 'Selecciona un encabezado para filtrar'}
+              {activeFilter && filterValue && (
+                <button
+                  type="button"
+                  style={{ marginLeft: 8, background: 'transparent', border: 'none', color: '#1e40af', cursor: 'pointer', fontSize: 12 }}
+                  onClick={() => { setFilterValue(''); }}
+                >Limpiar</button>
+              )}
+            </small>
           </div>
 
           <button className="btn-nuevo" onClick={() => setOpenNew(true)}>Nuevo +</button>
@@ -321,35 +433,59 @@ const Emisores: React.FC = () => {
                 {/* Fijos izquierda */}
                 <th 
                   className="th-sticky sticky-left-1 sortable" 
-                  onClick={() => handleSort('ruc')}
+                  onClick={() => { handleSort('ruc'); setActiveFilter('ruc'); setFilterValue(''); }}
                   style={{ cursor: 'pointer' }}
                 >
-                  RUC {sortBy === 'ruc' ? (sortOrder === 'asc' ? '▲' : '▼') : '▾'}
+                  RUC {sortBy === 'ruc' ? (sortOrder === 'asc' ? '▲' : '▼') : '▾'} {activeFilter === 'ruc' && <span style={{ color: '#ff8c00' }}>●</span>}
                 </th>
                 <th 
                   className="th-sticky sticky-left-2 sortable" 
-                  onClick={() => handleSort('razon_social')}
+                  onClick={() => { handleSort('razon_social'); setActiveFilter('razon_social'); setFilterValue(''); }}
                   style={{ cursor: 'pointer' }}
                 >
-                  Razón Social {sortBy === 'razon_social' ? (sortOrder === 'asc' ? '▲' : '▼') : '▾'}
+                  Razón Social {sortBy === 'razon_social' ? (sortOrder === 'asc' ? '▲' : '▼') : '▾'} {activeFilter === 'razon_social' && <span style={{ color: '#ff8c00' }}>●</span>}
                 </th>
 
                 {/* Columnas dinámicas */}
-                {dynamicColumns.map((c) => (
-                  <th
-                    key={String(c.key)}
-                    className={`th-dyn ${c.key !== 'logo' ? 'sortable' : ''}`}
-                    style={{
-                      minWidth: c.width ?? 200,
-                      width: c.width ?? 200,
-                      cursor: c.key !== 'logo' ? 'pointer' : 'default'
-                    }}
-                    title={c.label}
-                    onClick={() => c.key !== 'logo' && handleSort(c.key)}
-                  >
-                    {c.label} {c.key !== 'logo' && (sortBy === c.key ? (sortOrder === 'asc' ? '▲' : '▼') : '▾')}
-                  </th>
-                ))}
+                {dynamicColumns.map((c) => {
+                  const isFilterable = ['estado','tipo_plan','cantidad_creados','cantidad_restantes','nombre_comercial','direccion_matriz','correo_remitente','regimen_tributario','tipo_persona','ambiente','tipo_emision','created_by_name'].includes(String(c.key));
+                  const keyToFilter: Record<string, FilterField> = {
+                    estado: 'estado',
+                    tipo_plan: 'tipo_plan',
+                    cantidad_creados: 'cantidad_creados_gt',
+                    cantidad_restantes: 'cantidad_restantes_lt',
+                    nombre_comercial: 'nombre_comercial',
+                    direccion_matriz: 'direccion_matriz',
+                    correo_remitente: 'correo_remitente',
+                    regimen_tributario: 'regimen_tributario',
+                    tipo_persona: 'tipo_persona',
+                    ambiente: 'ambiente',
+                    tipo_emision: 'tipo_emision',
+                    created_by_name: 'registrador',
+                  };
+                  const filterField = keyToFilter[String(c.key)];
+                  return (
+                    <th
+                      key={String(c.key)}
+                      className={`th-dyn ${c.key !== 'logo' ? 'sortable' : ''}`}
+                      style={{
+                        minWidth: c.width ?? 200,
+                        width: c.width ?? 200,
+                        cursor: c.key !== 'logo' ? 'pointer' : 'default'
+                      }}
+                      title={c.label}
+                      onClick={() => {
+                        if (c.key !== 'logo') handleSort(c.key as any);
+                        if (isFilterable && filterField) {
+                          setActiveFilter(filterField);
+                          setFilterValue('');
+                        }
+                      }}
+                    >
+                      {c.label} {c.key !== 'logo' && (sortBy === c.key ? (sortOrder === 'asc' ? '▲' : '▼') : '▾')} {activeFilter === filterField && <span style={{ color: '#ff8c00' }}>●</span>}
+                    </th>
+                  );
+                })}
 
                 {/* Fijo derecha */}
                 <th className="th-sticky sticky-right">Acciones</th>

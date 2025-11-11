@@ -2,7 +2,8 @@ import { Emisor } from '../types/emisor';
 import api from './api';
 
 export const emisoresApi = {
-  list(params: { estado?: string; q?: string; fecha_inicio?: string; fecha_fin?: string }) {
+  // Accept flexible params to support dynamic filtering/sorting/pagination
+  list(params: Record<string, any>) {
     return api.get('/api/emisores', { params });
   },
 
