@@ -37,7 +37,7 @@ export const establecimientosApi = {
     }
     return api.put(`/api/emisores/${companyId}/establecimientos/${id}`, payload);
   },
-  delete(companyId: number | string, id: number | string) {
-    return api.delete(`/api/emisores/${companyId}/establecimientos/${id}`);
+  delete(companyId: number | string, id: number | string, password: string) {
+    return api.delete(`/api/emisores/${companyId}/establecimientos/${id}`, { data: { password } });
   }
 };

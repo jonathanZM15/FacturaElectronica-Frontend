@@ -5,6 +5,7 @@ import EmisorFormModal from './EmisorFormModal';
 import EstablishmentFormModal from './EstablishmentFormModal';
 import { establecimientosApi } from '../services/establecimientosApi';
 import { useNotification } from '../contexts/NotificationContext';
+import './Emisores.css';
 
 const EmisorInfo: React.FC = () => {
   const { id } = useParams();
@@ -19,7 +20,7 @@ const EmisorInfo: React.FC = () => {
   const [establecimientos, setEstablecimientos] = React.useState<any[]>([]);
   const [rucEditable, setRucEditable] = React.useState(true);
 
-  // Delete flow states
+  // Delete flow states (emisor)
   const [confirmOpen, setConfirmOpen] = React.useState(false);
   const [passwordOpen, setPasswordOpen] = React.useState(false);
   const [pwd, setPwd] = React.useState('');
@@ -27,6 +28,14 @@ const EmisorInfo: React.FC = () => {
   const [delError, setDelError] = React.useState<string | null>(null);
   const [deleteWithHistory, setDeleteWithHistory] = React.useState(false);
   const [actionsOpen, setActionsOpen] = React.useState(false);
+
+  // Delete flow states (establecimiento)
+  const [deleteEstOpen, setDeleteEstOpen] = React.useState(false);
+  const [deleteEstPasswordOpen, setDeleteEstPasswordOpen] = React.useState(false);
+  const [deleteEstPassword, setDeleteEstPassword] = React.useState('');
+  const [deleteEstError, setDeleteEstError] = React.useState<string | null>(null);
+  const [deleteEstLoading, setDeleteEstLoading] = React.useState(false);
+  const [deletingEstId, setDeletingEstId] = React.useState<number | null>(null);
 
   const load = React.useCallback(async () => {
     if (!id) return;
@@ -55,25 +64,47 @@ const EmisorInfo: React.FC = () => {
   React.useEffect(() => { load(); }, [load]);
   React.useEffect(() => { if (company?.id) loadEstablecimientos(company.id); }, [company, loadEstablecimientos]);
 
-  // Re-sync header with the dynamic body scroll so header cells (Logo/Estado) stay above their columns
-  const bodyScrollRef = React.useRef<HTMLTableCellElement | null>(null);
-  const headInnerRef = React.useRef<HTMLDivElement | null>(null);
+  // Sorting and pagination state for establecimientos
+  type EstCol = 'codigo'|'nombre'|'nombre_comercial'|'direccion'|'estado';
+  const [sortByEst, setSortByEst] = React.useState<EstCol>('codigo');
+  const [sortDirEst, setSortDirEst] = React.useState<'asc'|'desc'>('asc');
+  const [pageEst, setPageEst] = React.useState(1);
+  const [perPageEst, setPerPageEst] = React.useState(10);
 
-  React.useEffect(() => {
-    const bodyEl = bodyScrollRef.current as unknown as HTMLElement | null;
-    const headInner = headInnerRef.current;
-    if (!bodyEl || !headInner) return;
-    const onScroll = () => {
-      try {
-        const x = bodyEl.scrollLeft || 0;
-        headInner.style.transform = `translateX(${-x}px)`;
-      } catch (e) {}
-    };
-    bodyEl.addEventListener('scroll', onScroll, { passive: true });
-    // initial sync
-    onScroll();
-    return () => { bodyEl.removeEventListener('scroll', onScroll); };
-  }, [establecimientos]);
+  const toggleSortEst = (col: EstCol) => {
+    setPageEst(1);
+    if (sortByEst === col) {
+      setSortDirEst((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortByEst(col);
+      setSortDirEst('asc');
+    }
+  };
+
+  const sortedEsts = React.useMemo(() => {
+    const data = [...establecimientos];
+    const dir = sortDirEst === 'asc' ? 1 : -1;
+    data.sort((a, b) => {
+      const va = (a?.[sortByEst] ?? '') as string;
+      const vb = (b?.[sortByEst] ?? '') as string;
+      // Try numeric comparison if both are numbers
+      const na = Number(va); const nb = Number(vb);
+      if (!Number.isNaN(na) && !Number.isNaN(nb)) return (na - nb) * dir;
+      return String(va).localeCompare(String(vb), 'es', { numeric: true, sensitivity: 'base' }) * dir;
+    });
+    return data;
+  }, [establecimientos, sortByEst, sortDirEst]);
+
+  const paginatedEsts = React.useMemo(() => {
+    const start = (pageEst - 1) * perPageEst;
+    return sortedEsts.slice(start, start + perPageEst);
+  }, [sortedEsts, pageEst, perPageEst]);
+
+  const totalEst = establecimientos.length;
+  const startIdx = totalEst === 0 ? 0 : (pageEst - 1) * perPageEst + 1;
+  const endIdx = Math.min(pageEst * perPageEst, totalEst);
+  const lastPageEst = Math.max(1, Math.ceil(Math.max(1, totalEst) / perPageEst));
+  React.useEffect(() => { if (pageEst > lastPageEst) setPageEst(lastPageEst); }, [lastPageEst, pageEst]);
 
   if (!id) return <div>Emisor no especificado</div>;
 
@@ -198,68 +229,79 @@ const EmisorInfo: React.FC = () => {
               </div>
 
               <div className="tabla-wrapper estab-table">
-                <table className="tabla-emisores">
-                  <thead>
-                    <tr>
-                      <th className="th-sticky sticky-left-1" style={{ background: '#2931a8', color: '#fff', border: '2px solid #ff8c00', fontWeight: 600 }}>Codigo ▾</th>
-                      <th className="th-sticky sticky-left-2" style={{ background: '#2931a8', color: '#fff', border: '2px solid #ff8c00', fontWeight: 600 }}>Nombre ▾</th>
-                      <th className="scrollable-columns scrollable-head" style={{ padding: 0, border: 'none' }}>
-                        <div style={{ display: 'flex', transform: 'translateX(0)' }} ref={headInnerRef}>
-                          <div className="th-dyn" style={{ minWidth: 200, padding: '10px', background: '#2931a8', color: '#fff', border: '2px solid #ff8c00', fontWeight: 600 }}>Nombre Comercial ▾</div>
-                          <div className="th-dyn" style={{ minWidth: 300, padding: '10px', background: '#2931a8', color: '#fff', border: '2px solid #ff8c00', fontWeight: 600 }}>Dirección ▾</div>
-                          <div className="th-dyn" style={{ minWidth: 120, padding: '10px', background: '#2931a8', color: '#fff', border: '2px solid #ff8c00', fontWeight: 600 }}>Logo ▾</div>
-                          <div className="th-dyn" style={{ minWidth: 120, padding: '10px', background: '#2931a8', color: '#fff', border: '2px solid #ff8c00', fontWeight: 600 }}>Estado ▾</div>
-                        </div>
-                      </th>
-                      <th className="th-sticky sticky-right" style={{ background: '#939497ff', color: '#fff', border: '2px solid #ff8c00', fontWeight: 600 }}>Acciones</th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {establecimientos.length === 0 ? (
-                      <tr><td className="loading-row" colSpan={4}>No hay establecimientos registrados.</td></tr>
-                    ) : establecimientos.map((est) => (
-                      <tr key={est.id}>
-                        <td className="td-sticky sticky-left-1"><Link className="link-ruc" to={`/emisores/${company?.id}/establecimientos/${est.id}`}>{est.codigo}</Link></td>
-                        <td className="td-sticky sticky-left-2">{est.nombre}</td>
-
-                        <td className="scrollable-columns scrollable-body" style={{ padding: 0, border: 'none' }} ref={(el) => { bodyScrollRef.current = el; }}>
-                          <div style={{ display: 'flex' }}>
-                            <div className="td-dyn" style={{ minWidth: 200, padding: '8px 10px', textAlign: 'center' }}>{est.nombre_comercial || '-'}</div>
-                            <div className="td-dyn" style={{ minWidth: 300, padding: '8px 10px', textAlign: 'center' }}>{est.direccion || '-'}</div>
-                            <div className="td-dyn" style={{ minWidth: 120, padding: '8px 10px', textAlign: 'center' }}>
-                              {(
-                                est.logo_url || est.logo_path || est.logo
-                              ) ? (
-                                <img className="logo-cell" src={est.logo_url || est.logo_path || est.logo} alt="logo" onClick={() => window.open(est.logo_url || est.logo_path || est.logo, '_blank')} />
-                              ) : (
-                                <span className="logo-placeholder">—</span>
-                              )}
-                            </div>
-                            <div className="td-dyn" style={{ minWidth: 120, padding: '8px 10px', textAlign: 'center' }}>
-                              <div style={{ background: est.estado === 'ABIERTO' ? '#bbf7d0' : '#f3f4f6', padding: '6px 8px', borderRadius: 6, color: est.estado === 'ABIERTO' ? '#059669' : '#374151', fontWeight: 700 }}>{est.estado === 'ABIERTO' ? 'Activo' : 'Cerrado'}</div>
-                            </div>
-                          </div>
-                        </td>
-
-                        <td className="td-sticky sticky-right acciones">
-                          <button title="Editar" onClick={() => { navigate(`/emisores/${company?.id}/establecimientos/${est.id}/edit`); }}>✏️</button>
-                          <button title="Eliminar" onClick={async () => {
-                            if (!window.confirm('Eliminar establecimiento?')) return;
-                            try {
-                              await establecimientosApi.delete(company?.id, est.id);
-                              show({ title: 'Éxito', message: 'Establecimiento eliminado', type: 'success' });
-                              loadEstablecimientos(company?.id);
-                            } catch (err:any) {
-                              show({ title: 'Error', message: err?.response?.data?.message || 'No se pudo eliminar', type: 'error' });
-                            }
-                          }}>🗑️</button>
-                        </td>
+                <div className="tabla-scroll-container">
+                  <table className="tabla-emisores">
+                    <thead>
+                      <tr>
+                        <th className="th-sticky sticky-left-1 sortable" onClick={() => toggleSortEst('codigo')}>
+                          Código {sortByEst === 'codigo' ? (sortDirEst === 'asc' ? '▲' : '▼') : '▾'}
+                        </th>
+                        <th className="th-sticky sticky-left-2 sortable" onClick={() => toggleSortEst('nombre')}>
+                          Nombre {sortByEst === 'nombre' ? (sortDirEst === 'asc' ? '▲' : '▼') : '▾'}
+                        </th>
+                        <th className="sortable" onClick={() => toggleSortEst('nombre_comercial')} style={{ minWidth: 200 }}>
+                          Nombre Comercial {sortByEst === 'nombre_comercial' ? (sortDirEst === 'asc' ? '▲' : '▼') : '▾'}
+                        </th>
+                        <th className="sortable" onClick={() => toggleSortEst('direccion')} style={{ minWidth: 300 }}>
+                          Dirección {sortByEst === 'direccion' ? (sortDirEst === 'asc' ? '▲' : '▼') : '▾'}
+                        </th>
+                        <th style={{ minWidth: 120 }}>Logo</th>
+                        <th className="sortable" onClick={() => toggleSortEst('estado')} style={{ minWidth: 120 }}>
+                          Estado {sortByEst === 'estado' ? (sortDirEst === 'asc' ? '▲' : '▼') : '▾'}
+                        </th>
+                        <th className="th-sticky sticky-right">Acciones</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {/* Removed custom bottom scrollbar to restore native scrollbar inside the dynamic columns */}
+                    </thead>
+
+                    <tbody>
+                      {paginatedEsts.length === 0 ? (
+                        <tr><td className="loading-row" colSpan={7}>No hay establecimientos registrados.</td></tr>
+                      ) : paginatedEsts.map((est) => (
+                        <tr key={est.id}>
+                          <td className="td-sticky sticky-left-1"><Link className="link-ruc" to={`/emisores/${company?.id}/establecimientos/${est.id}`}>{est.codigo}</Link></td>
+                          <td className="td-sticky sticky-left-2">{est.nombre}</td>
+                          <td style={{ textAlign: 'center' }}>{est.nombre_comercial || '-'}</td>
+                          <td style={{ textAlign: 'center' }}>{est.direccion || '-'}</td>
+                          <td style={{ textAlign: 'center' }}>
+                            {(est.logo_url || est.logo_path || est.logo) ? (
+                              <img className="logo-cell" src={est.logo_url || est.logo_path || est.logo} alt="logo" onClick={() => window.open(est.logo_url || est.logo_path || est.logo, '_blank')} />
+                            ) : (<span className="logo-placeholder">—</span>)}
+                          </td>
+                          <td style={{ textAlign: 'center' }}>
+                            <div style={{ background: est.estado === 'ABIERTO' ? '#bbf7d0' : '#f3f4f6', padding: '6px 8px', borderRadius: 6, color: est.estado === 'ABIERTO' ? '#059669' : '#374151', fontWeight: 700 }}>{est.estado === 'ABIERTO' ? 'Activo' : 'Cerrado'}</div>
+                          </td>
+                          <td className="td-sticky sticky-right acciones">
+                            <button title="Editar" onClick={() => { navigate(`/emisores/${company?.id}/establecimientos/${est.id}/edit`); }}>✏️</button>
+                            <button title="Eliminar" onClick={() => { setDeletingEstId(est.id); setDeleteEstOpen(true); }}>🗑️</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pagination controls */}
+                <div className="pagination-controls">
+                  <div className="pagination-info">
+                    <label>
+                      Mostrar
+                      <select className="items-per-page-select" value={perPageEst} onChange={(e) => { setPerPageEst(Number(e.target.value)); setPageEst(1); }}>
+                        <option value={5}>5</option>
+                        <option value={10}>10</option>
+                        <option value={15}>15</option>
+                      </select>
+                      por página
+                    </label>
+                    <span className="page-range">{startIdx}–{endIdx} de {totalEst}</span>
+                  </div>
+
+                  <div className="pagination-buttons">
+                    <button className="page-btn" onClick={() => setPageEst(1)} disabled={pageEst <= 1}>{'⏮'}</button>
+                    <button className="page-btn" onClick={() => setPageEst((p) => Math.max(1, p - 1))} disabled={pageEst <= 1}>{'◀'}</button>
+                    <button className="page-btn" onClick={() => setPageEst((p) => Math.min(lastPageEst, p + 1))} disabled={pageEst >= lastPageEst}>{'▶'}</button>
+                    <button className="page-btn" onClick={() => setPageEst(lastPageEst)} disabled={pageEst >= lastPageEst}>{'⏭'}</button>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -369,6 +411,92 @@ const EmisorInfo: React.FC = () => {
                   setDelLoading(false);
                 }
               }} disabled={delLoading || pwd.length === 0}>{delLoading ? 'Eliminando…' : 'CONFIRMAR'}</button>
+            </div>
+
+            <style>{`
+              .mf-modal-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.35); display:flex; align-items:center; justify-content:center; z-index:3000; }
+              .mf-modal{ width:min(540px, 92vw); background:#fff; border-radius:12px; padding:28px 24px; box-shadow:0 20px 60px rgba(0,0,0,.25); text-align:center; }
+              .mf-btn-cancel{ padding:10px 18px; border-radius:8px; background:#fff; color:#333; border:2px solid #000; font-weight:700; cursor:pointer; }
+              .mf-btn-confirm{ padding:10px 18px; border-radius:8px; background:#ff6b6b; color:#fff; border:none; font-weight:700; cursor:pointer; }
+              .mf-btn-cancel:disabled, .mf-btn-confirm:disabled{ opacity:0.6; cursor:not-allowed; }
+            `}</style>
+          </div>
+        </div>
+      )}
+
+      {/* Establecimiento delete modal - Step 1: Confirmation */}
+      {deleteEstOpen && (
+        <div className="mf-modal-overlay" role="dialog" aria-modal="true">
+          <div className="mf-modal" style={{ width: 'min(620px,92vw)', padding: 22 }}>
+            <h3 style={{ margin: 0, color: '#1a63d6', fontSize: 22, textAlign: 'center' }}>Eliminación de establecimiento</h3>
+            <div style={{ height: 12 }} />
+            <p style={{ textAlign: 'center', fontSize: 16, margin: '0 0 8px', fontWeight: 700 }}>¿Está seguro que desea eliminar el establecimiento:</p>
+            <p style={{ textAlign: 'center', marginTop: 6, marginBottom: 12 }}>
+              <span style={{ color: '#c62828', fontWeight: 800, fontSize: 16 }}>
+                {establecimientos.find(e => e.id === deletingEstId)?.codigo ?? ''}
+              </span>
+              <span> - </span>
+              <span style={{ color: '#c62828', fontWeight: 800 }}>
+                {establecimientos.find(e => e.id === deletingEstId)?.nombre ?? ''}
+              </span>
+            </p>
+            <p style={{ textAlign: 'center', marginTop: 0, marginBottom: 18, fontSize: 15 }}>y todos sus datos asociados?</p>
+
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
+              <button className="mf-btn-cancel" onClick={() => { setDeleteEstOpen(false); setDeletingEstId(null); }} style={{ padding: '10px 22px', borderRadius: 20 }}>CANCELAR</button>
+              <button className="mf-btn-confirm" onClick={() => { setDeleteEstOpen(false); setDeleteEstPasswordOpen(true); }} style={{ padding: '10px 22px', borderRadius: 20, background: '#ff6b6b' }}>CONFIRMAR</button>
+            </div>
+
+            <style>{`
+              .mf-modal-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.35); display:flex; align-items:center; justify-content:center; z-index:3000; }
+              .mf-modal{ width:min(540px, 92vw); background:#fff; border-radius:12px; padding:28px 24px; box-shadow:0 20px 60px rgba(0,0,0,.25); text-align:center; }
+              .mf-btn-cancel{ padding:10px 18px; border-radius:8px; background:#fff; color:#333; border:2px solid #000; font-weight:700; cursor:pointer; }
+              .mf-btn-confirm{ padding:10px 18px; border-radius:8px; background:#ff6b6b; color:#fff; border:none; font-weight:700; cursor:pointer; }
+              .mf-btn-cancel:disabled, .mf-btn-confirm:disabled{ opacity:0.6; cursor:not-allowed; }
+            `}</style>
+          </div>
+        </div>
+      )}
+
+      {/* Establecimiento delete modal - Step 2: Password entry */}
+      {deleteEstPasswordOpen && (
+        <div className="mf-modal-overlay" role="dialog" aria-modal="true">
+          <div className="mf-modal" style={{ width: 'min(520px,92vw)', padding: 22 }}>
+            <h3 style={{ margin: 0, color: '#1a63d6', fontSize: 22, textAlign: 'center' }}>Eliminación de establecimiento</h3>
+            <div style={{ height: 12 }} />
+            <p style={{ textAlign: 'center', fontSize: 16, margin: '0 0 12px', fontWeight: 600 }}>Ingresa tu clave de administrador para confirmar la eliminación del establecimiento</p>
+
+            <div style={{ margin: '8px 0 6px' }}>
+              <input
+                type="password"
+                value={deleteEstPassword}
+                onChange={(e) => setDeleteEstPassword(e.target.value)}
+                placeholder="Clave de administrador"
+                style={{ width: '100%', padding: '12px 2px', borderRadius: 8, border: '1px solid #d0d0d0', fontSize: 16 }}
+                autoFocus
+              />
+              {deleteEstError && <div style={{ color: '#b00020', marginTop: 8 }}>{deleteEstError}</div>}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 14 }}>
+              <button className="mf-btn-cancel" onClick={() => { setDeleteEstPasswordOpen(false); setDeleteEstPassword(''); setDeleteEstError(null); setDeletingEstId(null); }} disabled={deleteEstLoading}>CANCELAR</button>
+              <button className="mf-btn-confirm" onClick={async () => {
+                if (!company?.id || !deletingEstId) return;
+                setDeleteEstLoading(true);
+                setDeleteEstError(null);
+                try {
+                  await establecimientosApi.delete(company.id, deletingEstId, deleteEstPassword);
+                  setDeleteEstPasswordOpen(false);
+                  setDeletingEstId(null);
+                  show({ title: 'Éxito', message: 'Establecimiento eliminado correctamente', type: 'success' });
+                  loadEstablecimientos(company.id);
+                } catch (err: any) {
+                  const msg = err?.response?.data?.message || 'No se pudo eliminar el establecimiento';
+                  setDeleteEstError(msg);
+                } finally {
+                  setDeleteEstLoading(false);
+                }
+              }} disabled={deleteEstLoading || deleteEstPassword.length === 0}>{deleteEstLoading ? 'Eliminando…' : 'CONFIRMAR'}</button>
             </div>
 
             <style>{`

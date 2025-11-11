@@ -27,6 +27,7 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
   const [v, setV] = React.useState<Establecimiento>(initial);
   const [logoFile, setLogoFile] = React.useState<File | null>(null);
   const [fieldErrors, setFieldErrors] = React.useState<Record<string,string>>({});
+  const [touched, setTouched] = React.useState<Set<string>>(new Set());
   const [checkingCode, setCheckingCode] = React.useState(false);
   const [codeDuplicateError, setCodeDuplicateError] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
@@ -58,6 +59,14 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
       return copy; 
     });
     if (k === 'codigo') setCodeDuplicateError(null);
+  };
+
+  const markTouched = (k: keyof Establecimiento) => {
+    setTouched(prev => {
+      const n = new Set(prev);
+      n.add(k as string);
+      return n;
+    });
   };
 
   // Check code uniqueness (debounce) - solo si estamos creando o si el código cambió
@@ -157,8 +166,8 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
   if (!open) return null;
 
   return (
-    <div className="mf-backdrop" onClick={onClose}>
-      <div className="mf-modal" onClick={(e)=>e.stopPropagation()} style={{ width: 'min(720px, 92vw)' }}>
+    <div className="mf-backdrop">
+      <div className="mf-modal" style={{ width: 'min(720px, 92vw)' }}>
         <div className="mf-header">
           <h2>{editingEst ? 'Editar establecimiento' : 'Registro de nuevo establecimiento'}</h2>
         </div>
@@ -169,14 +178,15 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <label style={{ marginBottom: 6 }}>Código {requiredKeys.has('codigo') && <span className="required">*</span>}</label>
               <input 
-                className={isMissing('codigo') || !!fieldErrors.codigo ? 'error-input codigo-input' : 'codigo-input'} 
-                value={v.codigo || ''} 
+                className={(touched.has('codigo') && (isMissing('codigo') || !!fieldErrors.codigo)) ? 'error-input codigo-input' : 'codigo-input'} 
+                value={v.codigo || ''}
+                onBlur={()=>markTouched('codigo')}
                 onChange={e=>onChange('codigo', e.target.value)}
                 disabled={!!(editingEst && !localCodigoEditable)}
               />
               {editingEst && !localCodigoEditable && <small style={{color:'#666'}}>El código no puede ser modificado porque existen comprobantes autorizados.</small>}
               {checkingCode && <small>Verificando código…</small>}
-              {fieldErrors.codigo && <span className="err">{fieldErrors.codigo}</span>}
+              {touched.has('codigo') && fieldErrors.codigo && <span className="err">{fieldErrors.codigo}</span>}
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -192,8 +202,8 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
           </div>
 
           <label>Nombre {requiredKeys.has('nombre') && <span className="required">*</span>}
-            <input value={v.nombre || ''} onChange={e=>onChange('nombre', e.target.value)} className={isMissing('nombre') ? 'error-input' : ''} />
-            {fieldErrors.nombre && <span className="err">{fieldErrors.nombre}</span>}
+            <input value={v.nombre || ''} onBlur={()=>markTouched('nombre')} onChange={e=>onChange('nombre', e.target.value)} className={touched.has('nombre') && isMissing('nombre') ? 'error-input' : ''} />
+            {touched.has('nombre') && fieldErrors.nombre && <span className="err">{fieldErrors.nombre}</span>}
           </label>
 
           <label>Nombre Comercial
@@ -201,13 +211,13 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
           </label>
 
           <label>Dirección {requiredKeys.has('direccion') && <span className="required">*</span>}
-            <input value={v.direccion || ''} onChange={e=>onChange('direccion', e.target.value)} className={isMissing('direccion') ? 'error-input' : ''} />
-            {fieldErrors.direccion && <span className="err">{fieldErrors.direccion}</span>}
+            <input value={v.direccion || ''} onBlur={()=>markTouched('direccion')} onChange={e=>onChange('direccion', e.target.value)} className={touched.has('direccion') && isMissing('direccion') ? 'error-input' : ''} />
+            {touched.has('direccion') && fieldErrors.direccion && <span className="err">{fieldErrors.direccion}</span>}
           </label>
 
           <label>Correo
-            <input value={v.correo || ''} onChange={e=>onChange('correo', e.target.value)} className={fieldErrors.correo ? 'error-input' : ''} />
-            {fieldErrors.correo && <span className="err">{fieldErrors.correo}</span>}
+            <input value={v.correo || ''} onBlur={()=>markTouched('correo')} onChange={e=>onChange('correo', e.target.value)} className={touched.has('correo') && fieldErrors.correo ? 'error-input' : ''} />
+            {touched.has('correo') && fieldErrors.correo && <span className="err">{fieldErrors.correo}</span>}
           </label>
 
           <label>Número de teléfono

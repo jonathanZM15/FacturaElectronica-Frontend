@@ -46,6 +46,7 @@ const EmisorFormModal: React.FC<Props> = (props) => {
   const [fieldErrors, setFieldErrors] = React.useState<Record<string, string>>({});
   const [rucDuplicateError, setRucDuplicateError] = React.useState<string | null>(null);
   const [checkingRuc, setCheckingRuc] = React.useState(false);
+    const [touchedFields, setTouchedFields] = React.useState<Set<string>>(new Set());
 
   React.useEffect(() => {
     if (open) {
@@ -57,12 +58,15 @@ const EmisorFormModal: React.FC<Props> = (props) => {
       setRucDuplicateError(null);
       setFieldErrors({});
       setCheckingRuc(false);
+        setTouchedFields(new Set());
     }
   }, [open, initialData, rucEditable]);
 
   // Enhanced onChange: set value and clear field-specific errors live
   const onChange = (k: keyof Emisor, value: any) => {
     setV(prev => ({ ...prev, [k]: value }));
+      // Mark field as touched
+      setTouchedFields(prev => new Set(prev).add(k as string));
     const ks = k as string;
     setFieldErrors(prev => {
       if (!prev || !(ks in prev)) return prev;
@@ -79,6 +83,58 @@ const EmisorFormModal: React.FC<Props> = (props) => {
       // nothing else
     }
   };
+
+    // Real-time validation for touched fields
+    const validateFieldRealTime = (key: string) => {
+      if (!touchedFields.has(key)) return null;
+    
+      const val = (v as any)[key];
+    
+      switch (key) {
+        case 'ruc':
+          if (!val || !val.toString().trim()) return 'RUC es obligatorio';
+          if (!validateRucEcuador(val)) return 'RUC no válido según reglas del SRI';
+          if (rucDuplicateError) return rucDuplicateError;
+          return null;
+        case 'razon_social':
+          if (!val || !val.toString().trim()) return 'Razón Social es obligatoria';
+          return null;
+        case 'direccion_matriz':
+          if (!val || !val.toString().trim()) return 'Dirección Matriz es obligatoria';
+          return null;
+        case 'correo_remitente':
+          if (!val || !val.toString().trim()) return 'Correo remitente es obligatorio';
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) return 'Correo debe ser válido';
+          return null;
+        case 'regimen_tributario':
+          if (!val) return 'Seleccione Régimen Tributario';
+          return null;
+        case 'obligado_contabilidad':
+          if (val !== 'SI' && val !== 'NO') return 'Indique si está obligado a llevar contabilidad';
+          return null;
+        case 'contribuyente_especial':
+          if (val !== 'SI' && val !== 'NO') return 'Indique si es contribuyente especial';
+          return null;
+        case 'agente_retencion':
+          if (val !== 'SI' && val !== 'NO') return 'Indique si es agente de retención';
+          return null;
+        case 'tipo_persona':
+          if (!val) return 'Seleccione Tipo de Persona';
+          return null;
+        case 'ambiente':
+          if (!val) return 'Seleccione ambiente';
+          return null;
+        case 'tipo_emision':
+          if (!val) return 'Seleccione tipo de emisión';
+          return null;
+        case 'logo':
+          if (!editingId && !logoFile) return 'Logo obligatorio al registrar';
+          if (logoFile && !/\.jpe?g$|\.png$/i.test(logoFile.name)) return 'Formato no permitido. Use .jpg, .jpeg o .png';
+          return null;
+        default:
+          return null;
+      }
+    };
 
   // Validate RUC in real time
   React.useEffect(() => {
@@ -130,7 +186,6 @@ const EmisorFormModal: React.FC<Props> = (props) => {
     if (!v.ruc || !v.ruc.toString().trim()) { setRucError('RUC es obligatorio'); return false; }
     if (!v.razon_social || !v.razon_social.toString().trim()) return false;
     if (!v.direccion_matriz || !v.direccion_matriz.toString().trim()) return false;
-    if (!v.codigo_artesano || !v.codigo_artesano.toString().trim()) return false;
 
     // RUC format
     if (!validateRucEcuador(v.ruc)) { setRucError('RUC no válido según reglas del SRI'); return false; }
@@ -159,7 +214,6 @@ const EmisorFormModal: React.FC<Props> = (props) => {
     if (!v.ruc || !v.ruc.toString().trim()) return false;
     if (!v.razon_social || !v.razon_social.toString().trim()) return false;
     if (!v.direccion_matriz || !v.direccion_matriz.toString().trim()) return false;
-    if (!v.codigo_artesano || !v.codigo_artesano.toString().trim()) return false;
     if (!v.correo_remitente || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.correo_remitente)) return false;
     if (!v.ambiente || !v.tipo_emision) return false;
     if (rucError || rucDuplicateError || checkingRuc) return false;
@@ -235,7 +289,7 @@ const EmisorFormModal: React.FC<Props> = (props) => {
     if (!yn(v.contribuyente_especial)) e.contribuyente_especial = 'Indique si es contribuyente especial';
     if (!yn(v.agente_retencion)) e.agente_retencion = 'Indique si es agente de retención';
   if (!v.tipo_persona) e.tipo_persona = 'Seleccione Tipo de Persona';
-  if (!v.codigo_artesano || !v.codigo_artesano.toString().trim()) e.codigo_artesano = 'Código Artesano es obligatorio';
+    // codigo_artesano is optional, no validation needed
     if (!v.correo_remitente || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.correo_remitente)) e.correo_remitente = 'Correo remitente obligatorio y debe ser válido';
     if (!v.ambiente) e.ambiente = 'Seleccione ambiente';
     if (!v.tipo_emision) e.tipo_emision = 'Seleccione tipo de emisión';
@@ -246,7 +300,7 @@ const EmisorFormModal: React.FC<Props> = (props) => {
 
   // Helper: which fields are required (used to show asterisk)
   const requiredKeys = React.useMemo(() => new Set<string>([
-  'ruc','razon_social','direccion_matriz','regimen_tributario','obligado_contabilidad','contribuyente_especial','agente_retencion','tipo_persona','codigo_artesano','correo_remitente','estado','ambiente','tipo_emision','logo'
+    'ruc','razon_social','direccion_matriz','regimen_tributario','obligado_contabilidad','contribuyente_especial','agente_retencion','tipo_persona','correo_remitente','estado','ambiente','tipo_emision','logo'
   ]), []);
 
   const isFieldValid = (key: string) => {
@@ -256,7 +310,7 @@ const EmisorFormModal: React.FC<Props> = (props) => {
       case 'nombre_comercial': return !!val && typeof val === 'string' && val.trim().length > 0;
       case 'razon_social': return !!val && typeof val === 'string' && val.trim().length > 0;
       case 'direccion_matriz': return !!val && typeof val === 'string' && val.trim().length > 0;
-      case 'codigo_artesano': return !!val && typeof val === 'string' && val.trim().length > 0;
+        case 'codigo_artesano': return true; // Optional field, always valid
       case 'correo_remitente': return !!val && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
       case 'ambiente': return !!val;
       case 'tipo_emision': return !!val;
@@ -270,7 +324,7 @@ const EmisorFormModal: React.FC<Props> = (props) => {
   if (!open) return null;
 
   return (
-    <div className="mf-backdrop" onClick={onClose}>
+    <div className="mf-backdrop">
       <div className="mf-modal" onClick={(e) => e.stopPropagation()}>
         <div className="mf-header">
           <h2>{editingId ? 'Editar emisor' : 'Registro de nuevo emisor'}</h2>
@@ -283,36 +337,37 @@ const EmisorFormModal: React.FC<Props> = (props) => {
                   <input
                     value={v.ruc}
                     onChange={e => onChange('ruc', e.target.value)}
+                      onBlur={() => setTouchedFields(prev => new Set(prev).add('ruc'))}
                     disabled={!localRucEditable}
-                    className={isMissing('ruc') || rucError || rucDuplicateError ? 'error-input' : ''}
+                      className={validateFieldRealTime('ruc') ? 'error-input' : ''}
                   />
                   {!localRucEditable && <small style={{color:'#666'}}>El RUC no puede ser modificado porque existen comprobantes autorizados.</small>}
-                  {rucError && <span className="err">{rucError}</span>}
-                  {rucDuplicateError && <span className="err">{rucDuplicateError}</span>}
+                    {validateFieldRealTime('ruc') && <span className="err">{validateFieldRealTime('ruc')}</span>}
               </label>
             <label>Razón Social {requiredKeys.has('razon_social') && <span className="required">*</span>}
               <input
                 value={v.razon_social}
                 onChange={e => onChange('razon_social', e.target.value)}
-                className={isMissing('razon_social') ? 'error-input' : ''}
+                  onBlur={() => setTouchedFields(prev => new Set(prev).add('razon_social'))}
+                  className={validateFieldRealTime('razon_social') ? 'error-input' : ''}
               />
-              {fieldErrors.razon_social && <span className="err">{fieldErrors.razon_social}</span>}
+                {validateFieldRealTime('razon_social') && <span className="err">{validateFieldRealTime('razon_social')}</span>}
             </label>
             <label>Nombre comercial {requiredKeys.has('nombre_comercial') && <span className="required">*</span>}
               <input 
                 value={v.nombre_comercial || ''} 
                 onChange={e => onChange('nombre_comercial', e.target.value)}
-                className={isMissing('nombre_comercial') ? 'error-input' : ''}
+                  onBlur={() => setTouchedFields(prev => new Set(prev).add('nombre_comercial'))}
               />
-              {fieldErrors.nombre_comercial && <span className="err">{fieldErrors.nombre_comercial}</span>}
             </label>
             <label>Dirección Matriz {requiredKeys.has('direccion_matriz') && <span className="required">*</span>}
               <input
                 value={v.direccion_matriz || ''}
                 onChange={e => onChange('direccion_matriz', e.target.value)}
-                className={isMissing('direccion_matriz') ? 'error-input' : ''}
+                  onBlur={() => setTouchedFields(prev => new Set(prev).add('direccion_matriz'))}
+                  className={validateFieldRealTime('direccion_matriz') ? 'error-input' : ''}
               />
-              {fieldErrors.direccion_matriz && <span className="err">{fieldErrors.direccion_matriz}</span>}
+                {validateFieldRealTime('direccion_matriz') && <span className="err">{validateFieldRealTime('direccion_matriz')}</span>}
             </label>
           </section>
 
@@ -346,18 +401,22 @@ const EmisorFormModal: React.FC<Props> = (props) => {
               <input 
                 value={v.codigo_artesano || ''} 
                 onChange={e => onChange('codigo_artesano', e.target.value)}
+             onBlur={() => setTouchedFields(prev => new Set(prev).add('codigo_artesano'))}
                 placeholder="Opcional - Ej: PICHINCHA-17-1234-2024"
-                className={isMissing('codigo_artesano') ? 'error-input' : ''}
               />
-              {fieldErrors.codigo_artesano && <span className="err">{fieldErrors.codigo_artesano}</span>}
             </label>
           </section>
 
           <section>
             <h3>Datos de configuración</h3>
             <label>Correo Remitente {requiredKeys.has('correo_remitente') && <span className="required">*</span>}
-              <input value={v.correo_remitente || ''} onChange={e => onChange('correo_remitente', e.target.value)} className={isMissing('correo_remitente') ? 'error-input' : ''} />
-              {emailError && <span className="err">{emailError}</span>}
+                <input 
+                  value={v.correo_remitente || ''} 
+                  onChange={e => onChange('correo_remitente', e.target.value)} 
+                  onBlur={() => setTouchedFields(prev => new Set(prev).add('correo_remitente'))}
+                  className={validateFieldRealTime('correo_remitente') ? 'error-input' : ''} 
+                />
+                {validateFieldRealTime('correo_remitente') && <span className="err">{validateFieldRealTime('correo_remitente')}</span>}
             </label>
             <div className="row config-row">
               <label>Estado
@@ -365,25 +424,49 @@ const EmisorFormModal: React.FC<Props> = (props) => {
               </label>
 
               <label>Ambiente{isMissing('ambiente') && <span className="req">*</span>}
-                <select value={v.ambiente} onChange={e => onChange('ambiente', e.target.value as any)} className={isMissing('ambiente') ? 'error-input' : ''}>
+                  <select 
+                    value={v.ambiente} 
+                    onChange={e => onChange('ambiente', e.target.value as any)} 
+                    onBlur={() => setTouchedFields(prev => new Set(prev).add('ambiente'))}
+                    className={validateFieldRealTime('ambiente') ? 'error-input' : ''}
+                  >
                   <option value="PRODUCCION">Producción</option>
                   <option value="PRUEBAS">Pruebas</option>
                 </select>
+                  {validateFieldRealTime('ambiente') && <span className="err">{validateFieldRealTime('ambiente')}</span>}
               </label>
 
               <label>Tipo de Emisión{isMissing('tipo_emision') && <span className="req">*</span>}
-                <select value={v.tipo_emision} onChange={e => onChange('tipo_emision', e.target.value as any)} className={isMissing('tipo_emision') ? 'error-input' : ''}>
+                  <select 
+                    value={v.tipo_emision} 
+                    onChange={e => onChange('tipo_emision', e.target.value as any)} 
+                    onBlur={() => setTouchedFields(prev => new Set(prev).add('tipo_emision'))}
+                    className={validateFieldRealTime('tipo_emision') ? 'error-input' : ''}
+                  >
                   <option value="NORMAL">Normal</option>
                   <option value="INDISPONIBILIDAD">Indisponibilidad del SRI</option>
                 </select>
-                {fieldErrors.tipo_emision && <span className="err">{fieldErrors.tipo_emision}</span>}
+                  {validateFieldRealTime('tipo_emision') && <span className="err">{validateFieldRealTime('tipo_emision')}</span>}
               </label>
             </div>
 
             <label>Logo {requiredKeys.has('logo') && <span className="required">*</span>}
-              <input type="text" readOnly value={logoFile?.name || ''} placeholder="logo.jpg" className={isMissing('logo') ? 'error-input' : ''} />
-              <input type="file" accept=".jpg,.jpeg,.png" onChange={e => setLogoFile(e.target.files?.[0] || null)} />
-              {logoError && <span className="err">{logoError}</span>}
+              <input 
+                type="text" 
+                readOnly 
+                value={logoFile?.name || ''} 
+                placeholder="logo.jpg" 
+                className={validateFieldRealTime('logo') ? 'error-input' : ''} 
+              />
+              <input 
+                type="file" 
+                accept=".jpg,.jpeg,.png" 
+                onChange={e => {
+                  setLogoFile(e.target.files?.[0] || null);
+                  setTouchedFields(prev => new Set(prev).add('logo'));
+                }} 
+              />
+              {validateFieldRealTime('logo') && <span className="err">{validateFieldRealTime('logo')}</span>}
             </label>
           </section>
         </div>

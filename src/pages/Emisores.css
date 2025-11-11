@@ -60,7 +60,7 @@
   padding: 8px 10px; border-radius: 6px;
 }
 
-/* Contenedor principal sin scroll - las columnas fijas no deben scrollear */
+/* Contenedor principal con scroll horizontal único */
 .tabla-wrapper {
   --col-ruc: 150px;
   --col-razon: 200px;
@@ -69,71 +69,44 @@
   border: 2px solid #ff8c00;
   position: relative;
   background: #fff;
-  /* allow native scrollbars inside the dynamic area */
   overflow: visible;
-  padding-bottom: 16px;
+}
+
+/* Contenedor con scroll horizontal */
+.tabla-scroll-container {
+  overflow-x: auto;
+  overflow-y: visible;
 }
 
 .tabla-emisores {
-  width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Headers y body usan flexbox para mantener columnas fijas */
-.tabla-emisores thead,
-.tabla-emisores tbody {
-  display: block;
-}
-
-.tabla-emisores thead tr,
-.tabla-emisores tbody tr {
-  display: flex;
-  width: 100%;
+  width: max-content;
+  min-width: 100%;
 }
 
 /* Columnas fijas: RUC, Razón Social */
 .th-sticky.sticky-left-1,
 .td-sticky.sticky-left-1 {
-  flex: 0 0 var(--col-ruc);
+  position: sticky;
+  left: 0;
+  z-index: 2;
   min-width: var(--col-ruc);
-  max-width: var(--col-ruc);
+  width: var(--col-ruc);
 }
 
 .th-sticky.sticky-left-2,
 .td-sticky.sticky-left-2 {
-  flex: 0 0 var(--col-razon);
+  position: sticky;
+  left: var(--col-ruc);
+  z-index: 2;
   min-width: var(--col-razon);
-  max-width: var(--col-razon);
+  width: var(--col-razon);
 }
 
-/* Contenedor para columnas dinámicas (por defecto sin scroll visual) */
-.scrollable-columns {
-  flex: 1;
-  display: flex;
-  /* don't hide overflow here; dynamic body will show native scroll */
-  overflow: visible;
-}
-
-/* El encabezado NO muestra barra; sólo refleja el scroll por JS */
-.scrollable-head {
-  overflow: hidden;
-}
-
-/* El body no muestra barra; sincronizamos su scrollLeft por JS */
-.scrollable-body {
-  /* allow native horizontal scrolling inside the dynamic columns area */
-  overflow-x: auto;
-}
-
-/* Removed custom bottom scrollbar - native scrollbar inside .scrollable-body is used instead */
-
-/* Columnas dinámicas dentro del scroll */
+/* Columnas dinámicas */
 .th-dyn,
 .td-dyn {
-  flex: 0 0 auto;
   white-space: normal;
   word-wrap: break-word;
   word-break: break-word;
@@ -142,9 +115,11 @@
 /* Columna de Acciones fija a la derecha */
 .th-sticky.sticky-right,
 .td-sticky.sticky-right {
-  flex: 0 0 var(--col-actions);
+  position: sticky;
+  right: 0;
+  z-index: 2;
   min-width: var(--col-actions);
-  max-width: var(--col-actions);
+  width: var(--col-actions);
 }
 
 /* Estilos de headers */
@@ -152,13 +127,10 @@ thead th {
   background: #2931a8;
   color: #fff;
   padding: 10px;
-  text-align: center; /* Centrar encabezados de tabla */
+  text-align: center;
   border: 2px solid #ff8c00;
   font-weight: 600;
   font-size: 13px;
-  position: sticky;
-  top: 0;
-  z-index: 10;
 }
 
 /* Columnas fijas con fondo gris */
@@ -208,7 +180,7 @@ tbody td {
   padding: 8px 10px;
   background: #fff;
   vertical-align: middle;
-  text-align: center; /* Centrar contenido de celdas */
+  text-align: center;
   font-size: 13px;
   white-space: normal;
   word-wrap: break-word;
@@ -237,6 +209,78 @@ tbody td {
 .acciones { display: flex; gap: 6px; align-items: center; justify-content: center; }
 .acciones button {
   border: none; background: transparent; cursor: pointer; font-size: 16px; padding: 4px;
+}
+
+/* Pagination controls */
+.pagination-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-top: 2px solid #ff8c00;
+  background: #fff;
+}
+
+.pagination-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #374151;
+}
+
+.items-per-page-select {
+  padding: 4px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.page-range {
+  margin-left: 12px;
+  font-weight: 500;
+}
+
+.pagination-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.page-btn {
+  min-width: 32px;
+  height: 32px;
+  padding: 4px 8px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.page-btn:hover:not(:disabled) {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Sortable column styling */
+.sortable {
+  user-select: none;
+  transition: background-color 0.2s;
+}
+
+.sortable:hover {
+  background: #1e3a8a !important;
 }
 
 /* Footer visual */

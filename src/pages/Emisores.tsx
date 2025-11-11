@@ -129,6 +129,15 @@ const Emisores: React.FC = () => {
   const dateRef = React.useRef<HTMLDivElement | null>(null);
   const desdeInputRef = React.useRef<HTMLInputElement | null>(null);
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const [itemsPerPage, setItemsPerPage] = React.useState(5);
+  const [totalItems, setTotalItems] = React.useState(0);
+
+  // Sorting states
+  const [sortBy, setSortBy] = React.useState<keyof Emisor | 'logo' | null>(null);
+  const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('asc');
+
   const formatDate = React.useCallback((iso: string) => {
     if (!iso) return '';
     // Expecting yyyy-mm-dd
@@ -137,33 +146,8 @@ const Emisores: React.FC = () => {
     return `${d}/${m}/${y}`;
   }, []);
 
-  // Scroll sync refs para columnas dinámicas
-  const headScrollRef = React.useRef<HTMLTableCellElement | null>(null);
-  const bodyScrollRefs = React.useRef<Array<HTMLTableCellElement | null>>([]);
-  const footScrollRef = React.useRef<HTMLDivElement | null>(null);
-  const isSyncingRef = React.useRef(false);
-
-  const syncAll = React.useCallback((x: number) => {
-    if (isSyncingRef.current) return;
-    isSyncingRef.current = true;
-    bodyScrollRefs.current.forEach((el) => { if (el) el.scrollLeft = x; });
-    if (headScrollRef.current) headScrollRef.current.scrollLeft = x;
-    if (footScrollRef.current) footScrollRef.current.scrollLeft = x;
-    // allow event loop to settle before unlocking
-    setTimeout(() => { isSyncingRef.current = false; }, 0);
-  }, []);
-
-  const onHeadScroll = React.useCallback(() => {
-    if (isSyncingRef.current) return;
-    const x = headScrollRef.current?.scrollLeft || 0;
-    syncAll(x);
-  }, [syncAll]);
-
-  const onFootScroll = React.useCallback(() => {
-    if (isSyncingRef.current) return;
-    const x = footScrollRef.current?.scrollLeft || 0;
-    syncAll(x);
-  }, [syncAll]);
+  // Scroll sync refs para una sola área scrollable
+  const scrollContainerRef = React.useRef<HTMLDivElement | null>(null);
 
   // Close date popover on outside click and focus first input on open
   React.useEffect(() => {
@@ -177,11 +161,6 @@ const Emisores: React.FC = () => {
     setTimeout(() => desdeInputRef.current?.focus(), 0);
     return () => document.removeEventListener('mousedown', onDocClick);
   }, [dateOpen]);
-
-  const dynTotalWidth = React.useMemo(
-    () => dynamicColumns.reduce((sum, c) => sum + (c.width ?? 200), 0),
-    []
-  );
 
   const load = React.useCallback(async () => {
     setLoading(true);
@@ -201,6 +180,8 @@ const Emisores: React.FC = () => {
         }
       });
       setData(emisores);
+      setTotalItems(emisores.length);
+      setCurrentPage(1); // Reset to first page when filters change
     } catch (e: any) {
       setError(e?.response?.data?.message || 'No se pudo cargar emisores');
     } finally {
@@ -211,6 +192,68 @@ const Emisores: React.FC = () => {
   React.useEffect(() => {
     load();
   }, [load]);
+
+  // Sorting function
+  const handleSort = (column: keyof Emisor | 'logo') => {
+    if (column === 'logo') return; // No sorting for logo column
+    
+    if (sortBy === column) {
+      // Toggle order if same column
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      // New column, default to ascending
+      setSortBy(column);
+      setSortOrder('asc');
+    }
+  };
+
+  // Sort data
+  const sortedData = React.useMemo(() => {
+    if (!sortBy) return data;
+
+    const sorted = [...data].sort((a, b) => {
+      const aVal = a[sortBy as keyof Emisor];
+      const bVal = b[sortBy as keyof Emisor];
+
+      // Handle null/undefined
+      if (aVal == null && bVal == null) return 0;
+      if (aVal == null) return sortOrder === 'asc' ? 1 : -1;
+      if (bVal == null) return sortOrder === 'asc' ? -1 : 1;
+
+      // Compare values
+      if (typeof aVal === 'string' && typeof bVal === 'string') {
+        return sortOrder === 'asc' 
+          ? aVal.localeCompare(bVal, 'es') 
+          : bVal.localeCompare(aVal, 'es');
+      }
+
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+
+      // Fallback to string comparison
+      return sortOrder === 'asc'
+        ? String(aVal).localeCompare(String(bVal), 'es')
+        : String(bVal).localeCompare(String(aVal), 'es');
+    });
+
+    return sorted;
+  }, [data, sortBy, sortOrder]);
+
+  // Paginate data
+  const paginatedData = React.useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return sortedData.slice(startIndex, endIndex);
+  }, [sortedData, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+  // Reset to first page when items per page changes
+  const handleItemsPerPageChange = (newItemsPerPage: number) => {
+    setItemsPerPage(newItemsPerPage);
+    setCurrentPage(1);
+  };
 
   return (
     <>
@@ -271,42 +314,42 @@ const Emisores: React.FC = () => {
       {error && <div className="alert-error">⚠ {error}</div>}
 
       <div className="tabla-wrapper">
+        <div className="tabla-scroll-container" ref={scrollContainerRef}>
           <table className="tabla-emisores">
             <thead>
               <tr>
                 {/* Fijos izquierda */}
-                <th className="th-sticky sticky-left-1">RUC ▾</th>
-                <th className="th-sticky sticky-left-2">Razón Social ▾</th>
-
-                {/* Contenedor scrollable para columnas dinámicas */}
-                <th
-                  ref={headScrollRef}
-                  className="scrollable-columns scrollable-head"
-                  onScroll={onHeadScroll}
-                  style={{ padding: 0, border: 'none' }}
+                <th 
+                  className="th-sticky sticky-left-1 sortable" 
+                  onClick={() => handleSort('ruc')}
+                  style={{ cursor: 'pointer' }}
                 >
-                  <div style={{ display: 'flex' }}>
-                    {dynamicColumns.map((c) => (
-                      <div
-                        key={String(c.key)}
-                        className="th-dyn"
-                        style={{
-                          minWidth: c.width ?? 200,
-                          padding: '10px',
-                          background: '#2931a8',
-                          color: '#fff',
-                          border: '2px solid #ff8c00',
-                          fontWeight: 600,
-                          fontSize: '13px',
-                          whiteSpace: 'nowrap'
-                        }}
-                        title={c.label}
-                      >
-                        {c.label} ▾
-                      </div>
-                    ))}
-                  </div>
+                  RUC {sortBy === 'ruc' ? (sortOrder === 'asc' ? '▲' : '▼') : '▾'}
                 </th>
+                <th 
+                  className="th-sticky sticky-left-2 sortable" 
+                  onClick={() => handleSort('razon_social')}
+                  style={{ cursor: 'pointer' }}
+                >
+                  Razón Social {sortBy === 'razon_social' ? (sortOrder === 'asc' ? '▲' : '▼') : '▾'}
+                </th>
+
+                {/* Columnas dinámicas */}
+                {dynamicColumns.map((c) => (
+                  <th
+                    key={String(c.key)}
+                    className={`th-dyn ${c.key !== 'logo' ? 'sortable' : ''}`}
+                    style={{
+                      minWidth: c.width ?? 200,
+                      width: c.width ?? 200,
+                      cursor: c.key !== 'logo' ? 'pointer' : 'default'
+                    }}
+                    title={c.label}
+                    onClick={() => c.key !== 'logo' && handleSort(c.key)}
+                  >
+                    {c.label} {c.key !== 'logo' && (sortBy === c.key ? (sortOrder === 'asc' ? '▲' : '▼') : '▾')}
+                  </th>
+                ))}
 
                 {/* Fijo derecha */}
                 <th className="th-sticky sticky-right">Acciones</th>
@@ -316,12 +359,12 @@ const Emisores: React.FC = () => {
             <tbody>
               {loading ? (
                 <tr>
-                  <td className="loading-row" colSpan={4}>
+                  <td className="loading-row" colSpan={dynamicColumns.length + 3}>
                     Cargando…
                   </td>
                 </tr>
-              ) : data.length ? (
-                data.map((row, idx) => (
+              ) : paginatedData.length ? (
+                paginatedData.map((row) => (
                   <tr key={row.id}>
                     {/* Fijos izquierda */}
                     <td className="td-sticky sticky-left-1">
@@ -331,47 +374,31 @@ const Emisores: React.FC = () => {
                       {row.razon_social}
                     </td>
 
-                    {/* Contenedor scrollable para celdas dinámicas */}
-                    <td
-                      className="scrollable-columns scrollable-body"
-                      style={{ padding: 0, border: 'none' }}
-                      ref={(el) => { bodyScrollRefs.current[idx] = el; }}
-                      onScroll={(e) => {
-                        if (isSyncingRef.current) return;
-                        const x = (e.target as HTMLTableCellElement).scrollLeft || 0;
-                        syncAll(x);
-                      }}
-                    >
-                      <div style={{ display: 'flex' }}>
-                        {dynamicColumns.map((c) => {
-                          const content =
-                            c.render
-                              ? c.render(row)
-                              : (row[c.key as keyof Emisor] as any) ?? '-';
+                    {/* Celdas dinámicas */}
+                    {dynamicColumns.map((c) => {
+                      const content =
+                        c.render
+                          ? c.render(row)
+                          : (row[c.key as keyof Emisor] as any) ?? '-';
 
-                          const isNumber = typeof (row[c.key as keyof Emisor] as any) === 'number';
-                          const isRestantes = c.key === 'cantidad_restantes';
+                      const isNumber = typeof (row[c.key as keyof Emisor] as any) === 'number';
+                      const isRestantes = c.key === 'cantidad_restantes';
 
-                          return (
-                            <div
-                              key={String(c.key)}
-                              className="td-dyn"
-                              style={{
-                                minWidth: c.width ?? 200,
-                                padding: '8px 10px',
-                                border: '2px solid #ff8c00',
-                                background: '#fff',
-                                textAlign: 'center',
-                                fontWeight: isNumber ? 700 : 'normal',
-                                color: isRestantes ? '#e24444' : (isNumber ? '#1b4ab4' : 'inherit')
-                              }}
-                            >
-                              {content ?? '-'}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </td>
+                      return (
+                        <td
+                          key={String(c.key)}
+                          className="td-dyn"
+                          style={{
+                            minWidth: c.width ?? 200,
+                            width: c.width ?? 200,
+                            fontWeight: isNumber ? 700 : 'normal',
+                            color: isRestantes ? '#e24444' : (isNumber ? '#1b4ab4' : 'inherit')
+                          }}
+                        >
+                          {content ?? '-'}
+                        </td>
+                      );
+                    })}
 
                     {/* Fijo derecha */}
                     <td className="td-sticky sticky-right acciones">
@@ -415,22 +442,68 @@ const Emisores: React.FC = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={4} style={{ textAlign: 'center', padding: 12, display: 'block', width: '100%' }}>
+                  <td colSpan={dynamicColumns.length + 3} style={{ textAlign: 'center', padding: 12 }}>
                     Sin resultados
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
-          {/* Barra de desplazamiento inferior alineada solo con columnas dinámicas */}
-          <div
-            className="dyn-scrollbar"
-            ref={footScrollRef}
-            onScroll={onFootScroll}
-            aria-label="Deslizar columnas"
-          >
-            <div style={{ width: dynTotalWidth, height: 1 }} />
+        </div>
+
+        {/* Pagination controls */}
+        <div className="pagination-controls">
+          <div className="pagination-info">
+            Filas por página: 
+            <select 
+              value={itemsPerPage} 
+              onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
+              className="items-per-page-select"
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={15}>15</option>
+            </select>
+            <span className="page-range">
+              {totalItems === 0 ? '0-0' : `${(currentPage - 1) * itemsPerPage + 1}-${Math.min(currentPage * itemsPerPage, totalItems)}`} de {totalItems}
+            </span>
           </div>
+          
+          <div className="pagination-buttons">
+            <button 
+              onClick={() => setCurrentPage(1)} 
+              disabled={currentPage === 1}
+              title="Primera página"
+              className="page-btn"
+            >
+              ⟪
+            </button>
+            <button 
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
+              disabled={currentPage === 1}
+              title="Página anterior"
+              className="page-btn"
+            >
+              ‹
+            </button>
+            <button 
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
+              disabled={currentPage >= totalPages}
+              title="Página siguiente"
+              className="page-btn"
+            >
+              ›
+            </button>
+            <button 
+              onClick={() => setCurrentPage(totalPages)} 
+              disabled={currentPage >= totalPages}
+              title="Última página"
+              className="page-btn"
+            >
+              ⟫
+            </button>
+          </div>
+        </div>
       </div>
     </div>
     <EmisorFormModal
@@ -438,14 +511,13 @@ const Emisores: React.FC = () => {
       onClose={() => setOpenNew(false)}
       onCreated={(created) => {
         // añadir en tiempo real; si prefieres recargar desde servidor, usa load()
-        setData((prev) => [created, ...prev]);
-        // mantener scroll sincronizado para la fila recién agregada
-        requestAnimationFrame(() => {
-          const x = footScrollRef.current?.scrollLeft || headScrollRef.current?.scrollLeft || 0;
-          syncAll(x);
+        setData((prev) => {
+          const newData = [created, ...prev];
+          setTotalItems(newData.length);
+          return newData;
         });
         // mostrar notificación temporal
-  show({ title: 'Éxito', message: 'Emisor creado correctamente', type: 'success' });
+        show({ title: 'Éxito', message: 'Emisor creado correctamente', type: 'success' });
       }}
     />
 
@@ -534,7 +606,11 @@ const Emisores: React.FC = () => {
                   await emisoresApi.delete(deletingId, deletePassword);
                 }
                 // remove from list
-                setData((prev) => prev.filter(p => p.id !== deletingId));
+                setData((prev) => {
+                  const newData = prev.filter(p => p.id !== deletingId);
+                  setTotalItems(newData.length);
+                  return newData;
+                });
                 setDeletePasswordOpen(false);
                 setDeletingWithHistory(false);
                 show({ title: 'Éxito', message: 'Emisor eliminado correctamente', type: 'success' });

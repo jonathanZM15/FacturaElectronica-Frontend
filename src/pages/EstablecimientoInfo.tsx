@@ -12,6 +12,13 @@ const EstablecimientoInfo: React.FC = () => {
   const [est, setEst] = React.useState<any | null>(null);
   const [company, setCompany] = React.useState<any | null>(null);
   const [actionsOpen, setActionsOpen] = React.useState(false);
+  
+  // Delete modal states
+  const [deleteOpen, setDeleteOpen] = React.useState(false);
+  const [deletePasswordOpen, setDeletePasswordOpen] = React.useState(false);
+  const [deletePassword, setDeletePassword] = React.useState('');
+  const [deleteError, setDeleteError] = React.useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = React.useState(false);
 
   React.useEffect(() => {
     const load = async () => {
@@ -35,15 +42,9 @@ const EstablecimientoInfo: React.FC = () => {
 
   if (!id || !estId) return <div>Establecimiento no especificado</div>;
 
-  const handleDeleteEst = async () => {
-    if (!window.confirm('¿Eliminar este establecimiento?')) return;
-    try {
-      await establecimientosApi.delete(id!, estId!);
-      show({ title: 'Éxito', message: 'Establecimiento eliminado', type: 'success' });
-      navigate(`/emisores/${id}`);
-    } catch (err:any) {
-      show({ title: 'Error', message: err?.response?.data?.message || 'No se pudo eliminar', type: 'error' });
-    }
+  const openDeleteModal = () => {
+    setActionsOpen(false);
+    setDeleteOpen(true);
   };
 
   return (
@@ -66,7 +67,7 @@ const EstablecimientoInfo: React.FC = () => {
             {actionsOpen && (
               <div role="menu" style={{ position: 'absolute', right: 0, top: '110%', background: '#fff', border: '1px solid #ddd', boxShadow: '0 6px 18px rgba(0,0,0,.08)', borderRadius: 6, zIndex: 50 }}>
                 <button role="menuitem" onClick={() => { setActionsOpen(false); navigate(`/emisores/${id}/establecimientos/${estId}/edit`); }} className="menu-item" style={{ display: 'block', padding: 8, width: 220, textAlign: 'left', background: 'transparent', border: 'none', cursor: 'pointer' }}>✏️ Editar establecimiento</button>
-                <button role="menuitem" onClick={() => { setActionsOpen(false); handleDeleteEst(); }} className="menu-item" style={{ display: 'block', padding: 8, width: 220, textAlign: 'left', background: 'transparent', border: 'none', cursor: 'pointer' }}>🗑️ Eliminar establecimiento</button>
+                <button role="menuitem" onClick={openDeleteModal} className="menu-item" style={{ display: 'block', padding: 8, width: 220, textAlign: 'left', background: 'transparent', border: 'none', cursor: 'pointer' }}>🗑️ Eliminar establecimiento</button>
               </div>
             )}
           </div>
@@ -172,6 +173,87 @@ const EstablecimientoInfo: React.FC = () => {
           }
         `}</style>
       </div>
+
+      {/* Step 1: Confirmation modal (shows codigo + nombre) */}
+      {deleteOpen && (
+        <div className="mf-modal-overlay" role="dialog" aria-modal="true">
+          <div className="mf-modal" style={{ width: 'min(620px,92vw)', padding: 22 }}>
+            <h3 style={{ margin: 0, color: '#1a63d6', fontSize: 22, textAlign: 'center' }}>Eliminación de establecimiento</h3>
+            <div style={{ height: 12 }} />
+            <p style={{ textAlign: 'center', fontSize: 16, margin: '0 0 8px', fontWeight: 700 }}>¿Está seguro que desea eliminar el establecimiento:</p>
+            <p style={{ textAlign: 'center', marginTop: 6, marginBottom: 12 }}>
+              <span style={{ color: '#c62828', fontWeight: 800, fontSize: 16 }}>{est?.codigo ?? ''}</span>
+              <span> - </span>
+              <span style={{ color: '#c62828', fontWeight: 800 }}>{est?.nombre ?? ''}</span>
+            </p>
+            <p style={{ textAlign: 'center', marginTop: 0, marginBottom: 18, fontSize: 15 }}>y todos sus datos asociados?</p>
+
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
+              <button className="mf-btn-cancel" onClick={() => setDeleteOpen(false)} style={{ padding: '10px 22px', borderRadius: 20 }}>CANCELAR</button>
+              <button className="mf-btn-confirm" onClick={() => { setDeleteOpen(false); setDeletePasswordOpen(true); }} style={{ padding: '10px 22px', borderRadius: 20, background: '#ff6b6b' }}>CONFIRMAR</button>
+            </div>
+
+            <style>{`
+              .mf-modal-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.35); display:flex; align-items:center; justify-content:center; z-index:3000; }
+              .mf-modal{ width:min(540px, 92vw); background:#fff; border-radius:12px; padding:28px 24px; box-shadow:0 20px 60px rgba(0,0,0,.25); text-align:center; }
+              .mf-btn-cancel{ padding:10px 18px; border-radius:8px; background:#fff; color:#333; border:2px solid #000; font-weight:700; cursor:pointer; }
+              .mf-btn-confirm{ padding:10px 18px; border-radius:8px; background:#ff6b6b; color:#fff; border:none; font-weight:700; cursor:pointer; }
+              .mf-btn-cancel:disabled, .mf-btn-confirm:disabled{ opacity:0.6; cursor:not-allowed; }
+            `}</style>
+          </div>
+        </div>
+      )}
+
+      {/* Step 2: Password entry modal */}
+      {deletePasswordOpen && (
+        <div className="mf-modal-overlay" role="dialog" aria-modal="true">
+          <div className="mf-modal" style={{ width: 'min(520px,92vw)', padding: 22 }}>
+            <h3 style={{ margin: 0, color: '#1a63d6', fontSize: 22, textAlign: 'center' }}>Eliminación de establecimiento</h3>
+            <div style={{ height: 12 }} />
+            <p style={{ textAlign: 'center', fontSize: 16, margin: '0 0 12px', fontWeight: 600 }}>Ingresa tu clave de administrador para confirmar la eliminación del establecimiento</p>
+
+            <div style={{ margin: '8px 0 6px' }}>
+              <input
+                type="password"
+                value={deletePassword}
+                onChange={(e) => setDeletePassword(e.target.value)}
+                placeholder="Clave de administrador"
+                style={{ width: '100%', padding: '12px 2px', borderRadius: 8, border: '1px solid #d0d0d0', fontSize: 16 }}
+                autoFocus
+              />
+              {deleteError && <div style={{ color: '#b00020', marginTop: 8 }}>{deleteError}</div>}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 14 }}>
+              <button className="mf-btn-cancel" onClick={() => { setDeletePasswordOpen(false); setDeletePassword(''); setDeleteError(null); }} disabled={deleteLoading}>CANCELAR</button>
+              <button className="mf-btn-confirm" onClick={async () => {
+                if (!id || !estId) return;
+                setDeleteLoading(true);
+                setDeleteError(null);
+                try {
+                  await establecimientosApi.delete(id, estId, deletePassword);
+                  setDeletePasswordOpen(false);
+                  show({ title: 'Éxito', message: 'Establecimiento eliminado correctamente', type: 'success' });
+                  navigate(`/emisores/${id}`);
+                } catch (err: any) {
+                  const msg = err?.response?.data?.message || 'No se pudo eliminar el establecimiento';
+                  setDeleteError(msg);
+                } finally {
+                  setDeleteLoading(false);
+                }
+              }} disabled={deleteLoading || deletePassword.length === 0}>{deleteLoading ? 'Eliminando…' : 'CONFIRMAR'}</button>
+            </div>
+
+            <style>{`
+              .mf-modal-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.35); display:flex; align-items:center; justify-content:center; z-index:3000; }
+              .mf-modal{ width:min(540px, 92vw); background:#fff; border-radius:12px; padding:28px 24px; box-shadow:0 20px 60px rgba(0,0,0,.25); text-align:center; }
+              .mf-btn-cancel{ padding:10px 18px; border-radius:8px; background:#fff; color:#333; border:2px solid #000; font-weight:700; cursor:pointer; }
+              .mf-btn-confirm{ padding:10px 18px; border-radius:8px; background:#ff6b6b; color:#fff; border:none; font-weight:700; cursor:pointer; }
+              .mf-btn-cancel:disabled, .mf-btn-confirm:disabled{ opacity:0.6; cursor:not-allowed; }
+            `}</style>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
