@@ -209,7 +209,7 @@ const CambiarPassword: React.FC<Props> = ({ onSubmit }) => {
                 {showPassword ? "🙉" : "🙈"}
               </button>
             </div>
-            <label className="password-label">Contraseña</label>
+            <label className="password-label">Contraseña:</label>
             {errors.password && <div className="field-error">{errors.password}</div>}
           </div>
 

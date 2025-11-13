@@ -12,13 +12,15 @@
 }
 
 .auth-card {
-  width: 420px; /* 💡 Ancho más estrecho y definido */
-  background: white;
-  border-radius: 8px;
-  padding: 40px 30px 80px 30px; /* 💡 Más padding abajo para el pie de página */
-  box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+  width: 420px;
+  background: rgba(255, 255, 255, 0.98); /* ✨ Fondo semi-transparente más elegante */
+  border-radius: 16px; /* ✨ Bordes más redondeados y modernos */
+  padding: 40px 30px 80px 30px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), /* ✨ Sombra más dramática */
+              0 0 0 1px rgba(255, 255, 255, 0.1); /* ✨ Borde sutil brillante */
   position: relative;
-  border: 1px solid rgba(0, 0, 0, 0.05); /* Borde sutil */
+  backdrop-filter: blur(10px); /* ✨ Efecto de vidrio esmerilado */
+  -webkit-backdrop-filter: blur(10px);
 }
 .auth-logo {
   display: block;
@@ -39,22 +41,30 @@
   gap: 8px;
   width: 100%;
   justify-content: center;
-  margin-bottom: 6px;
+  margin-bottom: 20px; /* ✨ AUMENTADO de 6px a 20px para más espacio */
 }
 .auth-tab {
   flex: 1 1 50%;
   text-align: center;
-  padding: 10px 12px;
+  padding: 12px 12px; /* ✨ Padding más generoso */
   background: transparent;
   border: none;
   cursor: pointer;
-  font-weight: 800;
-  color: #5b5b5b;
-  border-bottom: 2px solid transparent;
+  font-weight: 700; /* ✨ Más negrita */
+  font-size: 0.95rem; /* ✨ Texto un poco más grande */
+  color: #888; /* ✨ Gris más suave para inactivos */
+  border-bottom: 3px solid transparent;
+  transition: all 0.3s ease; /* ✨ Transición suave */
 }
 .auth-tab.active {
   color: #0d6efd;
   border-bottom: 3px solid #0d6efd;
+  background: rgba(13, 110, 253, 0.05); /* ✨ Fondo azul muy suave */
+}
+
+.auth-tab:hover:not(.active) {
+  color: #555; /* ✨ Color más oscuro al hover */
+  background: rgba(0, 0, 0, 0.02); /* ✨ Fondo sutil al hover */
 }
 
 /* 💡 Los field-stack ahora se alinean a la izquierda para replicar el diseño */
@@ -73,11 +83,21 @@
 
 .auth-input {
   padding: 12px;
-  border: 1px solid #c9c9c9;
-  border-radius: 4px; /* 💡 Bordes menos redondeados */
+  border: 2px solid #e0e0e0; /* ✨ Borde más grueso */
+  border-radius: 8px; /* ✨ Bordes más redondeados */
   width: 100%;
   font-size: 16px; 
   padding-right: 40px;
+  transition: all 0.3s ease; /* ✨ Transición suave */
+  background: #fafafa; /* ✨ Fondo ligeramente gris */
+}
+
+.auth-input:focus {
+  outline: none;
+  border-color: #0d6efd; /* ✨ Borde azul al hacer focus */
+  background: white; /* ✨ Fondo blanco al hacer focus */
+  box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.1); /* ✨ Resplandor azul suave */
+  transform: translateY(-1px); /* ✨ Pequeño levantamiento */
 }
 
 .field-label {
@@ -89,21 +109,32 @@
 }
 
 .primary-btn { 
-  /* 💡 Estilo de botón deseado: rectangular, sólido y azul */
-  background: #0d6efd; 
+  background: linear-gradient(135deg, #0d6efd 0%, #0b5fd7 100%); /* ✨ Gradiente moderno */
   color: white; 
-  padding: 12px 28px; 
-  border-radius: 6px; /* 💡 Bordes cuadrados */
+  padding: 14px 48px; /* ✨ Padding horizontal más amplio para mejor aspecto */
+  border-radius: 10px; /* ✨ Bordes más redondeados */
   border: none; 
   cursor: pointer; 
-  margin-top: 25px; 
-  margin-bottom: 50px;
-  font-size: 0.9rem;
+  margin-top: 28px; /* ✨ Reducido de 35px a 28px - espacio entre contraseña y botón */
+  margin-bottom: 16px; /* ✨ Reducido de 20px a 16px - espacio entre botón y footer */
+  font-size: 0.95rem;
   font-weight: bold;
-  letter-spacing: 0.5px;
-  width: 50%; /* 💡 Ocupa el ancho completo */
-  box-shadow: 0 4px 0 rgba(0,0,0,0.1); /* Sombra sutil */
-  transition: background-color 0.2s;
+  letter-spacing: 0.8px; /* ✨ Espaciado entre letras */
+  width: auto; /* ✨ CAMBIADO: ancho según contenido */
+  min-width: 200px; /* ✨ Ancho mínimo para que no sea muy pequeño */
+  box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3); /* ✨ Sombra azul */
+  transition: all 0.3s ease; /* ✨ Transición suave */
+}
+
+.primary-btn:hover {
+  background: linear-gradient(135deg, #0b5fd7 0%, #084298 100%); /* ✨ Gradiente más oscuro al hover */
+  box-shadow: 0 6px 20px rgba(13, 110, 253, 0.4); /* ✨ Sombra más pronunciada */
+  transform: translateY(-2px); /* ✨ Efecto de levantamiento */
+}
+
+.primary-btn:active {
+  transform: translateY(0); /* ✨ Presionar hacia abajo */
+  box-shadow: 0 2px 10px rgba(13, 110, 253, 0.3);
 }
 
 .secondary-btn { 
@@ -120,13 +151,9 @@
 .buttons-row{
   display:flex;gap:12px;align-items:center;justify-content:center;width:100%;margin-top:8px;margin-bottom:12px
 }
-.primary-btn{width:100%;}
 
-.primary-btn:hover {
-    background-color: #0b5fd7;
-}
 
-/* 💡 Contenedor para el pie de página - Soporte a la izquierda, Olvidé contraseña a la derecha */
+/* Icono de ojo */
 .auth-links-footer { 
   display: flex !important; 
   flex-direction: row !important;
@@ -176,7 +203,7 @@
 
 /* Icono de ojo */
 .eye-btn { 
-  font-size: 1.2rem; 
+  font-size: 1.3rem; /* ✨ Moñito más grande */
   position: absolute; 
   right: 10px; 
   top: 50%; 
@@ -185,7 +212,13 @@
   border: none; 
   cursor: pointer; 
   padding: 6px; 
-  color: #8e9097; /* Color sutil */
+  color: #666;
+  transition: all 0.2s ease; /* ✨ Transición suave */
+}
+
+.eye-btn:hover {
+  transform: translateY(-50%) scale(1.1); /* ✨ Aumenta tamaño al hover */
+  color: #0d6efd; /* ✨ Color azul al hover */
 }
 
 /* ... (mantener el resto de estilos de validación, errores y notificaciones) ... */
