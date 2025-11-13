@@ -333,7 +333,7 @@ const EmisorFormModal: React.FC<Props> = (props) => {
         <div className="mf-body scrollable">
           <section>
             <h3>Datos del RUC</h3>
-              <label>RUC {requiredKeys.has('ruc') && <span className="required">*</span>}
+              <label className="horizontal">RUC
                   <input
                     value={v.ruc}
                     onChange={e => onChange('ruc', e.target.value)}
@@ -341,34 +341,34 @@ const EmisorFormModal: React.FC<Props> = (props) => {
                     disabled={!localRucEditable}
                       className={validateFieldRealTime('ruc') ? 'error-input' : ''}
                   />
-                  {!localRucEditable && <small style={{color:'#666'}}>El RUC no puede ser modificado porque existen comprobantes autorizados.</small>}
-                    {validateFieldRealTime('ruc') && <span className="err">{validateFieldRealTime('ruc')}</span>}
               </label>
-            <label>Razón Social {requiredKeys.has('razon_social') && <span className="required">*</span>}
+                  {!localRucEditable && <small style={{color:'#666',marginLeft:'192px'}}>El RUC no puede ser modificado porque existen comprobantes autorizados.</small>}
+                    {validateFieldRealTime('ruc') && <span className="err" style={{marginLeft:'192px'}}>{validateFieldRealTime('ruc')}</span>}
+            <label className="horizontal">Razón Social
               <input
                 value={v.razon_social}
                 onChange={e => onChange('razon_social', e.target.value)}
                   onBlur={() => setTouchedFields(prev => new Set(prev).add('razon_social'))}
                   className={validateFieldRealTime('razon_social') ? 'error-input' : ''}
               />
-                {validateFieldRealTime('razon_social') && <span className="err">{validateFieldRealTime('razon_social')}</span>}
             </label>
-            <label>Nombre comercial {requiredKeys.has('nombre_comercial') && <span className="required">*</span>}
+                {validateFieldRealTime('razon_social') && <span className="err" style={{marginLeft:'192px'}}>{validateFieldRealTime('razon_social')}</span>}
+            <label className="horizontal">Nombre comercial
               <input 
                 value={v.nombre_comercial || ''} 
                 onChange={e => onChange('nombre_comercial', e.target.value)}
                   onBlur={() => setTouchedFields(prev => new Set(prev).add('nombre_comercial'))}
               />
             </label>
-            <label>Dirección Matriz {requiredKeys.has('direccion_matriz') && <span className="required">*</span>}
+            <label className="horizontal">Dirección Matriz
               <input
                 value={v.direccion_matriz || ''}
                 onChange={e => onChange('direccion_matriz', e.target.value)}
                   onBlur={() => setTouchedFields(prev => new Set(prev).add('direccion_matriz'))}
                   className={validateFieldRealTime('direccion_matriz') ? 'error-input' : ''}
               />
-                {validateFieldRealTime('direccion_matriz') && <span className="err">{validateFieldRealTime('direccion_matriz')}</span>}
             </label>
+                {validateFieldRealTime('direccion_matriz') && <span className="err" style={{marginLeft:'192px'}}>{validateFieldRealTime('direccion_matriz')}</span>}
           </section>
 
           <section>
@@ -381,9 +381,45 @@ const EmisorFormModal: React.FC<Props> = (props) => {
 
             <h3>Obligaciones</h3>
             <div className="row">
-              <label><input type="checkbox" checked={v.obligado_contabilidad==='SI'} onChange={e=>onChange('obligado_contabilidad', e.target.checked?'SI':'NO')} /> Obligado a llevar contabilidad{isMissing('obligado_contabilidad') && <span className="req">*</span>}</label>
-              <label><input type="checkbox" checked={v.contribuyente_especial==='SI'} onChange={e=>onChange('contribuyente_especial', e.target.checked?'SI':'NO')} /> Contribuyente Especial{isMissing('contribuyente_especial') && <span className="req">*</span>}</label>
-              <label><input type="checkbox" checked={v.agente_retencion==='SI'} onChange={e=>onChange('agente_retencion', e.target.checked?'SI':'NO')} /> Agente de retención{isMissing('agente_retencion') && <span className="req">*</span>}</label>
+              <label>
+                <input 
+                  type="radio" 
+                  name="obligacion" 
+                  checked={v.obligado_contabilidad==='SI' && v.contribuyente_especial==='NO' && v.agente_retencion==='NO'} 
+                  onChange={() => {
+                    onChange('obligado_contabilidad', 'SI');
+                    onChange('contribuyente_especial', 'NO');
+                    onChange('agente_retencion', 'NO');
+                  }} 
+                /> 
+                Obligado a llevar contabilidad
+              </label>
+              <label>
+                <input 
+                  type="radio" 
+                  name="obligacion" 
+                  checked={v.contribuyente_especial==='SI' && v.obligado_contabilidad==='NO' && v.agente_retencion==='NO'} 
+                  onChange={() => {
+                    onChange('obligado_contabilidad', 'NO');
+                    onChange('contribuyente_especial', 'SI');
+                    onChange('agente_retencion', 'NO');
+                  }} 
+                /> 
+                Contribuyente Especial
+              </label>
+              <label>
+                <input 
+                  type="radio" 
+                  name="obligacion" 
+                  checked={v.agente_retencion==='SI' && v.obligado_contabilidad==='NO' && v.contribuyente_especial==='NO'} 
+                  onChange={() => {
+                    onChange('obligado_contabilidad', 'NO');
+                    onChange('contribuyente_especial', 'NO');
+                    onChange('agente_retencion', 'SI');
+                  }} 
+                /> 
+                Agente de retención
+              </label>
             </div>
             <div>
               {(fieldErrors.obligado_contabilidad || fieldErrors.contribuyente_especial || fieldErrors.agente_retencion) && (
@@ -397,19 +433,20 @@ const EmisorFormModal: React.FC<Props> = (props) => {
                 <label key={opt}><input type="radio" checked={v.tipo_persona===opt} onChange={()=>onChange('tipo_persona', opt as any)} /> {opt}</label>
               ))}
             </div>
-            <label>Código Artesano {requiredKeys.has('codigo_artesano') && <span className="required">*</span>}
+            <label className="horizontal" style={{maxWidth: '600px', margin: '12px auto'}}>Código Artesano
               <input 
                 value={v.codigo_artesano || ''} 
                 onChange={e => onChange('codigo_artesano', e.target.value)}
-             onBlur={() => setTouchedFields(prev => new Set(prev).add('codigo_artesano'))}
+                onBlur={() => setTouchedFields(prev => new Set(prev).add('codigo_artesano'))}
                 placeholder="Opcional - Ej: PICHINCHA-17-1234-2024"
+                className="artesano-input"
               />
             </label>
           </section>
 
           <section>
             <h3>Datos de configuración</h3>
-            <label>Correo Remitente {requiredKeys.has('correo_remitente') && <span className="required">*</span>}
+            <label>Correo Remitente
                 <input 
                   value={v.correo_remitente || ''} 
                   onChange={e => onChange('correo_remitente', e.target.value)} 
@@ -418,12 +455,14 @@ const EmisorFormModal: React.FC<Props> = (props) => {
                 />
                 {validateFieldRealTime('correo_remitente') && <span className="err">{validateFieldRealTime('correo_remitente')}</span>}
             </label>
-            <div className="row config-row">
-              <label>Estado
+            <div className="config-row">
+              <label>
                 <input type="checkbox" checked={v.estado==='ACTIVO'} onChange={e => onChange('estado', e.target.checked?'ACTIVO':'INACTIVO')} />
+                Estado
               </label>
 
-              <label>Ambiente{isMissing('ambiente') && <span className="req">*</span>}
+              <label>
+                Ambiente
                   <select 
                     value={v.ambiente} 
                     onChange={e => onChange('ambiente', e.target.value as any)} 
@@ -436,7 +475,8 @@ const EmisorFormModal: React.FC<Props> = (props) => {
                   {validateFieldRealTime('ambiente') && <span className="err">{validateFieldRealTime('ambiente')}</span>}
               </label>
 
-              <label>Tipo de Emisión{isMissing('tipo_emision') && <span className="req">*</span>}
+              <label>
+                Tipo de Emisión
                   <select 
                     value={v.tipo_emision} 
                     onChange={e => onChange('tipo_emision', e.target.value as any)} 
@@ -450,22 +490,25 @@ const EmisorFormModal: React.FC<Props> = (props) => {
               </label>
             </div>
 
-            <label>Logo {requiredKeys.has('logo') && <span className="required">*</span>}
-              <input 
-                type="text" 
-                readOnly 
-                value={logoFile?.name || ''} 
-                placeholder="logo.jpg" 
-                className={validateFieldRealTime('logo') ? 'error-input' : ''} 
-              />
-              <input 
-                type="file" 
-                accept=".jpg,.jpeg,.png" 
-                onChange={e => {
-                  setLogoFile(e.target.files?.[0] || null);
-                  setTouchedFields(prev => new Set(prev).add('logo'));
-                }} 
-              />
+            <label>Logo
+              <div className="logo-container">
+                <div className={`logo-display ${validateFieldRealTime('logo') ? 'error-input' : ''}`}>
+                  <input 
+                    type="text" 
+                    readOnly 
+                    value={logoFile?.name || ''} 
+                    placeholder="Seleccione un archivo (JPG, JPEG o PNG)"
+                  />
+                </div>
+                <input 
+                  type="file" 
+                  accept=".jpg,.jpeg,.png" 
+                  onChange={e => {
+                    setLogoFile(e.target.files?.[0] || null);
+                    setTouchedFields(prev => new Set(prev).add('logo'));
+                  }} 
+                />
+              </div>
               {validateFieldRealTime('logo') && <span className="err">{validateFieldRealTime('logo')}</span>}
             </label>
           </section>
@@ -495,47 +538,121 @@ const EmisorFormModal: React.FC<Props> = (props) => {
       />
 
       <style>{`
-        .mf-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:1000}
-  .mf-modal{position:relative;width:min(880px,92vw);max-height:86vh;background:#fff;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,.25);display:flex;flex-direction:column;overflow:hidden}
-        .mf-header{padding:16px 20px;border-bottom:1px solid #eceff4}
-        .mf-body{padding:16px 20px}
-        .scrollable{overflow-y:auto}
-        section{margin-bottom:18px}
-        section h3{margin:10px 0;font-size:16px}
-        label{display:block;margin:8px 0}
-        input,select{padding:8px 10px;border:1px solid #d0d7e2;border-radius:6px;width:100%;max-width:100%}
-        .row{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
-  .err{color:#c53030;margin-left:8px;font-size:12px}
-  .required{color:#c53030;margin-left:6px;font-weight:600}
-  .req{color:#c53030;margin-left:6px}
-  .error-input{border-color:#c53030;background:#fff6f6}
-        .mf-footer{display:flex;gap:12px;justify-content:flex-end;padding:12px 20px;border-top:1px solid #eceff4}
-  .mf-footer button{padding:8px 14px;border-radius:8px;border:1px solid #cbd5e1;background:#1e3a8a;color:#fff;transition:all .12s ease;cursor:pointer}
-  .mf-footer button:first-child{background:#fff;color:#0f172a;border-color:#cbd5e1}
-  /* Hover/active animations for buttons */
-  .mf-footer button:hover{transform:translateY(-3px);box-shadow:0 6px 14px rgba(16,24,40,0.08)}
-  .mf-footer button:active{transform:translateY(-1px);opacity:.95}
-  .mf-footer button.btn-primary:hover{background:#15306b}
-  .mf-footer button.btn-primary:active{background:#122a5f}
-  .mf-footer button.btn-secondary:hover{background:#f3f4f6}
-  .mf-footer button.btn-secondary:active{background:#e6e9ef}
-        .mf-loading-overlay{position:absolute;inset:0;background:rgba(255,255,255,0.6);display:flex;align-items:center;justify-content:center;border-radius:12px}
-        .mf-spinner{width:48px;height:48px;border-radius:50%;border:6px solid rgba(0,0,0,0.08);border-top-color:#1e3a8a;animation:spin 1s linear infinite}
+        /* Backdrop and modal shell */
+        .mf-backdrop{position:fixed;inset:0;background:rgba(2,6,23,0.45);display:flex;align-items:center;justify-content:center;z-index:1000}
+        .mf-modal{position:relative;width:min(820px,92vw);max-height:88vh;background:#fff;border-radius:12px;box-shadow:0 14px 40px rgba(2,6,23,0.18);display:flex;flex-direction:column;overflow:hidden}
+
+        /* Header */
+        .mf-header{padding:20px 24px;border-bottom:1px solid #e5e7eb;background:linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)}
+        .mf-header h2{margin:0;font-size:22px;color:#1e293b;font-weight:700}
+
+        /* Body (scrollable) */
+        .mf-body{padding:24px;overflow:auto}
+        .scrollable{overflow-y:auto;padding-right:8px}
+
+        /* Sections */
+        section{margin-bottom:24px;padding:20px;background:#f8fafc;border-radius:10px;border:1px solid #e5e7eb}
+        section h3{margin:0 0 16px;font-size:16px;text-align:center;color:#334155;font-weight:700;text-transform:uppercase;letter-spacing:0.5px}
+
+        /* Form fields - HORIZONTAL layout for RUC section */
+        label.horizontal{display:grid;grid-template-columns:180px 1fr;gap:12px;align-items:center;
+          margin:10px 0;font-weight:500;color:#475569}
+        label.horizontal input,label.horizontal select{height:40px;padding:10px 12px;border:1px solid #cbd5e1;
+          border-radius:8px;width:100%;box-sizing:border-box;font-size:14px;background:#fff;transition:all 0.2s ease}
+        
+        /* Form fields - VERTICAL layout (default) */
+        label{display:flex;flex-direction:column;gap:8px;margin:12px 0;font-weight:500;color:#475569}
+        input:not([type="radio"]):not([type="checkbox"]):not([type="file"]),select,textarea{
+          height:40px;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;width:100%;
+          box-sizing:border-box;font-size:14px;background:#fff;transition:all 0.2s ease
+        }
+        input:not([type="radio"]):not([type="checkbox"]):not([type="file"]):focus,select:focus,textarea:focus{
+          outline:none;box-shadow:0 0 0 3px rgba(59,130,246,0.1);border-color:#3b82f6
+        }
+
+        /* Codigo Artesano - input más pequeño */
+        .artesano-input{max-width:400px!important;background:linear-gradient(135deg, #fff 0%, #f8fafc 100%)!important;
+          border:1px solid #cbd5e1!important;font-style:italic;color:#64748b}
+        .artesano-input:focus{background:#fff!important}
+
+        /* Radio buttons - custom styled circles */
+        input[type="radio"]{appearance:none;width:20px;height:20px;border:2px solid #cbd5e1;border-radius:50%;
+          cursor:pointer;transition:all 0.2s ease;margin:0;position:relative;flex-shrink:0}
+        input[type="radio"]:checked{border-color:#3b82f6;background:#3b82f6;
+          box-shadow:0 0 0 2px #fff inset}
+        input[type="radio"]:hover{border-color:#3b82f6}
+
+        /* Checkbox styled as radio - custom circles */
+        input[type="checkbox"].radio-style{appearance:none;width:20px;height:20px;border:2px solid #cbd5e1;
+          border-radius:50%;cursor:pointer;transition:all 0.2s ease;margin:0;position:relative;flex-shrink:0}
+        input[type="checkbox"].radio-style:checked{border-color:#3b82f6;background:#3b82f6;
+          box-shadow:0 0 0 2px #fff inset}
+        input[type="checkbox"].radio-style:hover{border-color:#3b82f6}
+
+        /* Regular checkbox for Estado */
+        input[type="checkbox"]:not(.radio-style){appearance:none;width:20px;height:20px;border:2px solid #cbd5e1;
+          border-radius:4px;cursor:pointer;transition:all 0.2s ease;margin:0;position:relative;flex-shrink:0}
+        input[type="checkbox"]:not(.radio-style):checked{border-color:#3b82f6;background:#3b82f6}
+        input[type="checkbox"]:not(.radio-style):checked::after{content:'✓';color:#fff;position:absolute;
+          top:50%;left:50%;transform:translate(-50%,-50%);font-size:14px;font-weight:bold}
+
+        /* Radio / checkbox groups */
+        .row{display:flex;gap:16px;flex-wrap:wrap;align-items:center;justify-content:center}
+        .row label{display:flex;flex-direction:row;align-items:center;gap:8px;margin:4px 0;
+          font-weight:500;font-size:13px;color:#64748b;text-transform:capitalize}
+
+        /* Config row - CENTRADO Y MÁS JUNTO */
+        .config-row{display:flex;gap:20px;justify-content:center;align-items:center;margin-top:12px;flex-wrap:wrap}
+        .config-row label{font-size:13px;font-weight:600;color:#475569;display:flex;align-items:center;gap:10px}
+        .config-row select{height:36px;font-size:13px;padding:6px 10px;min-width:140px}
+        .config-row input[type="checkbox"]{width:18px;height:18px}
+
+        /* Validation and misc */
+        .err{color:#dc2626;margin-top:4px;font-size:12px;display:block}
+        .required{color:#dc2626;margin-left:4px;font-weight:700}
+        .req{color:#dc2626;margin-left:4px}
+        .error-input{border-color:#dc2626!important;background:#fef2f2!important}
+
+        /* Footer / actions */
+        .mf-footer{display:flex;gap:12px;justify-content:flex-end;padding:16px 24px;border-top:1px solid #e5e7eb;background:#f8fafc}
+        .mf-footer .btn{padding:11px 20px;border-radius:8px;border:1px solid transparent;cursor:pointer;
+          font-weight:600;font-size:14px;transition:all 0.2s ease}
+        .mf-footer .btn-secondary{background:#fff;color:#475569;border:1px solid #cbd5e1}
+        .mf-footer .btn-secondary:hover{background:#f1f5f9;border-color:#94a3b8}
+        .mf-footer .btn-primary{background:#3b82f6;color:#fff}
+        .mf-footer .btn-primary:hover{background:#2563eb;transform:translateY(-1px);box-shadow:0 4px 12px rgba(59,130,246,0.3)}
+        .mf-footer .btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+        /* Loading overlay */
+        .mf-loading-overlay{position:absolute;inset:0;background:rgba(255,255,255,0.7);display:flex;
+          align-items:center;justify-content:center;border-radius:12px;backdrop-filter:blur(2px)}
+        .mf-spinner{width:40px;height:40px;border-radius:50%;border:4px solid #e5e7eb;
+          border-top-color:#3b82f6;animation:spin 0.8s linear infinite}
         @keyframes spin{to{transform:rotate(360deg)}}
-  /* File input personalizado */
-  /* Alinear a la izquierda y truncar nombre de archivo si es muy largo */
-  .file-wrapper{display:flex;gap:12px;align-items:center;justify-content:flex-start;flex-wrap:wrap;max-width:100%;margin:6px 0}
-        .file-btn{padding:8px 12px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;color:#0f172a;cursor:pointer}
-    .file-name{font-size:0.95rem;color:#374151;max-width:360px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-        @media (max-width:480px){
-          .row{grid-template-columns:repeat(1,1fr)}
-          input,select,textarea{max-width:100%}
-          .mf-modal{width:calc(100vw - 32px)}
-          /* En pantallas pequeñas, labels pasan a bloque para evitar columnas muy estrechas */
-          label{grid-template-columns:1fr;align-items:flex-start}
-          label > input,label > select,label > textarea,label > .file-wrapper{grid-column:1;width:100%}
-          /* Mover el asterisco junto al label en móvil */
-          label > .required{grid-column:1;justify-self:flex-start;margin-left:6px}
+
+        /* Logo input styling - MÁS PEQUEÑO Y CENTRADO */
+        .logo-container{display:flex;flex-direction:column;gap:10px;max-width:500px;margin:0 auto}
+        .logo-display{display:flex;align-items:center;gap:12px;padding:10px 14px;background:#fff;
+          border:2px dashed #cbd5e1;border-radius:8px;transition:all 0.2s ease;height:36px}
+        .logo-display:hover{border-color:#3b82f6;background:#f0f9ff}
+        .logo-display input[type="text"]{border:none;background:transparent;padding:0;height:auto;flex:1;font-size:13px}
+        .logo-display input[type="text"]:focus{box-shadow:none}
+        input[type="file"]{padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;
+          cursor:pointer;background:#fff;transition:all 0.2s ease;height:36px}
+        input[type="file"]:hover{border-color:#3b82f6;background:#f0f9ff}
+        input[type="file"]::file-selector-button{padding:5px 12px;border:1px solid #cbd5e1;
+          border-radius:6px;background:#f8fafc;color:#475569;cursor:pointer;font-weight:500;font-size:12px;
+          margin-right:10px;transition:all 0.2s ease}
+        input[type="file"]::file-selector-button:hover{background:#3b82f6;color:#fff;border-color:#3b82f6}
+
+        /* Responsive tweaks */
+        @media (max-width:600px){
+          .mf-modal{width:calc(100vw - 24px);border-radius:10px}
+          .mf-body{padding:16px}
+          section{padding:16px}
+          label.horizontal{grid-template-columns:1fr;gap:6px}
+          .row{flex-direction:column;align-items:flex-start;gap:12px}
+          .config-row{flex-direction:column;align-items:stretch;gap:12px}
         }
       `}</style>
     </div>

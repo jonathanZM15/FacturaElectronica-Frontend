@@ -126,32 +126,44 @@
     background-color: #0b5fd7;
 }
 
-/* 💡 Nuevo contenedor para el pie de página */
+/* 💡 Contenedor para el pie de página - Soporte a la izquierda, Olvidé contraseña a la derecha */
 .auth-links-footer { 
-  position: absolute; 
-  left: 30px; /* Desde el borde de la tarjeta */
-  right: 30px; /* Hasta el borde de la tarjeta */
-  bottom: 30px; /* Posicionamiento final */
-  display:flex; 
-  justify-content: space-between; /* Separar enlaces a los extremos */
-  font-size: 0.95rem; 
-  width: calc(100% - 60px); /* Ancho del contenido */
+  display: flex !important; 
+  flex-direction: row !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  align-self: stretch !important;
+  margin-top: 20px !important;
+  padding: 0 !important;
+  font-size: 0.95rem !important; 
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 .auth-links-footer a { 
-  color:#064aa6; 
-  text-decoration: none; /* 💡 Sin subrayado inicial */
-  font-weight: 700; 
+  color: #064aa6 !important; 
+  text-decoration: none !important;
+  font-weight: 700 !important; 
+  display: inline-flex !important;
+  align-items: center !important;
+  white-space: nowrap !important;
 }
 
 .auth-links-footer a:hover {
-    text-decoration: underline; /* Subrayado al pasar el ratón */
+    text-decoration: underline !important;
 }
 
 .support-link {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  order: 1 !important; /* Forzar que sea el primero */
+}
+
+.forgot {
+  order: 2 !important; /* Forzar que sea el segundo */
+  margin-left: auto !important; /* Empujar hacia la derecha */
 }
 
 .whatsapp-icon {
@@ -184,15 +196,13 @@
 @media (max-width: 500px) {
   .auth-card { 
     width: 95%; 
-    padding: 30px 20px 70px 20px; 
+    padding: 30px 20px; 
   }
   .auth-links-footer { 
-    left: 20px; 
-    right: 20px; 
-    width: calc(100% - 40px);
-    flex-direction: column; 
-    gap: 8px; 
-    bottom: 20px;
+    flex-direction: row; 
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
   }
 }
 /* Estilos específicos para la página de recuperación de contraseña */

@@ -181,42 +181,194 @@ const EmisorInfo: React.FC = () => {
 
         <div style={{ marginTop: 18 }}>
           {tab === 'emisor' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <div style={{ border: '1px solid #e6e6e6', padding: 16, borderRadius: 8 }}>
-                <h4 style={{ marginTop: 0 }}>Datos del RUC</h4>
-                <p><strong>RUC:</strong> {company?.ruc ?? '-'}</p>
-                <p><strong>Razón social:</strong> {company?.razon_social ?? '-'}</p>
-                <p><strong>Nombre comercial:</strong> {company?.nombre_comercial ?? '-'}</p>
-                <p><strong>Dirección matriz:</strong> {company?.direccion_matriz ?? '-'}</p>
-                <p><strong>Régimen tributario:</strong> {company?.regimen_tributario ?? '-'}</p>
-                <p><strong>Obligado contabilidad:</strong> {company?.obligado_contabilidad ?? '-'}</p>
-                <p><strong>Contribuyente especial:</strong> {company?.contribuyente_especial ?? '-'}</p>
-                <p><strong>Agente retención:</strong> {company?.agente_retencion ?? '-'}</p>
-                <p><strong>Tipo de persona:</strong> {company?.tipo_persona ?? '-'}</p>
-                <p><strong>Código artesano:</strong> {company?.codigo_artesano ?? '-'}</p>
-                <p><strong>Correo remitente:</strong> {company?.correo_remitente ?? '-'}</p>
+            <>
+              {/* Cards Grid - Modern Design */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
+                {/* Datos del RUC Card */}
+                <div className="info-card">
+                  <div className="card-header">
+                    <div className="card-icon" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+                      <span style={{ fontSize: 24 }}>📋</span>
+                    </div>
+                    <h3 className="card-title">Datos del RUC</h3>
+                  </div>
+                  <div className="card-body">
+                    <div className="info-row"><span className="info-label">RUC:</span><span className="info-value">{company?.ruc ?? '-'}</span></div>
+                    <div className="info-row"><span className="info-label">Razón social:</span><span className="info-value">{company?.razon_social ?? '-'}</span></div>
+                    <div className="info-row"><span className="info-label">Nombre comercial:</span><span className="info-value">{company?.nombre_comercial ?? '-'}</span></div>
+                    <div className="info-row"><span className="info-label">Dirección matriz:</span><span className="info-value">{company?.direccion_matriz ?? '-'}</span></div>
+                    <div className="info-row"><span className="info-label">Régimen tributario:</span><span className="info-value badge badge-purple">{company?.regimen_tributario?.replace('_', ' ') ?? '-'}</span></div>
+                    <div className="info-row"><span className="info-label">Obligado contabilidad:</span><span className={`info-value badge ${company?.obligado_contabilidad === 'SI' ? 'badge-green' : 'badge-gray'}`}>{company?.obligado_contabilidad ?? '-'}</span></div>
+                    <div className="info-row"><span className="info-label">Contribuyente especial:</span><span className={`info-value badge ${company?.contribuyente_especial === 'SI' ? 'badge-blue' : 'badge-gray'}`}>{company?.contribuyente_especial ?? '-'}</span></div>
+                    <div className="info-row"><span className="info-label">Agente retención:</span><span className={`info-value badge ${company?.agente_retencion === 'SI' ? 'badge-orange' : 'badge-gray'}`}>{company?.agente_retencion ?? '-'}</span></div>
+                    <div className="info-row"><span className="info-label">Tipo de persona:</span><span className="info-value">{company?.tipo_persona ?? '-'}</span></div>
+                    <div className="info-row"><span className="info-label">Código artesano:</span><span className="info-value">{company?.codigo_artesano ?? '-'}</span></div>
+                    <div className="info-row"><span className="info-label">Correo remitente:</span><span className="info-value" style={{ fontSize: 13, color: '#3b82f6' }}>{company?.correo_remitente ?? '-'}</span></div>
+                  </div>
+                </div>
+
+                {/* Configuración Card */}
+                <div className="info-card">
+                  <div className="card-header">
+                    <div className="card-icon" style={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }}>
+                      <span style={{ fontSize: 24 }}>⚙️</span>
+                    </div>
+                    <h3 className="card-title">Configuración de la cuenta</h3>
+                  </div>
+                  <div className="card-body">
+                    <div className="info-row"><span className="info-label">Ambiente:</span><span className={`info-value badge ${company?.ambiente === 'PRODUCCION' ? 'badge-green' : 'badge-yellow'}`}>{company?.ambiente ?? '-'}</span></div>
+                    <div className="info-row"><span className="info-label">Tipo de emisión:</span><span className="info-value badge badge-blue">{company?.tipo_emision ?? '-'}</span></div>
+                    <div className="info-row"><span className="info-label">Estado:</span><span className={`info-value badge ${company?.estado === 'ACTIVO' ? 'badge-green' : 'badge-red'}`}>{company?.estado ?? '-'}</span></div>
+                    <div className="info-row"><span className="info-label">Tipo de plan:</span><span className="info-value">{company?.tipo_plan ?? '-'}</span></div>
+                    <div className="info-row"><span className="info-label">Fecha inicio plan:</span><span className="info-value">{company?.fecha_inicio_plan ?? '-'}</span></div>
+                    <div className="info-row"><span className="info-label">Fecha fin plan:</span><span className="info-value">{company?.fecha_fin_plan ?? '-'}</span></div>
+                    <div className="info-row">
+                      <span className="info-label">Cantidad creados:</span>
+                      <span className="info-value" style={{ fontWeight: 700, color: '#059669' }}>{company?.cantidad_creados ?? '-'}</span>
+                    </div>
+                    <div className="info-row">
+                      <span className="info-label">Cantidad restantes:</span>
+                      <span className="info-value" style={{ fontWeight: 700, color: '#dc2626' }}>{company?.cantidad_restantes ?? '-'}</span>
+                    </div>
+                    <div className="info-row" style={{ alignItems: 'flex-start', marginTop: 12 }}>
+                      <span className="info-label">Logo:</span>
+                      <div className="info-value">
+                        {company?.logo_url ? (
+                          <img src={company.logo_url} alt="logo" style={{ maxWidth: 150, maxHeight: 150, borderRadius: 8, border: '2px solid #e5e7eb', padding: 8, background: '#fff' }} />
+                        ) : (
+                          <span style={{ color: '#94a3b8' }}>-</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actividad Card */}
+                <div className="info-card" style={{ gridColumn: 'span 2' }}>
+                  <div className="card-header">
+                    <div className="card-icon" style={{ background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' }}>
+                      <span style={{ fontSize: 24 }}>📊</span>
+                    </div>
+                    <h3 className="card-title">Actividad de la cuenta</h3>
+                  </div>
+                  <div className="card-body" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 16 }}>
+                    <div className="info-row"><span className="info-label">Fecha de creación:</span><span className="info-value">{company?.created_at ?? '-'}</span></div>
+                    <div className="info-row"><span className="info-label">Fecha de actualización:</span><span className="info-value">{company?.updated_at ?? '-'}</span></div>
+                    <div className="info-row"><span className="info-label">Fecha de último comprobante:</span><span className="info-value">{company?.ultimo_comprobante ?? '-'}</span></div>
+                    <div className="info-row"><span className="info-label">Fecha último inicio de sesión:</span><span className="info-value">{company?.ultimo_login ?? '-'}</span></div>
+                    <div className="info-row"><span className="info-label">Registrador:</span><span className="info-value">{company?.registrador ?? '-'}</span></div>
+                  </div>
+                </div>
               </div>
-              <div style={{ border: '1px solid #e6e6e6', padding: 16, borderRadius: 8 }}>
-                <h4 style={{ marginTop: 0 }}>Configuración de la cuenta</h4>
-                <p><strong>Ambiente:</strong> {company?.ambiente ?? '-'}</p>
-                <p><strong>Tipo de emisión:</strong> {company?.tipo_emision ?? '-'}</p>
-                <p><strong>Estado:</strong> {company?.estado ?? '-'}</p>
-                <p><strong>Tipo de plan:</strong> {company?.tipo_plan ?? '-'}</p>
-                <p><strong>Fecha inicio plan:</strong> {company?.fecha_inicio_plan ?? '-'}</p>
-                <p><strong>Fecha fin plan:</strong> {company?.fecha_fin_plan ?? '-'}</p>
-                <p><strong>Cantidad creados:</strong> {company?.cantidad_creados ?? '-'}</p>
-                <p><strong>Cantidad restantes:</strong> {company?.cantidad_restantes ?? '-'}</p>
-                <p><strong>Logo:</strong> {company?.logo_url ? <img src={company.logo_url} alt="logo" style={{ maxWidth: 120, display: 'block', marginTop: 8 }} /> : '-'}</p>
-              </div>
-              <div style={{ gridColumn: '1 / -1', border: '1px solid #e6e6e6', padding: 16, borderRadius: 8 }}>
-                <h4 style={{ marginTop: 0 }}>Actividad de la cuenta</h4>
-                <p><strong>Fecha de creación:</strong> {company?.created_at ?? '-'}</p>
-                <p><strong>Fecha de actualización:</strong> {company?.updated_at ?? '-'}</p>
-                <p><strong>Fecha de último comprobante:</strong> {company?.ultimo_comprobante ?? '-'}</p>
-                <p><strong>Fecha último inicio de sesión:</strong> {company?.ultimo_login ?? '-'}</p>
-                <p><strong>Registrador:</strong> {company?.registrador ?? '-'}</p>
-              </div>
-            </div>
+
+              {/* Styles for modern cards */}
+              <style>{`
+                .info-card {
+                  background: #fff;
+                  border-radius: 12px;
+                  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+                  overflow: hidden;
+                  transition: all 0.3s ease;
+                  border: 1px solid #e5e7eb;
+                }
+                .info-card:hover {
+                  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+                  transform: translateY(-2px);
+                }
+                .card-header {
+                  padding: 20px;
+                  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+                  border-bottom: 1px solid #e5e7eb;
+                  display: flex;
+                  align-items: center;
+                  gap: 12px;
+                }
+                .card-icon {
+                  width: 48px;
+                  height: 48px;
+                  border-radius: 12px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                }
+                .card-title {
+                  margin: 0;
+                  font-size: 18px;
+                  font-weight: 700;
+                  color: #1e293b;
+                }
+                .card-body {
+                  padding: 20px;
+                }
+                .info-row {
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  padding: 10px 0;
+                  border-bottom: 1px solid #f1f5f9;
+                }
+                .info-row:last-child {
+                  border-bottom: none;
+                }
+                .info-label {
+                  font-weight: 600;
+                  color: #64748b;
+                  font-size: 14px;
+                  flex-shrink: 0;
+                  margin-right: 12px;
+                }
+                .info-value {
+                  font-weight: 500;
+                  color: #1e293b;
+                  font-size: 14px;
+                  text-align: right;
+                  word-break: break-word;
+                }
+                .badge {
+                  display: inline-block;
+                  padding: 4px 12px;
+                  border-radius: 12px;
+                  font-size: 12px;
+                  font-weight: 700;
+                  text-transform: uppercase;
+                  letter-spacing: 0.5px;
+                }
+                .badge-green {
+                  background: #d1fae5;
+                  color: #065f46;
+                }
+                .badge-red {
+                  background: #fee2e2;
+                  color: #991b1b;
+                }
+                .badge-blue {
+                  background: #dbeafe;
+                  color: #1e40af;
+                }
+                .badge-yellow {
+                  background: #fef3c7;
+                  color: #92400e;
+                }
+                .badge-orange {
+                  background: #ffedd5;
+                  color: #9a3412;
+                }
+                .badge-purple {
+                  background: #e9d5ff;
+                  color: #6b21a8;
+                }
+                .badge-gray {
+                  background: #f3f4f6;
+                  color: #4b5563;
+                }
+                @media (max-width: 768px) {
+                  .info-card[style*="grid-column"] {
+                    grid-column: span 1 !important;
+                  }
+                }
+              `}</style>
+            </>
           )}
 
           {tab === 'establecimientos' && (
