@@ -379,47 +379,82 @@ const EmisorFormModal: React.FC<Props> = (props) => {
               ))}
             </div>
 
-            <h3>Obligaciones</h3>
-            <div className="row">
-              <label>
-                <input 
-                  type="radio" 
-                  name="obligacion" 
-                  checked={v.obligado_contabilidad==='SI' && v.contribuyente_especial==='NO' && v.agente_retencion==='NO'} 
-                  onChange={() => {
-                    onChange('obligado_contabilidad', 'SI');
-                    onChange('contribuyente_especial', 'NO');
-                    onChange('agente_retencion', 'NO');
-                  }} 
-                /> 
-                Obligado a llevar contabilidad
-              </label>
-              <label>
-                <input 
-                  type="radio" 
-                  name="obligacion" 
-                  checked={v.contribuyente_especial==='SI' && v.obligado_contabilidad==='NO' && v.agente_retencion==='NO'} 
-                  onChange={() => {
-                    onChange('obligado_contabilidad', 'NO');
-                    onChange('contribuyente_especial', 'SI');
-                    onChange('agente_retencion', 'NO');
-                  }} 
-                /> 
-                Contribuyente Especial
-              </label>
-              <label>
-                <input 
-                  type="radio" 
-                  name="obligacion" 
-                  checked={v.agente_retencion==='SI' && v.obligado_contabilidad==='NO' && v.contribuyente_especial==='NO'} 
-                  onChange={() => {
-                    onChange('obligado_contabilidad', 'NO');
-                    onChange('contribuyente_especial', 'NO');
-                    onChange('agente_retencion', 'SI');
-                  }} 
-                /> 
-                Agente de retención
-              </label>
+            <h3 style={{marginTop: '24px'}}>Obligaciones</h3>
+            <div style={{display: 'flex', flexDirection: 'column', gap: '10px', maxWidth: '550px', margin: '0 auto'}}>
+              {/* Obligado a llevar contabilidad */}
+              <div style={{display: 'grid', gridTemplateColumns: '1fr 130px', alignItems: 'center', gap: '16px', padding: '10px 12px', background: '#f8f9fa', borderRadius: '8px'}}>
+                <span style={{fontWeight: 600, fontSize: '14px', textAlign: 'left'}}>Obligado A Llevar Contabilidad</span>
+                <div style={{display: 'flex', gap: '24px', justifyContent: 'flex-end'}}>
+                  <label style={{display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer'}}>
+                    <input 
+                      type="radio" 
+                      name="obligado_contabilidad"
+                      checked={v.obligado_contabilidad === 'SI'} 
+                      onChange={() => onChange('obligado_contabilidad', 'SI')} 
+                    /> 
+                    Sí
+                  </label>
+                  <label style={{display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer'}}>
+                    <input 
+                      type="radio" 
+                      name="obligado_contabilidad"
+                      checked={v.obligado_contabilidad === 'NO'} 
+                      onChange={() => onChange('obligado_contabilidad', 'NO')} 
+                    /> 
+                    No
+                  </label>
+                </div>
+              </div>
+
+              {/* Contribuyente Especial */}
+              <div style={{display: 'grid', gridTemplateColumns: '1fr 130px', alignItems: 'center', gap: '16px', padding: '10px 12px', background: '#f8f9fa', borderRadius: '8px'}}>
+                <span style={{fontWeight: 600, fontSize: '14px', textAlign: 'left'}}>Contribuyente Especial</span>
+                <div style={{display: 'flex', gap: '24px', justifyContent: 'flex-end'}}>
+                  <label style={{display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer'}}>
+                    <input 
+                      type="radio" 
+                      name="contribuyente_especial"
+                      checked={v.contribuyente_especial === 'SI'} 
+                      onChange={() => onChange('contribuyente_especial', 'SI')} 
+                    /> 
+                    Sí
+                  </label>
+                  <label style={{display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer'}}>
+                    <input 
+                      type="radio" 
+                      name="contribuyente_especial"
+                      checked={v.contribuyente_especial === 'NO'} 
+                      onChange={() => onChange('contribuyente_especial', 'NO')} 
+                    /> 
+                    No
+                  </label>
+                </div>
+              </div>
+
+              {/* Agente de Retención */}
+              <div style={{display: 'grid', gridTemplateColumns: '1fr 130px', alignItems: 'center', gap: '16px', padding: '10px 12px', background: '#f8f9fa', borderRadius: '8px'}}>
+                <span style={{fontWeight: 600, fontSize: '14px', textAlign: 'left'}}>Agente De Retención</span>
+                <div style={{display: 'flex', gap: '24px', justifyContent: 'flex-end'}}>
+                  <label style={{display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer'}}>
+                    <input 
+                      type="radio" 
+                      name="agente_retencion"
+                      checked={v.agente_retencion === 'SI'} 
+                      onChange={() => onChange('agente_retencion', 'SI')} 
+                    /> 
+                    Sí
+                  </label>
+                  <label style={{display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer'}}>
+                    <input 
+                      type="radio" 
+                      name="agente_retencion"
+                      checked={v.agente_retencion === 'NO'} 
+                      onChange={() => onChange('agente_retencion', 'NO')} 
+                    /> 
+                    No
+                  </label>
+                </div>
+              </div>
             </div>
             <div>
               {(fieldErrors.obligado_contabilidad || fieldErrors.contribuyente_especial || fieldErrors.agente_retencion) && (

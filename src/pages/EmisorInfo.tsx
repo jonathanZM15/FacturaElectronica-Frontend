@@ -376,7 +376,33 @@ const EmisorInfo: React.FC = () => {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                 <h4 style={{ margin: 0 }}>Establecimientos</h4>
                 <div>
-                  <button onClick={() => { setEditEst(null); setOpenNewEst(true); }} style={{ padding: '8px 12px', borderRadius: 8, background: '#1e40af', color: '#fff', border: 'none', cursor: 'pointer' }}>Nuevo</button>
+                  <button 
+                    onClick={() => { setEditEst(null); setOpenNewEst(true); }} 
+                    style={{ 
+                      padding: '11px 24px', 
+                      borderRadius: 10, 
+                      background: 'linear-gradient(135deg, #0d6efd 0%, #0b5fd7 100%)', 
+                      color: '#fff', 
+                      border: 'none', 
+                      cursor: 'pointer',
+                      fontWeight: 700,
+                      boxShadow: '0 4px 12px rgba(13, 110, 253, 0.3)',
+                      letterSpacing: '0.5px',
+                      transition: 'all 0.3s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'linear-gradient(135deg, #0b5fd7 0%, #084298 100%)';
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = '0 6px 16px rgba(13, 110, 253, 0.4)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'linear-gradient(135deg, #0d6efd 0%, #0b5fd7 100%)';
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(13, 110, 253, 0.3)';
+                    }}
+                  >
+                    Nuevo
+                  </button>
                 </div>
               </div>
 
@@ -385,10 +411,10 @@ const EmisorInfo: React.FC = () => {
                   <table className="tabla-emisores">
                     <thead>
                       <tr>
-                        <th className="th-sticky sticky-left-1 sortable" onClick={() => toggleSortEst('codigo')}>
+                        <th className="sortable" onClick={() => toggleSortEst('codigo')} style={{ minWidth: 120 }}>
                           Código {sortByEst === 'codigo' ? (sortDirEst === 'asc' ? '▲' : '▼') : '▾'}
                         </th>
-                        <th className="th-sticky sticky-left-2 sortable" onClick={() => toggleSortEst('nombre')}>
+                        <th className="sortable" onClick={() => toggleSortEst('nombre')} style={{ minWidth: 150 }}>
                           Nombre {sortByEst === 'nombre' ? (sortDirEst === 'asc' ? '▲' : '▼') : '▾'}
                         </th>
                         <th className="sortable" onClick={() => toggleSortEst('nombre_comercial')} style={{ minWidth: 200 }}>
@@ -410,8 +436,8 @@ const EmisorInfo: React.FC = () => {
                         <tr><td className="loading-row" colSpan={7}>No hay establecimientos registrados.</td></tr>
                       ) : paginatedEsts.map((est) => (
                         <tr key={est.id}>
-                          <td className="td-sticky sticky-left-1"><Link className="link-ruc" to={`/emisores/${company?.id}/establecimientos/${est.id}`}>{est.codigo}</Link></td>
-                          <td className="td-sticky sticky-left-2">{est.nombre}</td>
+                          <td style={{ textAlign: 'center' }}><Link className="link-ruc" to={`/emisores/${company?.id}/establecimientos/${est.id}`}>{est.codigo}</Link></td>
+                          <td style={{ textAlign: 'center' }}>{est.nombre}</td>
                           <td style={{ textAlign: 'center' }}>{est.nombre_comercial || '-'}</td>
                           <td style={{ textAlign: 'center' }}>{est.direccion || '-'}</td>
                           <td style={{ textAlign: 'center' }}>
@@ -420,7 +446,22 @@ const EmisorInfo: React.FC = () => {
                             ) : (<span className="logo-placeholder">—</span>)}
                           </td>
                           <td style={{ textAlign: 'center' }}>
-                            <div style={{ background: est.estado === 'ABIERTO' ? '#bbf7d0' : '#f3f4f6', padding: '6px 8px', borderRadius: 6, color: est.estado === 'ABIERTO' ? '#059669' : '#374151', fontWeight: 700 }}>{est.estado === 'ABIERTO' ? 'Activo' : 'Cerrado'}</div>
+                            <div style={{ 
+                              background: est.estado === 'ABIERTO' 
+                                ? 'linear-gradient(135deg, #bbf7d0 0%, #86efac 100%)' 
+                                : 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)', 
+                              padding: '8px 14px', 
+                              borderRadius: 20, 
+                              color: est.estado === 'ABIERTO' ? '#059669' : '#6b7280', 
+                              fontWeight: 700,
+                              fontSize: '12px',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px',
+                              boxShadow: est.estado === 'ABIERTO' 
+                                ? '0 2px 8px rgba(5, 150, 105, 0.2)' 
+                                : '0 2px 8px rgba(0, 0, 0, 0.05)',
+                              display: 'inline-block'
+                            }}>{est.estado === 'ABIERTO' ? 'Activo' : 'Cerrado'}</div>
                           </td>
                           <td className="td-sticky sticky-right acciones">
                             <button title="Editar" onClick={() => { navigate(`/emisores/${company?.id}/establecimientos/${est.id}/edit`); }}>✏️</button>

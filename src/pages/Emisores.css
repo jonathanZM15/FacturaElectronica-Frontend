@@ -62,11 +62,28 @@
 .estado-search .caption { font-size: 11px; color: #6b7280; white-space: nowrap; display: none; }
 
 .filtros .btn-nuevo {
-  background: linear-gradient(180deg, #eef1ff, #dde4ff);
-  color: #111827; border: 1px solid #c7cffc; border-radius: 999px;
-  padding: 10px 18px; cursor: pointer; font-weight: 700; box-shadow: 0 1px 0 #cfd7ff inset;
-  height: 42px; display: inline-flex; align-items: center; justify-content: center;
-  white-space: nowrap; flex-shrink: 0;
+  background: linear-gradient(135deg, #0d6efd 0%, #0b5fd7 100%); /* ✨ Gradiente azul moderno */
+  color: #fff; /* ✨ Texto blanco */
+  border: none; /* ✨ Sin borde */
+  border-radius: 10px; /* ✨ Bordes más redondeados */
+  padding: 11px 24px; /* ✨ Padding ajustado */
+  cursor: pointer;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3); /* ✨ Sombra azul */
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  flex-shrink: 0;
+  letter-spacing: 0.5px; /* ✨ Espaciado entre letras */
+  transition: all 0.3s ease; /* ✨ Transición suave */
+}
+
+.filtros .btn-nuevo:hover {
+  background: linear-gradient(135deg, #0b5fd7 0%, #084298 100%); /* ✨ Gradiente más oscuro */
+  transform: translateY(-2px); /* ✨ Levantamiento */
+  box-shadow: 0 6px 16px rgba(13, 110, 253, 0.4); /* ✨ Sombra más intensa */
 }
 
 .alert-error {
@@ -80,10 +97,13 @@
   --col-razon: 200px;
   --col-actions: 100px;
 
-  border: 2px solid #ff8c00;
+  border: none; /* ✨ Sin borde naranja */
+  border-radius: 12px; /* ✨ Bordes redondeados */
   position: relative;
   background: #fff;
-  overflow: visible;
+  overflow: hidden; /* ✨ Para que los bordes redondeados funcionen */
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), /* ✨ Sombra suave */
+              0 0 0 1px rgba(0, 0, 0, 0.05); /* ✨ Borde sutil */
 }
 
 /* Contenedor con scroll horizontal */
@@ -138,67 +158,97 @@
 
 /* Estilos de headers */
 thead th {
-  background: #2931a8;
+  background: linear-gradient(135deg, #5b21b6 0%, #7c3aed 100%); /* ✨ Gradiente morado moderno */
   color: #fff;
-  padding: 10px;
+  padding: 14px 10px; /* ✨ Padding más generoso */
   text-align: center;
-  border: 2px solid #ff8c00;
+  border: none; /* ✨ Sin bordes naranjas */
+  border-right: 1px solid rgba(255, 255, 255, 0.1); /* ✨ Separador sutil */
   font-weight: 600;
   font-size: 13px;
+  text-transform: uppercase; /* ✨ Mayúsculas */
+  letter-spacing: 0.5px; /* ✨ Espaciado entre letras */
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.1); /* ✨ Sombra interna */
 }
 
-/* Columnas fijas con fondo gris */
+/* Columnas fijas con fondo degradado */
 .th-sticky.sticky-left-1,
 .th-sticky.sticky-left-2,
 .th-sticky.sticky-right {
-  background: #cccccc !important;
-  color: #000 !important;
+  background: linear-gradient(135deg, #6b7280 0%, #9ca3af 100%) !important; /* ✨ Gradiente gris moderno */
+  color: #fff !important; /* ✨ Texto blanco */
 }
 
-/* Special case: establishments table should show all headers in blue like the main header style */
-.tabla-wrapper.estab-table thead th,
-.tabla-wrapper.estab-table .th-dyn {
-  background: #2931a8 !important;
+/* ✨ Tabla de establecimientos - TODOS los headers son MORADOS */
+.tabla-wrapper.estab-table thead th {
+  background: linear-gradient(135deg, #5b21b6 0%, #7c3aed 100%) !important; /* ✨ Gradiente morado moderno */
   color: #fff !important;
-  border: 2px solid #ff8c00 !important;
+  border: none !important; /* ✨ Sin bordes naranjas */
+  border-right: 1px solid rgba(255, 255, 255, 0.1) !important; /* ✨ Separador sutil */
   font-weight: 600 !important;
+  text-transform: uppercase !important; /* ✨ Mayúsculas */
+  letter-spacing: 0.5px !important; /* ✨ Espaciado */
+  padding: 14px 10px !important;
+  font-size: 13px !important;
 }
 
-/* Ensure the right/left sticky header cells inside estab-table also show blue */
-.tabla-wrapper.estab-table .th-sticky.sticky-left-1,
-.tabla-wrapper.estab-table .th-sticky.sticky-left-2,
-.tabla-wrapper.estab-table .th-sticky.sticky-right {
-  background: #2931a8 !important;
+/* ✨ SOLO la columna de ACCIONES debe ser GRIS */
+.tabla-wrapper.estab-table thead .th-sticky.sticky-right {
+  background: linear-gradient(135deg, #6b7280 0%, #9ca3af 100%) !important; /* ✨ Gradiente gris SOLO para ACCIONES */
   color: #fff !important;
-  border: 2px solid #ff8c00 !important;
+  border: none !important; /* ✨ Sin bordes naranjas */
+  border-left: 1px solid rgba(255, 255, 255, 0.1) !important; /* ✨ Separador sutil */
 }
 
-/* Make ONLY the 'Estado' header (4th dynamic column) gray in the establishments table,
-   and give its body cells a light gray background. The dynamic columns order is:
-   1) Nombre Comercial, 2) Dirección, 3) Logo, 4) Estado */
-/* The 'Estado' column should remain blue like other headers;
-   make the right 'Acciones' column header and its cells gray instead. */
-.tabla-wrapper.estab-table .th-sticky.sticky-right {
-  background: #cccccc !important;
-  color: #000 !important;
-  border: 2px solid #ff8c00 !important;
-}
+/* ✨ Celdas sticky de acciones con fondo moderno */
 .tabla-wrapper.estab-table .td-sticky.sticky-right {
-  background: #f3f4f6 !important;
+  background: #f9fafb !important; /* ✨ Fondo gris muy claro */
   color: #374151 !important;
+  border: none !important;
+  border-bottom: 1px solid #e5e7eb !important; /* ✨ Separador horizontal sutil */
+}
+
+/* ✨ Celdas sticky izquierda con fondo blanco */
+.tabla-wrapper.estab-table .td-sticky.sticky-left-1,
+.tabla-wrapper.estab-table .td-sticky.sticky-left-2 {
+  border: none !important; /* ✨ Sin bordes naranjas */
+  border-bottom: 1px solid #e5e7eb !important; /* ✨ Separador horizontal */
+  border-right: 1px solid #f3f4f6 !important; /* ✨ Separador vertical sutil */
+}
+
+/* ✨ Efecto hover en filas de establecimientos */
+.tabla-wrapper.estab-table tbody tr:hover td {
+  background-color: #f3f0ff !important; /* ✨ Fondo morado claro al hover */
+}
+
+.tabla-wrapper.estab-table tbody tr:hover .td-sticky {
+  background-color: #ede9fe !important; /* ✨ Columnas sticky con tono morado más claro */
 }
 
 /* Estilos de celdas */
 tbody td {
-  border: 2px solid #ff8c00;
-  padding: 8px 10px;
+  border: none; /* ✨ Sin bordes naranjas */
+  border-bottom: 1px solid #e5e7eb; /* ✨ Separador horizontal sutil */
+  border-right: 1px solid #f3f4f6; /* ✨ Separador vertical muy sutil */
+  padding: 12px 10px; /* ✨ Padding más generoso */
   background: #fff;
   vertical-align: middle;
   text-align: center;
   font-size: 13px;
   white-space: normal;
   word-wrap: break-word;
+  transition: background-color 0.2s ease; /* ✨ Transición suave */
   word-break: break-word;
+}
+
+/* ✨ Efecto hover en las filas */
+tbody tr:hover td {
+  background-color: #f8f9fa !important; /* ✨ Fondo gris muy claro al hover */
+  cursor: pointer;
+}
+
+tbody tr:hover .td-sticky {
+  background-color: #f1f3f5 !important; /* ✨ Columnas sticky con tono ligeramente diferente */
 }
 
 .loading-row {
@@ -220,9 +270,20 @@ tbody td {
 }
 .logo-placeholder { opacity: 0.7; }
 
-.acciones { display: flex; gap: 6px; align-items: center; justify-content: center; }
+.acciones { display: flex; gap: 8px; align-items: center; justify-content: center; }
 .acciones button {
-  border: none; background: transparent; cursor: pointer; font-size: 16px; padding: 4px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 18px; /* ✨ Iconos más grandes */
+  padding: 6px;
+  border-radius: 6px; /* ✨ Bordes redondeados */
+  transition: all 0.2s ease; /* ✨ Transición suave */
+}
+
+.acciones button:hover {
+  background: rgba(0, 0, 0, 0.05); /* ✨ Fondo sutil al hover */
+  transform: scale(1.1); /* ✨ Aumenta tamaño */
 }
 
 /* Pagination controls */
@@ -230,9 +291,11 @@ tbody td {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
-  border-top: 2px solid #ff8c00;
-  background: #fff;
+  padding: 16px 20px; /* ✨ Padding más generoso */
+  border-top: 1px solid #e5e7eb; /* ✨ Borde sutil */
+  background: #fafbfc; /* ✨ Fondo gris muy claro */
+  border-bottom-left-radius: 12px; /* ✨ Bordes redondeados */
+  border-bottom-right-radius: 12px;
 }
 
 .pagination-info {
