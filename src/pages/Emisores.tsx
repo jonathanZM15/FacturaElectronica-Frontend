@@ -6,6 +6,14 @@ import EmisorFormModal from './EmisorFormModal';
 import { Emisor } from '../types/emisor';
 import { useNotification } from '../contexts/NotificationContext';
 
+// Helper para truncar a un máximo de N palabras
+function truncateWords(text: string, maxWords: number = 10): string {
+  if (!text) return '';
+  const words = text.trim().split(/\s+/);
+  if (words.length <= maxWords) return text;
+  return words.slice(0, maxWords).join(' ') + '...';
+}
+
 const dynamicColumns: Array<{
   key: keyof Emisor | 'logo';
   label: string;
@@ -38,9 +46,9 @@ const dynamicColumns: Array<{
   { key: 'cantidad_creados', label: 'Cantidad de comprobantes creados', width: 240 },
   { key: 'cantidad_restantes', label: 'Cantidad de comprobantes restantes', width: 240 },
 
-  { key: 'nombre_comercial', label: 'Nombre comercial', width: 150 },
-  { key: 'direccion_matriz', label: 'Dirección Matriz', width: 150 },
-  { key: 'correo_remitente', label: 'Correo Remitente', width: 220 },
+  { key: 'nombre_comercial', label: 'Nombre comercial', width: 200 },
+  { key: 'direccion_matriz', label: 'Dirección Matriz', width: 240 },
+  { key: 'correo_remitente', label: 'Correo Remitente', width: 250 },
   {
     key: 'logo',
     label: 'Logo',
@@ -517,20 +525,26 @@ const Emisores: React.FC = () => {
                   <tr key={row.id}>
                     {/* Fijos izquierda */}
                     <td className="td-sticky sticky-left-1">
-                      <Link className="link-ruc" to={`/emisores/${row.id}`}>{row.ruc}</Link>
+                      <Link className="link-ruc" to={`/emisores/${row.id}`}>{truncateWords(row.ruc || '')}</Link>
                     </td>
                     <td className="td-sticky sticky-left-2">
-                      {row.razon_social}
+                      {truncateWords(row.razon_social || '')}
                     </td>
 
                     {/* Celdas dinámicas */}
                     {dynamicColumns.map((c) => {
-                      const content =
+                      let content: React.ReactNode =
                         c.render
                           ? c.render(row)
                           : (row[c.key as keyof Emisor] as any) ?? '-';
 
-                      const isNumber = typeof (row[c.key as keyof Emisor] as any) === 'number';
+                      // Truncar sólo si es un string plano
+                      if (typeof content === 'string') {
+                        content = truncateWords(content);
+                      }
+
+                      const rawValue = row[c.key as keyof Emisor] as any;
+                      const isNumber = typeof rawValue === 'number';
                       const isRestantes = c.key === 'cantidad_restantes';
 
                       return (
