@@ -7,7 +7,7 @@
   align-items: center;
   background-color: #ffffff;
   height: 60px; 
-  padding: 0 30px;
+  padding: 0 12px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   /* Posición fija para que se mantenga arriba */
   position: fixed;
@@ -68,31 +68,43 @@
 
 .navbar-right {
   display: flex;
-  align-items: center; /* Centrado vertical */
-  gap: 25px;
-  padding: 50px;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto; /* push right block to the far right inside navbar */
+  padding-right: 8px; /* keep some spacing from edge */
+  margin-right: 24px; /* shift the block a bit to the left from the viewport edge */
 }
 
-/* BOTÓN SALIR */
-.logout-btn {
+/* Right-side user area: username then button */
+.navbar-right .user-area {
   display: flex;
-  align-items: center; 
-  gap: 5px;
-  background-color: #0c2de7; 
-  color: white; 
-  border: none;
-  padding: 8px 15px;
-  border-radius: 4px;
-  font-size: 14px;
-  font-weight: bold;
-  cursor: pointer;
+  align-items: center;
+  gap: 8px;
 }
 
-.logout-icon {
-  font-size: 1.2em; 
-  transform: rotate(180deg);
-  
+.user-name {
+  font-weight: 600;
+  color: var(--text-color, #111827);
+  font-size: 14px;
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+
+.logout-btn {
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  white-space: nowrap;
+  min-width: 48px;
+}
+
+.logout-btn:hover { background: #1e40af; }
 
 
 /* --- SIDEBAR (MENÚ LATERAL) --- */

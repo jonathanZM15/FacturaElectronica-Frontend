@@ -4,9 +4,13 @@ import './Navbar.css';
 import logo from '../assets/maximofactura.png';
 // static header: no dynamic logo or user controls
 import { useSidebar } from '../contexts/SidebarContext';
+import { useUser } from '../contexts/userContext';
+import { useNavigate } from 'react-router-dom';
 
 const Navbar: React.FC = () => {
   const { menuOpen, toggleMenu } = useSidebar();
+  const { user, logout } = useUser();
+  const navigate = useNavigate();
 
   return (
     <header className="navbar-container">
@@ -67,7 +71,17 @@ const Navbar: React.FC = () => {
         </ul>
       </nav>
 
-      {/* top bar is static; logout/confirm removed per design */}
+      {/* top bar right: user name and logout */}
+      <div className="navbar-right">
+        {user && (
+          <div className="user-area">
+            <span className="user-name">{(user as any).name || (user as any).username || (user as any).email}</span>
+            <button className="logout-btn" onClick={async () => { try { await logout(); } catch { navigate('/'); } }} title="Cerrar sesión">
+              Salir
+            </button>
+          </div>
+        )}
+      </div>
     </header>
   );
 };
