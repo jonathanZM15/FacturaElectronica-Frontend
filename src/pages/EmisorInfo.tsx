@@ -219,17 +219,7 @@ const EmisorInfo: React.FC = () => {
                     <div className="info-row"><span className="info-label">Ambiente:</span><span className={`info-value badge ${company?.ambiente === 'PRODUCCION' ? 'badge-green' : 'badge-yellow'}`}>{company?.ambiente ?? '-'}</span></div>
                     <div className="info-row"><span className="info-label">Tipo de emisión:</span><span className="info-value badge badge-blue">{company?.tipo_emision ?? '-'}</span></div>
                     <div className="info-row"><span className="info-label">Estado:</span><span className={`info-value badge ${company?.estado === 'ACTIVO' ? 'badge-green' : 'badge-red'}`}>{company?.estado ?? '-'}</span></div>
-                    <div className="info-row"><span className="info-label">Tipo de plan:</span><span className="info-value">{company?.tipo_plan ?? '-'}</span></div>
-                    <div className="info-row"><span className="info-label">Fecha inicio plan:</span><span className="info-value">{company?.fecha_inicio_plan ?? '-'}</span></div>
-                    <div className="info-row"><span className="info-label">Fecha fin plan:</span><span className="info-value">{company?.fecha_fin_plan ?? '-'}</span></div>
-                    <div className="info-row">
-                      <span className="info-label">Cantidad creados:</span>
-                      <span className="info-value" style={{ fontWeight: 700, color: '#059669' }}>{company?.cantidad_creados ?? '-'}</span>
-                    </div>
-                    <div className="info-row">
-                      <span className="info-label">Cantidad restantes:</span>
-                      <span className="info-value" style={{ fontWeight: 700, color: '#dc2626' }}>{company?.cantidad_restantes ?? '-'}</span>
-                    </div>
+                    {/* Plan details moved to 'Planes' tab to avoid duplication */}
                     <div className="info-row" style={{ alignItems: 'flex-start', marginTop: 12 }}>
                       <span className="info-label">Logo:</span>
                       <div className="info-value">
