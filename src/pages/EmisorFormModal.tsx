@@ -1,4 +1,5 @@
 import React from 'react';
+import { useUser } from '../contexts/userContext';
 import { emisoresApi } from '../services/emisoresApi';
 import { Emisor } from '../types/emisor';
 import { validateRucEcuador } from '../helpers/validateRuc';
@@ -34,6 +35,7 @@ const initial: Emisor = {
 
 const EmisorFormModal: React.FC<Props> = (props) => {
   const { open, onClose, onCreated, editingId, initialData, rucEditable, onUpdated } = props;
+  const { user } = useUser();
   const [v, setV] = React.useState<Emisor>(initial);
   const [logoFile, setLogoFile] = React.useState<File | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
@@ -236,12 +238,19 @@ const EmisorFormModal: React.FC<Props> = (props) => {
     setLoading(true);
     try {
       let res;
+      // Build payload but omit correo_remitente when empty so backend uses DB default/null
+      const payload: any = { ...v };
+      // If correo_remitente is empty, prefer the authenticated user's email to satisfy backend 'required' validation.
+      if (!payload.correo_remitente || (typeof payload.correo_remitente === 'string' && payload.correo_remitente.trim() === '')) {
+        payload.correo_remitente = (user && (user as any).email) ? (user as any).email : 'no-reply@localhost';
+      }
+
       if (editingId) {
-        res = await emisoresApi.update(editingId, { ...v, logoFile });
+        res = await emisoresApi.update(editingId, { ...payload, logoFile });
         const updated: Emisor = res.data?.data ?? res.data;
         onUpdated && onUpdated(updated);
       } else {
-        res = await emisoresApi.create({ ...v, logoFile });
+        res = await emisoresApi.create({ ...payload, logoFile });
         const created: Emisor = res.data?.data ?? res.data;
         onCreated && onCreated(created);
       }

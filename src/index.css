@@ -7,6 +7,12 @@
   --color-border: #d0d7e2; /* inputs and subtle borders */
   --color-bg: #ffffff;
   --color-text: #1f2335;
+  /* Notification colors */
+  --color-success: #16a34a; /* green with good contrast on white text */
+  --color-success-700: #15803d;
+  --color-warning: #f59e0b; /* amber/orange for warnings */
+  --color-warning-700: #b45309;
+  --color-notification-text: #ffffff;
   --input-radius: 8px;
   --input-padding: 10px;
 }
