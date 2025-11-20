@@ -224,7 +224,7 @@ const EmisorFormModal: React.FC<Props> = (props) => {
     if (v.correo_remitente && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.correo_remitente)) return false;
     if (!v.ambiente || !v.tipo_emision) return false;
     if (rucError || rucDuplicateError || checkingRuc) return false;
-    if (!editingId && !logoFile) return false;
+    // Logo is now optional - will use default if not provided
     if (logoFile && !/\.jpe?g$|\.png$/i.test(logoFile.name)) return false;
     return true;
   };
@@ -245,12 +245,66 @@ const EmisorFormModal: React.FC<Props> = (props) => {
         payload.correo_remitente = (user && (user as any).email) ? (user as any).email : 'no-reply@localhost';
       }
 
+      // If no logo is uploaded, use default logo from assets
+      let finalLogoFile = logoFile;
+      if (!logoFile && !editingId) {
+        // Fetch the default logo and convert to File with optimization
+        try {
+          const defaultLogoPath = require('../assets/maximofactura.png');
+          const response = await fetch(defaultLogoPath);
+          const blob = await response.blob();
+          
+          // Create an image to resize it
+          const img = new Image();
+          const imageLoadPromise = new Promise<File>((resolve, reject) => {
+            img.onload = () => {
+              // Create canvas to resize
+              const canvas = document.createElement('canvas');
+              const ctx = canvas.getContext('2d');
+              
+              // Calculate new dimensions (max 800px width maintaining aspect ratio)
+              const maxWidth = 800;
+              let width = img.width;
+              let height = img.height;
+              
+              if (width > maxWidth) {
+                height = (maxWidth / width) * height;
+                width = maxWidth;
+              }
+              
+              canvas.width = width;
+              canvas.height = height;
+              
+              // Draw resized image
+              ctx?.drawImage(img, 0, 0, width, height);
+              
+              // Convert to blob with compression
+              canvas.toBlob((resizedBlob) => {
+                if (resizedBlob) {
+                  const resizedFile = new File([resizedBlob], 'maximofactura.png', { type: 'image/png' });
+                  resolve(resizedFile);
+                } else {
+                  reject(new Error('Failed to create blob'));
+                }
+              }, 'image/png', 0.8); // 80% quality
+            };
+            
+            img.onerror = () => reject(new Error('Failed to load image'));
+          });
+          
+          img.src = URL.createObjectURL(blob);
+          finalLogoFile = await imageLoadPromise;
+        } catch (err) {
+          console.warn('Could not load default logo:', err);
+        }
+      }
+
       if (editingId) {
-        res = await emisoresApi.update(editingId, { ...payload, logoFile });
+        res = await emisoresApi.update(editingId, { ...payload, logoFile: finalLogoFile });
         const updated: Emisor = res.data?.data ?? res.data;
         onUpdated && onUpdated(updated);
       } else {
-        res = await emisoresApi.create({ ...payload, logoFile });
+        res = await emisoresApi.create({ ...payload, logoFile: finalLogoFile });
         const created: Emisor = res.data?.data ?? res.data;
         onCreated && onCreated(created);
       }
@@ -309,14 +363,14 @@ const EmisorFormModal: React.FC<Props> = (props) => {
     if (v.correo_remitente && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.correo_remitente)) e.correo_remitente = 'Correo debe ser válido';
     if (!v.ambiente) e.ambiente = 'Seleccione ambiente';
     if (!v.tipo_emision) e.tipo_emision = 'Seleccione tipo de emisión';
-    if (!editingId && !logoFile) e.logo = 'Logo obligatorio al registrar';
+    // Logo is now optional - default logo will be used if not provided
     setFieldErrors(e);
     return e;
   };
 
   // Helper: which fields are required (used to show asterisk)
   const requiredKeys = React.useMemo(() => new Set<string>([
-    'ruc','razon_social','direccion_matriz','regimen_tributario','obligado_contabilidad','contribuyente_especial','agente_retencion','tipo_persona','estado','ambiente','tipo_emision','logo'
+    'ruc','razon_social','direccion_matriz','regimen_tributario','obligado_contabilidad','contribuyente_especial','agente_retencion','tipo_persona','estado','ambiente','tipo_emision'
   ]), []);
 
   const isFieldValid = (key: string) => {
@@ -688,10 +742,13 @@ const EmisorFormModal: React.FC<Props> = (props) => {
                       📁
                     </div>
                     <div style={{fontSize: '15px', fontWeight: 600, color: '#374151'}}>
-                      Seleccionar archivo de logo
+                      Seleccionar logo personalizado (Opcional)
                     </div>
                     <div style={{fontSize: '13px', color: '#6b7280'}}>
                       Click para buscar o arrastra aquí
+                    </div>
+                    <div style={{fontSize: '12px', color: '#7c3aed', fontStyle: 'italic', marginTop: '4px'}}>
+                      Si no seleccionas ninguno, se usará el logo por defecto
                     </div>
                   </>
                 ) : (
