@@ -227,21 +227,125 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
               <input value={v.telefono || ''} onChange={e=>onChange('telefono', e.target.value)} />
             </label>
 
-            <label style={{ marginTop: 16 }}>Logo
-              <div className="logo-container">
-                <div className="logo-display">
-                  <input 
-                    type="text" 
-                    readOnly 
-                    value={logoFile?.name || ''} 
-                    placeholder="Seleccione un archivo (JPG, JPEG o PNG)"
-                  />
-                </div>
+            <label style={{marginTop: 24, display: 'flex', flexDirection: 'column', gap: '8px'}}>
+              <span style={{fontWeight: 600, fontSize: '14px', color: '#374151'}}>Logo</span>
+              <div style={{
+                position: 'relative',
+                border: '2px dashed #c7d2fe',
+                borderRadius: '12px',
+                padding: '32px 24px',
+                textAlign: 'center',
+                background: 'linear-gradient(135deg, #faf5ff 0%, #f3f4f6 100%)',
+                transition: 'all 0.3s ease',
+                cursor: 'pointer',
+                minHeight: '140px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '12px'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#7c3aed';
+                e.currentTarget.style.background = 'linear-gradient(135deg, #f3e8ff 0%, #ede9fe 100%)';
+                e.currentTarget.style.transform = 'scale(1.01)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = '#c7d2fe';
+                e.currentTarget.style.background = 'linear-gradient(135deg, #faf5ff 0%, #f3f4f6 100%)';
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+              >
+                {!logoFile ? (
+                  <>
+                    <div style={{
+                      width: '56px',
+                      height: '56px',
+                      background: 'linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%)',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '28px',
+                      color: '#fff',
+                      boxShadow: '0 4px 12px rgba(124, 58, 237, 0.3)'
+                    }}>
+                      📁
+                    </div>
+                    <div style={{fontSize: '15px', fontWeight: 600, color: '#374151'}}>
+                      Seleccionar archivo de logo
+                    </div>
+                    <div style={{fontSize: '13px', color: '#6b7280'}}>
+                      Click para buscar o arrastra aquí
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{
+                      width: '56px',
+                      height: '56px',
+                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '32px',
+                      color: '#fff',
+                      boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+                    }}>
+                      ✓
+                    </div>
+                    <div style={{fontSize: '15px', fontWeight: 700, color: '#059669'}}>
+                      Archivo seleccionado
+                    </div>
+                    <div style={{
+                      fontSize: '14px',
+                      color: '#374151',
+                      padding: '8px 16px',
+                      background: '#fff',
+                      borderRadius: '8px',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                      maxWidth: '90%',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {logoFile.name}
+                    </div>
+                    <div style={{fontSize: '12px', color: '#7c3aed', fontWeight: 600}}>
+                      Click para cambiar
+                    </div>
+                  </>
+                )}
                 <input 
                   type="file" 
-                  accept=".jpg,.jpeg,.png" 
+                  accept=".jpg,.jpeg,.png"
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    opacity: 0,
+                    cursor: 'pointer'
+                  }}
                   onChange={e=>setLogoFile(e.target.files?.[0] || null)} 
                 />
+              </div>
+              <div style={{
+                marginTop: '8px',
+                fontSize: '12px',
+                color: '#6b7280',
+                textAlign: 'center',
+                lineHeight: '1.6',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '16px'
+              }}>
+                <span>📎 <strong>JPG, JPEG, PNG</strong></span>
+                <span>•</span>
+                <span>📐 Horizontal (ancho &gt; alto)</span>
               </div>
             </label>
 

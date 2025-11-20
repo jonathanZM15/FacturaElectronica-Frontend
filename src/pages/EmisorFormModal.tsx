@@ -517,14 +517,23 @@ const EmisorFormModal: React.FC<Props> = (props) => {
 
           <section>
             <h3>Datos de configuración</h3>
-            <div className="config-row">
-              <label>
-                Ambiente
+            <div className="config-row" style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px'}}>
+              <label style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+                <span style={{fontWeight: 600, fontSize: '14px', color: '#374151'}}>Ambiente</span>
                   <select 
                     value={v.ambiente} 
                     onChange={e => onChange('ambiente', e.target.value as any)} 
                     onBlur={() => setTouchedFields(prev => new Set(prev).add('ambiente'))}
                     className={validateFieldRealTime('ambiente') ? 'error-input' : ''}
+                    style={{
+                      padding: '10px 12px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      backgroundColor: '#fff',
+                      cursor: 'pointer',
+                      transition: 'border-color 0.2s'
+                    }}
                   >
                   <option value="PRODUCCION">Producción</option>
                   <option value="PRUEBAS">Pruebas</option>
@@ -532,13 +541,22 @@ const EmisorFormModal: React.FC<Props> = (props) => {
                   {validateFieldRealTime('ambiente') && <span className="err">{validateFieldRealTime('ambiente')}</span>}
               </label>
 
-              <label>
-                Tipo de Emisión
+              <label style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+                <span style={{fontWeight: 600, fontSize: '14px', color: '#374151'}}>Tipo de Emisión</span>
                   <select 
                     value={v.tipo_emision} 
                     onChange={e => onChange('tipo_emision', e.target.value as any)} 
                     onBlur={() => setTouchedFields(prev => new Set(prev).add('tipo_emision'))}
                     className={validateFieldRealTime('tipo_emision') ? 'error-input' : ''}
+                    style={{
+                      padding: '10px 12px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      backgroundColor: '#fff',
+                      cursor: 'pointer',
+                      transition: 'border-color 0.2s'
+                    }}
                   >
                   <option value="NORMAL">Normal</option>
                   <option value="INDISPONIBILIDAD">Indisponibilidad del SRI</option>
@@ -546,34 +564,186 @@ const EmisorFormModal: React.FC<Props> = (props) => {
                   {validateFieldRealTime('tipo_emision') && <span className="err">{validateFieldRealTime('tipo_emision')}</span>}
               </label>
             </div>
+            
             {/* Messages area: ambiente and tipo de emision */}
-            <div style={{marginTop:12, textAlign:'center'}}>
-              {v.ambiente === 'PRODUCCION' && (
-                <div className="ambiente-message">Los comprobantes tendrán validez legal y fiscal.</div>
-              )}
-              {v.ambiente === 'PRUEBAS' && (
-                <div className="ambiente-message ambiente-test">Los comprobantes <strong style={{color:'#b00020'}}>NO</strong> tendrán validez fiscal ni legal.</div>
-              )}
-              <div className="tipo-message" style={{marginTop:8}}>
-                {/* Placeholder for Tipo de Emisión explanatory messages per option. */}
-                {v.tipo_emision === 'NORMAL' && <span>Información: (mensaje explicativo para 'Normal' pendiente).</span>}
-                {v.tipo_emision === 'INDISPONIBILIDAD' && <span>Información: (mensaje explicativo para 'Indisponibilidad del SRI' pendiente).</span>}
+            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px'}}>
+              {/* Mensaje de Ambiente */}
+              <div style={{
+                padding: '14px 16px',
+                background: v.ambiente === 'PRODUCCION' 
+                  ? 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)' 
+                  : 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)',
+                borderRadius: '10px',
+                border: v.ambiente === 'PRODUCCION' 
+                  ? '2px solid #059669' 
+                  : '2px solid #dc2626',
+                boxShadow: v.ambiente === 'PRODUCCION'
+                  ? '0 4px 12px rgba(5, 150, 105, 0.15)'
+                  : '0 4px 12px rgba(220, 38, 38, 0.15)',
+                transition: 'all 0.3s ease'
+              }}>
+                <div style={{
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  color: v.ambiente === 'PRODUCCION' ? '#065f46' : '#991b1b',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  marginBottom: '6px'
+                }}>
+                  Ambiente: {v.ambiente}
+                </div>
+                {v.ambiente === 'PRODUCCION' && (
+                  <div style={{fontSize: '13px', color: '#047857', fontWeight: 600, lineHeight: '1.4'}}>
+                    ✓ Los comprobantes tendrán validez legal y fiscal.
+                  </div>
+                )}
+                {v.ambiente === 'PRUEBAS' && (
+                  <div style={{fontSize: '13px', color: '#b91c1c', fontWeight: 600, lineHeight: '1.4'}}>
+                    ⚠ Los comprobantes <strong>NO</strong> tendrán validez fiscal ni legal.
+                  </div>
+                )}
+              </div>
+
+              {/* Mensaje de Tipo de Emisión */}
+              <div style={{
+                padding: '14px 16px',
+                background: v.tipo_emision === 'NORMAL'
+                  ? 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)'
+                  : 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                borderRadius: '10px',
+                border: v.tipo_emision === 'NORMAL'
+                  ? '2px solid #2563eb'
+                  : '2px solid #f59e0b',
+                boxShadow: v.tipo_emision === 'NORMAL'
+                  ? '0 4px 12px rgba(37, 99, 235, 0.15)'
+                  : '0 4px 12px rgba(245, 158, 11, 0.15)',
+                transition: 'all 0.3s ease'
+              }}>
+                <div style={{
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  color: v.tipo_emision === 'NORMAL' ? '#1e40af' : '#b45309',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  marginBottom: '6px'
+                }}>
+                  Tipo de Emisión: {v.tipo_emision === 'NORMAL' ? 'Normal' : 'Indisponibilidad'}
+                </div>
+                {v.tipo_emision === 'NORMAL' && (
+                  <div style={{fontSize: '13px', color: '#1e40af', fontWeight: 600, lineHeight: '1.4'}}>
+                    📄 Emisión estándar con conexión directa al SRI.
+                  </div>
+                )}
+                {v.tipo_emision === 'INDISPONIBILIDAD' && (
+                  <div style={{fontSize: '13px', color: '#b45309', fontWeight: 600, lineHeight: '1.4'}}>
+                    🔄 Emisión offline cuando el SRI no está disponible.
+                  </div>
+                )}
               </div>
             </div>
 
-            <label>Logo
-              <div className="logo-container">
-                <div className={`logo-display ${validateFieldRealTime('logo') ? 'error-input' : ''}`}>
-                  <input 
-                    type="text" 
-                    readOnly 
-                    value={logoFile?.name || ''} 
-                    placeholder="Seleccione un archivo (JPG, JPEG o PNG)"
-                  />
-                </div>
+            <label style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+              <span style={{fontWeight: 600, fontSize: '14px', color: '#374151'}}>Logo</span>
+              <div style={{
+                position: 'relative',
+                border: '2px dashed #c7d2fe',
+                borderRadius: '12px',
+                padding: '32px 24px',
+                textAlign: 'center',
+                background: 'linear-gradient(135deg, #faf5ff 0%, #f3f4f6 100%)',
+                transition: 'all 0.3s ease',
+                cursor: 'pointer',
+                minHeight: '140px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '12px'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#7c3aed';
+                e.currentTarget.style.background = 'linear-gradient(135deg, #f3e8ff 0%, #ede9fe 100%)';
+                e.currentTarget.style.transform = 'scale(1.01)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = '#c7d2fe';
+                e.currentTarget.style.background = 'linear-gradient(135deg, #faf5ff 0%, #f3f4f6 100%)';
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+              >
+                {!logoFile ? (
+                  <>
+                    <div style={{
+                      width: '56px',
+                      height: '56px',
+                      background: 'linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%)',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '28px',
+                      color: '#fff',
+                      boxShadow: '0 4px 12px rgba(124, 58, 237, 0.3)'
+                    }}>
+                      📁
+                    </div>
+                    <div style={{fontSize: '15px', fontWeight: 600, color: '#374151'}}>
+                      Seleccionar archivo de logo
+                    </div>
+                    <div style={{fontSize: '13px', color: '#6b7280'}}>
+                      Click para buscar o arrastra aquí
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{
+                      width: '56px',
+                      height: '56px',
+                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '32px',
+                      color: '#fff',
+                      boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+                    }}>
+                      ✓
+                    </div>
+                    <div style={{fontSize: '15px', fontWeight: 700, color: '#059669'}}>
+                      Archivo seleccionado
+                    </div>
+                    <div style={{
+                      fontSize: '14px',
+                      color: '#374151',
+                      padding: '8px 16px',
+                      background: '#fff',
+                      borderRadius: '8px',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                      maxWidth: '90%',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {logoFile.name}
+                    </div>
+                    <div style={{fontSize: '12px', color: '#7c3aed', fontWeight: 600}}>
+                      Click para cambiar
+                    </div>
+                  </>
+                )}
                 <input 
                   type="file" 
-                  accept=".jpg,.jpeg,.png" 
+                  accept=".jpg,.jpeg,.png"
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    opacity: 0,
+                    cursor: 'pointer'
+                  }}
                   onChange={e => {
                     const f = e.target.files?.[0] || null;
                     // read and validate orientation (horizontal required)
@@ -613,7 +783,21 @@ const EmisorFormModal: React.FC<Props> = (props) => {
                 />
               </div>
               {validateFieldRealTime('logo') && <span className="err">{validateFieldRealTime('logo')}</span>}
-              <div className="logo-hint">Opcional. Preferiblemente horizontal (ancho &gt; alto), dimensiones compatibles con la barra superior.</div>
+              <div style={{
+                marginTop: '8px',
+                fontSize: '12px',
+                color: '#6b7280',
+                textAlign: 'center',
+                lineHeight: '1.6',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '16px'
+              }}>
+                <span>📎 <strong>JPG, JPEG, PNG</strong></span>
+                <span>•</span>
+                <span>📐 Horizontal (ancho &gt; alto)</span>
+              </div>
             </label>
           </section>
         </div>
