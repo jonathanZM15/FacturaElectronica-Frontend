@@ -1,3 +1,16 @@
+:root {
+  /* Design system color tokens (use across app) */
+  --color-primary: #0d6efd; /* primary action / buttons (blue) */
+  --color-primary-600: #0b5fd7;
+  --color-accent: #7c3aed; /* accent (purple) reserved for highlights) */
+  --color-muted: #6b7280; /* secondary text */
+  --color-border: #d0d7e2; /* inputs and subtle borders */
+  --color-bg: #ffffff;
+  --color-text: #1f2335;
+  --input-radius: 8px;
+  --input-padding: 10px;
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -7,6 +20,8 @@ body {
   -moz-osx-font-smoothing: grayscale;
   /* Centrar por defecto el texto en toda la aplicación */
   text-align: center;
+  color: var(--color-text);
+  background: #fff;
 }
 
 code {

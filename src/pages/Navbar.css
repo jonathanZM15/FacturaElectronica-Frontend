@@ -31,12 +31,38 @@
   padding: 5px;
 }
 
+/* Hamburger icon (three lines) */
+.hamburger {
+  display: inline-block;
+  width: 22px;
+  height: 16px;
+  position: relative;
+}
+.hamburger span {
+  display: block;
+  height: 2px;
+  width: 100%;
+  background: var(--color-text, #222);
+  border-radius: 2px;
+  position: absolute;
+  left: 0;
+  transition: transform 150ms ease, opacity 150ms ease;
+}
+.hamburger span:nth-child(1) { top: 0; }
+.hamburger span:nth-child(2) { top: 7px; }
+.hamburger span:nth-child(3) { top: 14px; }
+
+.menu-toggle-btn:focus .hamburger span,
+.menu-toggle-btn:hover .hamburger span {
+  background: var(--color-primary, #0d6efd);
+}
+
 .navbar-logo {
-  /* FRONTEND DISPLAY SIZE - change these values to increase/decrease displayed logo size */
-  width: 40px; /* edit this to make the logo wider */
-  height: 40px; /* edit this to make the logo taller */
-  object-fit: cover; /* fill the square and crop if needed */
-  border-radius: 6px; /* subtle rounding */
+  /* FRONTEND DISPLAY SIZE - adjusted to avoid cropping */
+  height: 44px; /* keep within header height */
+  width: auto; /* let the logo preserve aspect ratio */
+  object-fit: contain; /* don't crop the image */
+  border-radius: 0; /* no rounding for logo */
   display: inline-block;
 }
 
@@ -75,19 +101,21 @@
   position: fixed;
   top: 60px; /* Altura del navbar */
   left: 0;
-  width: 250px; /* Ancho del menú lateral */
+  width: 250px; /* Ancho del menú lateral cuando está abierto */
   height: calc(100vh - 60px); /* Ocupa el resto de la altura */
   background-color: #f8f8f8;
   padding-top: 20px;
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-  transition: transform 200ms ease, width 200ms ease, opacity 200ms ease;
+  transition: width 200ms ease, transform 200ms ease, opacity 200ms ease;
+  overflow: hidden;
 }
 
+/* Collapsed (icon-only) state: sidebar is narrow and only icons are visible */
 .sidebar:not(.open) {
-  transform: translateX(-250px);
-  opacity: 0;
-  width: 0;
-  pointer-events: none;
+  transform: none;
+  opacity: 1;
+  width: 72px; /* narrow rail */
+  pointer-events: auto;
 }
 
 .nav-list {
@@ -108,15 +136,18 @@
   color: #333;
   font-weight: 500;
   border-left: 5px solid transparent;
-  transition: all 0.2s;
+  transition: all 0.12s;
 }
-.nav-link .icon { margin-right: 10px; }
+.nav-link .icon { margin-right: 10px; font-size: 18px; }
+.sidebar:not(.open) .nav-link { justify-content: center; padding: 12px 8px; }
+.sidebar:not(.open) .nav-link .icon { margin-right: 0; }
+.sidebar:not(.open) .nav-link .label { display: none; }
 
 /* Activo y hover usando NavLink */
 .nav-link.active,
 .nav-link:hover {
   background-color: #e6e6e6;
-  color: #0c2de7;
-  border-left-color: #ff8c00;
+  color: var(--color-primary);
+  border-left-color: var(--color-primary);
   font-weight: bold;
 }

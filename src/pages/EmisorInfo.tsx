@@ -190,10 +190,10 @@ const EmisorInfo: React.FC = () => {
                     <div className="card-icon" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
                       <span style={{ fontSize: 24 }}>📋</span>
                     </div>
-                    <h3 className="card-title">Datos del RUC</h3>
+                    <h3 className="card-title">Identificación</h3>
                   </div>
                   <div className="card-body">
-                    <div className="info-row"><span className="info-label">RUC:</span><span className="info-value">{company?.ruc ?? '-'}</span></div>
+                    <div className="info-row"><span className="info-label">Nro. RUC:</span><span className="info-value">{company?.ruc ?? '-'}</span></div>
                     <div className="info-row"><span className="info-label">Razón social:</span><span className="info-value">{company?.razon_social ?? '-'}</span></div>
                     <div className="info-row"><span className="info-label">Nombre comercial:</span><span className="info-value">{company?.nombre_comercial ?? '-'}</span></div>
                     <div className="info-row"><span className="info-label">Dirección matriz:</span><span className="info-value">{company?.direccion_matriz ?? '-'}</span></div>

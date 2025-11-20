@@ -11,7 +11,8 @@
 
 /* Cuando el sidebar está cerrado, el contenido ocupa todo el ancho */
 .app-content.sidebar-closed {
-  margin-left: 0;
+  /* when sidebar is collapsed, keep a small left margin to accommodate icons-only rail */
+  margin-left: 72px;
 }
 
 @media (max-width: 900px) {

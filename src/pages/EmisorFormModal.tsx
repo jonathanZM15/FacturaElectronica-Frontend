@@ -92,7 +92,8 @@ const EmisorFormModal: React.FC<Props> = (props) => {
     
       switch (key) {
         case 'ruc':
-          if (!val || !val.toString().trim()) return 'RUC es obligatorio';
+          if (!val || !val.toString().trim()) return 'Nro. RUC es obligatorio';
+          if ((val.toString().replace(/\D/g,'')).length < 13) return 'El Nro. RUC debe tener al menos 13 dígitos';
           if (!validateRucEcuador(val)) return 'RUC no válido según reglas del SRI';
           if (rucDuplicateError) return rucDuplicateError;
           return null;
@@ -103,7 +104,7 @@ const EmisorFormModal: React.FC<Props> = (props) => {
           if (!val || !val.toString().trim()) return 'Dirección Matriz es obligatoria';
           return null;
         case 'correo_remitente':
-          if (!val || !val.toString().trim()) return 'Correo remitente es obligatorio';
+          if (!val || !val.toString().trim()) return null; // optional in the form
           if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) return 'Correo debe ser válido';
           return null;
         case 'regimen_tributario':
@@ -183,7 +184,8 @@ const EmisorFormModal: React.FC<Props> = (props) => {
 
   const validate = () => {
     // Basic required checks align with backend
-    if (!v.ruc || !v.ruc.toString().trim()) { setRucError('RUC es obligatorio'); return false; }
+    if (!v.ruc || !v.ruc.toString().trim()) { setRucError('Nro. RUC es obligatorio'); return false; }
+    if ((v.ruc.toString().replace(/\D/g,'')).length < 13) { setRucError('El Nro. RUC debe tener al menos 13 dígitos'); return false; }
     if (!v.razon_social || !v.razon_social.toString().trim()) return false;
     if (!v.direccion_matriz || !v.direccion_matriz.toString().trim()) return false;
 
@@ -192,7 +194,8 @@ const EmisorFormModal: React.FC<Props> = (props) => {
     if (rucDuplicateError) return false;
 
     // correo
-    if (!v.correo_remitente || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.correo_remitente)) { setEmailError('Correo remitente obligatorio y debe ser válido'); return false; }
+    // Correo remitente is optional in the form (kept internally in DB)
+    if (v.correo_remitente && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.correo_remitente)) { setEmailError('Correo debe ser válido'); return false; }
 
     // ambiente / tipo emision
     if (!v.ambiente) return false;
@@ -214,7 +217,8 @@ const EmisorFormModal: React.FC<Props> = (props) => {
     if (!v.ruc || !v.ruc.toString().trim()) return false;
     if (!v.razon_social || !v.razon_social.toString().trim()) return false;
     if (!v.direccion_matriz || !v.direccion_matriz.toString().trim()) return false;
-    if (!v.correo_remitente || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.correo_remitente)) return false;
+    // correo_remitente optional for form validity
+    if (v.correo_remitente && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.correo_remitente)) return false;
     if (!v.ambiente || !v.tipo_emision) return false;
     if (rucError || rucDuplicateError || checkingRuc) return false;
     if (!editingId && !logoFile) return false;
@@ -278,7 +282,8 @@ const EmisorFormModal: React.FC<Props> = (props) => {
 
   const markFieldErrors = () => {
     const e: Record<string,string> = {};
-    if (!v.ruc || !v.ruc.toString().trim()) e.ruc = 'RUC es obligatorio';
+    if (!v.ruc || !v.ruc.toString().trim()) e.ruc = 'Nro. RUC es obligatorio';
+    else if ((v.ruc.toString().replace(/\D/g,'')).length < 13) e.ruc = 'El Nro. RUC debe tener al menos 13 dígitos';
     else if (!validateRucEcuador(v.ruc)) e.ruc = 'RUC no válido según reglas del SRI';
     if (rucDuplicateError) e.ruc = rucDuplicateError;
   if (!v.razon_social || !v.razon_social.toString().trim()) e.razon_social = 'Razón Social es obligatoria';
@@ -290,7 +295,8 @@ const EmisorFormModal: React.FC<Props> = (props) => {
     if (!yn(v.agente_retencion)) e.agente_retencion = 'Indique si es agente de retención';
   if (!v.tipo_persona) e.tipo_persona = 'Seleccione Tipo de Persona';
     // codigo_artesano is optional, no validation needed
-    if (!v.correo_remitente || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.correo_remitente)) e.correo_remitente = 'Correo remitente obligatorio y debe ser válido';
+    // correo_remitente is optional in form; validate only when present
+    if (v.correo_remitente && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.correo_remitente)) e.correo_remitente = 'Correo debe ser válido';
     if (!v.ambiente) e.ambiente = 'Seleccione ambiente';
     if (!v.tipo_emision) e.tipo_emision = 'Seleccione tipo de emisión';
     if (!editingId && !logoFile) e.logo = 'Logo obligatorio al registrar';
@@ -300,7 +306,7 @@ const EmisorFormModal: React.FC<Props> = (props) => {
 
   // Helper: which fields are required (used to show asterisk)
   const requiredKeys = React.useMemo(() => new Set<string>([
-    'ruc','razon_social','direccion_matriz','regimen_tributario','obligado_contabilidad','contribuyente_especial','agente_retencion','tipo_persona','correo_remitente','estado','ambiente','tipo_emision','logo'
+    'ruc','razon_social','direccion_matriz','regimen_tributario','obligado_contabilidad','contribuyente_especial','agente_retencion','tipo_persona','estado','ambiente','tipo_emision','logo'
   ]), []);
 
   const isFieldValid = (key: string) => {
@@ -311,7 +317,7 @@ const EmisorFormModal: React.FC<Props> = (props) => {
       case 'razon_social': return !!val && typeof val === 'string' && val.trim().length > 0;
       case 'direccion_matriz': return !!val && typeof val === 'string' && val.trim().length > 0;
         case 'codigo_artesano': return true; // Optional field, always valid
-      case 'correo_remitente': return !!val && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+      case 'correo_remitente': return !val || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val); // optional: valid if empty or matches pattern
       case 'ambiente': return !!val;
       case 'tipo_emision': return !!val;
       case 'logo': return editingId ? true : !!logoFile;
@@ -332,19 +338,23 @@ const EmisorFormModal: React.FC<Props> = (props) => {
 
         <div className="mf-body scrollable">
           <section>
-            <h3>Datos del RUC</h3>
-              <label className="horizontal">RUC
+            <h3>Identificación</h3>
+              <label className="horizontal">
+                <span style={{display:'inline-flex', alignItems:'center', gap:6}}>Nro. RUC{requiredKeys.has('ruc') && <strong style={{color:'#b00020', marginLeft:6}}> *</strong>}</span>
                   <input
                     value={v.ruc}
-                    onChange={e => onChange('ruc', e.target.value)}
+                    onChange={e => onChange('ruc', e.target.value.replace(/\D/g, ''))}
                       onBlur={() => setTouchedFields(prev => new Set(prev).add('ruc'))}
                     disabled={!localRucEditable}
                       className={validateFieldRealTime('ruc') ? 'error-input' : ''}
+                      maxLength={13}
+                      inputMode="numeric"
+                      pattern="\d*"
                   />
               </label>
                   {!localRucEditable && <small style={{color:'#666',marginLeft:'192px'}}>El RUC no puede ser modificado porque existen comprobantes autorizados.</small>}
                     {validateFieldRealTime('ruc') && <span className="err" style={{marginLeft:'192px'}}>{validateFieldRealTime('ruc')}</span>}
-            <label className="horizontal">Razón Social
+            <label className="horizontal">{requiredKeys.has('razon_social') ? <><span style={{display:'inline-flex', alignItems:'center', gap:6}}>Razón Social<strong style={{color:'#b00020', marginLeft:6}}> *</strong></span></> : 'Razón Social'}
               <input
                 value={v.razon_social}
                 onChange={e => onChange('razon_social', e.target.value)}
@@ -360,7 +370,7 @@ const EmisorFormModal: React.FC<Props> = (props) => {
                   onBlur={() => setTouchedFields(prev => new Set(prev).add('nombre_comercial'))}
               />
             </label>
-            <label className="horizontal">Dirección Matriz
+            <label className="horizontal">{requiredKeys.has('direccion_matriz') ? <><span style={{display:'inline-flex', alignItems:'center', gap:6}}>Dirección Matriz<strong style={{color:'#b00020', marginLeft:6}}> *</strong></span></> : 'Dirección Matriz'}
               <input
                 value={v.direccion_matriz || ''}
                 onChange={e => onChange('direccion_matriz', e.target.value)}
@@ -481,21 +491,7 @@ const EmisorFormModal: React.FC<Props> = (props) => {
 
           <section>
             <h3>Datos de configuración</h3>
-            <label>Correo Remitente
-                <input 
-                  value={v.correo_remitente || ''} 
-                  onChange={e => onChange('correo_remitente', e.target.value)} 
-                  onBlur={() => setTouchedFields(prev => new Set(prev).add('correo_remitente'))}
-                  className={validateFieldRealTime('correo_remitente') ? 'error-input' : ''} 
-                />
-                {validateFieldRealTime('correo_remitente') && <span className="err">{validateFieldRealTime('correo_remitente')}</span>}
-            </label>
             <div className="config-row">
-              <label>
-                <input type="checkbox" checked={v.estado==='ACTIVO'} onChange={e => onChange('estado', e.target.checked?'ACTIVO':'INACTIVO')} />
-                Estado
-              </label>
-
               <label>
                 Ambiente
                   <select 
@@ -547,6 +543,17 @@ const EmisorFormModal: React.FC<Props> = (props) => {
               {validateFieldRealTime('logo') && <span className="err">{validateFieldRealTime('logo')}</span>}
             </label>
           </section>
+        </div>
+
+        {/* Estado moved to end of form as a select list (Activo / Desactivado) */}
+        <div style={{padding: '18px 28px'}}>
+          <label style={{display:'flex', alignItems:'center', gap:12}}>
+            <span style={{minWidth:180, fontWeight:600}}>Estado</span>
+            <select value={v.estado} onChange={e => onChange('estado', e.target.value as any)} style={{width: 360, maxWidth: '60%'}}>
+              <option value="ACTIVO">Activo</option>
+              <option value="INACTIVO">Desactivado</option>
+            </select>
+          </label>
         </div>
 
         <div className="mf-footer">
