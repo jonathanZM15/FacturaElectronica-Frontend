@@ -81,7 +81,7 @@ const Login: React.FC = () => {
 
   const bgStyle: React.CSSProperties = {
     // left stays blue, right side changed to an orange tone
-    backgroundImage: `linear-gradient(90deg, rgba(12,45,231,0.8), rgba(255,140,0,0.6)), url('${finalUrl}')`,
+    backgroundImage: `linear-gradient(90deg, rgba(255,140,0,0.6), rgba(12,45,231,0.8)), url('${finalUrl}')`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
   };
