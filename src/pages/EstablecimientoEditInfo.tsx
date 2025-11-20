@@ -52,78 +52,584 @@ const EstablecimientoEditInfo: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: 18 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          <h2 style={{ margin: 0 }}>{est?.nombre ?? '—'} <small style={{ marginLeft: 12, fontWeight: 700 }}>{est?.codigo ?? ''}</small></h2>
+    <div style={{ 
+      padding: '24px 32px',
+      background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+      minHeight: '100vh'
+    }}>
+      {/* Header con gradiente */}
+      <div style={{ 
+        background: 'linear-gradient(135deg, #5b21b6 0%, #7c3aed 100%)',
+        borderRadius: '16px',
+        padding: '24px 28px',
+        marginBottom: '24px',
+        boxShadow: '0 8px 24px rgba(124, 58, 237, 0.25)',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center'
+      }}>
+        <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+          <div style={{
+            width: '56px',
+            height: '56px',
+            background: 'rgba(255, 255, 255, 0.2)',
+            borderRadius: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '28px',
+            backdropFilter: 'blur(10px)'
+          }}>
+            🏢
+          </div>
+          <div>
+            <h2 style={{ margin: 0, color: '#fff', fontSize: '26px', fontWeight: 700 }}>
+              {est?.nombre ?? '—'}
+            </h2>
+            <div style={{ 
+              marginTop: '6px',
+              color: 'rgba(255, 255, 255, 0.9)', 
+              fontSize: '15px',
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              <span style={{
+                background: 'rgba(255, 255, 255, 0.25)',
+                padding: '4px 12px',
+                borderRadius: '6px',
+                backdropFilter: 'blur(10px)'
+              }}>
+                📋 Código: {est?.codigo ?? ''}
+              </span>
+            </div>
+          </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
           <div style={{ position: 'relative' }}>
             <button
               className="actions-btn"
               onClick={() => setActionsOpen((s) => !s)}
               aria-expanded={actionsOpen}
-              style={{ padding: '6px 10px', borderRadius: 8, background: '#1e40af', color: '#fff', border: 'none', cursor: 'pointer' }}
+              style={{ 
+                padding: '10px 18px', 
+                borderRadius: '10px', 
+                background: 'rgba(255, 255, 255, 0.95)', 
+                color: '#5b21b6', 
+                border: 'none', 
+                cursor: 'pointer',
+                fontWeight: 700,
+                fontSize: '14px',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.2)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+              }}
             >
-              Acciones ▾
+              ⚙️ Acciones ▾
             </button>
             {actionsOpen && (
-              <div role="menu" style={{ position: 'absolute', right: 0, top: '110%', background: '#fff', border: '1px solid #ddd', boxShadow: '0 6px 18px rgba(0,0,0,.08)', borderRadius: 6, zIndex: 50 }}>
-                <button role="menuitem" onClick={() => { setOpenEdit(true); setActionsOpen(false); }} className="menu-item" style={{ display: 'block', padding: 8, width: 220, textAlign: 'left', background: 'transparent', border: 'none', cursor: 'pointer' }}>✏️ Editar establecimiento</button>
-                <button role="menuitem" onClick={openDeleteModal} className="menu-item" style={{ display: 'block', padding: 8, width: 220, textAlign: 'left', background: 'transparent', border: 'none', cursor: 'pointer' }}>🗑️ Eliminar establecimiento</button>
+              <div role="menu" style={{ 
+                position: 'absolute', 
+                right: 0, 
+                top: '110%', 
+                background: '#fff', 
+                border: 'none',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.15)', 
+                borderRadius: '12px', 
+                zIndex: 50,
+                overflow: 'hidden',
+                minWidth: '240px'
+              }}>
+                <button 
+                  role="menuitem" 
+                  onClick={() => { setOpenEdit(true); setActionsOpen(false); }} 
+                  className="menu-item" 
+                  style={{ 
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '14px 18px', 
+                    width: '100%', 
+                    textAlign: 'left', 
+                    background: 'transparent', 
+                    border: 'none', 
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    color: '#374151',
+                    transition: 'background 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = '#f3f4f6'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                >
+                  <span style={{ fontSize: '18px' }}>✏️</span>
+                  <span>Editar establecimiento</span>
+                </button>
+                <div style={{ height: '1px', background: '#e5e7eb', margin: '0 12px' }}></div>
+                <button 
+                  role="menuitem" 
+                  onClick={openDeleteModal} 
+                  className="menu-item" 
+                  style={{ 
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '14px 18px', 
+                    width: '100%', 
+                    textAlign: 'left', 
+                    background: 'transparent', 
+                    border: 'none', 
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    color: '#dc2626',
+                    transition: 'background 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = '#fef2f2'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                >
+                  <span style={{ fontSize: '18px' }}>🗑️</span>
+                  <span>Eliminar establecimiento</span>
+                </button>
               </div>
             )}
           </div>
 
-          <button onClick={() => navigate(-1)} style={{ padding: '8px 12px', borderRadius: 8 }}>Volver</button>
+          <button 
+            onClick={() => navigate(-1)} 
+            style={{ 
+              padding: '10px 18px', 
+              borderRadius: '10px',
+              background: 'rgba(255, 255, 255, 0.2)',
+              color: '#fff',
+              border: '2px solid rgba(255, 255, 255, 0.3)',
+              cursor: 'pointer',
+              fontWeight: 700,
+              fontSize: '14px',
+              backdropFilter: 'blur(10px)',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.5)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+            }}
+          >
+            ← Volver
+          </button>
         </div>
       </div>
 
-      <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '1fr 320px', gap: 18 }}>
-        <div style={{ border: '1px solid #e6e6e6', padding: 16, borderRadius: 8 }}>
-          <h4 style={{ marginTop: 0 }}>Datos del establecimiento</h4>
-          <p><strong>Código:</strong> {est?.codigo ?? '-'}</p>
-          <p><strong>Nombre:</strong> {est?.nombre ?? '-'}</p>
-          <p><strong>Nombre comercial:</strong> {est?.nombre_comercial ?? '-'}</p>
-          <p><strong>Dirección:</strong> {est?.direccion ?? '-'}</p>
-          <p><strong>Correo:</strong> {est?.correo ?? '-'}</p>
-          <p><strong>Teléfono:</strong> {est?.telefono ?? '-'}</p>
-          <p><strong>Estado:</strong> {est?.estado ? <span style={{ background: est.estado === 'ABIERTO' ? '#bbf7d0' : '#f3f4f6', padding: '6px 8px', borderRadius: 6, color: est.estado === 'ABIERTO' ? '#059669' : '#374151', fontWeight: 700 }}>{est.estado === 'ABIERTO' ? 'Abierto' : 'Cerrado'}</span> : '-'}</p>
+      {/* Grid de cards modernos - Ajustado para dar más espacio al logo */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 520px', gap: 20 }}>
+        {/* Datos del establecimiento */}
+        <div style={{ 
+          background: '#fff',
+          borderRadius: '16px',
+          padding: '24px 28px',
+          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
+          border: '1px solid #e5e7eb',
+          transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-4px)';
+          e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.12)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.08)';
+        }}
+        >
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '12px',
+            marginBottom: '20px',
+            paddingBottom: '16px',
+            borderBottom: '2px solid #f3f4f6'
+          }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              background: 'linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%)',
+              borderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '20px',
+              color: '#fff'
+            }}>
+              📊
+            </div>
+            <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1f2937' }}>Datos del establecimiento</h4>
+          </div>
+
+          <div style={{ display: 'grid', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: '16px', alignItems: 'baseline' }}>
+              <span style={{ fontWeight: 600, color: '#6b7280', fontSize: '14px' }}>📋 Código:</span>
+              <span style={{ color: '#1f2937', fontSize: '14px', fontWeight: 600 }}>{est?.codigo ?? '-'}</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: '16px', alignItems: 'baseline' }}>
+              <span style={{ fontWeight: 600, color: '#6b7280', fontSize: '14px' }}>🏢 Nombre:</span>
+              <span style={{ color: '#1f2937', fontSize: '14px', fontWeight: 600 }}>{est?.nombre ?? '-'}</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: '16px', alignItems: 'baseline' }}>
+              <span style={{ fontWeight: 600, color: '#6b7280', fontSize: '14px' }}>🏪 Nombre comercial:</span>
+              <span style={{ color: '#1f2937', fontSize: '14px' }}>{est?.nombre_comercial ?? '-'}</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: '16px', alignItems: 'baseline' }}>
+              <span style={{ fontWeight: 600, color: '#6b7280', fontSize: '14px' }}>📍 Dirección:</span>
+              <span style={{ color: '#1f2937', fontSize: '14px' }}>{est?.direccion ?? '-'}</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: '16px', alignItems: 'baseline' }}>
+              <span style={{ fontWeight: 600, color: '#6b7280', fontSize: '14px' }}>✉️ Correo:</span>
+              <span style={{ color: '#1f2937', fontSize: '14px' }}>{est?.correo ?? '-'}</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: '16px', alignItems: 'baseline' }}>
+              <span style={{ fontWeight: 600, color: '#6b7280', fontSize: '14px' }}>📞 Teléfono:</span>
+              <span style={{ color: '#1f2937', fontSize: '14px' }}>{est?.telefono ?? '-'}</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: '16px', alignItems: 'baseline' }}>
+              <span style={{ fontWeight: 600, color: '#6b7280', fontSize: '14px' }}>🚦 Estado:</span>
+              {est?.estado ? (
+                <span style={{ 
+                  background: est.estado === 'ABIERTO' ? 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)' : 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)', 
+                  padding: '6px 14px', 
+                  borderRadius: '8px', 
+                  color: est.estado === 'ABIERTO' ? '#065f46' : '#991b1b', 
+                  fontWeight: 700,
+                  fontSize: '13px',
+                  display: 'inline-block',
+                  boxShadow: est.estado === 'ABIERTO' ? '0 2px 8px rgba(16, 185, 129, 0.2)' : '0 2px 8px rgba(239, 68, 68, 0.2)'
+                }}>
+                  {est.estado === 'ABIERTO' ? '✅ Abierto' : '🔒 Cerrado'}
+                </span>
+              ) : '-'}
+            </div>
+          </div>
         </div>
 
-        <div style={{ border: '1px solid #e6e6e6', padding: 16, borderRadius: 8 }}>
-          <h4 style={{ marginTop: 0 }}>Logo</h4>
+        {/* Logo card */}
+        <div style={{ 
+          background: '#fff',
+          borderRadius: '16px',
+          padding: '24px 28px',
+          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
+          border: '1px solid #e5e7eb',
+          transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-4px)';
+          e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.12)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.08)';
+        }}
+        >
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '12px',
+            marginBottom: '20px',
+            paddingBottom: '16px',
+            borderBottom: '2px solid #f3f4f6'
+          }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+              borderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '20px',
+              color: '#fff'
+            }}>
+              🖼️
+            </div>
+            <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1f2937' }}>Logo</h4>
+          </div>
+
           {est?.logo_url ? (
-            <img src={est.logo_url} alt="logo" style={{ width: '100%', height: 180, objectFit: 'contain' }} />
-          ) : <div style={{ width: '100%', height: 180, background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>No hay logo</div>}
+            <div style={{
+              width: '100%',
+              height: '240px',
+              background: 'linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%)',
+              borderRadius: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '12px',
+              border: '2px solid #e5e7eb',
+              overflow: 'hidden',
+              boxSizing: 'border-box'
+            }}>
+              <img 
+                src={est.logo_url} 
+                alt="logo" 
+                style={{ 
+                  maxWidth: '100%', 
+                  maxHeight: '100%', 
+                  width: 'auto',
+                  height: 'auto',
+                  objectFit: 'contain',
+                  display: 'block'
+                }} 
+              />
+            </div>
+          ) : (
+            <div style={{ 
+              width: '100%', 
+              height: '240px', 
+              background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)', 
+              borderRadius: '12px',
+              display: 'flex', 
+              flexDirection: 'column',
+              alignItems: 'center', 
+              justifyContent: 'center',
+              gap: '12px',
+              border: '2px dashed #fbbf24'
+            }}>
+              <div style={{
+                fontSize: '48px',
+                opacity: 0.6
+              }}>🖼️</div>
+              <div style={{
+                color: '#92400e',
+                fontWeight: 600,
+                fontSize: '14px'
+              }}>No hay logo</div>
+            </div>
+          )}
         </div>
 
-        <div style={{ gridColumn: '1 / -1', border: '1px solid #e6e6e6', padding: 16, borderRadius: 8 }}>
-          <h4 style={{ marginTop: 0 }}>Información adicional</h4>
-          <p><strong>Actividades económicas:</strong> {est?.actividades_economicas ?? '-'}</p>
-          <p><strong>Fecha inicio de actividades:</strong> {est?.fecha_inicio_actividades ?? '-'}</p>
-          <p><strong>Fecha reinicio de actividades:</strong> {est?.fecha_reinicio_actividades ?? '-'}</p>
-          <p><strong>Fecha cierre de establecimiento:</strong> {est?.fecha_cierre_establecimiento ?? '-'}</p>
+        {/* Información adicional */}
+        <div style={{ 
+          gridColumn: '1 / -1',
+          background: '#fff',
+          borderRadius: '16px',
+          padding: '24px 28px',
+          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
+          border: '1px solid #e5e7eb',
+          transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-4px)';
+          e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.12)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.08)';
+        }}
+        >
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '12px',
+            marginBottom: '20px',
+            paddingBottom: '16px',
+            borderBottom: '2px solid #f3f4f6'
+          }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+              borderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '20px',
+              color: '#fff'
+            }}>
+              📝
+            </div>
+            <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1f2937' }}>Información adicional</h4>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+            <div style={{ 
+              background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+              padding: '16px 20px',
+              borderRadius: '12px',
+              border: '1px solid #fbbf24'
+            }}>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: '#78350f', marginBottom: '6px' }}>📅 Actividades económicas</div>
+              <div style={{ fontSize: '14px', color: '#1f2937', fontWeight: 600 }}>{est?.actividades_economicas ?? '-'}</div>
+            </div>
+
+            <div style={{ 
+              background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
+              padding: '16px 20px',
+              borderRadius: '12px',
+              border: '1px solid #3b82f6'
+            }}>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: '#1e3a8a', marginBottom: '6px' }}>🚀 Fecha inicio de actividades</div>
+              <div style={{ fontSize: '14px', color: '#1f2937', fontWeight: 600 }}>{est?.fecha_inicio_actividades ?? '-'}</div>
+            </div>
+
+            <div style={{ 
+              background: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)',
+              padding: '16px 20px',
+              borderRadius: '12px',
+              border: '1px solid #10b981'
+            }}>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: '#064e3b', marginBottom: '6px' }}>🔄 Fecha reinicio de actividades</div>
+              <div style={{ fontSize: '14px', color: '#1f2937', fontWeight: 600 }}>{est?.fecha_reinicio_actividades ?? '-'}</div>
+            </div>
+
+            <div style={{ 
+              background: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)',
+              padding: '16px 20px',
+              borderRadius: '12px',
+              border: '1px solid #ef4444'
+            }}>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: '#7f1d1d', marginBottom: '6px' }}>🔒 Fecha cierre de establecimiento</div>
+              <div style={{ fontSize: '14px', color: '#1f2937', fontWeight: 600 }}>{est?.fecha_cierre_establecimiento ?? '-'}</div>
+            </div>
+          </div>
         </div>
 
-        <div style={{ gridColumn: '1 / -1', border: '1px solid #e6e6e6', padding: 16, borderRadius: 8 }}>
-          <h4 style={{ marginTop: 0 }}>Emisor asociado</h4>
-          <p>
-            <strong>RUC:</strong>{' '}
-            {company?.id ? (
-              <a href={`/emisores/${company.id}`} onClick={(e) => { e.preventDefault(); navigate(`/emisores/${company.id}`); }} style={{ color: '#1b4ab4', fontWeight: 700 }}>{company?.ruc}</a>
-            ) : company?.ruc ?? '-'}
-          </p>
-          <p><strong>Razón Social:</strong> {company?.razon_social ?? '-'}</p>
+        {/* Emisor asociado */}
+        <div style={{ 
+          gridColumn: '1 / -1',
+          background: '#fff',
+          borderRadius: '16px',
+          padding: '24px 28px',
+          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
+          border: '1px solid #e5e7eb',
+          transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-4px)';
+          e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.12)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.08)';
+        }}
+        >
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '12px',
+            marginBottom: '20px',
+            paddingBottom: '16px',
+            borderBottom: '2px solid #f3f4f6'
+          }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              borderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '20px',
+              color: '#fff'
+            }}>
+              🏛️
+            </div>
+            <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1f2937' }}>Emisor asociado</h4>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: '#6b7280', marginBottom: '6px' }}>🔢 RUC</div>
+              {company?.id ? (
+                <a 
+                  href={`/emisores/${company.id}`} 
+                  onClick={(e) => { e.preventDefault(); navigate(`/emisores/${company.id}`); }} 
+                  style={{ 
+                    color: '#7c3aed', 
+                    fontWeight: 700,
+                    fontSize: '15px',
+                    textDecoration: 'none',
+                    transition: 'color 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = '#5b21b6'}
+                  onMouseLeave={(e) => e.currentTarget.style.color = '#7c3aed'}
+                >
+                  {company?.ruc}
+                </a>
+              ) : (
+                <div style={{ fontSize: '15px', color: '#1f2937', fontWeight: 600 }}>{company?.ruc ?? '-'}</div>
+              )}
+            </div>
+
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: '#6b7280', marginBottom: '6px' }}>🏢 Razón Social</div>
+              <div style={{ fontSize: '15px', color: '#1f2937', fontWeight: 600 }}>{company?.razon_social ?? '-'}</div>
+            </div>
+          </div>
         </div>
 
-        <div style={{ gridColumn: '1 / -1', border: '1px solid #e6e6e6', padding: 16, borderRadius: 8 }}>
-          <h4 style={{ marginTop: 0 }}>Actividad de la cuenta</h4>
-          <p><strong>Fecha de creación:</strong> {est?.created_at ?? '-'}</p>
-          <p><strong>Fecha de actualización:</strong> {est?.updated_at ?? '-'}</p>
-          <p><strong>Creado por:</strong> {est?.created_by_name ?? '-'}</p>
-          <p><strong>Actualizado por:</strong> {est?.updated_by_name ?? '-'}</p>
+        {/* Actividad de la cuenta */}
+        <div style={{ 
+          gridColumn: '1 / -1',
+          background: 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)',
+          borderRadius: '16px',
+          padding: '24px 28px',
+          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
+          border: '1px solid #d1d5db'
+        }}>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '12px',
+            marginBottom: '20px',
+            paddingBottom: '16px',
+            borderBottom: '2px solid #d1d5db'
+          }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              background: 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)',
+              borderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '20px',
+              color: '#fff'
+            }}>
+              ⏱️
+            </div>
+            <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1f2937' }}>Actividad de la cuenta</h4>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'start' }}>
+              <span style={{ fontSize: '13px', fontWeight: 600, color: '#4b5563' }}>📅 Fecha de creación:</span>
+              <span style={{ fontSize: '13px', color: '#1f2937', fontWeight: 600 }}>{est?.created_at ?? '-'}</span>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'start' }}>
+              <span style={{ fontSize: '13px', fontWeight: 600, color: '#4b5563' }}>🔄 Fecha de actualización:</span>
+              <span style={{ fontSize: '13px', color: '#1f2937', fontWeight: 600 }}>{est?.updated_at ?? '-'}</span>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'start' }}>
+              <span style={{ fontSize: '13px', fontWeight: 600, color: '#4b5563' }}>👤 Creado por:</span>
+              <span style={{ fontSize: '13px', color: '#1f2937', fontWeight: 600 }}>{est?.created_by_name ?? '-'}</span>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'start' }}>
+              <span style={{ fontSize: '13px', fontWeight: 600, color: '#4b5563' }}>✏️ Actualizado por:</span>
+              <span style={{ fontSize: '13px', color: '#1f2937', fontWeight: 600 }}>{est?.updated_by_name ?? '-'}</span>
+            </div>
+          </div>
         </div>
       </div>
 
