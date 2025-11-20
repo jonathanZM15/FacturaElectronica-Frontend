@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import './Navbar.css';
 import logo from '../assets/maximofactura.png';
@@ -6,11 +6,13 @@ import logo from '../assets/maximofactura.png';
 import { useSidebar } from '../contexts/SidebarContext';
 import { useUser } from '../contexts/userContext';
 import { useNavigate } from 'react-router-dom';
+import ConfirmDialog from './ConfirmDialog';
 
 const Navbar: React.FC = () => {
   const { menuOpen, toggleMenu } = useSidebar();
   const { user, logout } = useUser();
   const navigate = useNavigate();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   return (
     <header className="navbar-container">
@@ -76,12 +78,29 @@ const Navbar: React.FC = () => {
         {user && (
           <div className="user-area">
             <span className="user-name">{(user as any).name || (user as any).username || (user as any).email}</span>
-            <button className="logout-btn" onClick={async () => { try { await logout(); } catch { navigate('/'); } }} title="Cerrar sesión">
+            <button className="logout-btn" onClick={() => setShowLogoutConfirm(true)} title="Cerrar sesión">
               Salir
             </button>
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={showLogoutConfirm}
+        title="Cerrar Sesión"
+        message="¿Estás seguro que deseas cerrar la sesión?"
+        cancelText="CANCELAR"
+        confirmText="CONFIRMAR"
+        onCancel={() => setShowLogoutConfirm(false)}
+        onConfirm={async () => {
+          setShowLogoutConfirm(false);
+          try {
+            await logout();
+          } catch {
+            navigate('/');
+          }
+        }}
+      />
     </header>
   );
 };
