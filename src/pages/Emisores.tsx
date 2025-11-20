@@ -190,8 +190,9 @@ const Emisores: React.FC = () => {
     try {
       const params: Record<string, any> = {
         q: q || undefined,
-        fecha_inicio: desde || undefined,
-        fecha_fin: hasta || undefined,
+        // send created_at range params backend expects
+        created_at_from: desde || undefined,
+        created_at_to: hasta || undefined,
         page: 1,
         per_page: 200,
       };
@@ -433,14 +434,21 @@ const Emisores: React.FC = () => {
                 {/* Fijos izquierda */}
                 <th 
                   className="th-sticky sticky-left-1 sortable" 
-                  onClick={() => { handleSort('ruc'); setActiveFilter('ruc'); setFilterValue(''); }}
+                  onClick={() => { 
+                    // Always sort, but don't override an existing active filter
+                    handleSort('ruc'); 
+                    if (!activeFilter) { setActiveFilter('ruc'); setFilterValue(''); }
+                  }}
                   style={{ cursor: 'pointer' }}
                 >
                   RUC {sortBy === 'ruc' ? (sortOrder === 'asc' ? '▲' : '▼') : '▾'} {activeFilter === 'ruc' && <span style={{ color: '#ff8c00' }}>●</span>}
                 </th>
                 <th 
                   className="th-sticky sticky-left-2 sortable" 
-                  onClick={() => { handleSort('razon_social'); setActiveFilter('razon_social'); setFilterValue(''); }}
+                  onClick={() => { 
+                    handleSort('razon_social'); 
+                    if (!activeFilter) { setActiveFilter('razon_social'); setFilterValue(''); }
+                  }}
                   style={{ cursor: 'pointer' }}
                 >
                   Razón Social {sortBy === 'razon_social' ? (sortOrder === 'asc' ? '▲' : '▼') : '▾'} {activeFilter === 'razon_social' && <span style={{ color: '#ff8c00' }}>●</span>}
@@ -475,12 +483,17 @@ const Emisores: React.FC = () => {
                       }}
                       title={c.label}
                       onClick={() => {
-                        if (c.key !== 'logo') handleSort(c.key as any);
-                        if (isFilterable && filterField) {
-                          setActiveFilter(filterField);
-                          setFilterValue('');
-                        }
-                      }}
+                          // Always sort when header is clicked (except logo),
+                          // but DO NOT override an already active filter.
+                          if (c.key !== 'logo') handleSort(c.key as any);
+                          if (isFilterable && filterField) {
+                            if (!activeFilter) {
+                              setActiveFilter(filterField);
+                              setFilterValue('');
+                            }
+                            // if a filter is already active, keep it as-is
+                          }
+                        }}
                     >
                       {c.label} {c.key !== 'logo' && (sortBy === c.key ? (sortOrder === 'asc' ? '▲' : '▼') : '▾')} {activeFilter === filterField && <span style={{ color: '#ff8c00' }}>●</span>}
                     </th>
