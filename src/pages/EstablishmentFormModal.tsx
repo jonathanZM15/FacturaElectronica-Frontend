@@ -26,6 +26,7 @@ const initial: Establecimiento = {
 const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onCreated, editingEst, codigoEditable, onUpdated }) => {
   const [v, setV] = React.useState<Establecimiento>(initial);
   const [logoFile, setLogoFile] = React.useState<File | null>(null);
+  const [logoOption, setLogoOption] = React.useState<'custom' | 'default' | 'none'>('none');
   const [fieldErrors, setFieldErrors] = React.useState<Record<string,string>>({});
   const [touched, setTouched] = React.useState<Set<string>>(new Set());
   const [checkingCode, setCheckingCode] = React.useState(false);
@@ -44,6 +45,7 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
         setLocalCodigoEditable(true);
       }
       setLogoFile(null);
+      setLogoOption('none');
       setFieldErrors({});
       setCodeDuplicateError(null);
     }
@@ -111,6 +113,8 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
     if (!v.direccion || !v.direccion.trim()) e.direccion = 'Dirección es obligatoria';
     if (v.correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.correo)) e.correo = 'Correo inválido';
     if (codeDuplicateError) e.codigo = codeDuplicateError;
+    // Si eligió logo personalizado, debe subir un archivo
+    if (logoOption === 'custom' && !logoFile) e.logo = 'Debes subir un archivo para logo personalizado';
     setFieldErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -121,7 +125,10 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
     if (!v.direccion || !v.direccion.trim()) return false;
     if (v.correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.correo)) return false;
     if (codeDuplicateError || checkingCode) return false;
-    if (logoFile && !/\.jpe?g$|\.png$/i.test(logoFile.name)) return false;
+    // Si eligió logo personalizado, debe haber archivo
+    if (logoOption === 'custom' && !logoFile) return false;
+    // Validar formato del archivo si hay uno
+    if (logoOption === 'custom' && logoFile && !/\.jpe?g$|\.png$/i.test(logoFile.name)) return false;
     return true;
   };
 
@@ -129,12 +136,68 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
     if (!validate()) return;
     setLoading(true);
     try {
+      let finalLogoFile = logoFile;
+
+      // Si eligió logo por defecto, cargarlo y optimizarlo
+      if (logoOption === 'default') {
+        try {
+          const response = await fetch('/maximofactura.png');
+          const blob = await response.blob();
+          
+          // Optimizar la imagen (redimensionar y comprimir)
+          const optimizedBlob = await new Promise<Blob>((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => {
+              const canvas = document.createElement('canvas');
+              const ctx = canvas.getContext('2d');
+              
+              // Redimensionar si es muy grande
+              const maxWidth = 800;
+              let width = img.width;
+              let height = img.height;
+              
+              if (width > maxWidth) {
+                height = (height * maxWidth) / width;
+                width = maxWidth;
+              }
+              
+              canvas.width = width;
+              canvas.height = height;
+              ctx?.drawImage(img, 0, 0, width, height);
+              
+              canvas.toBlob(
+                (optimizedBlob) => {
+                  if (optimizedBlob) resolve(optimizedBlob);
+                  else reject(new Error('No se pudo optimizar'));
+                },
+                'image/jpeg',
+                0.8 // 80% calidad
+              );
+            };
+            img.onerror = reject;
+            img.src = URL.createObjectURL(blob);
+          });
+
+          finalLogoFile = new File([optimizedBlob], 'maximofactura.png', { type: 'image/jpeg' });
+        } catch (err) {
+          console.error('Error cargando logo por defecto:', err);
+          alert('No se pudo cargar el logo por defecto');
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Si eligió 'none', finalLogoFile queda null
+      if (logoOption === 'none') {
+        finalLogoFile = null;
+      }
+
       if (editingEst && editingEst.id) {
-        const res = await establecimientosApi.update(companyId, editingEst.id, { ...v, logoFile });
+        const res = await establecimientosApi.update(companyId, editingEst.id, { ...v, logoFile: finalLogoFile });
         const updated: Establecimiento = res.data?.data ?? res.data;
         onUpdated && onUpdated(updated);
       } else {
-        const res = await establecimientosApi.create(companyId, { ...v, logoFile });
+        const res = await establecimientosApi.create(companyId, { ...v, logoFile: finalLogoFile });
         const created: Establecimiento = res.data?.data ?? res.data;
         onCreated && onCreated(created);
       }
@@ -227,127 +290,129 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
               <input value={v.telefono || ''} onChange={e=>onChange('telefono', e.target.value)} />
             </label>
 
-            <label style={{marginTop: 24, display: 'flex', flexDirection: 'column', gap: '8px'}}>
+            <label className="horizontal" style={{marginTop: 24}}>
               <span style={{fontWeight: 600, fontSize: '14px', color: '#374151'}}>Logo</span>
-              <div style={{
-                position: 'relative',
-                border: '2px dashed #c7d2fe',
-                borderRadius: '12px',
-                padding: '32px 24px',
-                textAlign: 'center',
-                background: 'linear-gradient(135deg, #faf5ff 0%, #f3f4f6 100%)',
-                transition: 'all 0.3s ease',
-                cursor: 'pointer',
-                minHeight: '140px',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '12px'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = '#7c3aed';
-                e.currentTarget.style.background = 'linear-gradient(135deg, #f3e8ff 0%, #ede9fe 100%)';
-                e.currentTarget.style.transform = 'scale(1.01)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = '#c7d2fe';
-                e.currentTarget.style.background = 'linear-gradient(135deg, #faf5ff 0%, #f3f4f6 100%)';
-                e.currentTarget.style.transform = 'scale(1)';
-              }}
+              <select 
+                value={logoOption} 
+                onChange={(e) => {
+                  setLogoOption(e.target.value as 'custom' | 'default' | 'none');
+                  setLogoFile(null);
+                }}
+                style={{
+                  padding: '10px 12px',
+                  borderRadius: '8px',
+                  border: '2px solid #e5e7eb',
+                  fontSize: '14px',
+                  color: '#374151',
+                  background: '#fff',
+                  cursor: 'pointer',
+                  transition: 'border-color 0.2s ease'
+                }}
               >
-                {!logoFile ? (
-                  <>
-                    <div style={{
-                      width: '56px',
-                      height: '56px',
-                      background: 'linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%)',
-                      borderRadius: '50%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '28px',
-                      color: '#fff',
-                      boxShadow: '0 4px 12px rgba(124, 58, 237, 0.3)'
-                    }}>
-                      📁
-                    </div>
-                    <div style={{fontSize: '15px', fontWeight: 600, color: '#374151'}}>
-                      Seleccionar archivo de logo
-                    </div>
-                    <div style={{fontSize: '13px', color: '#6b7280'}}>
-                      Click para buscar o arrastra aquí
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div style={{
-                      width: '56px',
-                      height: '56px',
-                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                      borderRadius: '50%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '32px',
-                      color: '#fff',
-                      boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
-                    }}>
-                      ✓
-                    </div>
-                    <div style={{fontSize: '15px', fontWeight: 700, color: '#059669'}}>
-                      Archivo seleccionado
-                    </div>
-                    <div style={{
-                      fontSize: '14px',
-                      color: '#374151',
-                      padding: '8px 16px',
-                      background: '#fff',
-                      borderRadius: '8px',
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-                      maxWidth: '90%',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap'
-                    }}>
-                      {logoFile.name}
-                    </div>
-                    <div style={{fontSize: '12px', color: '#7c3aed', fontWeight: 600}}>
-                      Click para cambiar
-                    </div>
-                  </>
-                )}
-                <input 
-                  type="file" 
-                  accept=".jpg,.jpeg,.png"
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    opacity: 0,
-                    cursor: 'pointer'
-                  }}
-                  onChange={e=>setLogoFile(e.target.files?.[0] || null)} 
-                />
-              </div>
-              <div style={{
-                marginTop: '8px',
-                fontSize: '12px',
-                color: '#6b7280',
-                textAlign: 'center',
-                lineHeight: '1.6',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '16px'
-              }}>
-                <span>📎 <strong>JPG, JPEG, PNG</strong></span>
-                <span>•</span>
-                <span>📐 Horizontal (ancho &gt; alto)</span>
-              </div>
+                <option value="none">🚫 Sin logo</option>
+                <option value="default">🏢 Logo por defecto (Máximo Facturas)</option>
+                <option value="custom">📁 Logo personalizado</option>
+              </select>
             </label>
+
+              {/* Área de carga de archivo (solo visible cuando logoOption === 'custom') */}
+              {logoOption === 'custom' && (
+                <>
+                  <div style={{
+                    position: 'relative',
+                    border: '2px dashed #c7d2fe',
+                    borderRadius: '10px',
+                    padding: '20px 16px',
+                    textAlign: 'center',
+                    background: 'linear-gradient(135deg, #faf5ff 0%, #f3f4f6 100%)',
+                    transition: 'all 0.3s ease',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    marginTop: '12px'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#7c3aed';
+                    e.currentTarget.style.background = 'linear-gradient(135deg, #f3e8ff 0%, #ede9fe 100%)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = '#c7d2fe';
+                    e.currentTarget.style.background = 'linear-gradient(135deg, #faf5ff 0%, #f3f4f6 100%)';
+                  }}
+                  >
+                    {!logoFile ? (
+                      <>
+                        <div style={{
+                          width: '42px',
+                          height: '42px',
+                          background: 'linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%)',
+                          borderRadius: '50%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '20px',
+                          color: '#fff',
+                          boxShadow: '0 3px 8px rgba(124, 58, 237, 0.3)'
+                        }}>
+                          📁
+                        </div>
+                        <div style={{fontSize: '13px', fontWeight: 600, color: '#374151'}}>
+                          Click para seleccionar archivo
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div style={{
+                          width: '42px',
+                          height: '42px',
+                          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                          borderRadius: '50%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '24px',
+                          color: '#fff',
+                          boxShadow: '0 3px 8px rgba(16, 185, 129, 0.3)'
+                        }}>
+                          ✓
+                        </div>
+                        <div style={{fontSize: '13px', fontWeight: 700, color: '#059669'}}>
+                          {logoFile.name}
+                        </div>
+                        <div style={{fontSize: '11px', color: '#7c3aed', fontWeight: 600}}>
+                          Click para cambiar
+                        </div>
+                      </>
+                    )}
+                    <input 
+                      type="file" 
+                      accept=".jpg,.jpeg,.png"
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        opacity: 0,
+                        cursor: 'pointer'
+                      }}
+                      onChange={e=>setLogoFile(e.target.files?.[0] || null)} 
+                    />
+                  </div>
+
+                  <div style={{
+                    marginTop: '6px',
+                    fontSize: '11px',
+                    color: '#6b7280',
+                    textAlign: 'center'
+                  }}>
+                    📎 JPG, JPEG, PNG • 📐 Horizontal (ancho &gt; alto)
+                  </div>
+                </>
+              )}
 
             <label style={{ marginTop: 16 }}>Actividades economicas
               <textarea value={v.actividades_economicas || ''} onChange={e=>onChange('actividades_economicas', e.target.value)} rows={3} />
