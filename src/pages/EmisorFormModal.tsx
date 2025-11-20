@@ -129,8 +129,9 @@ const EmisorFormModal: React.FC<Props> = (props) => {
           if (!val) return 'Seleccione tipo de emisión';
           return null;
         case 'logo':
-          if (!editingId && !logoFile) return 'Logo obligatorio al registrar';
+          // logo is optional; when provided validate format and orientation
           if (logoFile && !/\.jpe?g$|\.png$/i.test(logoFile.name)) return 'Formato no permitido. Use .jpg, .jpeg o .png';
+          if (logoFile && (logoFile as any).__orientationInvalid) return 'El logo debe ser horizontal (ancho mayor que alto)';
           return null;
         default:
           return null;
@@ -201,9 +202,9 @@ const EmisorFormModal: React.FC<Props> = (props) => {
     if (!v.ambiente) return false;
     if (!v.tipo_emision) return false;
 
-    // logo required on create
-    if (!editingId && !logoFile) { setLogoError('Logo obligatorio al registrar un emisor'); return false; }
+    // logo is optional; if provided, validate format and orientation
     if (logoFile && !/\.jpe?g$|\.png$/i.test(logoFile.name)) { setLogoError('Formato no permitido. Use .jpg, .jpeg o .png'); return false; }
+    if (logoFile && (logoFile as any).__orientationInvalid) { setLogoError('El logo debe ser horizontal (ancho mayor que alto)'); return false; }
 
     // clear transient errors
     setRucError(null);
@@ -320,7 +321,7 @@ const EmisorFormModal: React.FC<Props> = (props) => {
       case 'correo_remitente': return !val || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val); // optional: valid if empty or matches pattern
       case 'ambiente': return !!val;
       case 'tipo_emision': return !!val;
-      case 'logo': return editingId ? true : !!logoFile;
+      case 'logo': return true; // optional
       default: return val !== null && val !== undefined && (typeof val !== 'string' || val.trim() !== '');
     }
   };
@@ -520,6 +521,20 @@ const EmisorFormModal: React.FC<Props> = (props) => {
                   {validateFieldRealTime('tipo_emision') && <span className="err">{validateFieldRealTime('tipo_emision')}</span>}
               </label>
             </div>
+            {/* Messages area: ambiente and tipo de emision */}
+            <div style={{marginTop:12, textAlign:'center'}}>
+              {v.ambiente === 'PRODUCCION' && (
+                <div className="ambiente-message">Los comprobantes tendrán validez legal y fiscal.</div>
+              )}
+              {v.ambiente === 'PRUEBAS' && (
+                <div className="ambiente-message ambiente-test">Los comprobantes <strong style={{color:'#b00020'}}>NO</strong> tendrán validez fiscal ni legal.</div>
+              )}
+              <div className="tipo-message" style={{marginTop:8}}>
+                {/* Placeholder for Tipo de Emisión explanatory messages per option. */}
+                {v.tipo_emision === 'NORMAL' && <span>Información: (mensaje explicativo para 'Normal' pendiente).</span>}
+                {v.tipo_emision === 'INDISPONIBILIDAD' && <span>Información: (mensaje explicativo para 'Indisponibilidad del SRI' pendiente).</span>}
+              </div>
+            </div>
 
             <label>Logo
               <div className="logo-container">
@@ -535,12 +550,45 @@ const EmisorFormModal: React.FC<Props> = (props) => {
                   type="file" 
                   accept=".jpg,.jpeg,.png" 
                   onChange={e => {
-                    setLogoFile(e.target.files?.[0] || null);
-                    setTouchedFields(prev => new Set(prev).add('logo'));
+                    const f = e.target.files?.[0] || null;
+                    // read and validate orientation (horizontal required)
+                    if (!f) {
+                      setLogoFile(null);
+                      setLogoError(null);
+                      setTouchedFields(prev => new Set(prev).add('logo'));
+                      return;
+                    }
+                    if (!/\.jpe?g$|\.png$/i.test(f.name)) {
+                      setLogoFile(f);
+                      setLogoError('Formato no permitido. Use .jpg, .jpeg o .png');
+                      setTouchedFields(prev => new Set(prev).add('logo'));
+                      return;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                      const img = new Image();
+                      img.onload = () => {
+                        const invalid = img.width <= img.height;
+                        (f as any).__orientationInvalid = invalid;
+                        setLogoFile(f);
+                        setLogoError(invalid ? 'El logo debe ser horizontal (ancho mayor que alto)' : null);
+                        setTouchedFields(prev => new Set(prev).add('logo'));
+                      };
+                      img.onerror = () => {
+                        // if we cannot determine dimensions, accept but warn via null
+                        (f as any).__orientationInvalid = false;
+                        setLogoFile(f);
+                        setLogoError(null);
+                        setTouchedFields(prev => new Set(prev).add('logo'));
+                      };
+                      img.src = ev.target?.result as string;
+                    };
+                    reader.readAsDataURL(f);
                   }} 
                 />
               </div>
               {validateFieldRealTime('logo') && <span className="err">{validateFieldRealTime('logo')}</span>}
+              <div className="logo-hint">Opcional. Preferiblemente horizontal (ancho &gt; alto), dimensiones compatibles con la barra superior.</div>
             </label>
           </section>
         </div>
@@ -616,6 +664,10 @@ const EmisorFormModal: React.FC<Props> = (props) => {
         .artesano-input{max-width:400px!important;background:linear-gradient(135deg, #fff 0%, #f8fafc 100%)!important;
           border:1px solid #cbd5e1!important;font-style:italic;color:#64748b}
         .artesano-input:focus{background:#fff!important}
+        .logo-hint{font-size:13px;color:var(--color-muted,#6b7280);margin-top:8px}
+        .ambiente-message{font-size:14px;color:var(--color-text);background:transparent;padding:6px 10px;border-radius:6px}
+        .ambiente-message.ambiente-test{color:#1f2937}
+        .tipo-message{font-size:13px;color:var(--color-muted,#6b7280)}
 
         /* Radio buttons - custom styled circles */
         input[type="radio"]{appearance:none;width:20px;height:20px;border:2px solid #cbd5e1;border-radius:50%;
