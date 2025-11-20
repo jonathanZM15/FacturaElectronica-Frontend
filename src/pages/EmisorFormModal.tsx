@@ -349,7 +349,9 @@ const EmisorFormModal: React.FC<Props> = (props) => {
         <div className="mf-body scrollable">
           <section>
             <h3>Identificación</h3>
-              <label className="horizontal">
+            {/* Grid: RUC on left, Estado toggle on right */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 220px', gap: 24, alignItems: 'center', marginBottom: 12 }}>
+              <label className="horizontal" style={{ margin: 0 }}>
                 <span style={{display:'inline-flex', alignItems:'center', gap:6}}>Nro. RUC{requiredKeys.has('ruc') && <strong style={{color:'#b00020', marginLeft:6}}> *</strong>}</span>
                   <input
                     value={v.ruc}
@@ -362,8 +364,22 @@ const EmisorFormModal: React.FC<Props> = (props) => {
                       pattern="\d*"
                   />
               </label>
-                  {!localRucEditable && <small style={{color:'#666',marginLeft:'192px'}}>El RUC no puede ser modificado porque existen comprobantes autorizados.</small>}
-                    {validateFieldRealTime('ruc') && <span className="err" style={{marginLeft:'192px'}}>{validateFieldRealTime('ruc')}</span>}
+              {/* Estado toggle on the right */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 12 }}>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontWeight: 600, fontSize: 13, color: '#475569' }}>Estado</div>
+                  <div style={{ fontSize: 12, marginTop: 2, color: v.estado === 'ACTIVO' ? '#059669' : '#64748b' }}>
+                    {v.estado === 'ACTIVO' ? 'Activo' : 'Inactivo'}
+                  </div>
+                </div>
+                <label className="switch">
+                  <input type="checkbox" checked={v.estado === 'ACTIVO'} onChange={e => onChange('estado', e.target.checked ? 'ACTIVO' : 'INACTIVO')} />
+                  <span className="slider" />
+                </label>
+              </div>
+            </div>
+            {!localRucEditable && <small style={{color:'#666',marginLeft:'192px'}}>El RUC no puede ser modificado porque existen comprobantes autorizados.</small>}
+            {validateFieldRealTime('ruc') && <span className="err" style={{marginLeft:'192px'}}>{validateFieldRealTime('ruc')}</span>}
             <label className="horizontal">{requiredKeys.has('razon_social') ? <><span style={{display:'inline-flex', alignItems:'center', gap:6}}>Razón Social<strong style={{color:'#b00020', marginLeft:6}}> *</strong></span></> : 'Razón Social'}
               <input
                 value={v.razon_social}
@@ -373,7 +389,7 @@ const EmisorFormModal: React.FC<Props> = (props) => {
               />
             </label>
                 {validateFieldRealTime('razon_social') && <span className="err" style={{marginLeft:'192px'}}>{validateFieldRealTime('razon_social')}</span>}
-            <label className="horizontal">Nombre comercial
+            <label className="horizontal"><span style={{display:'inline-flex', alignItems:'center', gap:6}}>Nombre comercial</span>
               <input 
                 value={v.nombre_comercial || ''} 
                 onChange={e => onChange('nombre_comercial', e.target.value)}
@@ -602,17 +618,6 @@ const EmisorFormModal: React.FC<Props> = (props) => {
           </section>
         </div>
 
-        {/* Estado moved to end of form as a select list (Activo / Desactivado) */}
-        <div style={{padding: '18px 28px'}}>
-          <label style={{display:'flex', alignItems:'center', gap:12}}>
-            <span style={{minWidth:180, fontWeight:600}}>Estado</span>
-            <select value={v.estado} onChange={e => onChange('estado', e.target.value as any)} style={{width: 360, maxWidth: '60%'}}>
-              <option value="ACTIVO">Activo</option>
-              <option value="INACTIVO">Desactivado</option>
-            </select>
-          </label>
-        </div>
-
         <div className="mf-footer">
           <button className="btn btn-secondary" onClick={onClose} disabled={loading}>{'Cancelar'}</button>
           <button className="btn btn-primary" onClick={submit} disabled={loading || !isFormValid()}>{editingId ? 'Guardar cambios' : 'Registrar'}</button>
@@ -757,6 +762,17 @@ const EmisorFormModal: React.FC<Props> = (props) => {
           .row{flex-direction:column;align-items:flex-start;gap:12px}
           .config-row{flex-direction:column;align-items:stretch;gap:12px}
         }
+      `}</style>
+      <style>{`
+        /* Toggle switch - MEJORADO (para Estado) */
+        .switch{position:relative;display:inline-block;width:50px;height:26px}
+        .switch input{opacity:0;width:0;height:0}
+        .slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#cbd5e1;
+          transition:.3s;border-radius:999px}
+        .slider:before{position:absolute;content:"";height:20px;width:20px;left:3px;top:3px;
+          background:white;transition:.3s;border-radius:50%;box-shadow:0 2px 6px rgba(2,6,23,0.15)}
+        .switch input:checked + .slider{background:#10b981}
+        .switch input:checked + .slider:before{transform:translateX(24px)}
       `}</style>
     </div>
   );
