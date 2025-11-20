@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useNotification } from '../contexts/NotificationContext';
 import logo from '../assets/maximofactura.png';
-import bgAsset from '../assets/factura-inicio.jpg';
+import bgAsset from '../assets/factura-inicio.png';
 import whatsappIcon from '../assets/icon-whatsapp.jpeg';
 import './PasswordRecovery.css';
 
@@ -28,8 +28,9 @@ const PasswordRecovery: React.FC = () => {
     };
   }, [error]);
 
-  const bgStyle: React.CSSProperties = {
-      backgroundImage: `linear-gradient(90deg, rgba(12, 45, 231, 0.8), rgba(63,8,143,0.55)), url('${bgAsset}')`,
+  const bgStyle: React.CSSProperties = {
+    // left stays blue, right side uses orange tone
+    backgroundImage: `linear-gradient(90deg, rgba(12,45,231,0.8), rgba(255,140,0,0.6)), url('${bgAsset}')`,
       backgroundSize: 'cover',
       backgroundPosition: 'center',
       minHeight: '100vh',

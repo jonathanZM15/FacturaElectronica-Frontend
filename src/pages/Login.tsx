@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import logo from '../assets/maximofactura.png';
 import api from '../services/api';
-import bgAsset from '../assets/factura-inicio.jpg';
+import bgAsset from '../assets/factura-inicio.png';
 import './auth.css';
 import { AuthCredentials } from '../types/interfaces';
 import { useUser } from '../contexts/userContext';
@@ -80,7 +80,8 @@ const Login: React.FC = () => {
   const finalUrl = bgAsset;
 
   const bgStyle: React.CSSProperties = {
-    backgroundImage: `linear-gradient(90deg, rgba(12, 45, 231, 0.8), rgba(63,8,143,0.55)), url('${finalUrl}')`,
+    // left stays blue, right side changed to an orange tone
+    backgroundImage: `linear-gradient(90deg, rgba(12,45,231,0.8), rgba(255,140,0,0.6)), url('${finalUrl}')`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
   };
