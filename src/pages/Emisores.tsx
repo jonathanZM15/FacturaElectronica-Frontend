@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import './Emisores.css';
 import { emisoresApi } from '../services/emisoresApi';
 import EmisorFormModal from './EmisorFormModal';
+import ImageViewerModal from './ImageViewerModal';
 import { Emisor } from '../types/emisor';
 import { useNotification } from '../contexts/NotificationContext';
 
@@ -59,6 +60,8 @@ const dynamicColumns: Array<{
           className="logo-cell" 
           src={row.logo_url} 
           alt="logo"
+          title="Haz clic para ampliar"
+          style={{ cursor: 'pointer', transition: 'transform 0.2s ease' }}
           onError={(e) => {
             console.error('Error cargando imagen:', row.logo_url);
             e.currentTarget.style.display = 'none';
@@ -167,6 +170,10 @@ const Emisores: React.FC = () => {
   // Sorting states
   const [sortBy, setSortBy] = React.useState<keyof Emisor | 'logo' | null>(null);
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('asc');
+
+  // Image viewer states
+  const [viewerOpen, setViewerOpen] = React.useState(false);
+  const [viewerImage, setViewerImage] = React.useState<string | null>(null);
 
   const formatDate = React.useCallback((iso: string) => {
     if (!iso) return '';
@@ -543,6 +550,33 @@ const Emisores: React.FC = () => {
                         content = truncateWords(content);
                       }
 
+                      // Special handling for logo column
+                      if (c.key === 'logo' && row.logo_url) {
+                        content = (
+                          <img 
+                            className="logo-cell" 
+                            src={row.logo_url} 
+                            alt="logo"
+                            title="Haz clic para ampliar"
+                            onClick={() => { 
+                              if (row.logo_url) {
+                                console.log('Logo clicked from table, URL:', row.logo_url); 
+                                setViewerImage(row.logo_url); 
+                                setViewerOpen(true);
+                              }
+                            }}
+                            style={{ cursor: 'pointer', transition: 'transform 0.2s ease' }}
+                            onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.1)')}
+                            onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+                            onError={(e) => {
+                              console.error('Error cargando imagen:', row.logo_url);
+                              e.currentTarget.style.display = 'none';
+                            }}
+                            onLoad={() => console.log('Imagen cargada correctamente:', row.logo_url)}
+                          />
+                        );
+                      }
+
                       const rawValue = row[c.key as keyof Emisor] as any;
                       const isNumber = typeof rawValue === 'number';
                       const isRestantes = c.key === 'cantidad_restantes';
@@ -811,6 +845,7 @@ const Emisores: React.FC = () => {
     />
 
     {/* notifications handled by NotificationProvider */}
+    <ImageViewerModal open={viewerOpen} imageUrl={viewerImage} onClose={() => setViewerOpen(false)} />
     </>
   );
 };

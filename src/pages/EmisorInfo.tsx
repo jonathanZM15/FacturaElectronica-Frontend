@@ -5,6 +5,7 @@ import EmisorFormModal from './EmisorFormModal';
 import EstablishmentFormModal from './EstablishmentFormModal';
 import { establecimientosApi } from '../services/establecimientosApi';
 import { useNotification } from '../contexts/NotificationContext';
+import ImageViewerModal from './ImageViewerModal';
 import './Emisores.css';
 
 const EmisorInfo: React.FC = () => {
@@ -33,6 +34,8 @@ const EmisorInfo: React.FC = () => {
   const [deleteEstOpen, setDeleteEstOpen] = React.useState(false);
   const [deleteEstPasswordOpen, setDeleteEstPasswordOpen] = React.useState(false);
   const [deleteEstPassword, setDeleteEstPassword] = React.useState('');
+  const [viewerOpen, setViewerOpen] = React.useState(false);
+  const [viewerImage, setViewerImage] = React.useState<string | null>(null);
   const [deleteEstError, setDeleteEstError] = React.useState<string | null>(null);
   const [deleteEstLoading, setDeleteEstLoading] = React.useState(false);
   const [deletingEstId, setDeletingEstId] = React.useState<number | null>(null);
@@ -224,7 +227,19 @@ const EmisorInfo: React.FC = () => {
                       <span className="info-label">Logo:</span>
                       <div className="info-value">
                         {company?.logo_url ? (
-                          <img src={company.logo_url} alt="logo" style={{ maxWidth: 150, maxHeight: 150, borderRadius: 8, border: '2px solid #e5e7eb', padding: 8, background: '#fff' }} />
+                          <img 
+                            src={company.logo_url} 
+                            alt="logo" 
+                            style={{ maxWidth: 150, maxHeight: 150, borderRadius: 8, border: '2px solid #e5e7eb', padding: 8, background: '#fff', cursor: 'pointer', transition: 'transform 0.2s' }}
+                            onClick={() => { 
+                              console.log('Logo clicked, URL:', company.logo_url); 
+                              setViewerImage(company.logo_url); 
+                              setViewerOpen(true); 
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
+                            onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+                            title="Haz clic para ampliar"
+                          />
                         ) : (
                           <span style={{ color: '#94a3b8' }}>-</span>
                         )}
@@ -432,7 +447,16 @@ const EmisorInfo: React.FC = () => {
                           <td style={{ textAlign: 'center' }}>{est.direccion || '-'}</td>
                           <td style={{ textAlign: 'center' }}>
                             {(est.logo_url || est.logo_path || est.logo) ? (
-                              <img className="logo-cell" src={est.logo_url || est.logo_path || est.logo} alt="logo" onClick={() => window.open(est.logo_url || est.logo_path || est.logo, '_blank')} />
+                              <img 
+                                className="logo-cell" 
+                                src={est.logo_url || est.logo_path || est.logo} 
+                                alt="logo" 
+                                onClick={() => { setViewerImage(est.logo_url || est.logo_path || est.logo); setViewerOpen(true); }}
+                                style={{ cursor: 'pointer', transition: 'transform 0.2s' }}
+                                onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.1)')}
+                                onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+                                title="Haz clic para ampliar"
+                              />
                             ) : (<span className="logo-placeholder">—</span>)}
                           </td>
                           <td style={{ textAlign: 'center' }}>
@@ -692,6 +716,8 @@ const EmisorInfo: React.FC = () => {
           </div>
         </div>
       )}
+
+      <ImageViewerModal open={viewerOpen} imageUrl={viewerImage} onClose={() => setViewerOpen(false)} />
     </div>
   );
 };

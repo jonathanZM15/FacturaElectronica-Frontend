@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { establecimientosApi } from '../services/establecimientosApi';
 import { emisoresApi } from '../services/emisoresApi';
 import { useNotification } from '../contexts/NotificationContext';
+import ImageViewerModal from './ImageViewerModal';
 
 const EstablecimientoInfo: React.FC = () => {
   const { id, estId } = useParams();
@@ -19,6 +20,10 @@ const EstablecimientoInfo: React.FC = () => {
   const [deletePassword, setDeletePassword] = React.useState('');
   const [deleteError, setDeleteError] = React.useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = React.useState(false);
+
+  // Image viewer states
+  const [viewerOpen, setViewerOpen] = React.useState(false);
+  const [viewerImage, setViewerImage] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     const load = async () => {
@@ -92,7 +97,11 @@ const EstablecimientoInfo: React.FC = () => {
         <div style={{ border: '1px solid #e6e6e6', padding: 16, borderRadius: 8 }}>
           <h4 style={{ marginTop: 0 }}>Logo</h4>
           {est?.logo_url ? (
-            <img src={est.logo_url} alt="logo" style={{ width: '100%', height: 180, objectFit: 'contain' }} />
+            <img src={est.logo_url} alt="logo" title="Haz clic para ampliar" onClick={() => { 
+              console.log('Logo clicked, URL:', est.logo_url); 
+              setViewerImage(est.logo_url); 
+              setViewerOpen(true); 
+            }} style={{ width: '100%', height: 180, objectFit: 'contain', cursor: 'pointer', transition: 'transform 0.2s ease', transform: 'scale(1)' }} onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')} onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')} />
           ) : <div style={{ width: '100%', height: 180, background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>No hay logo</div>}
         </div>
 
@@ -254,6 +263,8 @@ const EstablecimientoInfo: React.FC = () => {
           </div>
         </div>
       )}
+
+      <ImageViewerModal open={viewerOpen} imageUrl={viewerImage} onClose={() => setViewerOpen(false)} />
     </div>
   );
 };
