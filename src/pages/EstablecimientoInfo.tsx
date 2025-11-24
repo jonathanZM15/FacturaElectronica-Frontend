@@ -40,6 +40,30 @@ const EstablecimientoInfo: React.FC = () => {
   const [puntoFormOpen, setPuntoFormOpen] = React.useState(false);
   const [selectedPunto, setSelectedPunto] = React.useState<PuntoEmision | null>(null);
 
+  // Filtrado de puntos de emisión
+  type PuntoCol = 'codigo'|'nombre'|'estado';
+  type PuntoFilterField = 'codigo'|'nombre'|'estado';
+  const [activePuntoFilter, setActivePuntoFilter] = React.useState<PuntoFilterField | null>(null);
+  const [puntoFilterValue, setPuntoFilterValue] = React.useState<string>('');
+  const puntoFilterLabels: Record<PuntoFilterField, string> = {
+    codigo: 'Código',
+    nombre: 'Nombre',
+    estado: 'Estado'
+  };
+
+  // Date range filter for puntos
+  const [puntoDesde, setPuntoDesde] = React.useState<string>('');
+  const [puntoHasta, setPuntoHasta] = React.useState<string>('');
+  const [puntosDateOpen, setPuntosDateOpen] = React.useState(false);
+  const puntosDateRef = React.useRef<HTMLDivElement | null>(null);
+  const puntoDesdeInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  };
+
   React.useEffect(() => {
     const load = async () => {
       if (!id || !estId) return;
@@ -131,49 +155,252 @@ const EstablecimientoInfo: React.FC = () => {
       </div>
 
       <div style={{ marginTop: 18, borderRadius: 12, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.05)', background: '#fff' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid #e5e7eb' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid #e5e7eb', gap: 12, flexWrap: 'wrap' }}>
           <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1f2937' }}>Lista de puntos de emisión</h4>
-          <button 
-            onClick={() => { setSelectedPunto(null); setPuntoFormOpen(true); }}
-            style={{
-              padding: '11px 24px',
-              background: 'linear-gradient(135deg, #0d6efd 0%, #0b5fd7 100%)',
-              color: 'white',
-              border: 'none',
-              borderRadius: '10px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '700',
-              boxShadow: '0 4px 12px rgba(13, 110, 253, 0.3)',
-              transition: 'all 0.3s ease',
-              display: 'inline-flex',
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 300, justifyContent: 'flex-end' }}>
+            {/* Filter UI - Text filter */}
+            <div style={{ 
+              background: '#f8f9fa', 
+              border: '1px solid #dee2e6', 
+              borderRadius: 6, 
+              padding: '0 12px',
+              display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              height: '42px',
-              whiteSpace: 'nowrap'
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, #0b5fd7 0%, #084298 100%)';
-              (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-2px)';
-              (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 16px rgba(13, 110, 253, 0.4)';
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, #0d6efd 0%, #0b5fd7 100%)';
-              (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)';
-              (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 12px rgba(13, 110, 253, 0.3)';
-            }}
-          >
-            + Nuevo
-          </button>
+              gap: 8,
+              height: 44,
+              flex: 1,
+              maxWidth: 400
+            }}>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+                {activePuntoFilter === 'estado' ? (
+                  <select 
+                    value={puntoFilterValue} 
+                    onChange={(e) => setPuntoFilterValue(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '6px 8px',
+                      borderRadius: 4,
+                      border: 'none',
+                      fontSize: 14,
+                      fontFamily: 'inherit',
+                      background: 'transparent'
+                    }}
+                  >
+                    <option value="">Todos</option>
+                    <option value="activo">Activo</option>
+                    <option value="inactivo">Inactivo</option>
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    placeholder={activePuntoFilter ? `Filtrar por ${puntoFilterLabels[activePuntoFilter]}` : 'Haz clic en un encabezado para filtrar'}
+                    value={puntoFilterValue}
+                    onChange={(e) => setPuntoFilterValue(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '6px 8px',
+                      borderRadius: 4,
+                      border: 'none',
+                      fontSize: 14,
+                      background: 'transparent',
+                      outline: 'none'
+                    }}
+                  />
+                )}
+              </div>
+              <span style={{ fontSize: 16, color: '#666', flexShrink: 0 }}>🔍</span>
+              {activePuntoFilter && puntoFilterValue && (
+                <button
+                  onClick={() => setPuntoFilterValue('')}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    borderRadius: 4,
+                    padding: '2px 6px',
+                    cursor: 'pointer',
+                    fontSize: 14,
+                    color: '#666',
+                    flexShrink: 0
+                  }}
+                >
+                  ×
+                </button>
+              )}
+            </div>
+
+            {/* Date range filter */}
+            <div className="date-range" ref={puntosDateRef} style={{ position: 'relative' }}>
+              <button 
+                className="date-range-display"
+                onClick={() => setPuntosDateOpen((v) => !v)}
+                style={{
+                  padding: '8px 12px',
+                  background: '#fff',
+                  border: '1px solid #dee2e6',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: '#666',
+                  display: 'flex',
+                  gap: 6,
+                  alignItems: 'center',
+                  whiteSpace: 'nowrap',
+                  height: 44
+                }}
+              >
+                <span>{puntoDesde ? formatDate(puntoDesde) : 'Fecha Inicial'}</span>
+                <span>→</span>
+                <span>{puntoHasta ? formatDate(puntoHasta) : 'Fecha Final'}</span>
+              </button>
+              {puntosDateOpen && (
+                <div 
+                  className="date-range-popover"
+                  style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    marginTop: 4,
+                    background: '#fff',
+                    border: '1px solid #dee2e6',
+                    borderRadius: 8,
+                    padding: 12,
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                    zIndex: 100,
+                    minWidth: 280
+                  }}
+                >
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <label style={{ fontSize: 12, fontWeight: 500, color: '#666', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      Desde
+                      <input 
+                        ref={puntoDesdeInputRef}
+                        type="date" 
+                        value={puntoDesde} 
+                        onChange={(e) => setPuntoDesde(e.target.value)}
+                        style={{ padding: '6px 8px', border: '1px solid #dee2e6', borderRadius: 4, fontSize: 13 }}
+                      />
+                    </label>
+                    <label style={{ fontSize: 12, fontWeight: 500, color: '#666', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      Hasta
+                      <input 
+                        type="date" 
+                        value={puntoHasta} 
+                        onChange={(e) => setPuntoHasta(e.target.value)}
+                        style={{ padding: '6px 8px', border: '1px solid #dee2e6', borderRadius: 4, fontSize: 13 }}
+                      />
+                    </label>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 12, justifyContent: 'flex-end' }}>
+                    <button 
+                      onClick={() => { setPuntoDesde(''); setPuntoHasta(''); setPuntosDateOpen(false); }}
+                      style={{ padding: '6px 12px', background: '#f0f0f0', border: '1px solid #dee2e6', borderRadius: 4, cursor: 'pointer', fontSize: 12, fontWeight: 500, color: '#666' }}
+                    >
+                      Limpiar
+                    </button>
+                    <button 
+                      onClick={() => setPuntosDateOpen(false)}
+                      style={{ padding: '6px 12px', background: '#0d6efd', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 12, fontWeight: 500, color: '#fff' }}
+                    >
+                      Aplicar
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Clear date filter button */}
+            {(puntoDesde || puntoHasta) && (
+              <button 
+                onClick={() => { setPuntoDesde(''); setPuntoHasta(''); }}
+                style={{ padding: '4px 8px', background: '#fff', border: '1px solid #dee2e6', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 500, color: '#dc2626', display: 'flex', alignItems: 'center', height: 44 }}
+              >
+                ✕
+              </button>
+            )}
+
+            <button 
+              onClick={() => { setSelectedPunto(null); setPuntoFormOpen(true); }}
+              style={{
+                padding: '11px 24px',
+                background: 'linear-gradient(135deg, #0d6efd 0%, #0b5fd7 100%)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '10px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '700',
+                boxShadow: '0 4px 12px rgba(13, 110, 253, 0.3)',
+                transition: 'all 0.3s ease',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '44px',
+                whiteSpace: 'nowrap'
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, #0b5fd7 0%, #084298 100%)';
+                (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-2px)';
+                (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 16px rgba(13, 110, 253, 0.4)';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, #0d6efd 0%, #0b5fd7 100%)';
+                (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)';
+                (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 12px rgba(13, 110, 253, 0.3)';
+              }}
+            >
+              + Nuevo
+            </button>
+          </div>
         </div>
+        {activePuntoFilter && (
+          <div style={{ padding: '8px 20px', background: '#f8f9fa', borderBottom: '1px solid #e5e7eb', fontSize: 12, color: '#666' }}>
+            Buscando por {puntoFilterLabels[activePuntoFilter]}
+            {puntoFilterValue && (
+              <button
+                onClick={() => { setPuntoFilterValue(''); }}
+                style={{ marginLeft: 8, background: 'transparent', border: 'none', color: '#1e40af', cursor: 'pointer', fontSize: 12 }}
+              >
+                Limpiar
+              </button>
+            )}
+          </div>
+        )}
 
         <div style={{ overflowX: 'auto', overflowY: 'visible' }}>
           <table className="puntos-table-modern" style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, minWidth: '100%' }}>
             <thead>
               <tr>
-                <th className="th-sticky sticky-left-0">Código</th>
-                <th className="th-sticky sticky-left-1">Nombre</th>
-                <th className="th-sticky sticky-left-2">Estado</th>
+                <th 
+                  className="th-sticky sticky-left-0" 
+                  onClick={() => {
+                    setActivePuntoFilter('codigo');
+                    setPuntoFilterValue('');
+                  }}
+                  style={{ cursor: 'pointer' }}
+                >
+                  Código {activePuntoFilter === 'codigo' && <span style={{ color: '#ff8c00' }}>●</span>}
+                </th>
+                <th 
+                  className="th-sticky sticky-left-1" 
+                  onClick={() => {
+                    setActivePuntoFilter('nombre');
+                    setPuntoFilterValue('');
+                  }}
+                  style={{ cursor: 'pointer' }}
+                >
+                  Nombre {activePuntoFilter === 'nombre' && <span style={{ color: '#ff8c00' }}>●</span>}
+                </th>
+                <th 
+                  className="th-sticky sticky-left-2" 
+                  onClick={() => {
+                    setActivePuntoFilter('estado');
+                    setPuntoFilterValue('');
+                  }}
+                  style={{ cursor: 'pointer' }}
+                >
+                  Estado {activePuntoFilter === 'estado' && <span style={{ color: '#ff8c00' }}>●</span>}
+                </th>
                 <th>Secuencial Facturas</th>
                 <th>Secuencial Liquidaciones</th>
                 <th>Secuencial Notas Crédito</th>
@@ -181,12 +408,46 @@ const EstablecimientoInfo: React.FC = () => {
                 <th>Secuencial Guías</th>
                 <th>Secuencial Retenciones</th>
                 <th>Secuencial Proformas</th>
+                <th>Fecha de creación</th>
+                <th>Fecha de actualización</th>
                 <th className="th-sticky sticky-right">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {Array.isArray(est?.puntos_emision) && est.puntos_emision.length > 0 ? (
-                est.puntos_emision.map((p:any) => (
+                est.puntos_emision.filter((p: any) => {
+                  // Filter by text search
+                  if (activePuntoFilter && puntoFilterValue) {
+                    if (activePuntoFilter === 'estado') {
+                      if ((p.estado || '').toLowerCase() !== puntoFilterValue.toLowerCase()) return false;
+                    } else {
+                      const fieldValue = (p[activePuntoFilter] || '').toString().toLowerCase();
+                      if (!fieldValue.includes(puntoFilterValue.toLowerCase())) return false;
+                    }
+                  }
+                  
+                  // Filter by date range
+                  if (puntoDesde || puntoHasta) {
+                    const createdDate = p.created_at ? new Date(p.created_at) : null;
+                    if (createdDate) {
+                      const createdTime = createdDate.getTime();
+                      if (puntoDesde) {
+                        const desdeDate = new Date(puntoDesde);
+                        desdeDate.setHours(0, 0, 0, 0);
+                        if (createdTime < desdeDate.getTime()) return false;
+                      }
+                      if (puntoHasta) {
+                        const hastaDate = new Date(puntoHasta);
+                        hastaDate.setHours(23, 59, 59, 999);
+                        if (createdTime > hastaDate.getTime()) return false;
+                      }
+                    } else {
+                      return false;
+                    }
+                  }
+                  
+                  return true;
+                }).map((p:any) => (
                   <tr key={p.id}>
                     <td className="td-sticky sticky-left-0" style={{ fontWeight: 600 }}>
                       <a href={`/emisores/${id}/establecimientos/${estId}/puntos/${p.id}`} onClick={(e) => { e.preventDefault(); navigate(`/emisores/${id}/establecimientos/${estId}/puntos/${p.id}`); }} style={{ color: '#1b4ab4', textDecoration: 'underline', cursor: 'pointer' }}>{p.codigo}</a>
@@ -211,6 +472,12 @@ const EstablecimientoInfo: React.FC = () => {
                     <td style={{ textAlign: 'center', fontWeight: 600, color: '#1b4ab4' }}>{p.secuencial_guia_remision ?? '-'}</td>
                     <td style={{ textAlign: 'center', fontWeight: 600, color: '#1b4ab4' }}>{p.secuencial_retencion ?? '-'}</td>
                     <td style={{ textAlign: 'center', fontWeight: 600, color: '#1b4ab4' }}>{p.secuencial_proforma ?? '-'}</td>
+                    <td style={{ textAlign: 'center', fontSize: '13px', color: '#666' }}>
+                      {p.created_at ? new Date(p.created_at).toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-'}
+                    </td>
+                    <td style={{ textAlign: 'center', fontSize: '13px', color: '#666' }}>
+                      {p.updated_at ? new Date(p.updated_at).toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-'}
+                    </td>
                     <td className="td-sticky sticky-right" style={{ textAlign: 'center' }}>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center' }}>
                         <button title="Editar punto" onClick={() => { setSelectedPunto(p); setPuntoFormOpen(true); }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 18, padding: 6, borderRadius: 6, transition: 'all 0.2s ease' }} onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(0, 0, 0, 0.05)'; (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.1)'; }} onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}>✏️</button>
@@ -221,7 +488,7 @@ const EstablecimientoInfo: React.FC = () => {
                 ))
               ) : (
                 <tr>
-                  <td style={{ textAlign: 'center', padding: '16px 8px' }} colSpan={11}>No hay puntos de emisión registrados</td>
+                  <td style={{ textAlign: 'center', padding: '16px 8px' }} colSpan={13}>No hay puntos de emisión registrados</td>
                 </tr>
               )}
             </tbody>
