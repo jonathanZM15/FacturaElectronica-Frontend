@@ -1,9 +1,12 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { establecimientosApi } from '../services/establecimientosApi';
+import { puntosEmisionApi } from '../services/puntosEmisionApi';
 import { emisoresApi } from '../services/emisoresApi';
 import { useNotification } from '../contexts/NotificationContext';
 import ImageViewerModal from './ImageViewerModal';
+import PuntoEmisionFormModal from './PuntoEmisionFormModal';
+import { PuntoEmision } from '../types/puntoEmision';
 
 const EstablecimientoInfo: React.FC = () => {
   const { id, estId } = useParams();
@@ -24,6 +27,10 @@ const EstablecimientoInfo: React.FC = () => {
   // Image viewer states
   const [viewerOpen, setViewerOpen] = React.useState(false);
   const [viewerImage, setViewerImage] = React.useState<string | null>(null);
+
+  // Punto emisión modal states
+  const [puntoFormOpen, setPuntoFormOpen] = React.useState(false);
+  const [selectedPunto, setSelectedPunto] = React.useState<PuntoEmision | null>(null);
 
   React.useEffect(() => {
     const load = async () => {
@@ -115,70 +122,211 @@ const EstablecimientoInfo: React.FC = () => {
         </div>
       </div>
 
-      <div style={{ marginTop: 18, border: '1px solid #e6e6e6', padding: 12, borderRadius: 8 }}>
-        <h4 style={{ marginTop: 0 }}>Lista de puntos de emisión</h4>
+      <div style={{ marginTop: 18, borderRadius: 12, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.05)', background: '#fff' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid #e5e7eb' }}>
+          <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1f2937' }}>Lista de puntos de emisión</h4>
+          <button 
+            onClick={() => { setSelectedPunto(null); setPuntoFormOpen(true); }}
+            style={{
+              padding: '11px 24px',
+              background: 'linear-gradient(135deg, #0d6efd 0%, #0b5fd7 100%)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '10px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '700',
+              boxShadow: '0 4px 12px rgba(13, 110, 253, 0.3)',
+              transition: 'all 0.3s ease',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '42px',
+              whiteSpace: 'nowrap'
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, #0b5fd7 0%, #084298 100%)';
+              (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-2px)';
+              (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 16px rgba(13, 110, 253, 0.4)';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, #0d6efd 0%, #0b5fd7 100%)';
+              (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)';
+              (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 12px rgba(13, 110, 253, 0.3)';
+            }}
+          >
+            + Nuevo
+          </button>
+        </div>
 
-  <table className="puntos-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ background: '#f8fafc' }}>
-              <th style={{ textAlign: 'left', padding: 8 }}>Código</th>
-              <th style={{ textAlign: 'left', padding: 8 }}>Nombre</th>
-              <th style={{ textAlign: 'left', padding: 8 }}>Estado</th>
-              <th style={{ textAlign: 'left', padding: 8 }}>Usuario asociado</th>
-              <th style={{ textAlign: 'left', padding: 8 }}>Secuencial Factura</th>
-              <th style={{ textAlign: 'center', padding: 8 }}>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {Array.isArray(est?.puntos_emision) && est.puntos_emision.length > 0 ? (
-              est.puntos_emision.map((p:any) => (
-                <tr key={p.id}>
-                  <td style={{ padding: 8, borderTop: '1px solid #e6e6e6' }}>
-                    <a href={`/emisores/${id}/establecimientos/${estId}/puntos/${p.id}`} onClick={(e) => { e.preventDefault(); navigate(`/emisores/${id}/establecimientos/${estId}/puntos/${p.id}`); }} style={{ color: '#1b4ab4' }}>{p.codigo}</a>
-                  </td>
-                  <td style={{ padding: 8, borderTop: '1px solid #e6e6e6' }}>{p.nombre}</td>
-                  <td style={{ padding: 8, borderTop: '1px solid #e6e6e6' }}>{p.estado}</td>
-                  <td style={{ padding: 8, borderTop: '1px solid #e6e6e6' }}>{p.usuario_id ? <a href={`/usuarios/${p.usuario_id}`} onClick={(e) => { e.preventDefault(); navigate(`/usuarios/${p.usuario_id}`); }} style={{ color: '#1b4ab4' }}>{p.usuario_asociado}</a> : p.usuario_asociado}</td>
-                  <td style={{ padding: 8, borderTop: '1px solid #e6e6e6' }}>{p.secuencial_factura ?? p.secuencial ?? '-'}</td>
-                  <td style={{ padding: 8, borderTop: '1px solid #e6e6e6', textAlign: 'center' }}>
-                    <button title="Editar punto" onClick={() => navigate(`/emisores/${id}/establecimientos/${estId}/puntos/${p.id}/edit`)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', marginRight: 8 }}>✏️</button>
-                    <button title="Eliminar punto" onClick={() => { if (window.confirm('¿Eliminar este punto?')) show({ title: 'Info', message: 'Eliminación de punto no implementada en frontend', type: 'info' }); }} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>🗑️</button>
-                  </td>
-                </tr>
-              ))
-            ) : (
+        <div style={{ overflowX: 'auto', overflowY: 'visible' }}>
+          <table className="puntos-table-modern" style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, minWidth: '100%' }}>
+            <thead>
               <tr>
-                <td style={{ padding: 8, borderTop: '1px solid #e6e6e6' }}>&nbsp;</td>
-                <td style={{ padding: 8, borderTop: '1px solid #e6e6e6' }}>&nbsp;</td>
-                <td style={{ padding: 8, borderTop: '1px solid #e6e6e6' }}>&nbsp;</td>
-                <td style={{ padding: 8, borderTop: '1px solid #e6e6e6' }}>&nbsp;</td>
-                <td style={{ padding: 8, borderTop: '1px solid #e6e6e6' }}>&nbsp;</td>
-                <td style={{ padding: 8, borderTop: '1px solid #e6e6e6', textAlign: 'center' }}>&nbsp;</td>
+                <th className="th-sticky sticky-left-0">Código</th>
+                <th className="th-sticky sticky-left-1">Nombre</th>
+                <th className="th-sticky sticky-left-2">Estado</th>
+                <th>Secuencial Facturas</th>
+                <th>Secuencial Liquidaciones</th>
+                <th>Secuencial Notas Crédito</th>
+                <th>Secuencial Notas Débito</th>
+                <th>Secuencial Guías</th>
+                <th>Secuencial Retenciones</th>
+                <th>Secuencial Proformas</th>
+                <th className="th-sticky sticky-right">Acciones</th>
               </tr>
-            )}
-          </tbody>
-        </table>
-      
-        <style>{`
-          .puntos-table { width: 100%; border-collapse: collapse; border: 2px solid #000; }
-          .puntos-table thead th { background: #e6e6e6; color: #1b4ab4; font-weight:700; border: 2px solid #000; position: relative; padding: 8px 18px 8px 12px; }
-          .puntos-table th, .puntos-table td { padding: 8px; border: 2px solid #000; }
-          /* make all column cells light gray to match request */
-          .puntos-table tbody td { background: #f3f4f6; }
-          /* make the acciones column a slightly darker gray */
-          .puntos-table thead th:last-child, .puntos-table tbody td:last-child { background: #e9ecef; }
+            </thead>
+            <tbody>
+              {Array.isArray(est?.puntos_emision) && est.puntos_emision.length > 0 ? (
+                est.puntos_emision.map((p:any) => (
+                  <tr key={p.id}>
+                    <td className="td-sticky sticky-left-0" style={{ fontWeight: 600 }}>
+                      <a href={`/emisores/${id}/establecimientos/${estId}/puntos/${p.id}`} onClick={(e) => { e.preventDefault(); navigate(`/emisores/${id}/establecimientos/${estId}/puntos/${p.id}`); }} style={{ color: '#1b4ab4', textDecoration: 'underline', cursor: 'pointer' }}>{p.codigo}</a>
+                    </td>
+                    <td className="td-sticky sticky-left-1">{p.nombre}</td>
+                    <td className="td-sticky sticky-left-2" style={{ textAlign: 'center' }}>
+                      <span style={{
+                        display: 'inline-block',
+                        padding: '6px 12px',
+                        borderRadius: '20px',
+                        fontWeight: 600,
+                        color: '#fff',
+                        background: p.estado === 'ACTIVO' ? '#22c55e' : '#9ca3af'
+                      }}>
+                        {p.estado}
+                      </span>
+                    </td>
+                    <td style={{ textAlign: 'center', fontWeight: 600, color: '#1b4ab4' }}>{p.secuencial_factura ?? p.secuencial ?? '-'}</td>
+                    <td style={{ textAlign: 'center', fontWeight: 600, color: '#1b4ab4' }}>{p.secuencial_liquidacion_compra ?? '-'}</td>
+                    <td style={{ textAlign: 'center', fontWeight: 600, color: '#1b4ab4' }}>{p.secuencial_nota_credito ?? '-'}</td>
+                    <td style={{ textAlign: 'center', fontWeight: 600, color: '#1b4ab4' }}>{p.secuencial_nota_debito ?? '-'}</td>
+                    <td style={{ textAlign: 'center', fontWeight: 600, color: '#1b4ab4' }}>{p.secuencial_guia_remision ?? '-'}</td>
+                    <td style={{ textAlign: 'center', fontWeight: 600, color: '#1b4ab4' }}>{p.secuencial_retencion ?? '-'}</td>
+                    <td style={{ textAlign: 'center', fontWeight: 600, color: '#1b4ab4' }}>{p.secuencial_proforma ?? '-'}</td>
+                    <td className="td-sticky sticky-right" style={{ textAlign: 'center' }}>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center' }}>
+                        <button title="Editar punto" onClick={() => { setSelectedPunto(p); setPuntoFormOpen(true); }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 18, padding: 6, borderRadius: 6, transition: 'all 0.2s ease' }} onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(0, 0, 0, 0.05)'; (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.1)'; }} onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}>✏️</button>
+                        <button title="Eliminar punto" onClick={() => { if (window.confirm('¿Eliminar este punto?')) show({ title: 'Info', message: 'Eliminación de punto no implementada en frontend', type: 'info' }); }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 18, padding: 6, borderRadius: 6, transition: 'all 0.2s ease' }} onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(0, 0, 0, 0.05)'; (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.1)'; }} onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}>🗑️</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td style={{ textAlign: 'center', padding: '16px 8px' }} colSpan={11}>No hay puntos de emisión registrados</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
 
-          /* small blue arrow at the right side of each header */
-          .puntos-table thead th::after {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 10px;
-            color: #1b4ab4;
-            line-height: 1;
-            pointer-events: none;
-            content: '▼';
-            right: 6px;
+        <style>{`
+          .puntos-table-modern {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+          }
+
+          /* Columnas fijas: Código, Nombre, Estado */
+          .th-sticky.sticky-left-0,
+          .td-sticky.sticky-left-0 {
+            position: sticky;
+            left: 0;
+            z-index: 2;
+            min-width: 100px;
+          }
+
+          .th-sticky.sticky-left-1,
+          .td-sticky.sticky-left-1 {
+            position: sticky;
+            left: 100px;
+            z-index: 2;
+            min-width: 150px;
+          }
+
+          .th-sticky.sticky-left-2,
+          .td-sticky.sticky-left-2 {
+            position: sticky;
+            left: 250px;
+            z-index: 2;
+            min-width: 130px;
+          }
+
+          /* Columna fija: Acciones a la derecha */
+          .th-sticky.sticky-right,
+          .td-sticky.sticky-right {
+            position: sticky;
+            right: 0;
+            z-index: 2;
+            min-width: 100px;
+          }
+
+          .puntos-table-modern thead th {
+            background: linear-gradient(135deg, #5b21b6 0%, #7c3aed 100%);
+            color: #fff;
+            padding: 14px 10px;
+            text-align: center;
+            border: none;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.1);
+            white-space: nowrap;
+          }
+
+          .puntos-table-modern thead .th-sticky.sticky-left-0,
+          .puntos-table-modern thead .th-sticky.sticky-left-1,
+          .puntos-table-modern thead .th-sticky.sticky-left-2 {
+            background: linear-gradient(135deg, #5b21b6 0%, #7c3aed 100%);
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+          }
+
+          .puntos-table-modern thead .th-sticky.sticky-right {
+            background: linear-gradient(135deg, #6b7280 0%, #9ca3af 100%);
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            border-right: none;
+          }
+
+          .puntos-table-modern tbody td {
+            border: none;
+            border-bottom: 1px solid #e5e7eb;
+            border-right: 1px solid #f3f4f6;
+            padding: 12px 10px;
+            background: #fff;
+            vertical-align: middle;
+            text-align: left;
+            font-size: 13px;
+            white-space: normal;
+            word-wrap: break-word;
+            transition: background-color 0.2s ease;
+            word-break: break-word;
+          }
+
+          .puntos-table-modern tbody .td-sticky {
+            background: #fff;
+            border-bottom: 1px solid #e5e7eb;
+          }
+
+          .puntos-table-modern tbody .td-sticky.sticky-right {
+            border-right: none;
+            background: #f9fafb;
+            border-left: 1px solid #f3f4f6;
+          }
+
+          .puntos-table-modern tbody tr:hover td {
+            background-color: #f3f0ff;
+          }
+
+          .puntos-table-modern tbody tr:hover .td-sticky.sticky-left-0,
+          .puntos-table-modern tbody tr:hover .td-sticky.sticky-left-1,
+          .puntos-table-modern tbody tr:hover .td-sticky.sticky-left-2 {
+            background-color: #f3f0ff;
+          }
+
+          .puntos-table-modern tbody tr:hover .td-sticky.sticky-right {
+            background-color: #ede9fe;
           }
         `}</style>
       </div>
@@ -265,6 +413,37 @@ const EstablecimientoInfo: React.FC = () => {
       )}
 
       <ImageViewerModal open={viewerOpen} imageUrl={viewerImage} onClose={() => setViewerOpen(false)} />
+
+      <PuntoEmisionFormModal
+        isOpen={puntoFormOpen}
+        onClose={() => setPuntoFormOpen(false)}
+        onSave={async (puntoEmision) => {
+          try {
+            if (selectedPunto?.id) {
+              // Editar
+              await puntosEmisionApi.update(company?.id, parseInt(estId || '0'), selectedPunto.id, puntoEmision);
+              show({ title: 'Éxito', message: 'Punto de emisión actualizado correctamente', type: 'success' });
+            } else {
+              // Crear
+              await puntosEmisionApi.create(company?.id, parseInt(estId || '0'), puntoEmision);
+              show({ title: 'Éxito', message: 'Punto de emisión registrado correctamente', type: 'success' });
+            }
+            setPuntoFormOpen(false);
+            setSelectedPunto(null);
+            // Reload establishment data
+            if (id && estId) {
+              const rEst = await establecimientosApi.show(id, estId);
+              const dataEst = rEst.data?.data ?? rEst.data;
+              setEst(dataEst);
+            }
+          } catch (error: any) {
+            show({ title: 'Error', message: error?.response?.data?.message || 'No se pudo guardar el punto de emisión', type: 'error' });
+          }
+        }}
+        initialData={selectedPunto}
+        companyId={company?.id}
+        establecimientoId={parseInt(estId || '0')}
+      />
     </div>
   );
 };
