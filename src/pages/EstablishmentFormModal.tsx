@@ -52,6 +52,14 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
   }, [open, editingEst, codigoEditable]);
 
   const onChange = (k: keyof Establecimiento, value: any) => {
+    // Special handling for codigo: only numbers, max 3 digits
+    if (k === 'codigo') {
+      value = value.replace(/[^0-9]/g, '').slice(0, 3);
+    }
+    // Special handling for telefono: only numbers, max 10
+    if (k === 'telefono') {
+      value = value.replace(/[^0-9]/g, '').slice(0, 10);
+    }
     setV(prev => ({ ...prev, [k]: value }));
     const ks = k as string;
     setFieldErrors(prev => { 
@@ -61,6 +69,14 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
       return copy; 
     });
     if (k === 'codigo') setCodeDuplicateError(null);
+  };
+
+  const onCodigoBlur = () => {
+    markTouched('codigo');
+    // Auto-pad with zeros when leaving the field
+    if (v.codigo && v.codigo.length > 0 && v.codigo.length < 3) {
+      setV(prev => ({ ...prev, codigo: prev.codigo!.padStart(3, '0') }));
+    }
   };
 
   const markTouched = (k: keyof Establecimiento) => {
@@ -109,9 +125,13 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
   const validate = () => {
     const e: Record<string,string> = {};
     if (!v.codigo || !v.codigo.trim()) e.codigo = 'Código es obligatorio';
+    else if (v.codigo.length !== 3) e.codigo = 'Código debe tener 3 dígitos';
     if (!v.nombre || !v.nombre.trim()) e.nombre = 'Nombre es obligatorio';
     if (!v.direccion || !v.direccion.trim()) e.direccion = 'Dirección es obligatoria';
+    if (!v.estado) e.estado = 'Estado es obligatorio';
     if (v.correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.correo)) e.correo = 'Correo inválido';
+    if (v.telefono && !/^\d+$/.test(v.telefono)) e.telefono = 'Teléfono debe contener solo números';
+    if (v.telefono && v.telefono.length > 10) e.telefono = 'Teléfono máximo 10 dígitos';
     if (codeDuplicateError) e.codigo = codeDuplicateError;
     // Si eligió logo personalizado, debe subir un archivo
     if (logoOption === 'custom' && !logoFile) e.logo = 'Debes subir un archivo para logo personalizado';
@@ -120,10 +140,12 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
   };
 
   const isFormValid = () => {
-    if (!v.codigo || !v.codigo.trim()) return false;
+    if (!v.codigo || !v.codigo.trim() || v.codigo.length !== 3) return false;
     if (!v.nombre || !v.nombre.trim()) return false;
     if (!v.direccion || !v.direccion.trim()) return false;
+    if (!v.estado) return false;
     if (v.correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.correo)) return false;
+    if (v.telefono && (!/^\d+$/.test(v.telefono) || v.telefono.length > 10)) return false;
     if (codeDuplicateError || checkingCode) return false;
     // Si eligió logo personalizado, debe haber archivo
     if (logoOption === 'custom' && !logoFile) return false;
@@ -239,19 +261,21 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
           <section>
             {/* Top row: Código y Estado */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 24, marginBottom: 16 }}>
-              <label className="horizontal" style={{ flex: 1, maxWidth: '450px', margin: 0 }}>Código
+              <label className="horizontal" style={{ flex: 1, maxWidth: '450px', margin: 0 }}>
+                <span>Código <span style={{color:'#dc2626'}}>*</span></span>
                 <input 
                   className={(touched.has('codigo') && (isMissing('codigo') || !!fieldErrors.codigo)) ? 'error-input' : ''} 
                   value={v.codigo || ''}
-                  onBlur={()=>markTouched('codigo')}
+                  onBlur={onCodigoBlur}
                   onChange={e=>onChange('codigo', e.target.value)}
                   disabled={!!(editingEst && !localCodigoEditable)}
+                  placeholder="Ej: 001"
                 />
               </label>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontWeight: 600, fontSize: 13, color: '#475569' }}>Estado</div>
+                  <div style={{ fontWeight: 600, fontSize: 13, color: '#475569' }}>Estado <span style={{color:'#dc2626'}}>*</span></div>
                   <div style={{ fontSize: 12, marginTop: 2, color: v.estado === 'ABIERTO' ? '#059669' : '#64748b' }}>
                     {v.estado === 'ABIERTO' ? 'Abierto' : 'Cerrado'}
                   </div>
@@ -267,7 +291,8 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
             {checkingCode && <small style={{marginLeft: '192px', display: 'block', marginTop: -8}}>Verificando código…</small>}
             {touched.has('codigo') && fieldErrors.codigo && <span className="err" style={{marginLeft: '192px', display: 'block', marginTop: -8}}>{fieldErrors.codigo}</span>}
 
-            <label className="horizontal">Nombre
+            <label className="horizontal">
+              <span>Nombre <span style={{color:'#dc2626'}}>*</span></span>
               <input value={v.nombre || ''} onBlur={()=>markTouched('nombre')} onChange={e=>onChange('nombre', e.target.value)} className={touched.has('nombre') && isMissing('nombre') ? 'error-input' : ''} />
             </label>
             {touched.has('nombre') && fieldErrors.nombre && <span className="err" style={{marginLeft: '192px'}}>{fieldErrors.nombre}</span>}
@@ -275,20 +300,26 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
             <label className="horizontal">Nombre Comercial
               <input value={v.nombre_comercial || ''} onChange={e=>onChange('nombre_comercial', e.target.value)} />
             </label>
+            <small style={{marginLeft: '192px', display: 'block', marginTop: 2, color: '#64748b'}}>Se mostrará en los comprobantes</small>
 
-            <label className="horizontal">Dirección
+            <label className="horizontal">
+              <span>Dirección <span style={{color:'#dc2626'}}>*</span></span>
               <input value={v.direccion || ''} onBlur={()=>markTouched('direccion')} onChange={e=>onChange('direccion', e.target.value)} className={touched.has('direccion') && isMissing('direccion') ? 'error-input' : ''} />
             </label>
             {touched.has('direccion') && fieldErrors.direccion && <span className="err" style={{marginLeft: '192px'}}>{fieldErrors.direccion}</span>}
+            <small style={{marginLeft: '192px', display: 'block', marginTop: 2, color: '#64748b'}}>Se mostrará en los comprobantes</small>
 
             <label className="horizontal">Correo
               <input value={v.correo || ''} onBlur={()=>markTouched('correo')} onChange={e=>onChange('correo', e.target.value)} className={touched.has('correo') && fieldErrors.correo ? 'error-input' : ''} />
             </label>
             {touched.has('correo') && fieldErrors.correo && <span className="err" style={{marginLeft: '192px'}}>{fieldErrors.correo}</span>}
+            <small style={{marginLeft: '192px', display: 'block', marginTop: 2, color: '#64748b'}}>Se mostrará en los comprobantes</small>
 
             <label className="horizontal">Número de teléfono
-              <input value={v.telefono || ''} onChange={e=>onChange('telefono', e.target.value)} />
+              <input value={v.telefono || ''} onBlur={()=>markTouched('telefono')} onChange={e=>onChange('telefono', e.target.value)} className={touched.has('telefono') && fieldErrors.telefono ? 'error-input' : ''} placeholder="0123456789" />
             </label>
+            {touched.has('telefono') && fieldErrors.telefono && <span className="err" style={{marginLeft: '192px'}}>{fieldErrors.telefono}</span>}
+            <small style={{marginLeft: '192px', display: 'block', marginTop: 2, color: '#64748b'}}>Se mostrará en los comprobantes • Máximo 10 dígitos</small>
 
             <label className="horizontal" style={{marginTop: 24}}>
               <span style={{fontWeight: 600, fontSize: '14px', color: '#374151'}}>Logo</span>
