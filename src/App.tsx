@@ -14,6 +14,7 @@ import Emisores from './pages/Emisores';
 import EmisorInfo from './pages/EmisorInfo';
 import EstablecimientoInfo from './pages/EstablecimientoInfo';
 import EstablecimientoEditInfo from './pages/EstablecimientoEditInfo';
+import PuntoEmisionInfo from './pages/PuntoEmisionInfo';
 import Blank from './pages/Blank';
 
 const ChangePasswordAuthed: React.FC = () => {
@@ -50,6 +51,7 @@ function App() {
                 <Route path="/emisores/:id" element={<EmisorInfo />} />
                 <Route path="/emisores/:id/establecimientos/:estId" element={<EstablecimientoInfo />} />
                 <Route path="/emisores/:id/establecimientos/:estId/edit" element={<EstablecimientoEditInfo />} />
+                <Route path="/emisores/:id/establecimientos/:estId/puntos/:puntoId" element={<PuntoEmisionInfo />} />
                 {/* Compatibilidad: redirige /Navbar a /emisores */}
                 <Route path="/Navbar" element={<Navigate to="/emisores" replace />} />
 
