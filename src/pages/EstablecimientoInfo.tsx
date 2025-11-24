@@ -443,6 +443,7 @@ const EstablecimientoInfo: React.FC = () => {
         initialData={selectedPunto}
         companyId={company?.id}
         establecimientoId={parseInt(estId || '0')}
+        existingPuntos={est?.puntos_emision || []}
       />
     </div>
   );

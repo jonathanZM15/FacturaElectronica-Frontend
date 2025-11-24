@@ -8,6 +8,7 @@ interface PuntoEmisionFormModalProps {
   initialData?: PuntoEmision | null;
   companyId?: number;
   establecimientoId?: number;
+  existingPuntos?: PuntoEmision[];
 }
 
 const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
@@ -16,7 +17,8 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
   onSave,
   initialData = null,
   companyId,
-  establecimientoId
+  establecimientoId,
+  existingPuntos = []
 }) => {
   const [formData, setFormData] = useState<PuntoEmision>({
     codigo: '',
@@ -33,6 +35,8 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [touched, setTouched] = useState<Set<string>>(new Set());
+  const [codeDuplicateError, setCodeDuplicateError] = useState<string | null>(null);
+  const [checkingCode, setCheckingCode] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -54,8 +58,41 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
       }
       setErrors({});
       setTouched(new Set());
+      setCodeDuplicateError(null);
     }
   }, [isOpen, initialData]);
+
+  // Validación en tiempo real del código - verificar si es único
+  useEffect(() => {
+    if (!formData.codigo || !formData.codigo.trim()) {
+      setCodeDuplicateError(null);
+      return;
+    }
+
+    // Si estamos editando y el código no cambió, no verificar
+    if (initialData && formData.codigo === initialData.codigo) {
+      setCodeDuplicateError(null);
+      return;
+    }
+
+    const t = setTimeout(() => {
+      setCheckingCode(true);
+      // Verificar si el código ya existe en los puntos existentes
+      const exists = existingPuntos.some(p => 
+        p.codigo === formData.codigo && 
+        (!initialData || p.id !== initialData.id)
+      );
+      
+      if (exists) {
+        setCodeDuplicateError('Este código ya existe en otro punto de emisión del mismo establecimiento');
+      } else {
+        setCodeDuplicateError(null);
+      }
+      setCheckingCode(false);
+    }, 500);
+
+    return () => clearTimeout(t);
+  }, [formData.codigo, existingPuntos, initialData]);
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -74,7 +111,7 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
       setFormData(prev => ({ ...prev, [name]: value }));
     }
 
-    // Clear error when changing
+    // Limpiar error del campo cuando el usuario empieza a editar
     if (errors[name]) {
       setErrors(prev => {
         const copy = { ...prev };
@@ -102,45 +139,6 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
     setTouched(newTouched);
   };
 
-  const validate = () => {
-    const newErrors: { [key: string]: string } = {};
-
-    if (!formData.codigo.trim()) {
-      newErrors.codigo = 'Código es obligatorio';
-    } else if (!/^\d{3}$/.test(formData.codigo)) {
-      newErrors.codigo = 'Código debe tener 3 dígitos';
-    }
-
-    if (!formData.nombre.trim()) {
-      newErrors.nombre = 'Nombre es obligatorio';
-    }
-
-    if (formData.secuencial_factura < 1) {
-      newErrors.secuencial_factura = 'Debe ser mayor a 0';
-    }
-    if (formData.secuencial_liquidacion_compra < 1) {
-      newErrors.secuencial_liquidacion_compra = 'Debe ser mayor a 0';
-    }
-    if (formData.secuencial_nota_credito < 1) {
-      newErrors.secuencial_nota_credito = 'Debe ser mayor a 0';
-    }
-    if (formData.secuencial_nota_debito < 1) {
-      newErrors.secuencial_nota_debito = 'Debe ser mayor a 0';
-    }
-    if (formData.secuencial_guia_remision < 1) {
-      newErrors.secuencial_guia_remision = 'Debe ser mayor a 0';
-    }
-    if (formData.secuencial_retencion < 1) {
-      newErrors.secuencial_retencion = 'Debe ser mayor a 0';
-    }
-    if (formData.secuencial_proforma < 1) {
-      newErrors.secuencial_proforma = 'Debe ser mayor a 0';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
   const isMissing = (key: string) => {
     switch (key) {
       case 'codigo': return !(formData.codigo && formData.codigo.trim());
@@ -149,17 +147,98 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
     }
   };
 
+  const validate = () => {
+    const newErrors: { [key: string]: string } = {};
+
+    // Validar código
+    if (!formData.codigo.trim()) {
+      newErrors.codigo = 'Código es obligatorio';
+    } else if (!/^\d{3}$/.test(formData.codigo)) {
+      newErrors.codigo = 'Código debe tener exactamente 3 dígitos';
+    }
+
+    // Validar nombre
+    if (!formData.nombre.trim()) {
+      newErrors.nombre = 'Nombre es obligatorio';
+    } else if (formData.nombre.trim().length < 2) {
+      newErrors.nombre = 'El nombre debe tener al menos 2 caracteres';
+    } else if (formData.nombre.trim().length > 100) {
+      newErrors.nombre = 'El nombre no puede exceder 100 caracteres';
+    }
+
+    // Validar secuenciales
+    if (formData.secuencial_factura < 1) {
+      newErrors.secuencial_factura = 'Debe ser mayor a 0';
+    } else if (formData.secuencial_factura > 999999) {
+      newErrors.secuencial_factura = 'No puede exceder 999999';
+    }
+    
+    if (formData.secuencial_liquidacion_compra < 1) {
+      newErrors.secuencial_liquidacion_compra = 'Debe ser mayor a 0';
+    } else if (formData.secuencial_liquidacion_compra > 999999) {
+      newErrors.secuencial_liquidacion_compra = 'No puede exceder 999999';
+    }
+    
+    if (formData.secuencial_nota_credito < 1) {
+      newErrors.secuencial_nota_credito = 'Debe ser mayor a 0';
+    } else if (formData.secuencial_nota_credito > 999999) {
+      newErrors.secuencial_nota_credito = 'No puede exceder 999999';
+    }
+    
+    if (formData.secuencial_nota_debito < 1) {
+      newErrors.secuencial_nota_debito = 'Debe ser mayor a 0';
+    } else if (formData.secuencial_nota_debito > 999999) {
+      newErrors.secuencial_nota_debito = 'No puede exceder 999999';
+    }
+    
+    if (formData.secuencial_guia_remision < 1) {
+      newErrors.secuencial_guia_remision = 'Debe ser mayor a 0';
+    } else if (formData.secuencial_guia_remision > 999999) {
+      newErrors.secuencial_guia_remision = 'No puede exceder 999999';
+    }
+    
+    if (formData.secuencial_retencion < 1) {
+      newErrors.secuencial_retencion = 'Debe ser mayor a 0';
+    } else if (formData.secuencial_retencion > 999999) {
+      newErrors.secuencial_retencion = 'No puede exceder 999999';
+    }
+    
+    if (formData.secuencial_proforma < 1) {
+      newErrors.secuencial_proforma = 'Debe ser mayor a 0';
+    } else if (formData.secuencial_proforma > 999999) {
+      newErrors.secuencial_proforma = 'No puede exceder 999999';
+    }
+
+    // Validar código único
+    if (codeDuplicateError) {
+      newErrors.codigo = codeDuplicateError;
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const isFormValid = () => {
     return (
+      !checkingCode &&
+      !codeDuplicateError &&
       formData.codigo.trim().length === 3 &&
-      formData.nombre.trim().length > 0 &&
+      formData.nombre.trim().length >= 2 &&
+      formData.nombre.trim().length <= 100 &&
       formData.secuencial_factura >= 1 &&
+      formData.secuencial_factura <= 999999 &&
       formData.secuencial_liquidacion_compra >= 1 &&
+      formData.secuencial_liquidacion_compra <= 999999 &&
       formData.secuencial_nota_credito >= 1 &&
+      formData.secuencial_nota_credito <= 999999 &&
       formData.secuencial_nota_debito >= 1 &&
+      formData.secuencial_nota_debito <= 999999 &&
       formData.secuencial_guia_remision >= 1 &&
+      formData.secuencial_guia_remision <= 999999 &&
       formData.secuencial_retencion >= 1 &&
-      formData.secuencial_proforma >= 1
+      formData.secuencial_retencion <= 999999 &&
+      formData.secuencial_proforma >= 1 &&
+      formData.secuencial_proforma <= 999999
     );
   };
 
@@ -188,18 +267,31 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
           <section>
             {/* Top row: Código y Estado */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 24, marginBottom: 16 }}>
-              <label className="horizontal" style={{ flex: 1, maxWidth: '450px', margin: 0 }}>
-                <span>Código <span style={{color:'#dc2626'}}>*</span></span>
-                <input 
-                  className={(touched.has('codigo') && (isMissing('codigo') || !!errors.codigo)) ? 'error-input' : ''} 
-                  type="text"
-                  value={formData.codigo || ''}
-                  onBlur={onCodigoBlur}
-                  onChange={onChange}
-                  name="codigo"
-                  placeholder="Ej: 001"
-                />
-              </label>
+              <div style={{ flex: 1, maxWidth: '450px' }}>
+                <label className="horizontal" style={{ margin: 0 }}>
+                  <span>Código <span style={{color:'#dc2626'}}>*</span></span>
+                  <input 
+                    className={(touched.has('codigo') && (isMissing('codigo') || !!errors.codigo || codeDuplicateError)) ? 'error-input' : ''} 
+                    type="text"
+                    value={formData.codigo || ''}
+                    onBlur={onCodigoBlur}
+                    onChange={onChange}
+                    onFocus={() => markTouched('codigo')}
+                    name="codigo"
+                    placeholder="Ej: 001"
+                  />
+                </label>
+                {checkingCode && (
+                  <span className="err" style={{marginLeft: '208px', display: 'block', marginTop: 4, color: '#7c3aed', fontWeight: 500}}>
+                    Verificando código...
+                  </span>
+                )}
+                {touched.has('codigo') && (errors.codigo || codeDuplicateError) && !checkingCode && (
+                  <span className="err" style={{marginLeft: '208px', display: 'block', marginTop: 4}}>
+                    {errors.codigo || codeDuplicateError}
+                  </span>
+                )}
+              </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{ textAlign: 'right' }}>
@@ -219,21 +311,25 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
               </div>
             </div>
 
-            {touched.has('codigo') && errors.codigo && <span className="err" style={{marginLeft: '192px', display: 'block', marginTop: -8}}>{errors.codigo}</span>}
-
             <label className="horizontal">
               <span>Nombre <span style={{color:'#dc2626'}}>*</span></span>
-              <input 
-                type="text"
-                name="nombre"
-                value={formData.nombre || ''}
-                onBlur={() => markTouched('nombre')}
-                onChange={onChange}
-                className={touched.has('nombre') && isMissing('nombre') ? 'error-input' : ''}
-                placeholder="Nombre del punto de emisión"
-              />
+              <div style={{position: 'relative', width: '100%'}}>
+                <input 
+                  type="text"
+                  name="nombre"
+                  value={formData.nombre || ''}
+                  onBlur={() => markTouched('nombre')}
+                  onChange={onChange}
+                  onFocus={() => markTouched('nombre')}
+                  className={touched.has('nombre') && (isMissing('nombre') || errors.nombre) ? 'error-input' : ''}
+                  placeholder="Nombre del punto de emisión"
+                />
+                <span style={{position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: '#9ca3af'}}>
+                  {formData.nombre?.length || 0}/100
+                </span>
+              </div>
             </label>
-            {touched.has('nombre') && errors.nombre && <span className="err" style={{marginLeft: '192px'}}>{errors.nombre}</span>}
+            {touched.has('nombre') && (errors.nombre || isMissing('nombre')) && <span className="err" style={{marginLeft: '212px'}}>{errors.nombre || 'Campo requerido'}</span>}
 
             <label className="horizontal">
               <span>Secuencial Facturas <span style={{color:'#dc2626'}}>*</span></span>
