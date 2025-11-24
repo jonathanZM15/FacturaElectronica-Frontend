@@ -1,5 +1,5 @@
 import React from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import { emisoresApi } from '../services/emisoresApi';
 import EmisorFormModal from './EmisorFormModal';
 import EstablishmentFormModal from './EstablishmentFormModal';
@@ -11,6 +11,7 @@ import './Emisores.css';
 const EmisorInfo: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { show } = useNotification();
   const [loading, setLoading] = React.useState(false);
   const [company, setCompany] = React.useState<any | null>(null);
@@ -20,6 +21,15 @@ const EmisorInfo: React.FC = () => {
   const [editEst, setEditEst] = React.useState<any | null>(null);
   const [establecimientos, setEstablecimientos] = React.useState<any[]>([]);
   const [rucEditable, setRucEditable] = React.useState(true);
+
+  // Detectar si viene de un establecimiento para mostrar la pestaña de establecimientos
+  React.useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tabFromUrl = params.get('tab');
+    if (tabFromUrl === 'establecimientos') {
+      setTab('establecimientos');
+    }
+  }, [location.search]);
 
   // Delete flow states (emisor)
   const [confirmOpen, setConfirmOpen] = React.useState(false);
@@ -69,10 +79,21 @@ const EmisorInfo: React.FC = () => {
 
   // Sorting and pagination state for establecimientos
   type EstCol = 'codigo'|'nombre'|'nombre_comercial'|'direccion'|'estado';
+  type EstFilterField = 'codigo'|'nombre'|'nombre_comercial'|'direccion'|'estado';
   const [sortByEst, setSortByEst] = React.useState<EstCol>('codigo');
   const [sortDirEst, setSortDirEst] = React.useState<'asc'|'desc'>('asc');
   const [pageEst, setPageEst] = React.useState(1);
   const [perPageEst, setPerPageEst] = React.useState(10);
+  const [activeEstFilter, setActiveEstFilter] = React.useState<EstFilterField | null>(null);
+  const [estFilterValue, setEstFilterValue] = React.useState<string>('');
+
+  const estFilterLabels: Record<EstFilterField, string> = {
+    codigo: 'Código',
+    nombre: 'Nombre',
+    nombre_comercial: 'Nombre Comercial',
+    direccion: 'Dirección',
+    estado: 'Estado'
+  };
 
   const toggleSortEst = (col: EstCol) => {
     setPageEst(1);
@@ -84,8 +105,21 @@ const EmisorInfo: React.FC = () => {
     }
   };
 
+  const filteredEsts = React.useMemo(() => {
+    if (!activeEstFilter || !estFilterValue) return establecimientos;
+    
+    const filterVal = estFilterValue.toLowerCase();
+    return establecimientos.filter(est => {
+      if (activeEstFilter === 'estado') {
+        return (est.estado || '').toLowerCase() === filterVal;
+      }
+      const fieldValue = (est[activeEstFilter] || '').toString().toLowerCase();
+      return fieldValue.includes(filterVal);
+    });
+  }, [establecimientos, activeEstFilter, estFilterValue]);
+
   const sortedEsts = React.useMemo(() => {
-    const data = [...establecimientos];
+    const data = [...filteredEsts];
     const dir = sortDirEst === 'asc' ? 1 : -1;
     data.sort((a, b) => {
       const va = (a?.[sortByEst] ?? '') as string;
@@ -96,14 +130,14 @@ const EmisorInfo: React.FC = () => {
       return String(va).localeCompare(String(vb), 'es', { numeric: true, sensitivity: 'base' }) * dir;
     });
     return data;
-  }, [establecimientos, sortByEst, sortDirEst]);
+  }, [filteredEsts, sortByEst, sortDirEst]);
 
   const paginatedEsts = React.useMemo(() => {
     const start = (pageEst - 1) * perPageEst;
     return sortedEsts.slice(start, start + perPageEst);
   }, [sortedEsts, pageEst, perPageEst]);
 
-  const totalEst = establecimientos.length;
+  const totalEst = filteredEsts.length;
   const startIdx = totalEst === 0 ? 0 : (pageEst - 1) * perPageEst + 1;
   const endIdx = Math.min(pageEst * perPageEst, totalEst);
   const lastPageEst = Math.max(1, Math.ceil(Math.max(1, totalEst) / perPageEst));
@@ -118,15 +152,34 @@ const EmisorInfo: React.FC = () => {
           <h2 style={{ margin: 0 }}>{company?.ruc ?? '—'} <small style={{ marginLeft: 12, fontWeight: 700 }}>{company?.razon_social ?? ''}</small></h2>
 
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <button
-              className="actions-btn"
-              onClick={() => setActionsOpen((s) => !s)}
-              aria-expanded={actionsOpen}
-              aria-haspopup="menu"
-              style={{ background: '#1e40af', color: '#fff', padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 700 }}
-            >
-              Acciones ▾
-            </button>
+            {tab === 'emisor' && (
+              <>
+                <button
+                  className="actions-btn"
+                  onClick={() => setActionsOpen((s) => !s)}
+                  aria-expanded={actionsOpen}
+                  aria-haspopup="menu"
+                  style={{ background: '#1e40af', color: '#fff', padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 700 }}
+                >
+                  Acciones ▾
+                </button>
+
+                {actionsOpen && (
+                  <div role="menu" style={{ position: 'absolute', right: 0, top: '110%', background: '#fff', border: '1px solid #ddd', boxShadow: '0 6px 18px rgba(0,0,0,.08)', borderRadius: 6, zIndex: 50 }}>
+                    <button role="menuitem" onClick={() => { setOpenEdit(true); setActionsOpen(false); }} className="menu-item">✏️ Editar</button>
+                    <button role="menuitem" onClick={() => { setActionsOpen(false); setDeleteWithHistory(false); setConfirmOpen(true); }} className="menu-item">🗑️ Eliminar</button>
+                    {/* If inactive >= 1 year, show delete with history option */}
+                    {company && company.estado === 'INACTIVO' && company.updated_at && new Date(company.updated_at) <= new Date(Date.now() - 365*24*60*60*1000) && (
+                      <button role="menuitem" onClick={() => { setActionsOpen(false); setDeleteWithHistory(true); setConfirmOpen(true); }} className="menu-item">🗄️ Eliminar (con historial)</button>
+                    )}
+                    <style>{`
+                      .menu-item{ display:block; width:100%; padding:8px 14px; background:transparent; border:none; text-align:left; cursor:pointer; color:#222 }
+                      .menu-item:hover{ background:#e6f0ff; color:#1e40af }
+                    `}</style>
+                  </div>
+                )}
+              </>
+            )}
 
             {/* Single right X to close info, bold and red, hover lifts */}
             <button
@@ -142,21 +195,6 @@ const EmisorInfo: React.FC = () => {
               .close-x{ transition: transform .12s ease, box-shadow .12s ease }
               .close-x:hover{ transform: translateY(-3px); box-shadow: 0 6px 18px rgba(0,0,0,0.12) }
             `}</style>
-
-            {actionsOpen && (
-              <div role="menu" style={{ position: 'absolute', right: 0, top: '110%', background: '#fff', border: '1px solid #ddd', boxShadow: '0 6px 18px rgba(0,0,0,.08)', borderRadius: 6, zIndex: 50 }}>
-                <button role="menuitem" onClick={() => { setOpenEdit(true); setActionsOpen(false); }} className="menu-item">✏️ Editar</button>
-                <button role="menuitem" onClick={() => { setActionsOpen(false); setDeleteWithHistory(false); setConfirmOpen(true); }} className="menu-item">🗑️ Eliminar</button>
-                {/* If inactive >= 1 year, show delete with history option */}
-                {company && company.estado === 'INACTIVO' && company.updated_at && new Date(company.updated_at) <= new Date(Date.now() - 365*24*60*60*1000) && (
-                  <button role="menuitem" onClick={() => { setActionsOpen(false); setDeleteWithHistory(true); setConfirmOpen(true); }} className="menu-item">🗄️ Eliminar (con historial)</button>
-                )}
-                <style>{`
-                  .menu-item{ display:block; width:100%; padding:8px 14px; background:transparent; border:none; text-align:left; cursor:pointer; color:#222 }
-                  .menu-item:hover{ background:#e6f0ff; color:#1e40af }
-                `}</style>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -378,59 +416,182 @@ const EmisorInfo: React.FC = () => {
 
           {tab === 'establecimientos' && (
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <h4 style={{ margin: 0 }}>Establecimientos</h4>
-                <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, gap: 12 }}>
+                <h4 style={{ margin: 0, position: 'absolute', top: 16 }}>Establecimientos</h4>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', justifyContent: 'flex-end' }}>
+                  {/* Filter UI - same layout as Emisores */}
+                  <div style={{ 
+                    background: '#f8f9fa', 
+                    border: '1px solid #dee2e6', 
+                    borderRadius: 6, 
+                    padding: '0 12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    height: 44,
+                    flex: 1,
+                    maxWidth: 500
+                  }}>
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+                      {activeEstFilter === 'estado' ? (
+                        <select 
+                          value={estFilterValue} 
+                          onChange={(e) => setEstFilterValue(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '6px 8px',
+                            borderRadius: 4,
+                            border: 'none',
+                            fontSize: 14,
+                            fontFamily: 'inherit',
+                            background: 'transparent'
+                          }}
+                        >
+                          <option value="">Todos</option>
+                          <option value="abierto">Abierto</option>
+                          <option value="cerrado">Cerrado</option>
+                        </select>
+                      ) : (
+                        <input
+                          type="text"
+                          placeholder={activeEstFilter ? `Filtrar por ${estFilterLabels[activeEstFilter]}` : 'Haz clic en un encabezado para filtrar'}
+                          value={estFilterValue}
+                          onChange={(e) => setEstFilterValue(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '6px 8px',
+                            borderRadius: 4,
+                            border: 'none',
+                            fontSize: 14,
+                            background: 'transparent',
+                            outline: 'none'
+                          }}
+                        />
+                      )}
+                    </div>
+                    <span style={{ fontSize: 16, color: '#666', flexShrink: 0 }}>🔍</span>
+                    {activeEstFilter && estFilterValue && (
+                      <button
+                        onClick={() => setEstFilterValue('')}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          borderRadius: 4,
+                          padding: '2px 6px',
+                          cursor: 'pointer',
+                          fontSize: 14,
+                          color: '#666',
+                          flexShrink: 0
+                        }}
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
                   <button 
                     onClick={() => { setEditEst(null); setOpenNewEst(true); }} 
                     style={{ 
-                      padding: '11px 24px', 
-                      borderRadius: 10, 
-                      background: 'linear-gradient(135deg, #0d6efd 0%, #0b5fd7 100%)', 
+                      padding: '0 20px', 
+                      borderRadius: 6, 
+                      background: '#0d6efd', 
                       color: '#fff', 
                       border: 'none', 
                       cursor: 'pointer',
                       fontWeight: 700,
-                      boxShadow: '0 4px 12px rgba(13, 110, 253, 0.3)',
-                      letterSpacing: '0.5px',
+                      fontSize: 14,
+                      height: 44,
+                      whiteSpace: 'nowrap',
                       transition: 'all 0.3s ease'
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'linear-gradient(135deg, #0b5fd7 0%, #084298 100%)';
+                      e.currentTarget.style.background = '#0b5fd7';
                       e.currentTarget.style.transform = 'translateY(-2px)';
-                      e.currentTarget.style.boxShadow = '0 6px 16px rgba(13, 110, 253, 0.4)';
+                      e.currentTarget.style.boxShadow = '0 4px 8px rgba(13, 110, 253, 0.3)';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'linear-gradient(135deg, #0d6efd 0%, #0b5fd7 100%)';
+                      e.currentTarget.style.background = '#0d6efd';
                       e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(13, 110, 253, 0.3)';
+                      e.currentTarget.style.boxShadow = 'none';
                     }}
                   >
                     Nuevo
                   </button>
                 </div>
               </div>
+              {activeEstFilter && (
+                <small style={{ color: '#666', fontSize: 12, marginBottom: 12, display: 'block' }}>
+                  Buscando por {estFilterLabels[activeEstFilter]}
+                  {estFilterValue && (
+                    <button
+                      onClick={() => { setEstFilterValue(''); }}
+                      style={{ marginLeft: 8, background: 'transparent', border: 'none', color: '#1e40af', cursor: 'pointer', fontSize: 12 }}
+                    >
+                      Limpiar
+                    </button>
+                  )}
+                </small>
+              )}
 
               <div className="tabla-wrapper estab-table">
                 <div className="tabla-scroll-container">
                   <table className="tabla-emisores">
                     <thead>
                       <tr>
-                        <th className="sortable" onClick={() => toggleSortEst('codigo')} style={{ minWidth: 120 }}>
-                          Código {sortByEst === 'codigo' ? (sortDirEst === 'asc' ? '▲' : '▼') : '▾'}
+                        <th 
+                          className="sortable" 
+                          onClick={() => { 
+                            toggleSortEst('codigo');
+                            setActiveEstFilter('codigo');
+                            setEstFilterValue('');
+                          }} 
+                          style={{ minWidth: 120, cursor: 'pointer' }}
+                        >
+                          Código {sortByEst === 'codigo' ? (sortDirEst === 'asc' ? '▲' : '▼') : '▾'} {activeEstFilter === 'codigo' && <span style={{ color: '#ff8c00' }}>●</span>}
                         </th>
-                        <th className="sortable" onClick={() => toggleSortEst('nombre')} style={{ minWidth: 150 }}>
-                          Nombre {sortByEst === 'nombre' ? (sortDirEst === 'asc' ? '▲' : '▼') : '▾'}
+                        <th 
+                          className="sortable" 
+                          onClick={() => { 
+                            toggleSortEst('nombre');
+                            setActiveEstFilter('nombre');
+                            setEstFilterValue('');
+                          }} 
+                          style={{ minWidth: 150, cursor: 'pointer' }}
+                        >
+                          Nombre {sortByEst === 'nombre' ? (sortDirEst === 'asc' ? '▲' : '▼') : '▾'} {activeEstFilter === 'nombre' && <span style={{ color: '#ff8c00' }}>●</span>}
                         </th>
-                        <th className="sortable" onClick={() => toggleSortEst('nombre_comercial')} style={{ minWidth: 200 }}>
-                          Nombre Comercial {sortByEst === 'nombre_comercial' ? (sortDirEst === 'asc' ? '▲' : '▼') : '▾'}
+                        <th 
+                          className="sortable" 
+                          onClick={() => { 
+                            toggleSortEst('nombre_comercial');
+                            setActiveEstFilter('nombre_comercial');
+                            setEstFilterValue('');
+                          }} 
+                          style={{ minWidth: 200, cursor: 'pointer' }}
+                        >
+                          Nombre Comercial {sortByEst === 'nombre_comercial' ? (sortDirEst === 'asc' ? '▲' : '▼') : '▾'} {activeEstFilter === 'nombre_comercial' && <span style={{ color: '#ff8c00' }}>●</span>}
                         </th>
-                        <th className="sortable" onClick={() => toggleSortEst('direccion')} style={{ minWidth: 300 }}>
-                          Dirección {sortByEst === 'direccion' ? (sortDirEst === 'asc' ? '▲' : '▼') : '▾'}
+                        <th 
+                          className="sortable" 
+                          onClick={() => { 
+                            toggleSortEst('direccion');
+                            setActiveEstFilter('direccion');
+                            setEstFilterValue('');
+                          }} 
+                          style={{ minWidth: 300, cursor: 'pointer' }}
+                        >
+                          Dirección {sortByEst === 'direccion' ? (sortDirEst === 'asc' ? '▲' : '▼') : '▾'} {activeEstFilter === 'direccion' && <span style={{ color: '#ff8c00' }}>●</span>}
                         </th>
                         <th style={{ minWidth: 120 }}>Logo</th>
-                        <th className="sortable" onClick={() => toggleSortEst('estado')} style={{ minWidth: 120 }}>
-                          Estado {sortByEst === 'estado' ? (sortDirEst === 'asc' ? '▲' : '▼') : '▾'}
+                        <th 
+                          className="sortable" 
+                          onClick={() => { 
+                            toggleSortEst('estado');
+                            setActiveEstFilter('estado');
+                            setEstFilterValue('');
+                          }} 
+                          style={{ minWidth: 120, cursor: 'pointer' }}
+                        >
+                          Estado {sortByEst === 'estado' ? (sortDirEst === 'asc' ? '▲' : '▼') : '▾'} {activeEstFilter === 'estado' && <span style={{ color: '#ff8c00' }}>●</span>}
                         </th>
                         <th className="th-sticky sticky-right">Acciones</th>
                       </tr>
