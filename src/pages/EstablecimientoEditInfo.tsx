@@ -205,7 +205,7 @@ const EstablecimientoEditInfo: React.FC = () => {
           </div>
 
           <button 
-            onClick={() => navigate(-1)} 
+            onClick={() => navigate(`/emisores/${id}?tab=establecimientos`)} 
             style={{ 
               padding: '10px 18px', 
               borderRadius: '10px',

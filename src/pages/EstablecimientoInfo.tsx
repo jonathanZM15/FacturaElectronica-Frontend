@@ -84,7 +84,7 @@ const EstablecimientoInfo: React.FC = () => {
             )}
           </div>
 
-          <button onClick={() => navigate(-1)} style={{ padding: '8px 12px', borderRadius: 8 }}>Volver</button>
+          <button onClick={() => navigate(`/emisores/${id}?tab=establecimientos`)} style={{ padding: '8px 12px', borderRadius: 8 }}>Volver</button>
         </div>
       </div>
 

@@ -450,9 +450,9 @@ const Emisores: React.FC = () => {
                 <th 
                   className="th-sticky sticky-left-1 sortable" 
                   onClick={() => { 
-                    // Always sort, but don't override an existing active filter
                     handleSort('ruc'); 
-                    if (!activeFilter) { setActiveFilter('ruc'); setFilterValue(''); }
+                    setActiveFilter('ruc');
+                    setFilterValue('');
                   }}
                   style={{ cursor: 'pointer' }}
                 >
@@ -462,7 +462,8 @@ const Emisores: React.FC = () => {
                   className="th-sticky sticky-left-2 sortable" 
                   onClick={() => { 
                     handleSort('razon_social'); 
-                    if (!activeFilter) { setActiveFilter('razon_social'); setFilterValue(''); }
+                    setActiveFilter('razon_social');
+                    setFilterValue('');
                   }}
                   style={{ cursor: 'pointer' }}
                 >
@@ -498,15 +499,10 @@ const Emisores: React.FC = () => {
                       }}
                       title={c.label}
                       onClick={() => {
-                          // Always sort when header is clicked (except logo),
-                          // but DO NOT override an already active filter.
                           if (c.key !== 'logo') handleSort(c.key as any);
                           if (isFilterable && filterField) {
-                            if (!activeFilter) {
-                              setActiveFilter(filterField);
-                              setFilterValue('');
-                            }
-                            // if a filter is already active, keep it as-is
+                            setActiveFilter(filterField);
+                            setFilterValue('');
                           }
                         }}
                     >
