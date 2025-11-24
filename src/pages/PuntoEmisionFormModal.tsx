@@ -37,11 +37,14 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
   const [touched, setTouched] = useState<Set<string>>(new Set());
   const [codeDuplicateError, setCodeDuplicateError] = useState<string | null>(null);
   const [checkingCode, setCheckingCode] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState(false);
+  const [originalData, setOriginalData] = useState<PuntoEmision | null>(null);
 
   useEffect(() => {
     if (isOpen) {
       if (initialData) {
         setFormData(initialData);
+        setOriginalData(initialData);
       } else {
         setFormData({
           codigo: '',
@@ -55,10 +58,12 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
           secuencial_retencion: 1,
           secuencial_proforma: 1,
         });
+        setOriginalData(null);
       }
       setErrors({});
       setTouched(new Set());
       setCodeDuplicateError(null);
+      setConfirmDialog(false);
     }
   }, [isOpen, initialData]);
 
@@ -218,6 +223,13 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
+  const hasDataChanged = () => {
+    if (!originalData) return false;
+    return originalData.codigo !== formData.codigo || 
+           originalData.nombre !== formData.nombre ||
+           originalData.estado !== formData.estado;
+  };
+
   const isFormValid = () => {
     return (
       !checkingCode &&
@@ -245,13 +257,29 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validate()) {
-      onSave({
-        ...formData,
-        company_id: companyId,
-        establecimiento_id: establecimientoId,
-      });
-      onClose();
+      // Si es edición y hay cambios, mostrar confirmación
+      if (initialData && hasDataChanged()) {
+        setConfirmDialog(true);
+      } else {
+        // Si es creación o no hay cambios, guardar directamente
+        onSave({
+          ...formData,
+          company_id: companyId,
+          establecimiento_id: establecimientoId,
+        });
+        onClose();
+      }
     }
+  };
+
+  const handleConfirmSave = () => {
+    onSave({
+      ...formData,
+      company_id: companyId,
+      establecimiento_id: establecimientoId,
+    });
+    setConfirmDialog(false);
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -339,8 +367,10 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
                 value={formData.secuencial_factura}
                 onBlur={() => markTouched('secuencial_factura')}
                 onChange={onChange}
+                readOnly={!!initialData}
                 className={touched.has('secuencial_factura') && errors.secuencial_factura ? 'error-input' : ''}
                 placeholder="1"
+                style={initialData ? {backgroundColor: '#f3f4f6', cursor: 'not-allowed'} : {}}
               />
             </label>
             {touched.has('secuencial_factura') && errors.secuencial_factura && <span className="err" style={{marginLeft: '192px'}}>{errors.secuencial_factura}</span>}
@@ -353,8 +383,10 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
                 value={formData.secuencial_liquidacion_compra}
                 onBlur={() => markTouched('secuencial_liquidacion_compra')}
                 onChange={onChange}
+                readOnly={!!initialData}
                 className={touched.has('secuencial_liquidacion_compra') && errors.secuencial_liquidacion_compra ? 'error-input' : ''}
                 placeholder="1"
+                style={initialData ? {backgroundColor: '#f3f4f6', cursor: 'not-allowed'} : {}}
               />
             </label>
             {touched.has('secuencial_liquidacion_compra') && errors.secuencial_liquidacion_compra && <span className="err" style={{marginLeft: '192px'}}>{errors.secuencial_liquidacion_compra}</span>}
@@ -367,8 +399,10 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
                 value={formData.secuencial_nota_credito}
                 onBlur={() => markTouched('secuencial_nota_credito')}
                 onChange={onChange}
+                readOnly={!!initialData}
                 className={touched.has('secuencial_nota_credito') && errors.secuencial_nota_credito ? 'error-input' : ''}
                 placeholder="1"
+                style={initialData ? {backgroundColor: '#f3f4f6', cursor: 'not-allowed'} : {}}
               />
             </label>
             {touched.has('secuencial_nota_credito') && errors.secuencial_nota_credito && <span className="err" style={{marginLeft: '192px'}}>{errors.secuencial_nota_credito}</span>}
@@ -381,8 +415,10 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
                 value={formData.secuencial_nota_debito}
                 onBlur={() => markTouched('secuencial_nota_debito')}
                 onChange={onChange}
+                readOnly={!!initialData}
                 className={touched.has('secuencial_nota_debito') && errors.secuencial_nota_debito ? 'error-input' : ''}
                 placeholder="1"
+                style={initialData ? {backgroundColor: '#f3f4f6', cursor: 'not-allowed'} : {}}
               />
             </label>
             {touched.has('secuencial_nota_debito') && errors.secuencial_nota_debito && <span className="err" style={{marginLeft: '192px'}}>{errors.secuencial_nota_debito}</span>}
@@ -395,8 +431,10 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
                 value={formData.secuencial_guia_remision}
                 onBlur={() => markTouched('secuencial_guia_remision')}
                 onChange={onChange}
+                readOnly={!!initialData}
                 className={touched.has('secuencial_guia_remision') && errors.secuencial_guia_remision ? 'error-input' : ''}
                 placeholder="1"
+                style={initialData ? {backgroundColor: '#f3f4f6', cursor: 'not-allowed'} : {}}
               />
             </label>
             {touched.has('secuencial_guia_remision') && errors.secuencial_guia_remision && <span className="err" style={{marginLeft: '192px'}}>{errors.secuencial_guia_remision}</span>}
@@ -409,8 +447,10 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
                 value={formData.secuencial_retencion}
                 onBlur={() => markTouched('secuencial_retencion')}
                 onChange={onChange}
+                readOnly={!!initialData}
                 className={touched.has('secuencial_retencion') && errors.secuencial_retencion ? 'error-input' : ''}
                 placeholder="1"
+                style={initialData ? {backgroundColor: '#f3f4f6', cursor: 'not-allowed'} : {}}
               />
             </label>
             {touched.has('secuencial_retencion') && errors.secuencial_retencion && <span className="err" style={{marginLeft: '192px'}}>{errors.secuencial_retencion}</span>}
@@ -423,8 +463,10 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
                 value={formData.secuencial_proforma}
                 onBlur={() => markTouched('secuencial_proforma')}
                 onChange={onChange}
+                readOnly={!!initialData}
                 className={touched.has('secuencial_proforma') && errors.secuencial_proforma ? 'error-input' : ''}
                 placeholder="1"
+                style={initialData ? {backgroundColor: '#f3f4f6', cursor: 'not-allowed'} : {}}
               />
             </label>
             {touched.has('secuencial_proforma') && errors.secuencial_proforma && <span className="err" style={{marginLeft: '192px'}}>{errors.secuencial_proforma}</span>}
@@ -515,6 +557,130 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
           }
         `}</style>
       </div>
+
+      {/* Diálogo de confirmación de seguridad */}
+      {confirmDialog && (
+        <>
+          <div 
+            className="confirm-backdrop"
+            onClick={() => setConfirmDialog(false)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0, 0, 0, 0.5)',
+              zIndex: 1001,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          />
+          <div
+            style={{
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              background: 'white',
+              borderRadius: '12px',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+              zIndex: 1002,
+              width: 'min(400px, 90vw)',
+              maxWidth: '500px'
+            }}
+          >
+            <div style={{
+              padding: '24px',
+              borderBottom: '1px solid #e5e7eb',
+              background: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)',
+              borderRadius: '12px 12px 0 0'
+            }}>
+              <h3 style={{
+                margin: 0,
+                fontSize: '18px',
+                fontWeight: 700,
+                color: '#991b1b',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px'
+              }}>
+                <span style={{fontSize: '24px'}}>⚠️</span>
+                Confirmar cambios
+              </h3>
+            </div>
+
+            <div style={{
+              padding: '20px',
+              color: '#374151'
+            }}>
+              <p style={{margin: '0 0 12px 0', fontSize: '14px', lineHeight: '1.6'}}>
+                Está a punto de editar un punto de emisión existente. Esta acción puede afectar los registros de facturación.
+              </p>
+              <p style={{margin: 0, fontSize: '13px', color: '#666', fontStyle: 'italic'}}>
+                ¿Desea continuar con los cambios?
+              </p>
+            </div>
+
+            <div style={{
+              padding: '16px 24px',
+              borderTop: '1px solid #e5e7eb',
+              background: '#f9fafb',
+              display: 'flex',
+              gap: '12px',
+              justifyContent: 'flex-end',
+              borderRadius: '0 0 12px 12px'
+            }}>
+              <button
+                onClick={() => setConfirmDialog(false)}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  border: '1px solid #d1d5db',
+                  background: '#fff',
+                  color: '#374151',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  fontSize: '14px',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#f1f5f9';
+                  e.currentTarget.style.borderColor = '#94a3b8';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#fff';
+                  e.currentTarget.style.borderColor = '#d1d5db';
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmSave}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+                  color: 'white',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  fontSize: '14px',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 10px 20px rgba(220, 38, 38, 0.3)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              >
+                Confirmar cambios
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
