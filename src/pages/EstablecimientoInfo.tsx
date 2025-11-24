@@ -6,6 +6,7 @@ import { emisoresApi } from '../services/emisoresApi';
 import { useNotification } from '../contexts/NotificationContext';
 import ImageViewerModal from './ImageViewerModal';
 import PuntoEmisionFormModal from './PuntoEmisionFormModal';
+import PuntoEmisionDeleteModal from './PuntoEmisionDeleteModal';
 import { PuntoEmision } from '../types/puntoEmision';
 
 const EstablecimientoInfo: React.FC = () => {
@@ -23,6 +24,13 @@ const EstablecimientoInfo: React.FC = () => {
   const [deletePassword, setDeletePassword] = React.useState('');
   const [deleteError, setDeleteError] = React.useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = React.useState(false);
+
+  // Punto emisión delete states
+  const [puntoDeleteOpen, setPuntoDeleteOpen] = React.useState(false);
+  const [puntoDeletePassword, setPuntoDeletePassword] = React.useState('');
+  const [puntoDeleteError, setPuntoDeleteError] = React.useState<string | null>(null);
+  const [puntoDeleteLoading, setPuntoDeleteLoading] = React.useState(false);
+  const [puntoToDelete, setPuntoToDelete] = React.useState<PuntoEmision | null>(null);
 
   // Image viewer states
   const [viewerOpen, setViewerOpen] = React.useState(false);
@@ -473,7 +481,7 @@ const EstablecimientoInfo: React.FC = () => {
                     <td className="td-sticky sticky-right" style={{ textAlign: 'center' }}>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center' }}>
                         <button title="Editar punto" onClick={() => { setSelectedPunto(p); setPuntoFormOpen(true); }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 18, padding: 6, borderRadius: 6, transition: 'all 0.2s ease' }} onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(0, 0, 0, 0.05)'; (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.1)'; }} onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}>✏️</button>
-                        <button title="Eliminar punto" onClick={() => { if (window.confirm('¿Eliminar este punto?')) show({ title: 'Info', message: 'Eliminación de punto no implementada en frontend', type: 'info' }); }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 18, padding: 6, borderRadius: 6, transition: 'all 0.2s ease' }} onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(0, 0, 0, 0.05)'; (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.1)'; }} onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}>🗑️</button>
+                        <button title="Eliminar punto" onClick={() => { setPuntoToDelete(p); setPuntoDeleteOpen(true); }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 18, padding: 6, borderRadius: 6, transition: 'all 0.2s ease' }} onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(0, 0, 0, 0.05)'; (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.1)'; }} onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}>🗑️</button>
                       </div>
                     </td>
                   </tr>
@@ -710,6 +718,34 @@ const EstablecimientoInfo: React.FC = () => {
         initialData={selectedPunto}
         companyId={company?.id}
         establecimientoId={parseInt(estId || '0')}
+        existingPuntos={est?.puntos_emision || []}
+      />
+
+      <PuntoEmisionDeleteModal
+        isOpen={puntoDeleteOpen}
+        onClose={() => {
+          setPuntoDeleteOpen(false);
+          setPuntoToDelete(null);
+          setPuntoDeletePassword('');
+          setPuntoDeleteError(null);
+        }}
+        onSuccess={async () => {
+          // Reload establishment data
+          if (id && estId) {
+            const rEst = await establecimientosApi.show(id, estId);
+            const dataEst = rEst.data?.data ?? rEst.data;
+            setEst(dataEst);
+          }
+        }}
+        punto={puntoToDelete}
+        companyId={company?.id}
+        establecimientoId={parseInt(estId || '0')}
+        onError={(message) => {
+          show({ title: 'Error', message: message, type: 'error' });
+        }}
+        onSuccess_notification={(message) => {
+          show({ title: 'Éxito', message: message, type: 'success' });
+        }}
       />
     </div>
   );
