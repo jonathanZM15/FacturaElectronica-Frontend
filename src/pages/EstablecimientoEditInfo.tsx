@@ -953,7 +953,8 @@ const EstablecimientoEditInfo: React.FC = () => {
                     width: '120px',
                     background: 'linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)',
                     zIndex: 10,
-                    boxShadow: '2px 0 4px rgba(0,0,0,0.1)'
+                    boxShadow: '2px 0 8px rgba(99, 102, 241, 0.3)',
+                    borderRight: '1px solid rgba(99, 102, 241, 0.3)'
                   }}>ESTADO</th>
                   <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>SECUENCIAL FACTURAS</th>
                   <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>SECUENCIAL LIQUIDACIONES</th>
@@ -1075,7 +1076,8 @@ const EstablecimientoEditInfo: React.FC = () => {
                         width: '120px',
                         background: idx % 2 === 0 ? '#f9fafb' : '#fff',
                         zIndex: 5,
-                        boxShadow: '2px 0 4px rgba(0,0,0,0.1)'
+                        boxShadow: '2px 0 8px rgba(99, 102, 241, 0.15)',
+                        borderRight: '1px solid rgba(99, 102, 241, 0.2)'
                       }}>
                         <span style={{
                           padding: '4px 8px',
@@ -1114,47 +1116,53 @@ const EstablecimientoEditInfo: React.FC = () => {
                         <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
                           <button
                             onClick={() => { setSelectedPunto(punto); setPuntoFormOpen(true); }}
+                            title="Editar"
                             style={{
-                              padding: '6px 10px',
+                              padding: '8px',
                               borderRadius: '6px',
                               border: 'none',
                               background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
                               color: '#fff',
                               cursor: 'pointer',
-                              fontSize: '12px',
-                              fontWeight: 600,
+                              fontSize: '16px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
                               transition: 'all 0.2s'
                             }}
                             onMouseEnter={(e) => {
-                              e.currentTarget.style.transform = 'scale(1.05)';
+                              e.currentTarget.style.transform = 'scale(1.1)';
                             }}
                             onMouseLeave={(e) => {
                               e.currentTarget.style.transform = 'scale(1)';
                             }}
                           >
-                            ✏️ Editar
+                            ✏️
                           </button>
                           <button
                             onClick={() => { setPuntoToDelete(punto); setPuntoDeleteOpen(true); }}
+                            title="Eliminar"
                             style={{
-                              padding: '6px 10px',
+                              padding: '8px',
                               borderRadius: '6px',
                               border: 'none',
                               background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
                               color: '#fff',
                               cursor: 'pointer',
-                              fontSize: '12px',
-                              fontWeight: 600,
+                              fontSize: '16px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
                               transition: 'all 0.2s'
                             }}
                             onMouseEnter={(e) => {
-                              e.currentTarget.style.transform = 'scale(1.05)';
+                              e.currentTarget.style.transform = 'scale(1.1)';
                             }}
                             onMouseLeave={(e) => {
                               e.currentTarget.style.transform = 'scale(1)';
                             }}
                           >
-                            🗑️ Eliminar
+                            🗑️
                           </button>
                         </div>
                       </td>
@@ -1272,6 +1280,7 @@ const EstablecimientoEditInfo: React.FC = () => {
           initialData={selectedPunto}
           onClose={() => { setPuntoFormOpen(false); setSelectedPunto(null); }}
           onSave={async (savedPunto: PuntoEmision) => {
+            const wasEditing = !!selectedPunto;
             setPuntoFormOpen(false);
             setSelectedPunto(null);
             // Recargar establecimiento para actualizar la lista de puntos
@@ -1279,11 +1288,14 @@ const EstablecimientoEditInfo: React.FC = () => {
               const rEst = await establecimientosApi.show(id!, estId!);
               const dataEst = rEst.data?.data ?? rEst.data;
               setEst(dataEst);
-              show({ 
-                title: 'Éxito', 
-                message: selectedPunto ? 'Punto de emisión actualizado' : 'Punto de emisión creado', 
-                type: 'success' 
-              });
+              // Mostrar notificación después de actualizar el estado
+              setTimeout(() => {
+                show({ 
+                  title: 'Éxito', 
+                  message: wasEditing ? 'Punto de emisión actualizado' : 'Punto de emisión creado', 
+                  type: 'success' 
+                });
+              }, 100);
             } catch (e:any) {
               show({ title: 'Error', message: 'No se pudo recargar los datos', type: 'error' });
             }

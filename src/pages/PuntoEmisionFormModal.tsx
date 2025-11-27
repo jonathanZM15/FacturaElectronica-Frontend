@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { PuntoEmision } from '../types/puntoEmision';
+import { puntosEmisionApi } from '../services/puntosEmisionApi';
+import { useNotification } from '../contexts/NotificationContext';
 
 interface PuntoEmisionFormModalProps {
   isOpen: boolean;
@@ -20,6 +22,8 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
   establecimientoId,
   existingPuntos = []
 }) => {
+  const { show } = useNotification();
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<PuntoEmision>({
     codigo: '',
     estado: 'ACTIVO',
@@ -254,32 +258,63 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
     );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validate()) {
-      // Si es edición y hay cambios, mostrar confirmación
-      if (initialData && hasDataChanged()) {
-        setConfirmDialog(true);
-      } else {
-        // Si es creación o no hay cambios, guardar directamente
-        onSave({
-          ...formData,
-          company_id: companyId,
-          establecimiento_id: establecimientoId,
-        });
-        onClose();
-      }
+    if (!validate()) return;
+    
+    // Si es edición y hay cambios, mostrar confirmación
+    if (initialData && hasDataChanged()) {
+      setConfirmDialog(true);
+    } else {
+      // Si es creación, guardar directamente
+      await saveToApi();
     }
   };
 
-  const handleConfirmSave = () => {
-    onSave({
-      ...formData,
-      company_id: companyId,
-      establecimiento_id: establecimientoId,
-    });
+  const saveToApi = async () => {
+    if (!companyId || !establecimientoId) {
+      show({ title: 'Error', message: 'Faltan datos requeridos', type: 'error' });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const payload = {
+        codigo: formData.codigo,
+        nombre: formData.nombre,
+        estado: formData.estado,
+        secuencial_factura: formData.secuencial_factura,
+        secuencial_liquidacion_compra: formData.secuencial_liquidacion_compra,
+        secuencial_nota_credito: formData.secuencial_nota_credito,
+        secuencial_nota_debito: formData.secuencial_nota_debito,
+        secuencial_guia_remision: formData.secuencial_guia_remision,
+        secuencial_retencion: formData.secuencial_retencion,
+        secuencial_proforma: formData.secuencial_proforma
+      };
+
+      let response;
+      if (initialData?.id) {
+        // Actualizar
+        response = await puntosEmisionApi.update(companyId, establecimientoId, initialData.id, payload);
+      } else {
+        // Crear
+        response = await puntosEmisionApi.create(companyId, establecimientoId, payload);
+      }
+
+      const savedPunto = response.data?.data ?? response.data;
+      onSave(savedPunto);
+      onClose();
+    } catch (error: any) {
+      const errorMsg = error?.response?.data?.message || 'Error al guardar el punto de emisión';
+      show({ title: 'Error', message: errorMsg, type: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConfirmSave = async () => {
     setConfirmDialog(false);
-    onClose();
+    await saveToApi();
   };
 
   if (!isOpen) return null;
@@ -478,22 +513,23 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
             type="button"
             onClick={onClose}
             className="btn btn-secondary"
+            disabled={loading}
           >
             Cancelar
           </button>
           <button
             type="submit"
             onClick={handleSubmit}
-            disabled={!isFormValid()}
+            disabled={!isFormValid() || loading}
             className="btn btn-primary"
             style={{
-              backgroundColor: isFormValid() ? '#3b82f6' : '#d1d5db',
+              backgroundColor: isFormValid() && !loading ? '#3b82f6' : '#d1d5db',
               color: 'white',
-              cursor: isFormValid() ? 'pointer' : 'not-allowed',
-              opacity: isFormValid() ? 1 : 0.6,
+              cursor: isFormValid() && !loading ? 'pointer' : 'not-allowed',
+              opacity: isFormValid() && !loading ? 1 : 0.6,
             }}
           >
-            {initialData ? 'Actualizar' : 'Registrar'}
+            {loading ? 'Guardando...' : (initialData ? 'Actualizar' : 'Registrar')}
           </button>
         </div>
 
@@ -631,51 +667,63 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
             }}>
               <button
                 onClick={() => setConfirmDialog(false)}
+                disabled={loading}
                 style={{
                   padding: '8px 16px',
                   borderRadius: '6px',
                   border: '1px solid #d1d5db',
                   background: '#fff',
                   color: '#374151',
-                  cursor: 'pointer',
+                  cursor: loading ? 'not-allowed' : 'pointer',
                   fontWeight: 600,
                   fontSize: '14px',
-                  transition: 'all 0.2s ease'
+                  transition: 'all 0.2s ease',
+                  opacity: loading ? 0.5 : 1
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#f1f5f9';
-                  e.currentTarget.style.borderColor = '#94a3b8';
+                  if (!loading) {
+                    e.currentTarget.style.background = '#f1f5f9';
+                    e.currentTarget.style.borderColor = '#94a3b8';
+                  }
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = '#fff';
-                  e.currentTarget.style.borderColor = '#d1d5db';
+                  if (!loading) {
+                    e.currentTarget.style.background = '#fff';
+                    e.currentTarget.style.borderColor = '#d1d5db';
+                  }
                 }}
               >
                 Cancelar
               </button>
               <button
                 onClick={handleConfirmSave}
+                disabled={loading}
                 style={{
                   padding: '8px 16px',
                   borderRadius: '6px',
                   border: 'none',
-                  background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+                  background: loading ? '#d1d5db' : 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
                   color: 'white',
-                  cursor: 'pointer',
+                  cursor: loading ? 'not-allowed' : 'pointer',
                   fontWeight: 600,
                   fontSize: '14px',
-                  transition: 'all 0.2s ease'
+                  transition: 'all 0.2s ease',
+                  opacity: loading ? 0.5 : 1
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 10px 20px rgba(220, 38, 38, 0.3)';
+                  if (!loading) {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 10px 20px rgba(220, 38, 38, 0.3)';
+                  }
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = 'none';
+                  if (!loading) {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }
                 }}
               >
-                Confirmar cambios
+                {loading ? 'Guardando...' : 'Confirmar cambios'}
               </button>
             </div>
           </div>
