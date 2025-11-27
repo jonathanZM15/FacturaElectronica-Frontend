@@ -4,6 +4,9 @@ import { establecimientosApi } from '../services/establecimientosApi';
 import { emisoresApi } from '../services/emisoresApi';
 import EstablishmentFormModal from './EstablishmentFormModal';
 import { useNotification } from '../contexts/NotificationContext';
+import PuntoEmisionFormModal from './PuntoEmisionFormModal';
+import PuntoEmisionDeleteModal from './PuntoEmisionDeleteModal';
+import { PuntoEmision } from '../types/puntoEmision';
 
 const EstablecimientoEditInfo: React.FC = () => {
   const { id, estId } = useParams();
@@ -22,6 +25,40 @@ const EstablecimientoEditInfo: React.FC = () => {
   const [deletePassword, setDeletePassword] = React.useState('');
   const [deleteError, setDeleteError] = React.useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = React.useState(false);
+
+  // Punto emisión modal states
+  const [puntoFormOpen, setPuntoFormOpen] = React.useState(false);
+  const [selectedPunto, setSelectedPunto] = React.useState<PuntoEmision | null>(null);
+
+  // Punto emisión delete states
+  const [puntoDeleteOpen, setPuntoDeleteOpen] = React.useState(false);
+  const [puntoDeletePassword, setPuntoDeletePassword] = React.useState('');
+  const [puntoDeleteError, setPuntoDeleteError] = React.useState<string | null>(null);
+  const [puntoDeleteLoading, setPuntoDeleteLoading] = React.useState(false);
+  const [puntoToDelete, setPuntoToDelete] = React.useState<PuntoEmision | null>(null);
+
+  // Filtrado de puntos de emisión
+  type PuntoFilterField = 'codigo'|'nombre'|'estado';
+  const [activePuntoFilter, setActivePuntoFilter] = React.useState<PuntoFilterField | null>(null);
+  const [puntoFilterValue, setPuntoFilterValue] = React.useState<string>('');
+  const puntoFilterLabels: Record<PuntoFilterField, string> = {
+    codigo: 'Código',
+    nombre: 'Nombre',
+    estado: 'Estado'
+  };
+
+  // Date range filter for puntos
+  const [puntoDesde, setPuntoDesde] = React.useState<string>('');
+  const [puntoHasta, setPuntoHasta] = React.useState<string>('');
+  const [puntosDateOpen, setPuntosDateOpen] = React.useState(false);
+  const puntosDateRef = React.useRef<HTMLDivElement | null>(null);
+  const puntoDesdeInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  };
 
   React.useEffect(() => {
     const load = async () => {
@@ -44,6 +81,19 @@ const EstablecimientoEditInfo: React.FC = () => {
     load();
   }, [id, estId, show]);
 
+  // Close puntos date picker on outside click
+  React.useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (puntosDateRef.current && !puntosDateRef.current.contains(e.target as Node)) {
+        setPuntosDateOpen(false);
+      }
+    };
+    if (puntosDateOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [puntosDateOpen]);
+
   if (!id || !estId) return <div>Establecimiento no especificado</div>;
 
   const openDeleteModal = () => {
@@ -55,8 +105,11 @@ const EstablecimientoEditInfo: React.FC = () => {
     <div style={{ 
       padding: '24px 32px',
       background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
-      minHeight: '100vh'
+      minHeight: '100vh',
+      maxWidth: '100%',
+      overflowX: 'hidden'
     }}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
       {/* Header con gradiente */}
       <div style={{ 
         background: 'linear-gradient(135deg, #5b21b6 0%, #7c3aed 100%)',
@@ -233,7 +286,7 @@ const EstablecimientoEditInfo: React.FC = () => {
       </div>
 
       {/* Grid de cards modernos - Ajustado para dar más espacio al logo */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 520px', gap: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 20 }}>
         {/* Datos del establecimiento */}
         <div style={{ 
           background: '#fff',
@@ -631,6 +684,424 @@ const EstablecimientoEditInfo: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Lista de puntos de emisión */}
+        <div style={{ gridColumn: '1 / -1', marginTop: 18, borderRadius: 12, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.05)', background: '#fff' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid #e5e7eb', gap: 12, flexWrap: 'wrap' }}>
+            <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1f2937' }}>Lista de puntos de emisión</h4>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 300, justifyContent: 'flex-end' }}>
+            {/* Filter UI - Text filter */}
+            <div style={{ 
+              background: '#f8f9fa', 
+              border: '1px solid #dee2e6', 
+              borderRadius: 6, 
+              padding: '0 12px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              height: 44,
+              flex: 1,
+              maxWidth: 400
+            }}>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+                {activePuntoFilter === 'estado' ? (
+                  <select 
+                    value={puntoFilterValue} 
+                    onChange={(e) => setPuntoFilterValue(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '6px 8px',
+                      borderRadius: 4,
+                      border: 'none',
+                      fontSize: 14,
+                      fontFamily: 'inherit',
+                      background: 'transparent'
+                    }}
+                  >
+                    <option value="">Todos</option>
+                    <option value="activo">Activo</option>
+                    <option value="inactivo">Inactivo</option>
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    placeholder={activePuntoFilter ? `Filtrar por ${puntoFilterLabels[activePuntoFilter]}` : 'Haz clic en un encabezado para filtrar'}
+                    value={puntoFilterValue}
+                    onChange={(e) => setPuntoFilterValue(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '6px 8px',
+                      borderRadius: 4,
+                      border: 'none',
+                      fontSize: 14,
+                      background: 'transparent',
+                      outline: 'none'
+                    }}
+                  />
+                )}
+              </div>
+              <span style={{ fontSize: 16, color: '#666', flexShrink: 0 }}>🔍</span>
+              {activePuntoFilter && puntoFilterValue && (
+                <button
+                  onClick={() => setPuntoFilterValue('')}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    borderRadius: 4,
+                    padding: '2px 6px',
+                    cursor: 'pointer',
+                    fontSize: 14,
+                    color: '#666',
+                    flexShrink: 0
+                  }}
+                >
+                  ×
+                </button>
+              )}
+            </div>
+
+            {/* Date range filter */}
+            <div className="date-range" ref={puntosDateRef} style={{ position: 'relative' }}>
+              <button 
+                className="date-range-display"
+                onClick={() => setPuntosDateOpen((v) => !v)}
+                style={{
+                  padding: '8px 12px',
+                  background: '#fff',
+                  border: '1px solid #dee2e6',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: '#666',
+                  display: 'flex',
+                  gap: 6,
+                  alignItems: 'center',
+                  whiteSpace: 'nowrap',
+                  height: 44
+                }}
+              >
+                <span>{puntoDesde ? formatDate(puntoDesde) : 'Fecha Inicial'}</span>
+                <span>→</span>
+                <span>{puntoHasta ? formatDate(puntoHasta) : 'Fecha Final'}</span>
+              </button>
+              {puntosDateOpen && (
+                <div 
+                  className="date-range-popover"
+                  style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    marginTop: 4,
+                    background: '#fff',
+                    border: '1px solid #dee2e6',
+                    borderRadius: 8,
+                    padding: 12,
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                    zIndex: 100,
+                    minWidth: 280
+                  }}
+                >
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <label style={{ fontSize: 12, fontWeight: 500, color: '#666', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      Desde
+                      <input 
+                        ref={puntoDesdeInputRef}
+                        type="date" 
+                        value={puntoDesde} 
+                        onChange={(e) => setPuntoDesde(e.target.value)}
+                        style={{ padding: '6px 8px', border: '1px solid #dee2e6', borderRadius: 4, fontSize: 13 }}
+                      />
+                    </label>
+                    <label style={{ fontSize: 12, fontWeight: 500, color: '#666', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      Hasta
+                      <input 
+                        type="date" 
+                        value={puntoHasta} 
+                        onChange={(e) => setPuntoHasta(e.target.value)}
+                        style={{ padding: '6px 8px', border: '1px solid #dee2e6', borderRadius: 4, fontSize: 13 }}
+                      />
+                    </label>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 12, justifyContent: 'flex-end' }}>
+                    <button 
+                      onClick={() => { setPuntoDesde(''); setPuntoHasta(''); setPuntosDateOpen(false); }}
+                      style={{ padding: '6px 12px', background: '#f0f0f0', border: '1px solid #dee2e6', borderRadius: 4, cursor: 'pointer', fontSize: 12, fontWeight: 500, color: '#666' }}
+                    >
+                      Limpiar
+                    </button>
+                    <button 
+                      onClick={() => setPuntosDateOpen(false)}
+                      style={{ padding: '6px 12px', background: '#0d6efd', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 12, fontWeight: 500, color: '#fff' }}
+                    >
+                      Aplicar
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Clear date filter button */}
+            {(puntoDesde || puntoHasta) && (
+              <button 
+                onClick={() => { setPuntoDesde(''); setPuntoHasta(''); }}
+                style={{ padding: '4px 8px', background: '#fff', border: '1px solid #dee2e6', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 500, color: '#dc2626', display: 'flex', alignItems: 'center', height: 44 }}
+              >
+                ✕
+              </button>
+            )}
+
+            <button 
+              onClick={() => { setSelectedPunto(null); setPuntoFormOpen(true); }}
+              style={{
+                padding: '11px 24px',
+                background: 'linear-gradient(135deg, #0d6efd 0%, #0b5fd7 100%)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '10px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '700',
+                boxShadow: '0 4px 12px rgba(13, 110, 253, 0.3)',
+                transition: 'all 0.3s ease',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '44px',
+                whiteSpace: 'nowrap'
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, #0b5fd7 0%, #084298 100%)';
+                (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-2px)';
+                (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 16px rgba(13, 110, 253, 0.4)';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, #0d6efd 0%, #0b5fd7 100%)';
+                (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)';
+                (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 12px rgba(13, 110, 253, 0.3)';
+              }}
+            >
+              + Nuevo
+            </button>
+          </div>
+        </div>
+        {activePuntoFilter && (
+          <div style={{ padding: '8px 20px', background: '#f8f9fa', borderBottom: '1px solid #e5e7eb', fontSize: 12, color: '#666' }}>
+            Buscando por {puntoFilterLabels[activePuntoFilter]}
+            {puntoFilterValue && (
+              <button
+                onClick={() => { setPuntoFilterValue(''); }}
+                style={{ marginLeft: 8, background: 'transparent', border: 'none', color: '#1e40af', cursor: 'pointer', fontSize: 12 }}
+              >
+                Limpiar
+              </button>
+            )}
+          </div>
+        )}
+
+        <div style={{ overflowX: 'auto', overflowY: 'visible' }}>
+            <table style={{ 
+              width: '100%',
+              minWidth: '1200px',
+              borderCollapse: 'separate',
+              borderSpacing: 0,
+              fontSize: '13px',
+              background: '#fff',
+              borderRadius: '8px',
+              overflow: 'hidden',
+              border: '1px solid #e5e7eb'
+            }}>
+              <thead>
+                <tr style={{ 
+                  background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                  color: '#fff'
+                }}>
+                  <th style={{ 
+                    padding: '12px 10px', 
+                    textAlign: 'left', 
+                    fontWeight: 700,
+                    whiteSpace: 'nowrap'
+                  }}>Código</th>
+                  <th style={{ 
+                    padding: '12px 10px', 
+                    textAlign: 'left', 
+                    fontWeight: 700,
+                    whiteSpace: 'nowrap'
+                  }}>Nombre</th>
+                  <th style={{ 
+                    padding: '12px 10px', 
+                    textAlign: 'left', 
+                    fontWeight: 700,
+                    whiteSpace: 'nowrap'
+                  }}>Estado</th>
+                  <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>Sec. Factura</th>
+                  <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>Sec. N. Crédito</th>
+                  <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>Sec. N. Débito</th>
+                  <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>Sec. Guía Rem.</th>
+                  <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>Sec. Retención</th>
+                  <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>Sec. L. Porte</th>
+                  <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>Sec. Proforma</th>
+                  <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>F. Creación</th>
+                  <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>F. Actualización</th>
+                  <th style={{ 
+                    padding: '12px 10px', 
+                    textAlign: 'center', 
+                    fontWeight: 700,
+                    whiteSpace: 'nowrap'
+                  }}>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(() => {
+                  let puntos = est?.puntos_emision ?? [];
+                  
+                  // Filtro por campo
+                  if (activePuntoFilter && puntoFilterValue) {
+                    const lowerVal = puntoFilterValue.toLowerCase();
+                    puntos = puntos.filter((p: any) => {
+                      const fieldVal = String(p[activePuntoFilter] ?? '').toLowerCase();
+                      return fieldVal.includes(lowerVal);
+                    });
+                  }
+
+                  // Filtro por rango de fechas
+                  if (puntoDesde || puntoHasta) {
+                    puntos = puntos.filter((p: any) => {
+                      const created = p.created_at ? new Date(p.created_at) : null;
+                      if (!created) return false;
+                      if (puntoDesde && created < new Date(puntoDesde)) return false;
+                      if (puntoHasta && created > new Date(puntoHasta)) return false;
+                      return true;
+                    });
+                  }
+
+                  if (puntos.length === 0) {
+                    return (
+                      <tr>
+                        <td colSpan={13} style={{ 
+                          padding: '40px 20px', 
+                          textAlign: 'center',
+                          color: '#6b7280',
+                          fontSize: '14px',
+                          fontStyle: 'italic'
+                        }}>
+                          {activePuntoFilter || puntoDesde || puntoHasta 
+                            ? 'No se encontraron puntos de emisión que coincidan con los filtros'
+                            : 'No hay puntos de emisión registrados'}
+                        </td>
+                      </tr>
+                    );
+                  }
+
+                  return puntos.map((punto: any, idx: number) => (
+                    <tr 
+                      key={punto.id ?? idx}
+                      style={{
+                        background: idx % 2 === 0 ? '#fff' : '#f9fafb',
+                        transition: 'background 0.2s'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#eff6ff';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = idx % 2 === 0 ? '#fff' : '#f9fafb';
+                      }}
+                    >
+                      <td style={{ 
+                        padding: '10px', 
+                        borderBottom: '1px solid #e5e7eb',
+                        fontWeight: 600,
+                        color: '#1f2937'
+                      }}>{punto.codigo ?? '-'}</td>
+                      <td style={{ 
+                        padding: '10px', 
+                        borderBottom: '1px solid #e5e7eb',
+                        fontWeight: 600,
+                        color: '#1f2937'
+                      }}>{punto.nombre ?? '-'}</td>
+                      <td style={{ 
+                        padding: '10px', 
+                        borderBottom: '1px solid #e5e7eb'
+                      }}>
+                        <span style={{
+                          padding: '4px 8px',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          background: punto.estado === 'ACTIVO' ? '#dcfce7' : '#fee2e2',
+                          color: punto.estado === 'ACTIVO' ? '#166534' : '#991b1b'
+                        }}>
+                          {punto.estado ?? '-'}
+                        </span>
+                      </td>
+                      <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', color: '#374151' }}>{punto.secuencial_factura ?? '-'}</td>
+                      <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', color: '#374151' }}>{punto.secuencial_nota_credito ?? '-'}</td>
+                      <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', color: '#374151' }}>{punto.secuencial_nota_debito ?? '-'}</td>
+                      <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', color: '#374151' }}>{punto.secuencial_guia_remision ?? '-'}</td>
+                      <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', color: '#374151' }}>{punto.secuencial_retencion ?? '-'}</td>
+                      <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', color: '#374151' }}>{punto.secuencial_liquidacion_compra ?? '-'}</td>
+                      <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', color: '#374151' }}>{punto.secuencial_proforma ?? '-'}</td>
+                      <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', color: '#374151' }}>{formatDate(punto.created_at)}</td>
+                      <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', color: '#374151' }}>{formatDate(punto.updated_at)}</td>
+                      <td style={{ 
+                        padding: '10px', 
+                        borderBottom: '1px solid #e5e7eb',
+                        textAlign: 'center'
+                      }}>
+                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                          <button
+                            onClick={() => { setSelectedPunto(punto); setPuntoFormOpen(true); }}
+                            style={{
+                              padding: '6px 10px',
+                              borderRadius: '6px',
+                              border: 'none',
+                              background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                              color: '#fff',
+                              cursor: 'pointer',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              transition: 'all 0.2s'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.transform = 'scale(1.05)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.transform = 'scale(1)';
+                            }}
+                          >
+                            ✏️ Editar
+                          </button>
+                          <button
+                            onClick={() => { setPuntoToDelete(punto); setPuntoDeleteOpen(true); }}
+                            style={{
+                              padding: '6px 10px',
+                              borderRadius: '6px',
+                              border: 'none',
+                              background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                              color: '#fff',
+                              cursor: 'pointer',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              transition: 'all 0.2s'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.transform = 'scale(1.05)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.transform = 'scale(1)';
+                            }}
+                          >
+                            🗑️ Eliminar
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ));
+                })()}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       {openEdit && (
@@ -728,6 +1199,65 @@ const EstablecimientoEditInfo: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Punto Emisión Form Modal */}
+      {puntoFormOpen && (
+        <PuntoEmisionFormModal
+          isOpen={puntoFormOpen}
+          companyId={Number(id)}
+          establecimientoId={Number(estId)}
+          initialData={selectedPunto}
+          onClose={() => { setPuntoFormOpen(false); setSelectedPunto(null); }}
+          onSave={async (savedPunto: PuntoEmision) => {
+            setPuntoFormOpen(false);
+            setSelectedPunto(null);
+            // Recargar establecimiento para actualizar la lista de puntos
+            try {
+              const rEst = await establecimientosApi.show(id!, estId!);
+              const dataEst = rEst.data?.data ?? rEst.data;
+              setEst(dataEst);
+              show({ 
+                title: 'Éxito', 
+                message: selectedPunto ? 'Punto de emisión actualizado' : 'Punto de emisión creado', 
+                type: 'success' 
+              });
+            } catch (e:any) {
+              show({ title: 'Error', message: 'No se pudo recargar los datos', type: 'error' });
+            }
+          }}
+          existingPuntos={est?.puntos_emision ?? []}
+        />
+      )}
+
+      {/* Punto Emisión Delete Modal */}
+      {puntoDeleteOpen && puntoToDelete && (
+        <PuntoEmisionDeleteModal
+          isOpen={puntoDeleteOpen}
+          punto={puntoToDelete}
+          companyId={Number(id)}
+          establecimientoId={Number(estId)}
+          onClose={() => { setPuntoDeleteOpen(false); setPuntoToDelete(null); }}
+          onSuccess={async () => {
+            setPuntoDeleteOpen(false);
+            setPuntoToDelete(null);
+            // Recargar establecimiento para actualizar la lista de puntos
+            try {
+              const rEst = await establecimientosApi.show(id!, estId!);
+              const dataEst = rEst.data?.data ?? rEst.data;
+              setEst(dataEst);
+            } catch (e:any) {
+              // Error silencioso
+            }
+          }}
+          onError={(msg: string) => {
+            show({ title: 'Error', message: msg, type: 'error' });
+          }}
+          onSuccess_notification={(msg: string) => {
+            show({ title: 'Éxito', message: msg, type: 'success' });
+          }}
+        />
+      )}
+      </div>
     </div>
   );
 };

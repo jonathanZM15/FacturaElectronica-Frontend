@@ -49,8 +49,7 @@ function App() {
                 {/* Ruta inicial autenticada */}
                 <Route path="/emisores" element={<Emisores />} />
                 <Route path="/emisores/:id" element={<EmisorInfo />} />
-                <Route path="/emisores/:id/establecimientos/:estId" element={<EstablecimientoInfo />} />
-                <Route path="/emisores/:id/establecimientos/:estId/edit" element={<EstablecimientoEditInfo />} />
+                <Route path="/emisores/:id/establecimientos/:estId" element={<EstablecimientoEditInfo />} />
                 <Route path="/emisores/:id/establecimientos/:estId/puntos/:puntoId" element={<PuntoEmisionInfo />} />
                 {/* Compatibilidad: redirige /Navbar a /emisores */}
                 <Route path="/Navbar" element={<Navigate to="/emisores" replace />} />
