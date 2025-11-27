@@ -158,15 +158,19 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
     if (!validate()) return;
     setLoading(true);
     try {
-      let finalLogoFile = logoFile;
+      let finalLogoFile: File | null = null;
 
-      // Si eligió logo por defecto, cargarlo y optimizarlo
-      if (logoOption === 'default') {
+      // Determinar qué logo usar según la opción seleccionada
+      if (logoOption === 'custom') {
+        // Usar el archivo que subió el usuario
+        finalLogoFile = logoFile;
+      } else if (logoOption === 'default') {
+        // Cargar y optimizar el logo por defecto
         try {
           const response = await fetch('/maximofactura.png');
           const blob = await response.blob();
           
-          // Optimizar la imagen (redimensionar y comprimir)
+          // Optimizar la imagen (redimensionar y comprimir) manteniendo PNG para transparencia
           const optimizedBlob = await new Promise<Blob>((resolve, reject) => {
             const img = new Image();
             img.onload = () => {
@@ -185,32 +189,35 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
               
               canvas.width = width;
               canvas.height = height;
-              ctx?.drawImage(img, 0, 0, width, height);
+              
+              // Fondo transparente para PNG
+              if (ctx) {
+                ctx.clearRect(0, 0, width, height);
+                ctx.drawImage(img, 0, 0, width, height);
+              }
               
               canvas.toBlob(
                 (optimizedBlob) => {
                   if (optimizedBlob) resolve(optimizedBlob);
                   else reject(new Error('No se pudo optimizar'));
                 },
-                'image/jpeg',
-                0.8 // 80% calidad
+                'image/png', // PNG mantiene transparencia
+                0.9 // 90% calidad para PNG
               );
             };
             img.onerror = reject;
             img.src = URL.createObjectURL(blob);
           });
 
-          finalLogoFile = new File([optimizedBlob], 'maximofactura.png', { type: 'image/jpeg' });
+          finalLogoFile = new File([optimizedBlob], 'maximofactura.png', { type: 'image/png' });
         } catch (err) {
           console.error('Error cargando logo por defecto:', err);
           alert('No se pudo cargar el logo por defecto');
           setLoading(false);
           return;
         }
-      }
-
-      // Si eligió 'none', finalLogoFile queda null
-      if (logoOption === 'none') {
+      } else if (logoOption === 'none') {
+        // Sin logo
         finalLogoFile = null;
       }
 

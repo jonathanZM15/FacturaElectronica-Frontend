@@ -602,7 +602,7 @@ const EmisorInfo: React.FC = () => {
                         <tr><td className="loading-row" colSpan={7}>No hay establecimientos registrados.</td></tr>
                       ) : paginatedEsts.map((est) => (
                         <tr key={est.id}>
-                          <td style={{ textAlign: 'center' }}><Link className="link-ruc" to={`/emisores/${company?.id}/establecimientos/${est.id}`}>{est.codigo}</Link></td>
+                          <td style={{ textAlign: 'center' }}><span className="link-ruc" style={{ cursor: 'default' }}>{est.codigo}</span></td>
                           <td style={{ textAlign: 'center' }}>{est.nombre}</td>
                           <td style={{ textAlign: 'center' }}>{est.nombre_comercial || '-'}</td>
                           <td style={{ textAlign: 'center' }}>{est.direccion || '-'}</td>
