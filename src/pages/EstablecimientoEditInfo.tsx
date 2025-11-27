@@ -899,16 +899,13 @@ const EstablecimientoEditInfo: React.FC = () => {
           </div>
         )}
 
-        <div style={{ overflowX: 'auto', overflowY: 'visible' }}>
+        <div style={{ overflowX: 'auto', overflowY: 'visible', position: 'relative' }}>
             <table style={{ 
               width: '100%',
               minWidth: '1200px',
-              borderCollapse: 'separate',
-              borderSpacing: 0,
+              borderCollapse: 'collapse',
               fontSize: '13px',
               background: '#fff',
-              borderRadius: '8px',
-              overflow: 'hidden',
               border: '1px solid #e5e7eb'
             }}>
               <thead>
@@ -920,35 +917,68 @@ const EstablecimientoEditInfo: React.FC = () => {
                     padding: '12px 10px', 
                     textAlign: 'left', 
                     fontWeight: 700,
-                    whiteSpace: 'nowrap'
-                  }}>Código</th>
+                    whiteSpace: 'nowrap',
+                    position: 'sticky',
+                    left: 0,
+                    minWidth: '80px',
+                    maxWidth: '80px',
+                    width: '80px',
+                    background: 'linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)',
+                    zIndex: 10,
+                    boxShadow: '2px 0 4px rgba(0,0,0,0.1)'
+                  }}>CÓDIGO</th>
                   <th style={{ 
                     padding: '12px 10px', 
                     textAlign: 'left', 
                     fontWeight: 700,
-                    whiteSpace: 'nowrap'
-                  }}>Nombre</th>
+                    whiteSpace: 'nowrap',
+                    position: 'sticky',
+                    left: '80px',
+                    minWidth: '150px',
+                    maxWidth: '150px',
+                    width: '150px',
+                    background: 'linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)',
+                    zIndex: 10,
+                    boxShadow: '2px 0 4px rgba(0,0,0,0.1)'
+                  }}>NOMBRE</th>
                   <th style={{ 
                     padding: '12px 10px', 
                     textAlign: 'left', 
                     fontWeight: 700,
-                    whiteSpace: 'nowrap'
-                  }}>Estado</th>
-                  <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>Sec. Factura</th>
-                  <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>Sec. N. Crédito</th>
-                  <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>Sec. N. Débito</th>
-                  <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>Sec. Guía Rem.</th>
-                  <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>Sec. Retención</th>
-                  <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>Sec. L. Porte</th>
-                  <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>Sec. Proforma</th>
-                  <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>F. Creación</th>
-                  <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>F. Actualización</th>
+                    whiteSpace: 'nowrap',
+                    position: 'sticky',
+                    left: '230px',
+                    minWidth: '120px',
+                    maxWidth: '120px',
+                    width: '120px',
+                    background: 'linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)',
+                    zIndex: 10,
+                    boxShadow: '2px 0 4px rgba(0,0,0,0.1)'
+                  }}>ESTADO</th>
+                  <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>SECUENCIAL FACTURAS</th>
+                  <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>SECUENCIAL LIQUIDACIONES</th>
+                  <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>SECUENCIAL NOTAS CRÉDITO</th>
+                  <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>SECUENCIAL NOTAS DÉBITO</th>
+                  <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>SECUENCIAL GUÍA REM.</th>
+                  <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>SECUENCIAL RETENCIÓN</th>
+                  <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>SECUENCIAL L. PORTE</th>
+                  <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>SECUENCIAL PROFORMA</th>
+                  <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>F. CREACIÓN</th>
+                  <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>F. ACTUALIZACIÓN</th>
                   <th style={{ 
                     padding: '12px 10px', 
                     textAlign: 'center', 
                     fontWeight: 700,
-                    whiteSpace: 'nowrap'
-                  }}>Acciones</th>
+                    whiteSpace: 'nowrap',
+                    position: 'sticky',
+                    right: 0,
+                    minWidth: '100px',
+                    maxWidth: '100px',
+                    width: '100px',
+                    background: 'linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)',
+                    zIndex: 10,
+                    boxShadow: '-2px 0 4px rgba(0,0,0,0.1)'
+                  }}>ACCIONES</th>
                 </tr>
               </thead>
               <tbody>
@@ -1011,17 +1041,41 @@ const EstablecimientoEditInfo: React.FC = () => {
                         padding: '10px', 
                         borderBottom: '1px solid #e5e7eb',
                         fontWeight: 600,
-                        color: '#1f2937'
+                        color: '#1f2937',
+                        position: 'sticky',
+                        left: 0,
+                        minWidth: '80px',
+                        maxWidth: '80px',
+                        width: '80px',
+                        background: idx % 2 === 0 ? '#f9fafb' : '#fff',
+                        zIndex: 5,
+                        boxShadow: '2px 0 4px rgba(0,0,0,0.1)'
                       }}>{punto.codigo ?? '-'}</td>
                       <td style={{ 
                         padding: '10px', 
                         borderBottom: '1px solid #e5e7eb',
                         fontWeight: 600,
-                        color: '#1f2937'
+                        color: '#1f2937',
+                        position: 'sticky',
+                        left: '80px',
+                        minWidth: '150px',
+                        maxWidth: '150px',
+                        width: '150px',
+                        background: idx % 2 === 0 ? '#f9fafb' : '#fff',
+                        zIndex: 5,
+                        boxShadow: '2px 0 4px rgba(0,0,0,0.1)'
                       }}>{punto.nombre ?? '-'}</td>
                       <td style={{ 
                         padding: '10px', 
-                        borderBottom: '1px solid #e5e7eb'
+                        borderBottom: '1px solid #e5e7eb',
+                        position: 'sticky',
+                        left: '230px',
+                        minWidth: '120px',
+                        maxWidth: '120px',
+                        width: '120px',
+                        background: idx % 2 === 0 ? '#f9fafb' : '#fff',
+                        zIndex: 5,
+                        boxShadow: '2px 0 4px rgba(0,0,0,0.1)'
                       }}>
                         <span style={{
                           padding: '4px 8px',
@@ -1035,6 +1089,7 @@ const EstablecimientoEditInfo: React.FC = () => {
                         </span>
                       </td>
                       <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', color: '#374151' }}>{punto.secuencial_factura ?? '-'}</td>
+                      <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', color: '#374151' }}>{punto.secuencial_liquidacion_compra ?? '-'}</td>
                       <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', color: '#374151' }}>{punto.secuencial_nota_credito ?? '-'}</td>
                       <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', color: '#374151' }}>{punto.secuencial_nota_debito ?? '-'}</td>
                       <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', color: '#374151' }}>{punto.secuencial_guia_remision ?? '-'}</td>
@@ -1046,7 +1101,15 @@ const EstablecimientoEditInfo: React.FC = () => {
                       <td style={{ 
                         padding: '10px', 
                         borderBottom: '1px solid #e5e7eb',
-                        textAlign: 'center'
+                        textAlign: 'center',
+                        position: 'sticky',
+                        right: 0,
+                        minWidth: '100px',
+                        maxWidth: '100px',
+                        width: '100px',
+                        background: idx % 2 === 0 ? '#f9fafb' : '#fff',
+                        zIndex: 5,
+                        boxShadow: '-2px 0 4px rgba(0,0,0,0.1)'
                       }}>
                         <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
                           <button
