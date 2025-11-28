@@ -38,6 +38,7 @@ const EmisorFormModal: React.FC<Props> = (props) => {
   const { user } = useUser();
   const [v, setV] = React.useState<Emisor>(initial);
   const [logoFile, setLogoFile] = React.useState<File | null>(null);
+  const [existingLogoUrl, setExistingLogoUrl] = React.useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [emailError, setEmailError] = React.useState<string | null>(null);
@@ -53,7 +54,9 @@ const EmisorFormModal: React.FC<Props> = (props) => {
   React.useEffect(() => {
     if (open) {
       setV(initialData ?? initial);
-      setLogoFile(null);
+      // Don't reset logoFile here - let user's selection persist
+      // setLogoFile(null);  // <-- REMOVED: Let the selected file persist until submission
+      setExistingLogoUrl((initialData as any)?.logo_url || null);
       setEmailError(null);
       setLogoError(null);
       setLocalRucEditable(rucEditable ?? true);
@@ -300,8 +303,20 @@ const EmisorFormModal: React.FC<Props> = (props) => {
       }
 
       if (editingId) {
+        console.log('Enviando actualización de emisor:', {
+          editingId,
+          hasLogoFile: !!finalLogoFile,
+          logoFileName: finalLogoFile?.name,
+          logoFileSize: finalLogoFile?.size,
+          logoFileType: finalLogoFile?.type,
+        });
         res = await emisoresApi.update(editingId, { ...payload, logoFile: finalLogoFile });
         const updated: Emisor = res.data?.data ?? res.data;
+        // Force cache-busting for logo by adding timestamp
+        if (updated.logo_url) {
+          const separator = updated.logo_url.includes('?') ? '&' : '?';
+          updated.logo_url = updated.logo_url.split('?')[0] + separator + 't=' + Date.now();
+        }
         onUpdated && onUpdated(updated);
       } else {
         res = await emisoresApi.create({ ...payload, logoFile: finalLogoFile });

@@ -8,6 +8,7 @@ import ImageViewerModal from './ImageViewerModal';
 import PuntoEmisionFormModal from './PuntoEmisionFormModal';
 import PuntoEmisionDeleteModal from './PuntoEmisionDeleteModal';
 import { PuntoEmision } from '../types/puntoEmision';
+import { getImageUrl } from '../helpers/imageUrl';
 
 const EstablecimientoInfo: React.FC = () => {
   const { id, estId } = useParams();
@@ -136,7 +137,7 @@ const EstablecimientoInfo: React.FC = () => {
         <div style={{ border: '1px solid #e6e6e6', padding: 16, borderRadius: 8 }}>
           <h4 style={{ marginTop: 0 }}>Logo</h4>
           {est?.logo_url ? (
-            <img src={est.logo_url} alt="logo" title="Haz clic para ampliar" onClick={() => { 
+            <img src={getImageUrl(est.logo_url)} alt="logo" title="Haz clic para ampliar" onClick={() => { 
               console.log('Logo clicked, URL:', est.logo_url); 
               setViewerImage(est.logo_url); 
               setViewerOpen(true); 

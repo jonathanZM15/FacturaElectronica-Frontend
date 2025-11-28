@@ -7,6 +7,7 @@ import { useNotification } from '../contexts/NotificationContext';
 import PuntoEmisionFormModal from './PuntoEmisionFormModal';
 import PuntoEmisionDeleteModal from './PuntoEmisionDeleteModal';
 import { PuntoEmision } from '../types/puntoEmision';
+import { getImageUrl } from '../helpers/imageUrl';
 
 const EstablecimientoEditInfo: React.FC = () => {
   const { id, estId } = useParams();
@@ -431,7 +432,7 @@ const EstablecimientoEditInfo: React.FC = () => {
               boxSizing: 'border-box'
             }}>
               <img 
-                src={est.logo_url} 
+                src={getImageUrl(est.logo_url)} 
                 alt="logo" 
                 style={{ 
                   maxWidth: '100%', 
@@ -1183,7 +1184,31 @@ const EstablecimientoEditInfo: React.FC = () => {
           codigoEditable={codigoEditable}
           onClose={() => { setOpenEdit(false); }}
           onUpdated={(updated:any) => { 
-            setEst(updated); 
+            // Force refresh by reloading from server to ensure cache-busting works
+            // Create a new promise to refresh data
+            (async () => {
+              if (!id || !estId) return;
+              try {
+                const [rEst, rComp] = await Promise.all([
+                  establecimientosApi.show(id, estId),
+                  emisoresApi.get(id)
+                ]);
+                const dataEst = rEst.data?.data ?? rEst.data;
+                const dataComp = rComp.data?.data ?? rComp.data;
+                
+                // Force cache-busting for logo by adding timestamp
+                if (dataEst.logo_url) {
+                  const separator = dataEst.logo_url.includes('?') ? '&' : '?';
+                  dataEst.logo_url = dataEst.logo_url.split('?')[0] + separator + 't=' + Date.now();
+                }
+                
+                setEst(dataEst);
+                setCompany(dataComp);
+              } catch (e: any) {
+                show({ title: 'Error', message: 'No se pudo recargar el establecimiento', type: 'error' });
+              }
+            })();
+            
             setOpenEdit(false);
             show({ title: 'Éxito', message: 'Establecimiento actualizado', type: 'success' });
           }}

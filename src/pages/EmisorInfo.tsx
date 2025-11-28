@@ -7,6 +7,7 @@ import { establecimientosApi } from '../services/establecimientosApi';
 import { useNotification } from '../contexts/NotificationContext';
 import ImageViewerModal from './ImageViewerModal';
 import './Emisores.css';
+import { getImageUrl } from '../helpers/imageUrl';
 
 const EmisorInfo: React.FC = () => {
   const { id } = useParams();
@@ -266,7 +267,7 @@ const EmisorInfo: React.FC = () => {
                       <div className="info-value">
                         {company?.logo_url ? (
                           <img 
-                            src={company.logo_url} 
+                            src={getImageUrl(company.logo_url)} 
                             alt="logo" 
                             style={{ maxWidth: 150, maxHeight: 150, borderRadius: 8, border: '2px solid #e5e7eb', padding: 8, background: '#fff', cursor: 'pointer', transition: 'transform 0.2s' }}
                             onClick={() => { 
@@ -610,7 +611,7 @@ const EmisorInfo: React.FC = () => {
                             {(est.logo_url || est.logo_path || est.logo) ? (
                               <img 
                                 className="logo-cell" 
-                                src={est.logo_url || est.logo_path || est.logo} 
+                                src={getImageUrl(est.logo_url || est.logo_path || est.logo)} 
                                 alt="logo" 
                                 onClick={() => { setViewerImage(est.logo_url || est.logo_path || est.logo); setViewerOpen(true); }}
                                 style={{ cursor: 'pointer', transition: 'transform 0.2s' }}

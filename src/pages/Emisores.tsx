@@ -6,6 +6,7 @@ import EmisorFormModal from './EmisorFormModal';
 import ImageViewerModal from './ImageViewerModal';
 import { Emisor } from '../types/emisor';
 import { useNotification } from '../contexts/NotificationContext';
+import { getImageUrl } from '../helpers/imageUrl';
 
 // Helper para truncar a un máximo de N palabras
 function truncateWords(text: string, maxWords: number = 10): string {
@@ -58,7 +59,7 @@ const dynamicColumns: Array<{
       row.logo_url ? (
         <img 
           className="logo-cell" 
-          src={row.logo_url} 
+          src={getImageUrl(row.logo_url)} 
           alt="logo"
           title="Haz clic para ampliar"
           style={{ cursor: 'pointer', transition: 'transform 0.2s ease' }}
@@ -551,7 +552,7 @@ const Emisores: React.FC = () => {
                         content = (
                           <img 
                             className="logo-cell" 
-                            src={row.logo_url} 
+                            src={getImageUrl(row.logo_url)} 
                             alt="logo"
                             title="Haz clic para ampliar"
                             onClick={() => { 
@@ -833,10 +834,10 @@ const Emisores: React.FC = () => {
       initialData={editingInitial ?? undefined}
       rucEditable={editingRucEditable}
       onUpdated={(updated) => {
-        // replace in place
-        setData((prev) => prev.map(p => (p.id === updated.id ? updated : p)));
+        // Force refresh of the entire list to ensure cache-busting works
+        load();
         setOpenEdit(false);
-  show({ title: 'Éxito', message: 'Emisor actualizado correctamente', type: 'success' });
+        show({ title: 'Éxito', message: 'Emisor actualizado correctamente', type: 'success' });
       }}
     />
 

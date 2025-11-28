@@ -221,12 +221,13 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
         finalLogoFile = null;
       }
 
+      const removeLogoFlag = logoOption === 'none';
       if (editingEst && editingEst.id) {
-        const res = await establecimientosApi.update(companyId, editingEst.id, { ...v, logoFile: finalLogoFile });
+        const res = await establecimientosApi.update(companyId, editingEst.id, { ...v, logoFile: finalLogoFile, remove_logo: removeLogoFlag });
         const updated: Establecimiento = res.data?.data ?? res.data;
         onUpdated && onUpdated(updated);
       } else {
-        const res = await establecimientosApi.create(companyId, { ...v, logoFile: finalLogoFile });
+        const res = await establecimientosApi.create(companyId, { ...v, logoFile: finalLogoFile, remove_logo: removeLogoFlag });
         const created: Establecimiento = res.data?.data ?? res.data;
         onCreated && onCreated(created);
       }
