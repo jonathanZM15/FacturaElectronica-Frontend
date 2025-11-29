@@ -1051,8 +1051,27 @@ const EstablecimientoEditInfo: React.FC = () => {
                         width: '80px',
                         background: idx % 2 === 0 ? '#f9fafb' : '#fff',
                         zIndex: 5,
-                        boxShadow: '2px 0 4px rgba(0,0,0,0.1)'
-                      }}>{punto.codigo ?? '-'}</td>
+                        boxShadow: '2px 0 4px rgba(0,0,0,0.1)',
+                        pointerEvents: 'auto'
+                      }}>
+                        <a 
+                          href={`/emisores/${id}/establecimientos/${estId}/puntos/${punto.id}`}
+                          onClick={(e) => { 
+                            e.preventDefault(); 
+                            navigate(`/emisores/${id}/establecimientos/${estId}/puntos/${punto.id}`); 
+                          }} 
+                          style={{ 
+                            color: '#1b4ab4', 
+                            textDecoration: 'underline', 
+                            cursor: 'pointer',
+                            transition: 'color 0.2s ease'
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.color = '#1642a2')}
+                          onMouseLeave={(e) => (e.currentTarget.style.color = '#1b4ab4')}
+                        >
+                          {punto.codigo ?? '-'}
+                        </a>
+                      </td>
                       <td style={{ 
                         padding: '10px', 
                         borderBottom: '1px solid #e5e7eb',

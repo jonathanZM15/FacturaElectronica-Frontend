@@ -510,6 +510,7 @@ const EstablecimientoInfo: React.FC = () => {
             left: 0;
             z-index: 2;
             min-width: 100px;
+            pointer-events: auto;
           }
 
           .th-sticky.sticky-left-1,
@@ -518,6 +519,7 @@ const EstablecimientoInfo: React.FC = () => {
             left: 100px;
             z-index: 2;
             min-width: 150px;
+            pointer-events: auto;
           }
 
           .th-sticky.sticky-left-2,
@@ -526,6 +528,7 @@ const EstablecimientoInfo: React.FC = () => {
             left: 250px;
             z-index: 2;
             min-width: 130px;
+            pointer-events: auto;
           }
 
           /* Columna fija: Acciones a la derecha */
@@ -535,6 +538,7 @@ const EstablecimientoInfo: React.FC = () => {
             right: 0;
             z-index: 2;
             min-width: 100px;
+            pointer-events: auto;
           }
 
           .puntos-table-modern thead th {
