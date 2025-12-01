@@ -2,6 +2,7 @@ import React from 'react';
 import { establecimientosApi } from '../services/establecimientosApi';
 import { Establecimiento } from '../types/establecimiento';
 import ConfirmDialog from './ConfirmDialog';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 type Props = {
   open: boolean;
@@ -481,7 +482,7 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
 
         {loading && (
           <div className="mf-loading-overlay" aria-hidden>
-            <div className="mf-spinner" />
+            <LoadingSpinner message="Procesando cambios…" />
           </div>
         )}
 
@@ -565,9 +566,6 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
           /* Loading overlay */
           .mf-loading-overlay{position:absolute;inset:0;background:rgba(255,255,255,0.7);display:flex;
             align-items:center;justify-content:center;border-radius:12px;backdrop-filter:blur(2px)}
-          .mf-spinner{width:40px;height:40px;border-radius:50%;border:4px solid #e5e7eb;
-            border-top-color:#3b82f6;animation:spin 0.8s linear infinite}
-          @keyframes spin{to{transform:rotate(360deg)}}
 
           /* Responsive tweaks */
           @media (max-width:600px){

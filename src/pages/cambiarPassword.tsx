@@ -4,6 +4,7 @@ import whatsappIcon from '../assets/icon-whatsapp.jpeg';
 import './cambiarPassword.css';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useUser } from '../contexts/userContext';
+import LoadingSpinner from '../components/LoadingSpinner';
 import { auth } from '../services/api';
 import { useNotification } from '../contexts/NotificationContext';
 
@@ -268,7 +269,11 @@ const CambiarPassword: React.FC<Props> = ({ onSubmit }) => {
               className="update-button"
               disabled={loading || !password || !passwordConfirmation}
             >
-              {loading ? (publicMode ? 'Procesando...' : 'Procesando...') : (publicMode ? 'Actualizar contraseña' : 'ACTUALIZAR')}
+              {loading ? (
+                <LoadingSpinner inline size={18} message="Procesando…" />
+              ) : (
+                publicMode ? 'Actualizar contraseña' : 'ACTUALIZAR'
+              )}
             </button>
           </div>
         </form>

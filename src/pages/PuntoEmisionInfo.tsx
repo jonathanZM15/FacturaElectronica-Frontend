@@ -4,6 +4,7 @@ import { puntosEmisionApi } from '../services/puntosEmisionApi';
 import { establecimientosApi } from '../services/establecimientosApi';
 import { emisoresApi } from '../services/emisoresApi';
 import { useNotification } from '../contexts/NotificationContext';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const PuntoEmisionInfo: React.FC = () => {
   const { id, estId, puntoId } = useParams();
@@ -44,8 +45,8 @@ const PuntoEmisionInfo: React.FC = () => {
 
   if (loading) {
     return (
-      <div style={{ padding: '20px', textAlign: 'center' }}>
-        <p>Cargando información...</p>
+      <div style={{ padding: '40px 0' }}>
+        <LoadingSpinner fullHeight message="Cargando información del punto…" />
       </div>
     );
   }

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { PuntoEmision } from '../types/puntoEmision';
 import { puntosEmisionApi } from '../services/puntosEmisionApi';
 import { useNotification } from '../contexts/NotificationContext';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 interface PuntoEmisionFormModalProps {
   isOpen: boolean;
@@ -529,7 +530,11 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
               opacity: isFormValid() && !loading ? 1 : 0.6,
             }}
           >
-            {loading ? 'Guardando...' : (initialData ? 'Actualizar' : 'Registrar')}
+            {loading ? (
+              <LoadingSpinner inline size={18} message="Guardando…" />
+            ) : (
+              initialData ? 'Actualizar' : 'Registrar'
+            )}
           </button>
         </div>
 
@@ -723,7 +728,11 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
                   }
                 }}
               >
-                {loading ? 'Guardando...' : 'Confirmar cambios'}
+                {loading ? (
+                  <LoadingSpinner inline size={18} message="Guardando…" />
+                ) : (
+                  'Confirmar cambios'
+                )}
               </button>
             </div>
           </div>

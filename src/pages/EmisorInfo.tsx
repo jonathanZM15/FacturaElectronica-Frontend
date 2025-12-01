@@ -3,17 +3,26 @@ import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import { emisoresApi } from '../services/emisoresApi';
 import EmisorFormModal from './EmisorFormModal';
 import EstablishmentFormModal from './EstablishmentFormModal';
+import EmisorUsuarioFormModal from './EmisorUsuarioFormModal';
+import EmisorUsuariosList from './EmisorUsuariosList';
 import { establecimientosApi } from '../services/establecimientosApi';
+import { puntosEmisionApi } from '../services/puntosEmisionApi';
 import { useNotification } from '../contexts/NotificationContext';
+import { useUser } from '../contexts/userContext';
 import ImageViewerModal from './ImageViewerModal';
 import './Emisores.css';
 import { getImageUrl } from '../helpers/imageUrl';
+import { User } from '../types/user';
+import LoadingSpinner from '../components/LoadingSpinner';
+import { usuariosApi } from '../services/usuariosApi';
 
 const EmisorInfo: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const { show } = useNotification();
+  const { user } = useUser();
+  const role = user?.role?.toLowerCase?.() ?? '';
   const [loading, setLoading] = React.useState(false);
   const [company, setCompany] = React.useState<any | null>(null);
   const [tab, setTab] = React.useState<'emisor'|'establecimientos'|'usuarios'|'planes'>('emisor');
@@ -22,6 +31,14 @@ const EmisorInfo: React.FC = () => {
   const [editEst, setEditEst] = React.useState<any | null>(null);
   const [establecimientos, setEstablecimientos] = React.useState<any[]>([]);
   const [rucEditable, setRucEditable] = React.useState(true);
+  
+  // Estados para usuarios del emisor
+  const [openNewUser, setOpenNewUser] = React.useState(false);
+  const [editUser, setEditUser] = React.useState<User | null>(null);
+  const [puntosEmision, setPuntosEmision] = React.useState<any[]>([]);
+  const [refreshUsers, setRefreshUsers] = React.useState(0);
+  const isLimitedRole = role === 'gerente' || role === 'cajero';
+  const [distributorCreator, setDistributorCreator] = React.useState<User | null>(null);
 
   // Detectar si viene de un establecimiento para mostrar la pestaña de establecimientos
   React.useEffect(() => {
@@ -68,15 +85,144 @@ const EmisorInfo: React.FC = () => {
     if (!companyId) return;
     try {
       const r = await establecimientosApi.list(companyId);
-      const data = r.data?.data ?? r.data ?? [];
+      let data = r.data?.data ?? r.data ?? [];
+      
+      console.log('📋 Establecimientos cargados desde API:', data);
+      console.log('👤 Usuario actual:', user);
+      
+      // Si el usuario es gerente o cajero, filtrar establecimientos asignados
+      if (user && isLimitedRole) {
+        let user_establecimientos_ids = (user as any).establecimientos_ids || [];
+        
+        console.log('🔍 establecimientos_ids RAW:', user_establecimientos_ids);
+        console.log('🔍 Tipo de establecimientos_ids:', typeof user_establecimientos_ids);
+        
+        // Si es JSON string, parsearlo
+        if (typeof user_establecimientos_ids === 'string') {
+          try {
+            user_establecimientos_ids = JSON.parse(user_establecimientos_ids);
+            console.log('✅ Parseado exitoso:', user_establecimientos_ids);
+          } catch (e) {
+            console.error('❌ Error parsing establecimientos_ids:', e);
+            user_establecimientos_ids = [];
+          }
+        }
+        
+        console.log('📍 Usuario establecimientos asignados (final):', user_establecimientos_ids);
+        console.log('📍 Es array?', Array.isArray(user_establecimientos_ids));
+        console.log('📍 Longitud:', user_establecimientos_ids.length);
+        
+        if (Array.isArray(user_establecimientos_ids) && user_establecimientos_ids.length > 0) {
+          const dataAntes = data.length;
+          data = data.filter((est: any) => {
+            const match = user_establecimientos_ids.includes(est.id) || 
+                         user_establecimientos_ids.includes(String(est.id)) ||
+                         user_establecimientos_ids.includes(Number(est.id));
+            console.log(`🔎 Establecimiento ${est.id} (${est.nombre}): ${match ? '✅ INCLUIDO' : '❌ EXCLUIDO'}`);
+            return match;
+          });
+          console.log(`🎯 Filtrado: ${dataAntes} → ${data.length} establecimientos`);
+        } else {
+          console.warn('⚠️ No hay establecimientos asignados o el array está vacío');
+        }
+      }
+      
       setEstablecimientos(Array.isArray(data) ? data : []);
     } catch (e) {
+      console.error('❌ Error cargando establecimientos:', e);
       setEstablecimientos([]);
     }
-  }, []);
+  }, [user, isLimitedRole, role]);
+
+  const loadPuntosEmision = React.useCallback(async (companyId?: number | string) => {
+    if (!companyId) return;
+    try {
+      // Cargar puntos de emisión desde la API
+      const r = await puntosEmisionApi.listByEmisor(companyId);
+      let data = r.data?.data ?? r.data ?? [];
+      
+      // Si el usuario es gerente o cajero, filtrar puntos de emisión asignados
+      if (user && isLimitedRole) {
+        let user_puntos_ids = (user as any).puntos_emision_ids || [];
+        
+        console.log('🔍 Filtrando puntos de emisión para:', role || user?.role);
+        console.log('  📦 puntos_emision_ids RAW:', user_puntos_ids);
+        
+        // Si es JSON string, parsearlo
+        if (typeof user_puntos_ids === 'string') {
+          try {
+            user_puntos_ids = JSON.parse(user_puntos_ids);
+            console.log('  ✅ Parseado exitoso:', user_puntos_ids);
+          } catch (e) {
+            console.error('  ❌ Error parsing puntos_emision_ids:', e);
+            user_puntos_ids = [];
+          }
+        }
+        
+        console.log('  📍 puntos_emision_ids (final):', user_puntos_ids);
+        console.log('  📍 Es array?', Array.isArray(user_puntos_ids));
+        console.log('  📍 Longitud:', user_puntos_ids.length);
+        
+        // Filtrar por puntos de emisión específicos asignados al usuario
+        if (Array.isArray(user_puntos_ids) && user_puntos_ids.length > 0) {
+          data = data.filter((pe: any) => {
+            const isAssigned = user_puntos_ids.includes(pe.id) ||
+                              user_puntos_ids.includes(Number(pe.id)) ||
+                              user_puntos_ids.includes(String(pe.id));
+            console.log(`  ${isAssigned ? '✅' : '❌'} Punto ${pe.id} (${pe.codigo} - ${pe.nombre}): ${isAssigned ? 'INCLUIDO' : 'EXCLUIDO'}`);
+            return isAssigned;
+          });
+          console.log('  🎯 Puntos filtrados:', data.length);
+        } else {
+          console.log('  ⚠️ No hay puntos_emision_ids o está vacío - mostrando todos');
+        }
+      }
+      
+      setPuntosEmision(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error('Error loading puntos de emisión:', e);
+      setPuntosEmision([]);
+    }
+  }, [user, isLimitedRole, role]);
 
   React.useEffect(() => { load(); }, [load]);
-  React.useEffect(() => { if (company?.id) loadEstablecimientos(company.id); }, [company, loadEstablecimientos]);
+  React.useEffect(() => { 
+    if (company?.id) {
+      loadEstablecimientos(company.id);
+      loadPuntosEmision(company.id);
+    }
+  }, [company, loadEstablecimientos, loadPuntosEmision]);
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    const fetchDistributor = async () => {
+      if (role !== 'administrador' || !company?.created_by) {
+        if (!cancelled) setDistributorCreator(null);
+        return;
+      }
+
+      try {
+        const res = await usuariosApi.get(company.created_by);
+        const creatorData = res.data?.data ?? res.data;
+        if (!cancelled) {
+          if (creatorData?.role === 'distribuidor') {
+            setDistributorCreator(creatorData);
+          } else {
+            setDistributorCreator(null);
+          }
+        }
+      } catch (error) {
+        if (!cancelled) setDistributorCreator(null);
+      }
+    };
+
+    fetchDistributor();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [company?.created_by, role]);
 
   // Sorting and pagination state for establecimientos
   type EstCol = 'codigo'|'nombre'|'nombre_comercial'|'direccion'|'estado';
@@ -144,7 +290,31 @@ const EmisorInfo: React.FC = () => {
   const lastPageEst = Math.max(1, Math.ceil(Math.max(1, totalEst) / perPageEst));
   React.useEffect(() => { if (pageEst > lastPageEst) setPageEst(lastPageEst); }, [lastPageEst, pageEst]);
 
+  const canEditEst = React.useCallback((est: any) => {
+    if (!user || isLimitedRole) return false;
+    if (role === 'administrador') return true;
+    if (role === 'distribuidor') {
+      return est.created_by === user.id;
+    }
+    // Emisor puede editar:
+    // 1. Establecimientos que creó
+    // 2. Establecimientos de su emisor asignado (si el emisor es el suyo)
+    if (role === 'emisor' && company) {
+      // Si el company.id es su emisor_id, puede editar
+      return est.created_by === user.id || company.id === (user as any).emisor_id;
+    }
+    return false;
+  }, [user, company, isLimitedRole, role]);
+
   if (!id) return <div>Emisor no especificado</div>;
+
+  if (loading) {
+    return (
+      <div className="emisores-page">
+        <LoadingSpinner fullHeight message="Cargando emisor…" />
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: 18 }}>
@@ -154,32 +324,52 @@ const EmisorInfo: React.FC = () => {
 
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8 }}>
             {tab === 'emisor' && (
-              <>
+              isLimitedRole ? (
                 <button
                   className="actions-btn"
-                  onClick={() => setActionsOpen((s) => !s)}
-                  aria-expanded={actionsOpen}
-                  aria-haspopup="menu"
-                  style={{ background: '#1e40af', color: '#fff', padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 700 }}
+                  disabled
+                  title="Tu rol no permite realizar acciones sobre el emisor"
+                  style={{
+                    background: '#cbd5f5',
+                    color: '#6b7280',
+                    padding: '8px 14px',
+                    borderRadius: 8,
+                    border: 'none',
+                    cursor: 'not-allowed',
+                    fontWeight: 700,
+                    opacity: 0.7
+                  }}
                 >
                   Acciones ▾
                 </button>
+              ) : (
+                <>
+                  <button
+                    className="actions-btn"
+                    onClick={() => setActionsOpen((s) => !s)}
+                    aria-expanded={actionsOpen}
+                    aria-haspopup="menu"
+                    style={{ background: '#1e40af', color: '#fff', padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 700 }}
+                  >
+                    Acciones ▾
+                  </button>
 
-                {actionsOpen && (
-                  <div role="menu" style={{ position: 'absolute', right: 0, top: '110%', background: '#fff', border: '1px solid #ddd', boxShadow: '0 6px 18px rgba(0,0,0,.08)', borderRadius: 6, zIndex: 50 }}>
-                    <button role="menuitem" onClick={() => { setOpenEdit(true); setActionsOpen(false); }} className="menu-item">✏️ Editar</button>
-                    <button role="menuitem" onClick={() => { setActionsOpen(false); setDeleteWithHistory(false); setConfirmOpen(true); }} className="menu-item">🗑️ Eliminar</button>
-                    {/* If inactive >= 1 year, show delete with history option */}
-                    {company && company.estado === 'INACTIVO' && company.updated_at && new Date(company.updated_at) <= new Date(Date.now() - 365*24*60*60*1000) && (
-                      <button role="menuitem" onClick={() => { setActionsOpen(false); setDeleteWithHistory(true); setConfirmOpen(true); }} className="menu-item">🗄️ Eliminar (con historial)</button>
-                    )}
-                    <style>{`
-                      .menu-item{ display:block; width:100%; padding:8px 14px; background:transparent; border:none; text-align:left; cursor:pointer; color:#222 }
-                      .menu-item:hover{ background:#e6f0ff; color:#1e40af }
-                    `}</style>
-                  </div>
-                )}
-              </>
+                  {actionsOpen && (
+                    <div role="menu" style={{ position: 'absolute', right: 0, top: '110%', background: '#fff', border: '1px solid #ddd', boxShadow: '0 6px 18px rgba(0,0,0,.08)', borderRadius: 6, zIndex: 50 }}>
+                      <button role="menuitem" onClick={() => { setOpenEdit(true); setActionsOpen(false); }} className="menu-item">✏️ Editar</button>
+                      <button role="menuitem" onClick={() => { setActionsOpen(false); setDeleteWithHistory(false); setConfirmOpen(true); }} className="menu-item">🗑️ Eliminar</button>
+                      {/* If inactive >= 1 year, show delete with history option */}
+                      {company && company.estado === 'INACTIVO' && company.updated_at && new Date(company.updated_at) <= new Date(Date.now() - 365*24*60*60*1000) && (
+                        <button role="menuitem" onClick={() => { setActionsOpen(false); setDeleteWithHistory(true); setConfirmOpen(true); }} className="menu-item">🗄️ Eliminar (con historial)</button>
+                      )}
+                      <style>{`
+                        .menu-item{ display:block; width:100%; padding:8px 14px; background:transparent; border:none; text-align:left; cursor:pointer; color:#222 }
+                        .menu-item:hover{ background:#e6f0ff; color:#1e40af }
+                      `}</style>
+                    </div>
+                  )}
+                </>
+              )
             )}
 
             {/* Single right X to close info, bold and red, hover lifts */}
@@ -491,29 +681,36 @@ const EmisorInfo: React.FC = () => {
                   </div>
                   <button 
                     onClick={() => { setEditEst(null); setOpenNewEst(true); }} 
+                    disabled={isLimitedRole}
                     style={{ 
                       padding: '0 20px', 
                       borderRadius: 6, 
-                      background: '#0d6efd', 
+                      background: isLimitedRole ? '#ccc' : '#0d6efd', 
                       color: '#fff', 
                       border: 'none', 
-                      cursor: 'pointer',
+                      cursor: isLimitedRole ? 'not-allowed' : 'pointer',
                       fontWeight: 700,
                       fontSize: 14,
                       height: 44,
                       whiteSpace: 'nowrap',
-                      transition: 'all 0.3s ease'
+                      transition: 'all 0.3s ease',
+                      opacity: isLimitedRole ? 0.5 : 1
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.background = '#0b5fd7';
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                      e.currentTarget.style.boxShadow = '0 4px 8px rgba(13, 110, 253, 0.3)';
+                      if (!isLimitedRole) {
+                        e.currentTarget.style.background = '#0b5fd7';
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(13, 110, 253, 0.3)';
+                      }
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.background = '#0d6efd';
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = 'none';
+                      if (!isLimitedRole) {
+                        e.currentTarget.style.background = '#0d6efd';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }
                     }}
+                    title={isLimitedRole ? 'Los gerentes y cajeros no pueden crear establecimientos' : 'Crear nuevo establecimiento'}
                   >
                     Nuevo
                   </button>
@@ -640,8 +837,18 @@ const EmisorInfo: React.FC = () => {
                             }}>{est.estado === 'ABIERTO' ? 'Activo' : 'Cerrado'}</div>
                           </td>
                           <td className="td-sticky sticky-right acciones">
-                            <button title="Editar" onClick={() => { setEditEst(est); }}>✏️</button>
-                            <button title="Eliminar" onClick={() => { setDeletingEstId(est.id); setDeleteEstOpen(true); }}>🗑️</button>
+                            <button 
+                              title={canEditEst(est) ? "Editar" : "No tienes permisos para editar"}
+                              disabled={!canEditEst(est)}
+                              onClick={() => { setEditEst(est); }}
+                              style={{ opacity: canEditEst(est) ? 1 : 0.5, cursor: canEditEst(est) ? 'pointer' : 'not-allowed' }}
+                            >✏️</button>
+                            <button 
+                              title={canEditEst(est) ? "Eliminar" : "No tienes permisos para eliminar"}
+                              disabled={!canEditEst(est)}
+                              onClick={() => { setDeletingEstId(est.id); setDeleteEstOpen(true); }}
+                              style={{ opacity: canEditEst(est) ? 1 : 0.5, cursor: canEditEst(est) ? 'pointer' : 'not-allowed' }}
+                            >🗑️</button>
                           </td>
                         </tr>
                       ))}
@@ -676,7 +883,16 @@ const EmisorInfo: React.FC = () => {
           )}
 
           {tab === 'usuarios' && (
-            <div>Listado de usuarios (pendiente integrar)</div>
+            <EmisorUsuariosList
+              emiId={company?.id}
+              onEdit={(u) => setEditUser(u)}
+              onOpenModal={() => {
+                setEditUser(null);
+                setOpenNewUser(true);
+              }}
+              refreshTrigger={refreshUsers}
+              distributorCreator={distributorCreator}
+            />
           )}
 
           {tab === 'planes' && (
@@ -724,6 +940,31 @@ const EmisorInfo: React.FC = () => {
           }}
         />
       )}
+
+      {/* Usuario Emisor Modal */}
+      <EmisorUsuarioFormModal
+        open={openNewUser}
+        onClose={() => {
+          setOpenNewUser(false);
+          setEditUser(null);
+        }}
+        emiId={company?.id}
+        editingId={editUser?.id}
+        initialData={editUser}
+        establecimientos={establecimientos}
+        puntosEmision={puntosEmision}
+        onCreated={() => {
+          setOpenNewUser(false);
+          setRefreshUsers(r => r + 1);
+          show({ title: 'Éxito', message: 'Usuario creado correctamente', type: 'success' });
+        }}
+        onUpdated={() => {
+          setOpenNewUser(false);
+          setEditUser(null);
+          setRefreshUsers(r => r + 1);
+          show({ title: 'Éxito', message: 'Usuario actualizado correctamente', type: 'success' });
+        }}
+      />
 
       {/* Step 1: Confirmation modal (reuses same modal markup as Emisores list) */}
       {confirmOpen && (

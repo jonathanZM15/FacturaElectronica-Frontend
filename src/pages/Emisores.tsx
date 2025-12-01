@@ -6,7 +6,9 @@ import EmisorFormModal from './EmisorFormModal';
 import ImageViewerModal from './ImageViewerModal';
 import { Emisor } from '../types/emisor';
 import { useNotification } from '../contexts/NotificationContext';
+import { useUser } from '../contexts/userContext';
 import { getImageUrl } from '../helpers/imageUrl';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 // Helper para truncar a un máximo de N palabras
 function truncateWords(text: string, maxWords: number = 10): string {
@@ -116,6 +118,7 @@ const dynamicColumns: Array<{
 const Emisores: React.FC = () => {
   const [data, setData] = React.useState<Emisor[]>([]);
   const { show } = useNotification();
+  const { user } = useUser();
   const [loading, setLoading] = React.useState(false);
   // Dynamic filtering
   type FilterField = 'ruc'|'razon_social'|'estado'|'tipo_plan'|'cantidad_creados_gt'|'cantidad_restantes_lt'|'nombre_comercial'|'direccion_matriz'|'correo_remitente'|'regimen_tributario'|'tipo_persona'|'ambiente'|'tipo_emision'|'registrador';
@@ -184,6 +187,25 @@ const Emisores: React.FC = () => {
     return `${d}/${m}/${y}`;
   }, []);
 
+  // Verificar si el usuario tiene permisos para editar/eliminar un emisor
+  const canEditEmit = React.useCallback((emit: Emisor) => {
+    if (!user) return false;
+    // Admin puede editar todos
+    if (user.role === 'administrador') return true;
+    // Distribuidor solo puede editar los que creó
+    if (user.role === 'distribuidor') {
+      return emit.created_by === user.id;
+    }
+    // Emisor puede editar:
+    // 1. Emisores que creó
+    // 2. Su propio emisor asignado (comparar ID del emisor con ID del usuario)
+    if (user.role === 'emisor') {
+      return emit.created_by === user.id || emit.id === (user as any).emisor_id;
+    }
+    // Otros roles no pueden editar
+    return false;
+  }, [user]);
+
   // Scroll sync refs para una sola área scrollable
   const scrollContainerRef = React.useRef<HTMLDivElement | null>(null);
 
@@ -231,6 +253,13 @@ const Emisores: React.FC = () => {
         const term = filterValue.trim().toLowerCase();
         list = list.filter((e) => (e as any).tipo_plan && String((e as any).tipo_plan).toLowerCase().includes(term));
       }
+      // Si el usuario es gerente o cajero, solo mostrar su emisor asignado
+      if (user && (user.role === 'gerente' || user.role === 'cajero')) {
+        const user_emisor_id = (user as any).emisor_id;
+        if (user_emisor_id) {
+          list = list.filter((e) => e.id === user_emisor_id);
+        }
+      }
   setData(list);
   setTotalItems(list.length);
       setCurrentPage(1); // Reset to first page when filters change
@@ -239,7 +268,7 @@ const Emisores: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [activeFilter, filterValue, estado, q, desde, hasta]);
+  }, [activeFilter, filterValue, estado, q, desde, hasta, user]);
 
   React.useEffect(() => {
     load();
@@ -436,7 +465,19 @@ const Emisores: React.FC = () => {
             </small>
           </div>
 
-          <button className="btn-nuevo" onClick={() => setOpenNew(true)}>Nuevo +</button>
+          <button 
+            className="btn-nuevo" 
+            onClick={() => setOpenNew(true)}
+            disabled={user?.role === 'gerente' || user?.role === 'emisor' || user?.role === 'cajero'}
+            style={{
+              opacity: (user?.role === 'gerente' || user?.role === 'emisor' || user?.role === 'cajero') ? 0.5 : 1,
+              cursor: (user?.role === 'gerente' || user?.role === 'emisor' || user?.role === 'cajero') ? 'not-allowed' : 'pointer',
+              backgroundColor: (user?.role === 'gerente' || user?.role === 'emisor' || user?.role === 'cajero') ? '#ccc' : undefined
+            }}
+            title={user?.role === 'gerente' ? 'Los gerentes no pueden crear emisores' : user?.role === 'emisor' ? 'Los emisores no pueden crear emisores' : user?.role === 'cajero' ? 'Los cajeros no pueden crear emisores' : 'Crear nuevo emisor'}
+          >
+            Nuevo +
+          </button>
         </div>
       </div>
 
@@ -521,7 +562,7 @@ const Emisores: React.FC = () => {
               {loading ? (
                 <tr>
                   <td className="loading-row" colSpan={dynamicColumns.length + 3}>
-                    Cargando…
+                    <LoadingSpinner message="Cargando emisores…" />
                   </td>
                 </tr>
               ) : paginatedData.length ? (
@@ -596,40 +637,55 @@ const Emisores: React.FC = () => {
 
                     {/* Fijo derecha */}
                     <td className="td-sticky sticky-right acciones">
-                      <button title="Editar" onClick={async () => {
-                        try {
-                          const res = await emisoresApi.get(row.id!);
-                          const em = res.data?.data ?? res.data;
-                          setEditingId(row.id || null);
-                          setEditingInitial(em);
-                          setEditingRucEditable(em.ruc_editable ?? true);
-                          setOpenEdit(true);
-                        } catch (e: any) {
-                          alert('No se pudo cargar el emisor para edición');
-                        }
-                      }}>✏️</button>
-                      <button title="Eliminar" onClick={() => {
-                        setDeletingId(row.id || null);
-                        setDeletingName(row.razon_social || null);
-                        setDeletePassword('');
-                        setDeleteError(null);
-                        setDeleteOpen(true); // open confirmation first
-                      }}>🗑️</button>
+                      <button 
+                        title={canEditEmit(row) ? "Editar" : "No tienes permisos para editar"}
+                        disabled={!canEditEmit(row)}
+                        onClick={async () => {
+                          try {
+                            const res = await emisoresApi.get(row.id!);
+                            const em = res.data?.data ?? res.data;
+                            setEditingId(row.id || null);
+                            setEditingInitial(em);
+                            setEditingRucEditable(em.ruc_editable ?? true);
+                            setOpenEdit(true);
+                          } catch (e: any) {
+                            alert('No se pudo cargar el emisor para edición');
+                          }
+                        }}
+                        style={{ opacity: canEditEmit(row) ? 1 : 0.5, cursor: canEditEmit(row) ? 'pointer' : 'not-allowed' }}
+                      >✏️</button>
+                      <button 
+                        title={canEditEmit(row) ? "Eliminar" : "No tienes permisos para eliminar"}
+                        disabled={!canEditEmit(row)}
+                        onClick={() => {
+                          setDeletingId(row.id || null);
+                          setDeletingName(row.razon_social || null);
+                          setDeletePassword('');
+                          setDeleteError(null);
+                          setDeleteOpen(true); // open confirmation first
+                        }}
+                        style={{ opacity: canEditEmit(row) ? 1 : 0.5, cursor: canEditEmit(row) ? 'pointer' : 'not-allowed' }}
+                      >🗑️</button>
                       {/** Show 'prepare deletion' for emisores inactive >=1 year */}
                       {((row.estado === 'INACTIVO') && ((row.updated_at && new Date(row.updated_at) <= new Date(Date.now() - 365*24*60*60*1000)) || (row.fecha_actualizacion && new Date(row.fecha_actualizacion) <= new Date(Date.now() - 365*24*60*60*1000)))) && (
-                        <button title="Eliminar (con historial)" onClick={async () => {
-                          try {
-                            const res = await emisoresApi.prepareDeletion(row.id!);
-                            const backup = res.data?.backup_url ?? res.data?.backupUrl ?? null;
-                            setDeletingId(row.id || null);
-                            setDeletingName(row.razon_social || null);
+                        <button 
+                          title={canEditEmit(row) ? "Eliminar (con historial)" : "No tienes permisos"}
+                          disabled={!canEditEmit(row)}
+                          onClick={async () => {
+                            try {
+                              const res = await emisoresApi.prepareDeletion(row.id!);
+                              const backup = res.data?.backup_url ?? res.data?.backupUrl ?? null;
+                              setDeletingId(row.id || null);
+                              setDeletingName(row.razon_social || null);
                             setBackupUrl(backup);
                             setHistoryPreparedOpen(true);
                             show({ title: 'Respaldo creado', message: 'Se generó un respaldo y se envió notificación al cliente (si aplica).', type: 'info' });
                           } catch (err: any) {
                             show({ title: 'Error', message: err?.response?.data?.message || 'No se pudo generar el respaldo', type: 'error' });
                           }
-                        }}>🗄️</button>
+                        }}
+                        style={{ opacity: canEditEmit(row) ? 1 : 0.5, cursor: canEditEmit(row) ? 'pointer' : 'not-allowed' }}
+                        >🗄️</button>
                       )}
                     </td>
                   </tr>

@@ -4,6 +4,7 @@ import { emisoresApi } from '../services/emisoresApi';
 import { Emisor } from '../types/emisor';
 import { validateRucEcuador } from '../helpers/validateRuc';
 import ConfirmDialog from './ConfirmDialog';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 type Props = {
   open: boolean;
@@ -881,7 +882,7 @@ const EmisorFormModal: React.FC<Props> = (props) => {
 
         {loading && (
           <div className="mf-loading-overlay" aria-hidden>
-            <div className="mf-spinner" />
+            <LoadingSpinner message="Procesando emisor…" />
           </div>
         )}
       </div>
@@ -990,9 +991,6 @@ const EmisorFormModal: React.FC<Props> = (props) => {
         /* Loading overlay */
         .mf-loading-overlay{position:absolute;inset:0;background:rgba(255,255,255,0.7);display:flex;
           align-items:center;justify-content:center;border-radius:12px;backdrop-filter:blur(2px)}
-        .mf-spinner{width:40px;height:40px;border-radius:50%;border:4px solid #e5e7eb;
-          border-top-color:#3b82f6;animation:spin 0.8s linear infinite}
-        @keyframes spin{to{transform:rotate(360deg)}}
 
         /* Logo input styling - MÁS PEQUEÑO Y CENTRADO */
         .logo-container{display:flex;flex-direction:column;gap:10px;max-width:500px;margin:0 auto}

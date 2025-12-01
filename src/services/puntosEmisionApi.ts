@@ -2,6 +2,10 @@ import api from './api';
 import type { PuntoEmision } from '../types/puntoEmision';
 
 export const puntosEmisionApi = {
+  listByEmisor(companyId: number | string) {
+    return api.get(`/api/emisores/${companyId}/puntos-emision`);
+  },
+
   list(companyId: number | string, establecimientoId: number | string) {
     return api.get(`/api/emisores/${companyId}/establecimientos/${establecimientoId}/puntos`);
   },

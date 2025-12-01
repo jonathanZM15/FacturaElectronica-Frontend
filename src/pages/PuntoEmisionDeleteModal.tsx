@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { PuntoEmision } from '../types/puntoEmision';
 import { puntosEmisionApi } from '../services/puntosEmisionApi';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 interface PuntoEmisionDeleteModalProps {
   isOpen: boolean;
@@ -308,7 +309,11 @@ const PuntoEmisionDeleteModal: React.FC<PuntoEmisionDeleteModalProps> = ({
                 e.currentTarget.style.boxShadow = 'none';
               }}
             >
-              {loading ? 'Eliminando...' : 'Eliminar definitivamente'}
+              {loading ? (
+                <LoadingSpinner inline size={18} message="Eliminando…" />
+              ) : (
+                'Eliminar definitivamente'
+              )}
             </button>
           )}
         </div>

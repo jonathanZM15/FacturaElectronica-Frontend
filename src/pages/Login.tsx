@@ -7,6 +7,7 @@ import { AuthCredentials } from '../types/interfaces';
 import { useUser } from '../contexts/userContext';
 import { useNotification } from '../contexts/NotificationContext';
 import whatsappIcon from '../assets/icon-whatsapp.jpeg';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 // Constantes de límites
 const USERNAME_MAX_LENGTH = 40;
@@ -163,7 +164,15 @@ const Login: React.FC = () => {
           {/* Buttons row: primary action */}
           <div className="buttons-row">
             <button className="primary-btn" type="submit" disabled={loading}>
-              {loading ? 'Cargando...' : (isRegistering ? 'REGISTRARSE' : 'INICIAR SESIÓN')}
+              {loading ? (
+                <LoadingSpinner
+                  inline
+                  size={20}
+                  message={isRegistering ? 'Registrando…' : 'Iniciando…'}
+                />
+              ) : (
+                isRegistering ? 'REGISTRARSE' : 'INICIAR SESIÓN'
+              )}
             </button>
           </div>
 

@@ -4,16 +4,20 @@ import { establecimientosApi } from '../services/establecimientosApi';
 import { puntosEmisionApi } from '../services/puntosEmisionApi';
 import { emisoresApi } from '../services/emisoresApi';
 import { useNotification } from '../contexts/NotificationContext';
+import { useUser } from '../contexts/userContext';
 import ImageViewerModal from './ImageViewerModal';
 import PuntoEmisionFormModal from './PuntoEmisionFormModal';
 import PuntoEmisionDeleteModal from './PuntoEmisionDeleteModal';
 import { PuntoEmision } from '../types/puntoEmision';
 import { getImageUrl } from '../helpers/imageUrl';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const EstablecimientoInfo: React.FC = () => {
   const { id, estId } = useParams();
   const navigate = useNavigate();
   const { show } = useNotification();
+  const { user } = useUser();
+  const role = user?.role?.toLowerCase?.() ?? '';
   const [loading, setLoading] = React.useState(false);
   const [est, setEst] = React.useState<any | null>(null);
   const [company, setCompany] = React.useState<any | null>(null);
@@ -40,6 +44,7 @@ const EstablecimientoInfo: React.FC = () => {
   // Punto emisión modal states
   const [puntoFormOpen, setPuntoFormOpen] = React.useState(false);
   const [selectedPunto, setSelectedPunto] = React.useState<PuntoEmision | null>(null);
+  const isLimitedRole = role === 'gerente' || role === 'cajero';
 
   // Filtrado de puntos de emisión
   type PuntoCol = 'codigo'|'nombre'|'estado';
@@ -74,8 +79,42 @@ const EstablecimientoInfo: React.FC = () => {
           establecimientosApi.show(id, estId),
           emisoresApi.get(id)
         ]);
-        const dataEst = rEst.data?.data ?? rEst.data;
+        let dataEst = rEst.data?.data ?? rEst.data;
         const dataComp = rComp.data?.data ?? rComp.data;
+        
+        // Filtrar puntos de emisión para Gerente/Cajero
+        if (user && isLimitedRole && dataEst?.puntos_emision) {
+          let user_puntos_ids = (user as any).puntos_emision_ids || [];
+          
+          console.log('🔍 [EstablecimientoInfo] Filtrando puntos para:', role || user?.role);
+          console.log('  📦 puntos_emision_ids RAW:', user_puntos_ids);
+          
+          if (typeof user_puntos_ids === 'string') {
+            try {
+              user_puntos_ids = JSON.parse(user_puntos_ids);
+              console.log('  ✅ Parseado exitoso:', user_puntos_ids);
+            } catch (e) {
+              console.error('  ❌ Error parsing:', e);
+              user_puntos_ids = [];
+            }
+          }
+          
+          console.log('  📍 Puntos antes del filtro:', dataEst.puntos_emision.length);
+          
+          if (Array.isArray(user_puntos_ids) && user_puntos_ids.length > 0) {
+            dataEst.puntos_emision = dataEst.puntos_emision.filter((p: any) => {
+              const isAssigned = user_puntos_ids.includes(p.id) ||
+                                user_puntos_ids.includes(Number(p.id)) ||
+                                user_puntos_ids.includes(String(p.id));
+              console.log(`  ${isAssigned ? '✅' : '❌'} Punto ${p.id} (${p.codigo}): ${isAssigned ? 'INCLUIDO' : 'EXCLUIDO'}`);
+              return isAssigned;
+            });
+            console.log('  📍 Puntos después del filtro:', dataEst.puntos_emision.length);
+          } else {
+            console.log('  ⚠️ No hay puntos_emision_ids - mostrando todos');
+          }
+        }
+        
         setEst(dataEst);
         setCompany(dataComp);
       } catch (e:any) {
@@ -83,9 +122,17 @@ const EstablecimientoInfo: React.FC = () => {
       } finally { setLoading(false); }
     };
     load();
-  }, [id, estId, show]);
+  }, [id, estId, show, user]);
 
   if (!id || !estId) return <div>Establecimiento no especificado</div>;
+
+  if (loading) {
+    return (
+      <div style={{ padding: 32 }}>
+        <LoadingSpinner fullHeight message="Cargando establecimiento…" />
+      </div>
+    );
+  }
 
   const openDeleteModal = () => {
     setActionsOpen(false);
@@ -103,13 +150,26 @@ const EstablecimientoInfo: React.FC = () => {
           <div style={{ position: 'relative' }}>
             <button
               className="actions-btn"
-              onClick={() => setActionsOpen((s) => !s)}
+              onClick={() => {
+                if (isLimitedRole) return;
+                setActionsOpen((s) => !s);
+              }}
               aria-expanded={actionsOpen}
-              style={{ padding: '6px 10px', borderRadius: 8, background: '#1e40af', color: '#fff', border: 'none', cursor: 'pointer' }}
+              disabled={isLimitedRole}
+              title={isLimitedRole ? 'Tu rol no permite modificar establecimientos' : 'Acciones del establecimiento'}
+              style={{
+                padding: '6px 10px',
+                borderRadius: 8,
+                background: isLimitedRole ? '#cbd5f5' : '#1e40af',
+                color: isLimitedRole ? '#6b7280' : '#fff',
+                border: 'none',
+                cursor: isLimitedRole ? 'not-allowed' : 'pointer',
+                opacity: isLimitedRole ? 0.7 : 1
+              }}
             >
               Acciones ▾
             </button>
-            {actionsOpen && (
+            {!isLimitedRole && actionsOpen && (
               <div role="menu" style={{ position: 'absolute', right: 0, top: '110%', background: '#fff', border: '1px solid #ddd', boxShadow: '0 6px 18px rgba(0,0,0,.08)', borderRadius: 6, zIndex: 50 }}>
                 <button role="menuitem" onClick={() => { setActionsOpen(false); navigate(`/emisores/${id}/establecimientos/${estId}/edit`); }} className="menu-item" style={{ display: 'block', padding: 8, width: 220, textAlign: 'left', background: 'transparent', border: 'none', cursor: 'pointer' }}>✏️ Editar establecimiento</button>
                 <button role="menuitem" onClick={openDeleteModal} className="menu-item" style={{ display: 'block', padding: 8, width: 220, textAlign: 'left', background: 'transparent', border: 'none', cursor: 'pointer' }}>🗑️ Eliminar establecimiento</button>
@@ -321,34 +381,45 @@ const EstablecimientoInfo: React.FC = () => {
             )}
 
             <button 
-              onClick={() => { setSelectedPunto(null); setPuntoFormOpen(true); }}
+              onClick={() => { if (isLimitedRole) return; setSelectedPunto(null); setPuntoFormOpen(true); }}
+              disabled={isLimitedRole}
               style={{
                 padding: '11px 24px',
-                background: 'linear-gradient(135deg, #0d6efd 0%, #0b5fd7 100%)',
+                background: isLimitedRole 
+                  ? '#ccc' 
+                  : 'linear-gradient(135deg, #0d6efd 0%, #0b5fd7 100%)',
                 color: 'white',
                 border: 'none',
                 borderRadius: '10px',
-                cursor: 'pointer',
+                cursor: isLimitedRole ? 'not-allowed' : 'pointer',
                 fontSize: '14px',
                 fontWeight: '700',
-                boxShadow: '0 4px 12px rgba(13, 110, 253, 0.3)',
+                boxShadow: isLimitedRole 
+                  ? 'none' 
+                  : '0 4px 12px rgba(13, 110, 253, 0.3)',
                 transition: 'all 0.3s ease',
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 height: '44px',
-                whiteSpace: 'nowrap'
+                whiteSpace: 'nowrap',
+                opacity: isLimitedRole ? 0.5 : 1
               }}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, #0b5fd7 0%, #084298 100%)';
-                (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-2px)';
-                (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 16px rgba(13, 110, 253, 0.4)';
+                if (!isLimitedRole) {
+                  (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, #0b5fd7 0%, #084298 100%)';
+                  (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-2px)';
+                  (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 16px rgba(13, 110, 253, 0.4)';
+                }
               }}
               onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, #0d6efd 0%, #0b5fd7 100%)';
-                (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)';
-                (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 12px rgba(13, 110, 253, 0.3)';
+                if (!isLimitedRole) {
+                  (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, #0d6efd 0%, #0b5fd7 100%)';
+                  (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)';
+                  (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 12px rgba(13, 110, 253, 0.3)';
+                }
               }}
+              title={isLimitedRole ? 'Tu rol no permite crear puntos de emisión' : 'Crear nuevo punto de emisión'}
             >
               + Nuevo
             </button>
@@ -417,6 +488,9 @@ const EstablecimientoInfo: React.FC = () => {
             <tbody>
               {Array.isArray(est?.puntos_emision) && est.puntos_emision.length > 0 ? (
                 est.puntos_emision.filter((p: any) => {
+                  // NOTE: Filter by puntos_emision_ids is already applied in useEffect
+                  // This filter only handles text search and date range
+                  
                   // Filter by text search
                   if (activePuntoFilter && puntoFilterValue) {
                     if (activePuntoFilter === 'estado') {
@@ -481,8 +555,68 @@ const EstablecimientoInfo: React.FC = () => {
                     </td>
                     <td className="td-sticky sticky-right" style={{ textAlign: 'center' }}>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center' }}>
-                        <button title="Editar punto" onClick={() => { setSelectedPunto(p); setPuntoFormOpen(true); }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 18, padding: 6, borderRadius: 6, transition: 'all 0.2s ease' }} onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(0, 0, 0, 0.05)'; (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.1)'; }} onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}>✏️</button>
-                        <button title="Eliminar punto" onClick={() => { setPuntoToDelete(p); setPuntoDeleteOpen(true); }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 18, padding: 6, borderRadius: 6, transition: 'all 0.2s ease' }} onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(0, 0, 0, 0.05)'; (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.1)'; }} onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}>🗑️</button>
+                        <button
+                          title={isLimitedRole ? 'Tu rol no permite editar puntos de emisión' : 'Editar punto'}
+                          disabled={isLimitedRole}
+                          onClick={() => {
+                            if (isLimitedRole) return;
+                            setSelectedPunto(p);
+                            setPuntoFormOpen(true);
+                          }}
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            cursor: isLimitedRole ? 'not-allowed' : 'pointer',
+                            fontSize: 18,
+                            padding: 6,
+                            borderRadius: 6,
+                            transition: 'all 0.2s ease',
+                            opacity: isLimitedRole ? 0.4 : 1
+                          }}
+                          onMouseEnter={(e) => {
+                            if (isLimitedRole) return;
+                            (e.currentTarget as HTMLButtonElement).style.background = 'rgba(0, 0, 0, 0.05)';
+                            (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.1)';
+                          }}
+                          onMouseLeave={(e) => {
+                            if (isLimitedRole) return;
+                            (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+                            (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)';
+                          }}
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          title={isLimitedRole ? 'Tu rol no permite eliminar puntos de emisión' : 'Eliminar punto'}
+                          disabled={isLimitedRole}
+                          onClick={() => {
+                            if (isLimitedRole) return;
+                            setPuntoToDelete(p);
+                            setPuntoDeleteOpen(true);
+                          }}
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            cursor: isLimitedRole ? 'not-allowed' : 'pointer',
+                            fontSize: 18,
+                            padding: 6,
+                            borderRadius: 6,
+                            transition: 'all 0.2s ease',
+                            opacity: isLimitedRole ? 0.4 : 1
+                          }}
+                          onMouseEnter={(e) => {
+                            if (isLimitedRole) return;
+                            (e.currentTarget as HTMLButtonElement).style.background = 'rgba(0, 0, 0, 0.05)';
+                            (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.1)';
+                          }}
+                          onMouseLeave={(e) => {
+                            if (isLimitedRole) return;
+                            (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+                            (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)';
+                          }}
+                        >
+                          🗑️
+                        </button>
                       </div>
                     </td>
                   </tr>

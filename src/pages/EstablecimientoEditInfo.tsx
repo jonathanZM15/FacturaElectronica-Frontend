@@ -4,15 +4,20 @@ import { establecimientosApi } from '../services/establecimientosApi';
 import { emisoresApi } from '../services/emisoresApi';
 import EstablishmentFormModal from './EstablishmentFormModal';
 import { useNotification } from '../contexts/NotificationContext';
+import { useUser } from '../contexts/userContext';
 import PuntoEmisionFormModal from './PuntoEmisionFormModal';
 import PuntoEmisionDeleteModal from './PuntoEmisionDeleteModal';
 import { PuntoEmision } from '../types/puntoEmision';
 import { getImageUrl } from '../helpers/imageUrl';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const EstablecimientoEditInfo: React.FC = () => {
   const { id, estId } = useParams();
   const navigate = useNavigate();
   const { show } = useNotification();
+  const { user } = useUser();
+  const role = user?.role?.toLowerCase?.() ?? '';
+  const isLimitedRole = role === 'gerente' || role === 'cajero';
   const [loading, setLoading] = React.useState(false);
   const [est, setEst] = React.useState<any | null>(null);
   const [company, setCompany] = React.useState<any | null>(null);
@@ -97,7 +102,16 @@ const EstablecimientoEditInfo: React.FC = () => {
 
   if (!id || !estId) return <div>Establecimiento no especificado</div>;
 
+  if (loading) {
+    return (
+      <div style={{ padding: 32 }}>
+        <LoadingSpinner fullHeight message="Cargando información del establecimiento…" />
+      </div>
+    );
+  }
+
   const openDeleteModal = () => {
+    if (isLimitedRole) return;
     setActionsOpen(false);
     setDeleteOpen(true);
   };
@@ -165,32 +179,40 @@ const EstablecimientoEditInfo: React.FC = () => {
           <div style={{ position: 'relative' }}>
             <button
               className="actions-btn"
-              onClick={() => setActionsOpen((s) => !s)}
+              onClick={() => {
+                if (isLimitedRole) return;
+                setActionsOpen((s) => !s);
+              }}
               aria-expanded={actionsOpen}
+              disabled={isLimitedRole}
+              title={isLimitedRole ? 'Tu rol no permite modificar establecimientos' : 'Acciones del establecimiento'}
               style={{ 
                 padding: '10px 18px', 
                 borderRadius: '10px', 
-                background: 'rgba(255, 255, 255, 0.95)', 
-                color: '#5b21b6', 
+                background: isLimitedRole ? 'rgba(255, 255, 255, 0.5)' : 'rgba(255, 255, 255, 0.95)', 
+                color: isLimitedRole ? '#9ca3af' : '#5b21b6', 
                 border: 'none', 
-                cursor: 'pointer',
+                cursor: isLimitedRole ? 'not-allowed' : 'pointer',
                 fontWeight: 700,
                 fontSize: '14px',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                boxShadow: isLimitedRole ? 'none' : '0 4px 12px rgba(0, 0, 0, 0.15)',
+                opacity: isLimitedRole ? 0.7 : 1,
                 transition: 'all 0.2s ease'
               }}
               onMouseEnter={(e) => {
+                if (isLimitedRole) return;
                 e.currentTarget.style.transform = 'translateY(-2px)';
                 e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.2)';
               }}
               onMouseLeave={(e) => {
+                if (isLimitedRole) return;
                 e.currentTarget.style.transform = 'translateY(0)';
                 e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
               }}
             >
               ⚙️ Acciones ▾
             </button>
-            {actionsOpen && (
+            {!isLimitedRole && actionsOpen && (
               <div role="menu" style={{ 
                 position: 'absolute', 
                 right: 0, 
@@ -853,30 +875,41 @@ const EstablecimientoEditInfo: React.FC = () => {
             )}
 
             <button 
-              onClick={() => { setSelectedPunto(null); setPuntoFormOpen(true); }}
+              onClick={() => {
+                if (isLimitedRole) return;
+                setSelectedPunto(null); 
+                setPuntoFormOpen(true); 
+              }}
+              disabled={isLimitedRole}
+              title={isLimitedRole ? 'Tu rol no permite crear puntos de emisión' : 'Crear nuevo punto de emisión'}
               style={{
                 padding: '11px 24px',
-                background: 'linear-gradient(135deg, #0d6efd 0%, #0b5fd7 100%)',
-                color: 'white',
+                background: isLimitedRole 
+                  ? 'linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%)' 
+                  : 'linear-gradient(135deg, #0d6efd 0%, #0b5fd7 100%)',
+                color: isLimitedRole ? '#4b5563' : 'white',
                 border: 'none',
                 borderRadius: '10px',
-                cursor: 'pointer',
+                cursor: isLimitedRole ? 'not-allowed' : 'pointer',
                 fontSize: '14px',
                 fontWeight: '700',
-                boxShadow: '0 4px 12px rgba(13, 110, 253, 0.3)',
+                boxShadow: isLimitedRole ? 'none' : '0 4px 12px rgba(13, 110, 253, 0.3)',
                 transition: 'all 0.3s ease',
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 height: '44px',
-                whiteSpace: 'nowrap'
+                whiteSpace: 'nowrap',
+                opacity: isLimitedRole ? 0.6 : 1
               }}
               onMouseEnter={(e) => {
+                if (isLimitedRole) return;
                 (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, #0b5fd7 0%, #084298 100%)';
                 (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-2px)';
                 (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 16px rgba(13, 110, 253, 0.4)';
               }}
               onMouseLeave={(e) => {
+                if (isLimitedRole) return;
                 (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, #0d6efd 0%, #0b5fd7 100%)';
                 (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)';
                 (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 12px rgba(13, 110, 253, 0.3)';
@@ -1135,50 +1168,66 @@ const EstablecimientoEditInfo: React.FC = () => {
                       }}>
                         <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
                           <button
-                            onClick={() => { setSelectedPunto(punto); setPuntoFormOpen(true); }}
-                            title="Editar"
+                            onClick={() => {
+                              if (isLimitedRole) return;
+                              setSelectedPunto(punto); 
+                              setPuntoFormOpen(true); 
+                            }}
+                            disabled={isLimitedRole}
+                            title={isLimitedRole ? 'Tu rol no permite editar puntos de emisión' : 'Editar punto de emisión'}
                             style={{
                               padding: '8px',
                               borderRadius: '6px',
                               border: 'none',
-                              background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                              background: isLimitedRole ? 'linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%)' : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
                               color: '#fff',
-                              cursor: 'pointer',
+                              cursor: isLimitedRole ? 'not-allowed' : 'pointer',
                               fontSize: '16px',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              transition: 'all 0.2s'
+                              transition: 'all 0.2s',
+                              opacity: isLimitedRole ? 0.6 : 1
                             }}
                             onMouseEnter={(e) => {
+                              if (isLimitedRole) return;
                               e.currentTarget.style.transform = 'scale(1.1)';
                             }}
                             onMouseLeave={(e) => {
+                              if (isLimitedRole) return;
                               e.currentTarget.style.transform = 'scale(1)';
                             }}
                           >
                             ✏️
                           </button>
                           <button
-                            onClick={() => { setPuntoToDelete(punto); setPuntoDeleteOpen(true); }}
-                            title="Eliminar"
+                            onClick={() => {
+                              if (isLimitedRole) return;
+                              setPuntoToDelete(punto); 
+                              setPuntoDeleteOpen(true); 
+                            }}
+                            disabled={isLimitedRole}
+                            title={isLimitedRole ? 'Tu rol no permite eliminar puntos de emisión' : 'Eliminar punto de emisión'}
                             style={{
                               padding: '8px',
                               borderRadius: '6px',
                               border: 'none',
-                              background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                              background: isLimitedRole ? 'linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%)' : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
                               color: '#fff',
-                              cursor: 'pointer',
+                              cursor: isLimitedRole ? 'not-allowed' : 'pointer',
                               fontSize: '16px',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              transition: 'all 0.2s'
+                              transition: 'all 0.2s',
+                              opacity: isLimitedRole ? 0.6 : 1
                             }}
                             onMouseEnter={(e) => {
+                              if (isLimitedRole) return;
                               e.currentTarget.style.transform = 'scale(1.1)';
                             }}
                             onMouseLeave={(e) => {
+                              if (isLimitedRole) return;
                               e.currentTarget.style.transform = 'scale(1)';
                             }}
                           >

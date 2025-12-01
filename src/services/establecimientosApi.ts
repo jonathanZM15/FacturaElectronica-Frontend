@@ -53,5 +53,8 @@ export const establecimientosApi = {
   },
   delete(companyId: number | string, id: number | string, password: string) {
     return api.delete(`/api/emisores/${companyId}/establecimientos/${id}`, { data: { password } });
+  },
+  listPuntos(companyId: number | string) {
+    return api.get(`/api/emisores/${companyId}/puntos-emision`);
   }
 };

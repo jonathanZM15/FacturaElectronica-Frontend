@@ -34,36 +34,57 @@ const Navbar: React.FC = () => {
 
       <nav className={`sidebar ${menuOpen ? 'open' : ''}`}>
         <ul className="nav-list">
-          <li className="nav-item">
-            <NavLink to="/dashboard" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                <span className="icon">👤</span>
-                <span className="label">Dashboard Administrativo</span>
+          {/* Dashboard Administrativo: solo Admin */}
+          {user && user.role === 'administrador' && (
+            <li className="nav-item">
+              <NavLink to="/dashboard" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                  <span className="icon">👤</span>
+                  <span className="label">Dashboard Administrativo</span>
+                </NavLink>
+            </li>
+          )}
+          
+          {/* Emisores: Admin, Distribuidor, Emisor y Gerente */}
+          {user && (user.role === 'administrador' || user.role === 'distribuidor' || user.role === 'emisor' || user.role === 'gerente') && (
+            <li className="nav-item">
+              <NavLink to="/emisores" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                <span className="icon">📧</span>
+                <span className="label">Emisores</span>
               </NavLink>
-          </li>
-          <li className="nav-item">
-            <NavLink to="/emisores" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-              <span className="icon">📧</span>
-              <span className="label">Emisores</span>
-            </NavLink>
-          </li>
-          <li className="nav-item">
-            <NavLink to="/usuarios" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-              <span className="icon">👥</span>
-              <span className="label">Usuarios</span>
-            </NavLink>
-          </li>
-          <li className="nav-item">
-            <NavLink to="/planes" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-              <span className="icon">📊</span>
-              <span className="label">Planes</span>
-            </NavLink>
-          </li>
-          <li className="nav-item">
-            <NavLink to="/impuestos" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-              <span className="icon">🧾</span>
-              <span className="label">Impuestos</span>
-            </NavLink>
-          </li>
+            </li>
+          )}
+          
+          {/* Usuarios: solo visible para Administradores */}
+          {user && user.role === 'administrador' && (
+            <li className="nav-item">
+              <NavLink to="/usuarios" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                <span className="icon">👥</span>
+                <span className="label">Usuarios</span>
+              </NavLink>
+            </li>
+          )}
+          
+          {/* Planes: Admin y Distribuidor */}
+          {user && (user.role === 'administrador' || user.role === 'distribuidor') && (
+            <li className="nav-item">
+              <NavLink to="/planes" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                <span className="icon">📊</span>
+                <span className="label">Planes</span>
+              </NavLink>
+            </li>
+          )}
+          
+          {/* Impuestos: solo Admin */}
+          {user && user.role === 'administrador' && (
+            <li className="nav-item">
+              <NavLink to="/impuestos" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                <span className="icon">🧾</span>
+                <span className="label">Impuestos</span>
+              </NavLink>
+            </li>
+          )}
+          
+          {/* Cambiar Contraseña: todos los roles */}
           <li className="nav-item">
             <NavLink to="/cambiarPassword" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
               <span className="icon">🔒</span>
