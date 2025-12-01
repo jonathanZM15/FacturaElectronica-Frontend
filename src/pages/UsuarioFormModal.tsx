@@ -51,6 +51,7 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
   const [role, setRole] = React.useState<string>('administrador');
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [loading, setLoading] = React.useState<boolean>(false);
+  const [estado, setEstado] = React.useState<string>('nuevo');
 
   // Memoizar rolesPermitidos para evitar recálculos infinitos
   const rolesPermitidos = React.useMemo(() => {
@@ -70,6 +71,7 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
       setPassword('');
       setPasswordConfirmation('');
       setRole(initialData.role || 'administrador');
+      setEstado(initialData.estado || (initialData.email === 'admin@factura.local' ? 'activo' : 'nuevo'));
     } else {
       setCedula('');
       setNombres('');
@@ -81,6 +83,7 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
       const userRole = currentUser?.role;
       const defaultRoles = userRole ? getRolesPermitidos(userRole) : [];
       setRole(defaultRoles.length > 0 ? defaultRoles[0].value : 'administrador');
+      setEstado('nuevo');
     }
     setErrors({});
   }, [isOpen, isEditing, initialData, currentUser?.role]);
@@ -151,6 +154,15 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
+    // Estado: obligatorio en edición y creación; admin@factura.local debe ser 'activo'
+    const editingAdmin = isEditing && initialData?.email === 'admin@factura.local';
+    const estadosValidos = ['nuevo','activo','pendiente_verificacion','suspendido','retirado'];
+    if (!estado || !estadosValidos.includes(estado)) {
+      newErrors.estado = 'Estado inválido';
+    }
+    if (editingAdmin && estado !== 'activo') {
+      newErrors.estado = 'El admin debe estar siempre Activo';
+    }
 
     // Cédula: obligatoria, exactamente 10 dígitos
     if (!cedula || cedula.length !== 10) {
@@ -221,6 +233,7 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
 
     try {
       setLoading(true);
+      const estadoFinal = isEditing ? estado : 'nuevo';
       const dataToSubmit: User & { password_confirmation?: string } = {
         cedula,
         nombres,
@@ -228,6 +241,7 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
         username,
         email,
         role: role as User['role'],
+        estado: estadoFinal as User['estado'],
       };
 
       // Solo incluir password si es creación o si se cambió
@@ -399,6 +413,41 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
             )}
             {errors.role && <span className="error-text">{errors.role}</span>}
           </div>
+
+            {isEditing ? (
+              <div className="form-group">
+                <label htmlFor="modal-estado">Estado *</label>
+                <select
+                  id="modal-estado"
+                  value={estado}
+                  onChange={(e) => setEstado(e.target.value)}
+                  className={errors.estado ? 'form-input error' : 'form-input'}
+                  disabled={loading || (isEditing && initialData?.email === 'admin@factura.local')}
+                >
+                  <option value="nuevo">Nuevo</option>
+                  <option value="activo">Activo</option>
+                  <option value="pendiente_verificacion">Pendiente de verificación</option>
+                  <option value="suspendido">Suspendido</option>
+                  <option value="retirado">Retirado</option>
+                </select>
+                {errors.estado && <span className="error-text">{errors.estado}</span>}
+                {isEditing && initialData?.email === 'admin@factura.local' && (
+                  <small style={{ color: '#666', marginTop: '4px', display: 'block' }}>
+                    El usuario admin@factura.local permanece siempre Activo.
+                  </small>
+                )}
+              </div>
+            ) : (
+              <div className="form-group">
+                <label>Estado asignado automáticamente *</label>
+                <div className="form-input" style={{ backgroundColor: '#f5f5f5', color: '#333' }}>
+                  Nuevo
+                </div>
+                <small style={{ color: '#666', marginTop: '4px', display: 'block' }}>
+                  Los usuarios nuevos inician con estado "Nuevo" y podrán cambiarlo posteriormente desde la edición.
+                </small>
+              </div>
+            )}
 
           <div className="modal-footer">
             <button 

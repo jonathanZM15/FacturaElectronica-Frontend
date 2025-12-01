@@ -148,6 +148,40 @@ const Usuarios: React.FC = () => {
         </span>
       )
     },
+    {
+      key: 'estado',
+      label: 'Estados',
+      width: 170,
+      render: (row) => {
+        const labelMap: Record<string, string> = {
+          nuevo: 'Nuevo',
+          activo: 'Activo',
+          pendiente_verificacion: 'Pendiente de verificación',
+          suspendido: 'Suspendido',
+          retirado: 'Retirado',
+        };
+        const colorMap: Record<string, string> = {
+          nuevo: '#6366f1',
+          activo: '#16a34a',
+          pendiente_verificacion: '#f59e0b',
+          suspendido: '#ef4444',
+          retirado: '#6b7280',
+        };
+        const key = (row.estado || 'nuevo') as string;
+        return (
+          <span style={{
+            display: 'inline-block',
+            padding: '6px 12px',
+            borderRadius: '20px',
+            fontWeight: 600,
+            color: '#fff',
+            background: colorMap[key] || '#9ca3af'
+          }}>
+            {labelMap[key] || row.estado}
+          </span>
+        );
+      }
+    },
     { 
       key: 'created_at', 
       label: 'Fecha de creación', 
