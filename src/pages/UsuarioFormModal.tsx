@@ -2,12 +2,13 @@ import React from 'react';
 import { User } from '../types/user';
 import { useUser } from '../contexts/userContext';
 import LoadingSpinner from '../components/LoadingSpinner';
+import './UsuarioFormModalModern.css';
 
 interface Props {
   isOpen: boolean;
   initialData?: User | null;
   onClose: () => void;
-  onSubmit: (data: User & { password_confirmation?: string }) => Promise<void>;
+  onSubmit: (data: User) => Promise<void>;
   isEditing: boolean;
 }
 
@@ -46,8 +47,6 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
   const [apellidos, setApellidos] = React.useState<string>('');
   const [username, setUsername] = React.useState<string>('');
   const [email, setEmail] = React.useState<string>('');
-  const [password, setPassword] = React.useState<string>('');
-  const [passwordConfirmation, setPasswordConfirmation] = React.useState<string>('');
   const [role, setRole] = React.useState<string>('administrador');
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [loading, setLoading] = React.useState<boolean>(false);
@@ -68,8 +67,6 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
       setApellidos(initialData.apellidos || '');
       setUsername(initialData.username || '');
       setEmail(initialData.email || '');
-      setPassword('');
-      setPasswordConfirmation('');
       setRole(initialData.role || 'administrador');
       setEstado(initialData.estado || (initialData.email === 'admin@factura.local' ? 'activo' : 'nuevo'));
     } else {
@@ -78,8 +75,6 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
       setApellidos('');
       setUsername('');
       setEmail('');
-      setPassword('');
-      setPasswordConfirmation('');
       const userRole = currentUser?.role;
       const defaultRoles = userRole ? getRolesPermitidos(userRole) : [];
       setRole(defaultRoles.length > 0 ? defaultRoles[0].value : 'administrador');
@@ -128,21 +123,7 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
     }
   };
 
-  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setPassword(value);
-    if (errors.password) {
-      setErrors({ ...errors, password: '' });
-    }
-  };
 
-  const handlePasswordConfirmChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setPasswordConfirmation(value);
-    if (errors.password_confirmation) {
-      setErrors({ ...errors, password_confirmation: '' });
-    }
-  };
 
   const handleRoleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
@@ -195,25 +176,6 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
       newErrors.email = 'Email inválido';
     }
 
-    // Password (solo si es creación o si se está editando y se ingresa contraseña)
-    if (!isEditing || password) {
-      if (!password || password.length < 8) {
-        newErrors.password = 'La contraseña debe tener al menos 8 caracteres';
-      } else if (!/[A-Z]/.test(password)) {
-        newErrors.password = 'La contraseña debe contener una mayúscula';
-      } else if (!/[a-z]/.test(password)) {
-        newErrors.password = 'La contraseña debe contener una minúscula';
-      } else if (!/\d/.test(password)) {
-        newErrors.password = 'La contraseña debe contener un número';
-      } else if (!/[@$!%*?&]/.test(password)) {
-        newErrors.password = 'La contraseña debe contener un carácter especial (@$!%*?&)';
-      }
-
-      if (password !== passwordConfirmation) {
-        newErrors.password_confirmation = 'Las contraseñas no coinciden';
-      }
-    }
-
     // Rol - Validar que está en los roles permitidos
     const rolesValidos = rolesPermitidos.map((r) => r.value);
     if (!role || !rolesValidos.includes(role)) {
@@ -234,7 +196,7 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
     try {
       setLoading(true);
       const estadoFinal = isEditing ? estado : 'nuevo';
-      const dataToSubmit: User & { password_confirmation?: string } = {
+      const dataToSubmit: User = {
         cedula,
         nombres,
         apellidos,
@@ -243,15 +205,6 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
         role: role as User['role'],
         estado: estadoFinal as User['estado'],
       };
-
-      // Solo incluir password si es creación o si se cambió
-      if (!isEditing) {
-        dataToSubmit.password = password;
-        dataToSubmit.password_confirmation = passwordConfirmation;
-      } else if (password) {
-        dataToSubmit.password = password;
-        dataToSubmit.password_confirmation = passwordConfirmation;
-      }
 
       await onSubmit(dataToSubmit);
     } finally {
@@ -262,13 +215,13 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>{isEditing ? 'Editar Usuario' : 'Crear Nuevo Usuario'}</h2>
+    <div className="usuario-modal-overlay" onClick={onClose}>
+      <div className="usuario-modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="usuario-modal-header">
+          <h2>{isEditing ? '✏️ Editar Usuario' : '➕ Crear Nuevo Usuario'}</h2>
           <button 
             type="button"
-            className="close-btn" 
+            className="usuario-modal-close" 
             onClick={onClose}
             disabled={loading}
           >
@@ -276,183 +229,197 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="form">
-          <div className="form-group">
-            <label htmlFor="modal-cedula">Número de Cédula *</label>
-            <input
-              id="modal-cedula"
-              type="text"
-              value={cedula}
-              onChange={handleCedulaChange}
-              placeholder="0123456789"
-              maxLength={10}
-              className={errors.cedula ? 'form-input error' : 'form-input'}
-              disabled={loading}
-              autoComplete="off"
-            />
-            {errors.cedula && <span className="error-text">{errors.cedula}</span>}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="modal-nombres">Nombres *</label>
-            <input
-              id="modal-nombres"
-              type="text"
-              value={nombres}
-              onChange={handleNombresChange}
-              placeholder="Ingrese sus nombres"
-              className={errors.nombres ? 'form-input error' : 'form-input'}
-              disabled={loading}
-              autoComplete="off"
-            />
-            {errors.nombres && <span className="error-text">{errors.nombres}</span>}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="modal-apellidos">Apellidos *</label>
-            <input
-              id="modal-apellidos"
-              type="text"
-              value={apellidos}
-              onChange={handleApellidosChange}
-              placeholder="Ingrese sus apellidos"
-              className={errors.apellidos ? 'form-input error' : 'form-input'}
-              disabled={loading}
-              autoComplete="off"
-            />
-            {errors.apellidos && <span className="error-text">{errors.apellidos}</span>}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="modal-username">Nombre de Usuario *</label>
-            <input
-              id="modal-username"
-              type="text"
-              value={username}
-              onChange={handleUsernameChange}
-              placeholder="nombre_usuario"
-              className={errors.username ? 'form-input error' : 'form-input'}
-              disabled={loading}
-              autoComplete="off"
-            />
-            {errors.username && <span className="error-text">{errors.username}</span>}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="modal-email">Email *</label>
-            <input
-              id="modal-email"
-              type="email"
-              value={email}
-              onChange={handleEmailChange}
-              placeholder="usuario@example.com"
-              className={errors.email ? 'form-input error' : 'form-input'}
-              disabled={loading}
-              autoComplete="off"
-            />
-            {errors.email && <span className="error-text">{errors.email}</span>}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="modal-password">
-              {isEditing ? 'Contraseña (dejar en blanco para no cambiar)' : 'Contraseña'} *
-            </label>
-            <input
-              id="modal-password"
-              type="password"
-              value={password}
-              onChange={handlePasswordChange}
-              placeholder="Mínimo 8 caracteres con mayúscula, minúscula, número y carácter especial"
-              className={errors.password ? 'form-input error' : 'form-input'}
-              disabled={loading}
-              autoComplete="new-password"
-            />
-            {errors.password && <span className="error-text">{errors.password}</span>}
-            <small style={{ color: '#666', marginTop: '4px', display: 'block' }}>
-              Debe contener: mayúscula, minúscula, número y carácter especial (@$!%*?&)
-            </small>
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="modal-password-confirm">
-              {isEditing ? 'Confirmar Contraseña (dejar en blanco para no cambiar)' : 'Confirmar Contraseña'} *
-            </label>
-            <input
-              id="modal-password-confirm"
-              type="password"
-              value={passwordConfirmation}
-              onChange={handlePasswordConfirmChange}
-              placeholder="Repite tu contraseña"
-              className={errors.password_confirmation ? 'form-input error' : 'form-input'}
-              disabled={loading}
-              autoComplete="new-password"
-            />
-            {errors.password_confirmation && <span className="error-text">{errors.password_confirmation}</span>}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="modal-role">Rol *</label>
-            {rolesPermitidos.length > 0 ? (
-              <select
-                id="modal-role"
-                value={role}
-                onChange={handleRoleChange}
-                className={errors.role ? 'form-input error' : 'form-input'}
-                disabled={loading}
-              >
-                {rolesPermitidos.map((rol) => (
-                  <option key={rol.value} value={rol.value}>
-                    {rol.label}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <div className="form-input" style={{ backgroundColor: '#f5f5f5', color: '#999' }}>
-                No tienes permisos para crear usuarios
-              </div>
-            )}
-            {errors.role && <span className="error-text">{errors.role}</span>}
-          </div>
-
-            {isEditing ? (
-              <div className="form-group">
-                <label htmlFor="modal-estado">Estado *</label>
-                <select
-                  id="modal-estado"
-                  value={estado}
-                  onChange={(e) => setEstado(e.target.value)}
-                  className={errors.estado ? 'form-input error' : 'form-input'}
-                  disabled={loading || (isEditing && initialData?.email === 'admin@factura.local')}
-                >
-                  <option value="nuevo">Nuevo</option>
-                  <option value="activo">Activo</option>
-                  <option value="pendiente_verificacion">Pendiente de verificación</option>
-                  <option value="suspendido">Suspendido</option>
-                  <option value="retirado">Retirado</option>
-                </select>
-                {errors.estado && <span className="error-text">{errors.estado}</span>}
-                {isEditing && initialData?.email === 'admin@factura.local' && (
-                  <small style={{ color: '#666', marginTop: '4px', display: 'block' }}>
-                    El usuario admin@factura.local permanece siempre Activo.
-                  </small>
+        <form onSubmit={handleSubmit}>
+          <div className="usuario-modal-body">
+            <div className="usuario-form-grid">
+              
+              {/* Cédula - Columna 1 */}
+              <div className="usuario-form-group">
+                <label htmlFor="modal-cedula" className="usuario-form-label">
+                  <span className="icon">🆔</span>
+                  Número de Cédula
+                  <span className="required">*</span>
+                </label>
+                <input
+                  id="modal-cedula"
+                  type="text"
+                  value={cedula}
+                  onChange={handleCedulaChange}
+                  placeholder="0123456789"
+                  maxLength={10}
+                  className={errors.cedula ? 'usuario-form-input error' : 'usuario-form-input'}
+                  disabled={loading}
+                  autoComplete="off"
+                />
+                {errors.cedula && (
+                  <span className="usuario-error-text">
+                    <span className="icon">⚠️</span>
+                    {errors.cedula}
+                  </span>
                 )}
               </div>
-            ) : (
-              <div className="form-group">
-                <label>Estado asignado automáticamente *</label>
-                <div className="form-input" style={{ backgroundColor: '#f5f5f5', color: '#333' }}>
-                  Nuevo
-                </div>
-                <small style={{ color: '#666', marginTop: '4px', display: 'block' }}>
-                  Los usuarios nuevos inician con estado "Nuevo" y podrán cambiarlo posteriormente desde la edición.
-                </small>
-              </div>
-            )}
 
-          <div className="modal-footer">
+              {/* Email - Columna 2 */}
+              <div className="usuario-form-group">
+                <label htmlFor="modal-email" className="usuario-form-label">
+                  <span className="icon">📧</span>
+                  Email
+                  <span className="required">*</span>
+                </label>
+                <input
+                  id="modal-email"
+                  type="email"
+                  value={email}
+                  onChange={handleEmailChange}
+                  placeholder="usuario@example.com"
+                  className={errors.email ? 'usuario-form-input error' : 'usuario-form-input'}
+                  disabled={loading}
+                  autoComplete="off"
+                />
+                {errors.email && (
+                  <span className="usuario-error-text">
+                    <span className="icon">⚠️</span>
+                    {errors.email}
+                  </span>
+                )}
+              </div>
+
+              {/* Nombres - Columna 1 */}
+              <div className="usuario-form-group">
+                <label htmlFor="modal-nombres" className="usuario-form-label">
+                  <span className="icon">👤</span>
+                  Nombres
+                  <span className="required">*</span>
+                </label>
+                <input
+                  id="modal-nombres"
+                  type="text"
+                  value={nombres}
+                  onChange={handleNombresChange}
+                  placeholder="Ingrese sus nombres"
+                  className={errors.nombres ? 'usuario-form-input error' : 'usuario-form-input'}
+                  disabled={loading}
+                  autoComplete="off"
+                />
+                {errors.nombres && (
+                  <span className="usuario-error-text">
+                    <span className="icon">⚠️</span>
+                    {errors.nombres}
+                  </span>
+                )}
+              </div>
+
+              {/* Apellidos - Columna 2 */}
+              <div className="usuario-form-group">
+                <label htmlFor="modal-apellidos" className="usuario-form-label">
+                  <span className="icon">👥</span>
+                  Apellidos
+                  <span className="required">*</span>
+                </label>
+                <input
+                  id="modal-apellidos"
+                  type="text"
+                  value={apellidos}
+                  onChange={handleApellidosChange}
+                  placeholder="Ingrese sus apellidos"
+                  className={errors.apellidos ? 'usuario-form-input error' : 'usuario-form-input'}
+                  disabled={loading}
+                  autoComplete="off"
+                />
+                {errors.apellidos && (
+                  <span className="usuario-error-text">
+                    <span className="icon">⚠️</span>
+                    {errors.apellidos}
+                  </span>
+                )}
+              </div>
+
+              {/* Username - Columna 1 */}
+              <div className="usuario-form-group">
+                <label htmlFor="modal-username" className="usuario-form-label">
+                  <span className="icon">@</span>
+                  Nombre de Usuario
+                  <span className="required">*</span>
+                </label>
+                <input
+                  id="modal-username"
+                  type="text"
+                  value={username}
+                  onChange={handleUsernameChange}
+                  placeholder="nombre_usuario"
+                  className={errors.username ? 'usuario-form-input error' : 'usuario-form-input'}
+                  disabled={loading}
+                  autoComplete="off"
+                />
+                {errors.username && (
+                  <span className="usuario-error-text">
+                    <span className="icon">⚠️</span>
+                    {errors.username}
+                  </span>
+                )}
+              </div>
+
+              {/* Rol - Columna 2 */}
+              <div className="usuario-form-group">
+                <label htmlFor="modal-role" className="usuario-form-label">
+                  <span className="icon">🎭</span>
+                  Rol
+                  <span className="required">*</span>
+                </label>
+                {rolesPermitidos.length > 0 ? (
+                  <select
+                    id="modal-role"
+                    value={role}
+                    onChange={handleRoleChange}
+                    className={errors.role ? 'usuario-form-select error' : 'usuario-form-select'}
+                    disabled={loading}
+                  >
+                    {rolesPermitidos.map((rol) => (
+                      <option key={rol.value} value={rol.value}>
+                        {rol.label}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="usuario-no-permissions">
+                    <span className="icon">⚠️</span>
+                    No tienes permisos para crear usuarios
+                  </div>
+                )}
+                {errors.role && (
+                  <span className="usuario-error-text">
+                    <span className="icon">⚠️</span>
+                    {errors.role}
+                  </span>
+                )}
+              </div>
+
+              {/* Contraseña Auto-Generada - Ancho Completo */}
+              {!isEditing && (
+                <div className="usuario-form-group full-width">
+                  <label className="usuario-form-label">
+                    <span className="icon">🔐</span>
+                    Contraseña
+                    <span className="required">*</span>
+                  </label>
+                  <div className="usuario-password-auto">
+                    <span className="icon">🔐</span>
+                    Generada automáticamente
+                  </div>
+                  <span className="usuario-help-text">
+                    <span className="icon">ℹ️</span>
+                    El usuario recibirá un correo para verificar su cuenta y establecer su propia contraseña.
+                  </span>
+                </div>
+              )}
+
+            </div>
+          </div>
+
+          <div className="usuario-modal-footer">
             <button 
               type="button" 
-              className="btn-secondary" 
+              className="usuario-btn usuario-btn-cancel" 
               onClick={onClose} 
               disabled={loading}
             >
@@ -460,13 +427,18 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
             </button>
             <button 
               type="submit" 
-              className="btn-primary" 
+              className="usuario-btn usuario-btn-submit" 
               disabled={loading || rolesPermitidos.length === 0}
             >
               {loading ? (
-                <LoadingSpinner inline size={18} message="Guardando…" />
+                <>
+                  <LoadingSpinner inline size={18} message="" />
+                  Guardando...
+                </>
               ) : (
-                isEditing ? 'Actualizar' : 'Registrar'
+                <>
+                  {isEditing ? '💾 Actualizar' : '✨ Registrar'}
+                </>
               )}
             </button>
           </div>

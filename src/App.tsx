@@ -4,6 +4,8 @@ import './App.css';
 import Login from './pages/Login';
 import PasswordRecovery from './pages/PasswordRecovery';
 import CambiarPassword from './pages/cambiarPassword';
+import VerifyEmail from './pages/VerifyEmail';
+import ChangePassword from './pages/ChangePassword';
 import { auth } from './services/api';
 import { UserProvider, useUser } from './contexts/userContext';
 import { NotificationProvider } from './contexts/NotificationContext';
@@ -37,8 +39,11 @@ function App() {
             <Routes>
               {/* Públicas */}
               <Route path="/" element={<Login />} />
+              <Route path="/login" element={<Login />} />
               <Route path="/PasswordRecovery" element={<PasswordRecovery/>} />
               <Route path="/cambiarPassword" element={<CambiarPassword />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
+              <Route path="/change-password" element={<ChangePassword />} />
 
               {/* Protegidas con layout (Navbar + contenido dinámico) */}
               <Route

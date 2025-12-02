@@ -1,0 +1,554 @@
+/* ============================================
+   PÁGINA DE GESTIÓN DE USUARIOS - DISEÑO MODERNO
+   ============================================ */
+
+.usuarios-page-container {
+  padding: 32px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  min-height: 100vh;
+}
+
+/* Header con diseño moderno */
+.usuarios-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+  padding: 24px 32px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(102, 126, 234, 0.3);
+}
+
+.usuarios-header h1 {
+  margin: 0;
+  font-size: 36px;
+  font-weight: 800;
+  color: white;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  letter-spacing: -0.5px;
+}
+
+.usuarios-header .btn-nuevo {
+  padding: 14px 28px;
+  background: white;
+  color: #667eea;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.usuarios-header .btn-nuevo:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+  background: #f8f9ff;
+}
+
+.usuarios-header .btn-nuevo:active {
+  transform: translateY(0);
+}
+
+/* Barra de búsqueda mejorada */
+.usuarios-search-container {
+  margin-bottom: 24px;
+  padding: 20px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.usuarios-search-wrapper {
+  position: relative;
+  max-width: 500px;
+}
+
+.usuarios-search-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.usuarios-search-input {
+  width: 100%;
+  padding: 14px 16px 14px 48px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 15px;
+  transition: all 0.3s ease;
+  background: #f9fafb;
+}
+
+.usuarios-search-input:hover {
+  border-color: #d1d5db;
+  background: white;
+}
+
+.usuarios-search-input:focus {
+  outline: none;
+  border-color: #667eea;
+  background: white;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+}
+
+/* Contenedor de tabla con diseño premium */
+.usuarios-table-container {
+  background: white;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 400px);
+  min-height: 500px;
+}
+
+.usuarios-table-wrapper {
+  overflow-x: auto;
+  overflow-y: auto;
+  flex: 1;
+  position: relative;
+}
+
+/* Scrollbar personalizado */
+.usuarios-table-wrapper::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.usuarios-table-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.usuarios-table-wrapper::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 10px;
+}
+
+.usuarios-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+.usuarios-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+}
+
+/* Header de tabla con gradiente */
+.usuarios-table thead tr {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.usuarios-table thead th {
+  padding: 18px 16px;
+  text-align: left;
+  font-weight: 700;
+  font-size: 13px;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  border: none;
+  white-space: nowrap;
+}
+
+/* Columna CÉDULA fija a la izquierda con fondo gris */
+.usuarios-table thead th:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  background: linear-gradient(135deg, #6b7280 0%, #9ca3af 100%) !important;
+  padding-left: 24px;
+}
+
+.usuarios-table tbody td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  background: #f3f4f6 !important;
+  font-weight: 700;
+  padding-left: 24px;
+  white-space: nowrap;
+}
+
+/* Columna ACCIONES fija a la derecha con fondo gris */
+.usuarios-table thead th:last-child {
+  position: sticky;
+  right: 0;
+  z-index: 10;
+  background: linear-gradient(135deg, #6b7280 0%, #9ca3af 100%) !important;
+  text-align: center;
+  padding-right: 24px;
+}
+
+.usuarios-table tbody td:last-child {
+  position: sticky;
+  right: 0;
+  z-index: 5;
+  background: #f3f4f6 !important;
+  padding-right: 24px;
+}
+
+/* Filas de la tabla */
+.usuarios-table tbody tr {
+  border-bottom: 1px solid #f3f4f6;
+  transition: all 0.3s ease;
+}
+
+.usuarios-table tbody tr:hover {
+  background: linear-gradient(90deg, #f8f9ff 0%, #ffffff 100%);
+  transform: scale(1.01);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+}
+
+/* Mantener fondo gris en columnas sticky al hacer hover */
+.usuarios-table tbody tr:hover td:first-child,
+.usuarios-table tbody tr:hover td:last-child {
+  background: #e5e7eb !important;
+}
+
+.usuarios-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.usuarios-table tbody td {
+  padding: 16px;
+  color: #374151;
+  font-size: 14px;
+  vertical-align: middle;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+}
+
+.usuarios-table tbody td:first-child {
+  padding-left: 24px;
+}
+
+.usuarios-table tbody td:last-child {
+  padding-right: 24px;
+}
+
+/* Cédula clickeable mejorada */
+.cedula-link {
+  color: #667eea;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  display: inline-block;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  background: linear-gradient(90deg, transparent 0%, rgba(102, 126, 234, 0.05) 100%);
+  white-space: nowrap;
+}
+
+.cedula-link::before {
+  content: '🔗';
+  margin-right: 6px;
+  font-size: 12px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.cedula-link:hover {
+  background: linear-gradient(90deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  color: #764ba2;
+  transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+}
+
+.cedula-link:hover::before {
+  opacity: 1;
+}
+
+/* Formato mejorado para cédula */
+.cedula-numero {
+  font-family: 'Courier New', monospace;
+  font-size: 15px;
+  letter-spacing: 0.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  display: inline-block;
+}
+
+/* Email sin cortes */
+.email-cell {
+  word-break: break-all;
+  font-size: 13px;
+}
+
+/* Badges de rol y estado modernos */
+.badge-rol,
+.badge-estado {
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 12px;
+  color: white;
+  text-transform: capitalize;
+  letter-spacing: 0.3px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+}
+
+.badge-rol:hover,
+.badge-estado:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+/* Botones de acción mejorados - SOLO ICONOS */
+.usuarios-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+}
+
+.btn-action {
+  padding: 10px;
+  border: none;
+  border-radius: 10px;
+  font-size: 0;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  width: 40px;
+  height: 40px;
+}
+
+.btn-action svg {
+  width: 18px;
+  height: 18px;
+}
+
+.btn-action:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.btn-action:active {
+  transform: translateY(0);
+}
+
+.btn-editar {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+}
+
+.btn-editar:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+}
+
+.btn-eliminar {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+}
+
+.btn-eliminar:hover {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+}
+
+/* Estados vacíos y de carga */
+.empty-state,
+.loading-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #9ca3af;
+}
+
+.empty-state svg,
+.loading-state svg {
+  width: 80px;
+  height: 80px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.empty-state p {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* Paginación moderna - FIJA EN LA PARTE INFERIOR */
+.usuarios-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 32px;
+  background: white;
+  border-top: 2px solid #e5e7eb;
+  position: sticky;
+  bottom: 0;
+  z-index: 100;
+}
+
+.pagination-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.pagination-select {
+  padding: 6px 32px 6px 12px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  background: white;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23667eea' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+}
+
+.pagination-select:hover {
+  border-color: #667eea;
+  background-color: #f8f9ff;
+}
+
+.pagination-select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.pagination-center {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pagination-info-text {
+  color: #374151;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.btn-pagination {
+  padding: 8px;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  width: 36px;
+  height: 36px;
+}
+
+.btn-pagination svg {
+  width: 20px;
+  height: 20px;
+  stroke: #6b7280;
+}
+
+.btn-pagination:hover:not(:disabled) {
+  background: #667eea;
+  border-color: #667eea;
+}
+
+.btn-pagination:hover:not(:disabled) svg {
+  stroke: white;
+}
+
+.btn-pagination:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  background: #f9fafb;
+  border-color: #e5e7eb;
+}
+
+.btn-pagination:disabled svg {
+  stroke: #d1d5db;
+}
+
+.pagination-info {
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  border-radius: 10px;
+  font-weight: 700;
+  color: #374151;
+  font-size: 14px;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .usuarios-page-container {
+    padding: 20px;
+  }
+
+  .usuarios-header {
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+  }
+
+  .usuarios-header h1 {
+    font-size: 28px;
+  }
+}
+
+@media (max-width: 768px) {
+  .usuarios-header {
+    padding: 20px;
+  }
+
+  .usuarios-header h1 {
+    font-size: 24px;
+  }
+
+  .usuarios-table thead th {
+    font-size: 11px;
+    padding: 12px 8px;
+  }
+
+  .usuarios-table tbody td {
+    font-size: 13px;
+    padding: 12px 8px;
+  }
+
+  .btn-action {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .usuarios-actions {
+    flex-direction: column;
+    gap: 6px;
+  }
+}

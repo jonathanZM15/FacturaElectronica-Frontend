@@ -1,7 +1,9 @@
 import React from 'react';
 import './Emisores.css'; // Reutilizar estilos de Emisores
+import './UsuariosModern.css'; // Estilos modernos para usuarios
 import { usuariosApi } from '../services/usuariosApi';
 import UsuarioFormModal from './UsuarioFormModal';
+import UsuarioDetailModal from './UsuarioDetailModal';
 import { User } from '../types/user';
 import { useNotification } from '../contexts/NotificationContext';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -22,7 +24,7 @@ const Usuarios: React.FC = () => {
   const [users, setUsers] = React.useState<User[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [currentPage, setCurrentPage] = React.useState(1);
-  const [itemsPerPage] = React.useState(10);
+  const [itemsPerPage, setItemsPerPage] = React.useState(10);
   const [totalItems, setTotalItems] = React.useState(0);
   const [searchQuery, setSearchQuery] = React.useState('');
   const { show } = useNotification();
@@ -34,6 +36,8 @@ const Usuarios: React.FC = () => {
   const [deletingUserName, setDeletingUserName] = React.useState<string>('');
   const [deletePassword, setDeletePassword] = React.useState('');
   const [deleteLoading, setDeleteLoading] = React.useState(false);
+  const [openDetail, setOpenDetail] = React.useState(false);
+  const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
 
   // Cargar usuarios
   const loadUsers = React.useCallback(async () => {
@@ -114,36 +118,51 @@ const Usuarios: React.FC = () => {
     { 
       key: 'cedula', 
       label: 'Cédula', 
-      width: 120,
-      render: (row) => row.cedula || '-'
+      width: 140,
+      render: (row) => (
+        <span 
+          className="cedula-link"
+          onClick={() => {
+            setSelectedUser(row);
+            setOpenDetail(true);
+          }}
+        >
+          <span className="cedula-numero">{row.cedula || 'Sin cédula'}</span>
+        </span>
+      )
     },
     { 
       key: 'nombres', 
       label: 'Nombres y Apellidos', 
-      width: 250,
+      width: 280,
       render: (row) => `${row.nombres || ''} ${row.apellidos || ''}`.trim() || '-'
     },
-    { key: 'username', label: 'Usuario', width: 150 },
-    { key: 'email', label: 'Email', width: 250 },
+    { key: 'username', label: 'Usuario', width: 180 },
+    { 
+      key: 'email', 
+      label: 'Email', 
+      width: 300,
+      render: (row) => (
+        <span className="email-cell">{row.email}</span>
+      )
+    },
     { 
       key: 'role', 
       label: 'Rol',
-      width: 120,
+      width: 150,
       render: (row) => (
-        <span style={{
-          display: 'inline-block',
-          padding: '6px 12px',
-          borderRadius: '20px',
-          fontWeight: 600,
-          color: '#fff',
-          background: {
-            'administrador': '#ef4444',
-            'distribuidor': '#f97316',
-            'emisor': '#3b82f6',
-            'gerente': '#10b981',
-            'cajero': '#8b5cf6'
-          }[row.role as string] || '#9ca3af'
-        }}>
+        <span 
+          className="badge-rol"
+          style={{
+            background: {
+              'administrador': '#ef4444',
+              'distribuidor': '#f97316',
+              'emisor': '#3b82f6',
+              'gerente': '#10b981',
+              'cajero': '#8b5cf6'
+            }[row.role as string] || '#9ca3af'
+          }}
+        >
           {row.role}
         </span>
       )
@@ -151,7 +170,7 @@ const Usuarios: React.FC = () => {
     {
       key: 'estado',
       label: 'Estados',
-      width: 170,
+      width: 180,
       render: (row) => {
         const labelMap: Record<string, string> = {
           nuevo: 'Nuevo',
@@ -169,23 +188,58 @@ const Usuarios: React.FC = () => {
         };
         const key = (row.estado || 'nuevo') as string;
         return (
-          <span style={{
-            display: 'inline-block',
-            padding: '6px 12px',
-            borderRadius: '20px',
-            fontWeight: 600,
-            color: '#fff',
-            background: colorMap[key] || '#9ca3af'
-          }}>
+          <span 
+            className="badge-estado"
+            style={{
+              background: colorMap[key] || '#9ca3af'
+            }}
+          >
             {labelMap[key] || row.estado}
           </span>
+        );
+      }
+    },
+    {
+      key: 'id' as keyof User,
+      label: 'Detalle',
+      width: 100,
+      render: (row) => {
+        const estadoDescriptions: Record<string, string> = {
+          nuevo: '👤 Usuario recién creado. Aún no ha verificado su email ni configurado su contraseña.',
+          activo: '✅ Usuario activo. Ha verificado su email y puede acceder al sistema sin restricciones.',
+          pendiente_verificacion: '⏳ Usuario pendiente de verificación. Debe verificar su email para activar su cuenta.',
+          suspendido: '🚫 Usuario suspendido. No puede acceder al sistema temporalmente por decisión administrativa.',
+          retirado: '👋 Usuario retirado. Ya no forma parte del sistema y no tiene acceso.',
+        };
+        const estado = (row.estado || 'nuevo') as string;
+        const description = estadoDescriptions[estado] || 'Estado sin descripción disponible.';
+        
+        return (
+          <div className="tooltip-container">
+            <svg 
+              className="info-icon" 
+              width="20" 
+              height="20" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="2"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="16" x2="12" y2="12" />
+              <line x1="12" y1="8" x2="12.01" y2="8" />
+            </svg>
+            <div className="tooltip-content">
+              {description}
+            </div>
+          </div>
         );
       }
     },
     { 
       key: 'created_at', 
       label: 'Fecha de creación', 
-      width: 150,
+      width: 180,
       render: (row) => {
         if (!row.created_at) return '-';
         const date = new Date(row.created_at);
@@ -195,62 +249,62 @@ const Usuarios: React.FC = () => {
   ];
 
   return (
-    <div className="page-container">
-      <div className="page-header">
+    <div className="usuarios-page-container">
+      <div className="usuarios-header">
         <h1>Gestión de Usuarios</h1>
         <button 
-          className="btn-primary"
+          className="btn-nuevo"
           onClick={() => setOpenNew(true)}
         >
-          + Nuevo Usuario
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          Nuevo Usuario
         </button>
       </div>
 
       {/* Búsqueda */}
-      <div style={{ marginBottom: '20px' }}>
-        <input
-          type="text"
-          placeholder="Buscar por nombre o email..."
-          value={searchQuery}
-          onChange={(e) => {
-            setSearchQuery(e.target.value);
-            setCurrentPage(1);
-          }}
-          className="form-input"
-          style={{ width: '100%', maxWidth: '400px' }}
-        />
+      <div className="usuarios-search-container">
+        <div className="usuarios-search-wrapper">
+          <svg 
+            className="usuarios-search-icon"
+            width="20" 
+            height="20" 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="2"
+          >
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.35-4.35" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Buscar por nombre, email o cédula..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="usuarios-search-input"
+          />
+        </div>
       </div>
 
       {/* Tabla */}
-      <div style={{ overflowX: 'auto', marginBottom: '20px' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ borderBottom: '2px solid #e5e7eb', backgroundColor: '#f9fafb' }}>
-              {columns.map(col => (
-                <th 
-                  key={col.key} 
-                  style={{ 
-                    padding: '12px', 
-                    textAlign: 'left', 
-                    width: col.width,
-                    fontWeight: 600,
-                    color: '#374151'
-                  }}
-                >
-                  {col.label}
-                </th>
-              ))}
-              <th style={{ 
-                padding: '12px', 
-                textAlign: 'center', 
-                fontWeight: 600, 
-                color: '#374151',
-                width: 150 
-              }}>
-                Acciones
-              </th>
-            </tr>
-          </thead>
+      <div className="usuarios-table-container">
+        <div className="usuarios-table-wrapper">
+          <table className="usuarios-table">
+            <thead>
+              <tr>
+                {columns.map(col => (
+                  <th key={col.key} style={{ width: col.width }}>
+                    {col.label}
+                  </th>
+                ))}
+                <th style={{ width: 120 }}>Acciones</th>
+              </tr>
+            </thead>
           <tbody>
             {loading ? (
               <tr>
@@ -266,103 +320,115 @@ const Usuarios: React.FC = () => {
               </tr>
             ) : (
               users.map(user => (
-                <tr 
-                  key={user.id} 
-                  style={{ 
-                    borderBottom: '1px solid #e5e7eb'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                >
+                <tr key={user.id}>
                   {columns.map(col => (
-                    <td 
-                      key={`${user.id}-${col.key}`}
-                      style={{ 
-                        padding: '12px',
-                        color: '#1f2937',
-                        fontSize: '14px'
-                      }}
-                    >
+                    <td key={`${user.id}-${col.key}`}>
                       {col.render ? col.render(user) : (user[col.key] as any)?.toString() || '-'}
                     </td>
                   ))}
-                  <td style={{ padding: '12px', textAlign: 'center' }}>
-                    <button
-                      onClick={() => {
-                        setEditingUser(user);
-                        setOpenEdit(true);
-                      }}
-                      style={{
-                        padding: '6px 12px',
-                        marginRight: '8px',
-                        background: '#3b82f6',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontSize: '12px'
-                      }}
-                    >
-                      Editar
-                    </button>
-                    <button
-                      onClick={() => user.id && handleDelete(user.id)}
-                      style={{
-                        padding: '6px 12px',
-                        background: '#ef4444',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontSize: '12px'
-                      }}
-                    >
-                      Eliminar
-                    </button>
+                  <td>
+                    <div className="usuarios-actions">
+                      <button
+                        className="btn-action btn-editar"
+                        onClick={() => {
+                          setEditingUser(user);
+                          setOpenEdit(true);
+                        }}
+                        title="Editar"
+                      >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                      </button>
+                      <button
+                        className="btn-action btn-eliminar"
+                        onClick={() => user.id && handleDelete(user.id)}
+                        title="Eliminar"
+                      >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="3 6 5 6 21 6" />
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                        </svg>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
             )}
           </tbody>
         </table>
-      </div>
-
-      {/* Paginación */}
-      {totalPages > 1 && (
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '20px' }}>
-          <button
-            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-            disabled={currentPage === 1}
-            style={{
-              padding: '8px 12px',
-              background: currentPage === 1 ? '#e5e7eb' : '#3b82f6',
-              color: currentPage === 1 ? '#9ca3af' : '#fff',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: currentPage === 1 ? 'not-allowed' : 'pointer'
-            }}
-          >
-            Anterior
-          </button>
-          <span style={{ padding: '8px 12px', color: '#1f2937' }}>
-            Página {currentPage} de {totalPages}
-          </span>
-          <button
-            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-            disabled={currentPage === totalPages}
-            style={{
-              padding: '8px 12px',
-              background: currentPage === totalPages ? '#e5e7eb' : '#3b82f6',
-              color: currentPage === totalPages ? '#9ca3af' : '#fff',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: currentPage === totalPages ? 'not-allowed' : 'pointer'
-            }}
-          >
-            Siguiente
-          </button>
         </div>
-      )}
+        
+        {/* Paginación dentro de la tabla - SIEMPRE VISIBLE */}
+        <div className="usuarios-pagination">
+          <div className="pagination-left">
+            <span style={{ marginRight: '8px' }}>Filas por página:</span>
+            <select 
+              value={itemsPerPage} 
+              onChange={(e) => {
+                setItemsPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="pagination-select"
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={15}>15</option>
+            </select>
+            <span className="pagination-info-text" style={{ marginLeft: '16px' }}>
+              {totalItems > 0 ? `${((currentPage - 1) * itemsPerPage) + 1}-${Math.min(currentPage * itemsPerPage, totalItems)} de ${totalItems}` : '0-0 de 0'}
+            </span>
+          </div>
+          <div className="pagination-center">
+            <button
+              className="btn-pagination"
+              onClick={() => setCurrentPage(1)}
+              disabled={currentPage === 1}
+              title="Primera página"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="11 17 6 12 11 7" />
+                <polyline points="18 17 13 12 18 7" />
+              </svg>
+            </button>
+            <button
+              className="btn-pagination"
+              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+              title="Página anterior"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </button>
+            <span className="pagination-info">
+              Página {currentPage} de {totalPages || 1}
+            </span>
+            <button
+              className="btn-pagination"
+              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+              disabled={currentPage === totalPages || totalPages === 0}
+              title="Página siguiente"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
+            <button
+              className="btn-pagination"
+              onClick={() => setCurrentPage(totalPages)}
+              disabled={currentPage === totalPages || totalPages === 0}
+              title="Última página"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="13 17 18 12 13 7" />
+                <polyline points="6 17 11 12 6 7" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* Modales */}
       <UsuarioFormModal
@@ -382,6 +448,15 @@ const Usuarios: React.FC = () => {
         }}
         onSubmit={handleUpdate}
         isEditing={true}
+      />
+
+      <UsuarioDetailModal
+        open={openDetail}
+        user={selectedUser}
+        onClose={() => {
+          setOpenDetail(false);
+          setSelectedUser(null);
+        }}
       />
     </div>
   );

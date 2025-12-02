@@ -21,6 +21,9 @@ export const auth = {
   cambiarPassword: (currentPassword: string, newPassword: string) => api.post('/api/cambiarClave', { current_password: currentPassword, password: newPassword }),
   logout: () => api.post('/api/logout'),
   me: () => api.get('/api/user'),
+  verifyEmail: (token: string) => api.post('/api/verify-email', { token }),
+  changeInitialPassword: (token: string, password: string, password_confirmation: string) => 
+    api.post('/api/change-initial-password', { token, password, password_confirmation }),
 };
 
 // Endpoint para restablecimiento de contraseña vía token (enlace recibido por correo)
