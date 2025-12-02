@@ -35,6 +35,15 @@
   width: 100%; /* Ocupa el 100% del padding de la tarjeta */
 }
 
+.auth-title {
+  width: 100%;
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #0d6efd;
+}
+
 /* Pestañas para alternar Login / Registrarse */
 .auth-tabs {
   display: flex;

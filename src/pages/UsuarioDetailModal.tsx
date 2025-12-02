@@ -144,8 +144,8 @@ const UsuarioDetailModal: React.FC<Props> = ({ open, onClose, user }) => {
               </h3>
               <div className="info-rows">
                 <div className="info-row">
-                  <span className="info-label">ID de Usuario</span>
-                  <span className="info-value">#{user.id}</span>
+                  <span className="info-label">Usuario que Realizó la Acción</span>
+                  <span className="info-value">{user.created_by_name || 'Sistema'}</span>
                 </div>
                 <div className="info-row">
                   <span className="info-label">Fecha de Creación</span>

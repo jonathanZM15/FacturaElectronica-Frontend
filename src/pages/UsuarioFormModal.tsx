@@ -2,6 +2,7 @@ import React from 'react';
 import { User } from '../types/user';
 import { useUser } from '../contexts/userContext';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { usuariosApi } from '../services/usuariosApi';
 import './UsuarioFormModalModern.css';
 
 interface Props {
@@ -51,6 +52,9 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [loading, setLoading] = React.useState<boolean>(false);
   const [estado, setEstado] = React.useState<string>('nuevo');
+  const [checkingUsername, setCheckingUsername] = React.useState<boolean>(false);
+  const [checkingCedula, setCheckingCedula] = React.useState<boolean>(false);
+  const [checkingEmail, setCheckingEmail] = React.useState<boolean>(false);
 
   // Memoizar rolesPermitidos para evitar recálculos infinitos
   const rolesPermitidos = React.useMemo(() => {
@@ -86,40 +90,144 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
   const handleCedulaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\D/g, '').slice(0, 10);
     setCedula(value);
-    if (errors.cedula) {
-      setErrors({ ...errors, cedula: '' });
+    
+    let error = '';
+    if (value.length !== 10 && value.length > 0) {
+      error = 'La cédula debe tener exactamente 10 dígitos';
+    }
+    
+    setErrors(prev => ({ ...prev, cedula: error }));
+    
+    // Verificar disponibilidad si tiene 10 dígitos
+    if (value.length === 10 && !isEditing) {
+      setCheckingCedula(true);
+      const timer = setTimeout(async () => {
+        try {
+          await usuariosApi.checkCedula(value);
+          setErrors(prev => ({ ...prev, cedula: '❌ Esta cédula ya está registrada' }));
+        } catch (err: any) {
+          // Si da error 404, significa que no existe, es válida
+          if (err?.response?.status === 404) {
+            setErrors(prev => {
+              const newErrors = { ...prev };
+              delete newErrors.cedula;
+              return newErrors;
+            });
+          }
+        } finally {
+          setCheckingCedula(false);
+        }
+      }, 500);
     }
   };
 
   const handleNombresChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
+    let value = e.target.value;
+    // Solo permitir letras, espacios, guiones y apóstrofes
+    value = value.replace(/[^a-záéíóúñA-ZÁÉÍÓÚÑ\s'-]/g, '');
     setNombres(value);
-    if (errors.nombres) {
-      setErrors({ ...errors, nombres: '' });
+    
+    // Validación en tiempo real
+    let error = '';
+    if (value.length > 0 && value.length < 3) {
+      error = 'El nombre debe tener al menos 3 caracteres';
+    } else if (value.length > 0 && !/^[a-záéíóúñA-ZÁÉÍÓÚÑ\s'-]+$/.test(value)) {
+      error = 'Solo se permiten caracteres alfabéticos';
     }
+    
+    setErrors({ ...errors, nombres: error });
   };
 
   const handleApellidosChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
+    let value = e.target.value;
+    // Solo permitir letras, espacios, guiones y apóstrofes
+    value = value.replace(/[^a-záéíóúñA-ZÁÉÍÓÚÑ\s'-]/g, '');
     setApellidos(value);
-    if (errors.apellidos) {
-      setErrors({ ...errors, apellidos: '' });
+    
+    // Validación en tiempo real
+    let error = '';
+    if (value.length > 0 && value.length < 3) {
+      error = 'El apellido debe tener al menos 3 caracteres';
+    } else if (value.length > 0 && !/^[a-záéíóúñA-ZÁÉÍÓÚÑ\s'-]+$/.test(value)) {
+      error = 'Solo se permiten caracteres alfabéticos';
     }
+    
+    setErrors({ ...errors, apellidos: error });
   };
 
   const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setUsername(value);
-    if (errors.username) {
-      setErrors({ ...errors, username: '' });
+    
+    let error = '';
+    if (value.length > 0 && value.length < 3) {
+      error = 'El nombre de usuario debe tener al menos 3 caracteres';
+    }
+    
+    setErrors(prev => ({ ...prev, username: error }));
+    
+    // Verificar disponibilidad si tiene al menos 3 caracteres
+    if (value.length >= 3 && !isEditing) {
+      setCheckingUsername(true);
+      const timer = setTimeout(async () => {
+        try {
+          await usuariosApi.checkUsername(value);
+          setErrors(prev => ({ ...prev, username: '❌ Este nombre de usuario ya existe' }));
+        } catch (err: any) {
+          // Si da error 404, significa que no existe, es válido
+          if (err?.response?.status === 404) {
+            setErrors(prev => {
+              const newErrors = { ...prev };
+              delete newErrors.username;
+              return newErrors;
+            });
+          }
+        } finally {
+          setCheckingUsername(false);
+        }
+      }, 500);
     }
   };
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setEmail(value);
-    if (errors.email) {
-      setErrors({ ...errors, email: '' });
+    
+    // Validación en tiempo real
+    let error = '';
+    if (value.length > 0) {
+      // Verificar que tenga formato de email
+      if (!value.includes('@')) {
+        error = 'El correo debe contener @';
+      } else if (!value.includes('gmail.com') && !value.includes('factura.local')) {
+        error = 'El correo debe terminar en @gmail.com o @factura.local';
+      } else if (!/^[^\s@]+@(gmail\.com|factura\.local)$/.test(value)) {
+        error = 'Email inválido. Use formato: usuario@gmail.com o usuario@factura.local';
+      }
+    }
+    
+    setErrors(prev => ({ ...prev, email: error }));
+    
+    // Verificar disponibilidad si tiene formato correcto
+    if (value.length > 0 && /^[^\s@]+@(gmail\.com|factura\.local)$/.test(value) && !isEditing) {
+      setCheckingEmail(true);
+      const timer = setTimeout(async () => {
+        try {
+          await usuariosApi.checkEmail(value);
+          setErrors(prev => ({ ...prev, email: '❌ Este correo ya está registrado' }));
+        } catch (err: any) {
+          // Si da error 404, significa que no existe, es válido
+          if (err?.response?.status === 404) {
+            setErrors(prev => {
+              const newErrors = { ...prev };
+              delete newErrors.email;
+              return newErrors;
+            });
+          }
+        } finally {
+          setCheckingEmail(false);
+        }
+      }, 500);
     }
   };
 
@@ -171,9 +279,9 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
       newErrors.username = 'El nombre de usuario debe tener al menos 3 caracteres';
     }
 
-    // Email: validación básica
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      newErrors.email = 'Email inválido';
+    // Email: validación básica y debe ser gmail.com o factura.local
+    if (!email || !/^[^\s@]+@(gmail\.com|factura\.local)$/.test(email)) {
+      newErrors.email = 'Email inválido. Use formato: usuario@gmail.com o usuario@factura.local';
     }
 
     // Rol - Validar que está en los roles permitidos
@@ -433,7 +541,26 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
             <button 
               type="submit" 
               className="usuario-btn usuario-btn-submit" 
-              disabled={loading || rolesPermitidos.length === 0}
+              disabled={
+                loading || 
+                rolesPermitidos.length === 0 || 
+                checkingUsername || 
+                checkingCedula || 
+                checkingEmail ||
+                Object.values(errors).some(err => err && err.length > 0) ||
+                !cedula ||
+                !nombres ||
+                !apellidos ||
+                !username ||
+                !email
+              }
+              title={
+                Object.values(errors).some(err => err && err.length > 0)
+                  ? 'Por favor corrige los errores antes de continuar'
+                  : checkingUsername || checkingCedula || checkingEmail
+                  ? 'Verificando disponibilidad...'
+                  : ''
+              }
             >
               {loading ? (
                 <>

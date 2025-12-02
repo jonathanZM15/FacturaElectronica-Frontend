@@ -17,10 +17,8 @@ const Login: React.FC = () => {
   const [creds, setCreds] = useState<AuthCredentials>({ username: '', password: '' });
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { login, register } = useUser();
+  const { login } = useUser();
   const { show } = useNotification();
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [name, setName] = useState('');
 
   // navigate provided by context after login
   
@@ -68,14 +66,7 @@ const Login: React.FC = () => {
       return; 
     }
 
-    if (isRegistering) {
-      // register flow uses name and email
-      register(name, creds.username, creds.password)
-        .then(() => show({ title: 'Registro correcto', message: 'Cuenta creada correctamente. Bienvenido', type: 'success' }))
-        .catch(() => show({ title: 'Error', message: 'Error al registrar', type: 'error' }));
-    } else {
-      fakeAuth(creds);
-    }
+    fakeAuth(creds);
   };
 
   const finalUrl = bgAsset;
@@ -96,26 +87,9 @@ const Login: React.FC = () => {
       <div className="auth-card">
   <img src={logo} alt="logo" className="auth-logo" />
 
-        <div className="auth-tabs">
-          <button type="button" className={`auth-tab ${!isRegistering ? 'active' : ''}`} onClick={() => setIsRegistering(false)}>Iniciar sesión</button>
-          <button type="button" className={`auth-tab ${isRegistering ? 'active' : ''}`} onClick={() => setIsRegistering(true)}>Registrarse</button>
-        </div>
+        <h2 className="auth-title">Iniciar sesión</h2>
 
         <form className="auth-form" onSubmit={onSubmit}>
-          {isRegistering && (
-            <div className="field-stack">
-              <div className="auth-input-wrapper">
-                <input
-                  className={`auth-input`}
-                  placeholder="Nombre completo"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
-              </div>
-              <label className="field-label">Nombre:</label>
-            </div>
-          )}
-          
           {/* CAMPO EMAIL O USUARIO */}
           <div className="field-stack">
             <div className="auth-input-wrapper">
@@ -168,10 +142,10 @@ const Login: React.FC = () => {
                 <LoadingSpinner
                   inline
                   size={20}
-                  message={isRegistering ? 'Registrando…' : 'Iniciando…'}
+                  message="Iniciando…"
                 />
               ) : (
-                isRegistering ? 'REGISTRARSE' : 'INICIAR SESIÓN'
+                'INICIAR SESIÓN'
               )}
             </button>
           </div>

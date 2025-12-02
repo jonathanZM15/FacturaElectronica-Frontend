@@ -26,4 +26,19 @@ export const usuariosApi = {
   delete(id: number | string, password: string) {
     return api.delete(`/api/usuarios/${id}`, { data: { password } });
   },
+
+  // Verificar si el username ya existe
+  checkUsername(username: string) {
+    return api.get('/api/usuarios/check/username', { params: { username } });
+  },
+
+  // Verificar si la cédula ya existe
+  checkCedula(cedula: string) {
+    return api.get('/api/usuarios/check/cedula', { params: { cedula } });
+  },
+
+  // Verificar si el email ya existe
+  checkEmail(email: string) {
+    return api.get('/api/usuarios/check/email', { params: { email } });
+  },
 };

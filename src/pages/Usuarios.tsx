@@ -186,24 +186,6 @@ const Usuarios: React.FC = () => {
           suspendido: '#ef4444',
           retirado: '#6b7280',
         };
-        const key = (row.estado || 'nuevo') as string;
-        return (
-          <span 
-            className="badge-estado"
-            style={{
-              background: colorMap[key] || '#9ca3af'
-            }}
-          >
-            {labelMap[key] || row.estado}
-          </span>
-        );
-      }
-    },
-    {
-      key: 'id' as keyof User,
-      label: 'Detalle',
-      width: 100,
-      render: (row) => {
         const estadoDescriptions: Record<string, string> = {
           nuevo: '👤 Usuario recién creado. Aún no ha verificado su email ni configurado su contraseña.',
           activo: '✅ Usuario activo. Ha verificado su email y puede acceder al sistema sin restricciones.',
@@ -211,24 +193,19 @@ const Usuarios: React.FC = () => {
           suspendido: '🚫 Usuario suspendido. No puede acceder al sistema temporalmente por decisión administrativa.',
           retirado: '👋 Usuario retirado. Ya no forma parte del sistema y no tiene acceso.',
         };
-        const estado = (row.estado || 'nuevo') as string;
-        const description = estadoDescriptions[estado] || 'Estado sin descripción disponible.';
+        const key = (row.estado || 'nuevo') as string;
+        const description = estadoDescriptions[key] || 'Estado sin descripción disponible.';
         
         return (
           <div className="tooltip-container">
-            <svg 
-              className="info-icon" 
-              width="20" 
-              height="20" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="currentColor" 
-              strokeWidth="2"
+            <span 
+              className="badge-estado"
+              style={{
+                background: colorMap[key] || '#9ca3af'
+              }}
             >
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="16" x2="12" y2="12" />
-              <line x1="12" y1="8" x2="12.01" y2="8" />
-            </svg>
+              {labelMap[key] || row.estado}
+            </span>
             <div className="tooltip-content">
               {description}
             </div>
