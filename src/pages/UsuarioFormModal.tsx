@@ -215,21 +215,26 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
   if (!isOpen) return null;
 
   return (
-    <div className="usuario-modal-overlay" onClick={onClose}>
-      <div className="usuario-modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="usuario-modal-header">
-          <h2>{isEditing ? '✏️ Editar Usuario' : '➕ Crear Nuevo Usuario'}</h2>
-          <button 
-            type="button"
-            className="usuario-modal-close" 
-            onClick={onClose}
-            disabled={loading}
-          >
-            ✕
-          </button>
-        </div>
+    <div className="usuario-modal-overlay">
+      <div className="usuario-modal-content usuario-modal-content-barra-izquierda">
+        <div className="usuario-modal-barra-izquierda"></div>
+        <div className="usuario-modal-main">
+          <div className="usuario-modal-header" style={{position: 'relative'}}>
+            <h2>{isEditing ? '✏️ Editar Usuario' : '➕ Crear Nuevo Usuario'}</h2>
+            <button
+              type="button"
+              className="usuario-modal-close"
+              onClick={onClose}
+              disabled={loading}
+              style={{position: 'absolute', top: 24, right: 24}}
+            >
+              ✕
+            </button>
+          </div>
+          {/* Barra horizontal decorativa dentro del recuadro blanco */}
+          <div className="usuario-barra-horizontal-interna"></div>
 
-        <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit}>
           <div className="usuario-modal-body">
             <div className="usuario-form-grid">
               
@@ -442,7 +447,8 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
               )}
             </button>
           </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
   );
