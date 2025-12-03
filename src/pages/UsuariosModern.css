@@ -108,7 +108,7 @@ body, html {
 .usuarios-table-container {
   background: white;
   border-radius: 20px;
-  overflow: hidden;
+  overflow: visible;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
   margin-bottom: 24px;
   display: flex;
@@ -122,6 +122,7 @@ body, html {
   overflow-y: auto;
   flex: 1;
   position: relative;
+  z-index: auto;
 }
 
 /* Scrollbar personalizado */
@@ -209,12 +210,14 @@ body, html {
 .usuarios-table tbody tr {
   border-bottom: 1px solid #f3f4f6;
   transition: all 0.3s ease;
+  position: relative;
 }
 
 .usuarios-table tbody tr:hover {
   background: linear-gradient(90deg, #f8f9ff 0%, #ffffff 100%);
   transform: scale(1.01);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+  z-index: 50;
 }
 
 /* Mantener fondo gris en columnas sticky al hacer hover */
@@ -314,6 +317,9 @@ body, html {
   letter-spacing: 0.3px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   transition: all 0.3s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .badge-rol:hover,
@@ -589,8 +595,26 @@ body, html {
 .tooltip-container {
   position: relative;
   display: inline-flex;
+  width: 100%;
   align-items: center;
   justify-content: center;
+  text-align: center;
+  z-index: 10;
+}
+
+.tooltip-container .badge-estado {
+  position: relative;
+  z-index: 1;
+}
+
+.tooltip-container:hover,
+.tooltip-container:focus-within {
+  z-index: 9999;
+}
+
+.tooltip-container:hover .badge-estado,
+.tooltip-container:focus-within .badge-estado {
+  z-index: -1;
 }
 
 .info-icon {
@@ -629,8 +653,9 @@ body, html {
   opacity: 0;
   visibility: hidden;
   transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-  z-index: 1000;
+  z-index: 10000;
   backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 /* Tooltip Arrow */
@@ -643,6 +668,19 @@ body, html {
   border: 8px solid transparent;
   border-top-color: #764ba2;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+}
+
+/* Todos los tooltips aparecen hacia abajo */
+.usuarios-table tbody tr .tooltip-content {
+  bottom: auto;
+  top: calc(100% + 12px);
+}
+
+.usuarios-table tbody tr .tooltip-content::after {
+  top: auto;
+  bottom: 100%;
+  border-top-color: transparent;
+  border-bottom-color: #764ba2;
 }
 
 /* Show tooltip on hover */

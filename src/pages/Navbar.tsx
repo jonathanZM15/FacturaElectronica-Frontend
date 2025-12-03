@@ -83,14 +83,6 @@ const Navbar: React.FC = () => {
               </NavLink>
             </li>
           )}
-          
-          {/* Cambiar Contraseña: todos los roles */}
-          <li className="nav-item">
-            <NavLink to="/cambiarPassword" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-              <span className="icon">🔒</span>
-              <span className="label">Cambiar Contraseña</span>
-            </NavLink>
-          </li>
         </ul>
       </nav>
 

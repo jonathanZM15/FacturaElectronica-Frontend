@@ -46,7 +46,7 @@ const getEstadosPermitidos = (estadoActual: string): { value: string; label: str
   const transiciones: Record<string, { value: string; label: string; tooltip: string }[]> = {
     nuevo: [
       { value: 'nuevo', label: '🆕 Nuevo', tooltip: 'Usuario recién creado, pendiente de verificación de email' },
-      { value: 'activo', label: '✅ Activo', tooltip: 'Verificar email manualmente y activar usuario' }
+      { value: 'pendiente_verificacion', label: '⏳ Pendiente Verificación', tooltip: 'Enviar email de verificación al usuario' }
     ],
     activo: [
       { value: 'activo', label: '✅ Activo', tooltip: 'Usuario con acceso completo al sistema' },
