@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import LoadingSpinner from '../components/LoadingSpinner';
+import './UsuarioDeleteModalModern.css';
 
 interface Props {
   isOpen: boolean;
@@ -55,22 +56,36 @@ const UsuarioDeleteModal: React.FC<Props> = ({ isOpen, onClose, onSubmit }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>⚠️ Eliminar Usuario</h2>
-          <button className="close-btn" onClick={onClose}>✕</button>
+    <div className="delete-modal-overlay" onClick={onClose}>
+      <div className="delete-modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="delete-modal-header">
+          <h2>
+            <span className="icon">⚠️</span>
+            {step === 'confirmation' ? 'Eliminar Usuario' : 'Verificar Contraseña'}
+          </h2>
+          <button className="delete-modal-close" onClick={onClose}>✕</button>
         </div>
 
         {step === 'confirmation' ? (
-          <div style={{ padding: '20px' }}>
-            <p style={{ marginBottom: '20px', fontSize: '16px' }}>
-              ¿Está seguro de que desea eliminar este usuario? Esta acción no se puede deshacer.
-            </p>
-            <div className="modal-footer">
+          <>
+            <div className="delete-modal-body">
+              <p className="delete-confirmation-text">
+                ¿Está seguro de que desea <strong>eliminar este usuario</strong>? Esta acción es permanente y no se puede deshacer.
+              </p>
+              <div className="delete-warning-box">
+                <span className="icon">⚠️</span>
+                <div>
+                  <strong>Esta acción no se puede deshacer.</strong> Todos los datos asociados al usuario serán eliminados permanentemente del sistema.
+                </div>
+              </div>
+              <p className="delete-info-text">
+                Para continuar, haz clic en "Eliminar". Se te solicitará que ingreses tu contraseña como medida de seguridad.
+              </p>
+            </div>
+            <div className="delete-modal-footer">
               <button
                 type="button"
-                className="btn-secondary"
+                className="delete-btn delete-btn-cancel"
                 onClick={onClose}
                 disabled={loading}
               >
@@ -78,45 +93,54 @@ const UsuarioDeleteModal: React.FC<Props> = ({ isOpen, onClose, onSubmit }) => {
               </button>
               <button
                 type="button"
-                className="btn-danger"
+                className="delete-btn delete-btn-danger"
                 onClick={handleConfirm}
                 disabled={loading}
               >
-                Sí, eliminar
+                🗑️ Sí, eliminar
               </button>
             </div>
-          </div>
+          </>
         ) : (
-          <div style={{ padding: '20px' }}>
-            <p style={{ marginBottom: '20px', fontSize: '14px', color: '#666' }}>
-              Para confirmar la eliminación del usuario, ingrese su contraseña de administrador:
-            </p>
+          <>
+            <div className="delete-modal-body">
+              <p className="delete-password-text">
+                Por seguridad, debes confirmar tu identidad ingresando tu contraseña de administrador.
+              </p>
 
-            <div className="form-group">
-              <label htmlFor="password">Contraseña del administrador *</label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  if (passwordError) setPasswordError(null);
-                }}
-                placeholder="Ingrese su contraseña"
-                className={passwordError ? 'form-input error' : 'form-input'}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter' && password.trim()) {
-                    handleDelete();
-                  }
-                }}
-              />
-              {passwordError && <span className="error-text">{passwordError}</span>}
+              <div className="delete-form-group">
+                <label htmlFor="password" className="delete-form-label">
+                  Contraseña del administrador *
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (passwordError) setPasswordError(null);
+                  }}
+                  placeholder="Ingresa tu contraseña"
+                  className={passwordError ? 'delete-form-input error' : 'delete-form-input'}
+                  autoFocus
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && password.trim() && !loading) {
+                      handleDelete();
+                    }
+                  }}
+                />
+                {passwordError && (
+                  <span className="delete-error-text">
+                    <span className="icon">⚠️</span>
+                    {passwordError}
+                  </span>
+                )}
+              </div>
             </div>
-
-            <div className="modal-footer">
+            <div className="delete-modal-footer">
               <button
                 type="button"
-                className="btn-secondary"
+                className="delete-btn delete-btn-cancel"
                 onClick={() => {
                   resetModal();
                   onClose();
@@ -127,18 +151,21 @@ const UsuarioDeleteModal: React.FC<Props> = ({ isOpen, onClose, onSubmit }) => {
               </button>
               <button
                 type="button"
-                className="btn-danger"
+                className="delete-btn delete-btn-danger"
                 onClick={handleDelete}
                 disabled={loading || !password.trim()}
               >
                 {loading ? (
-                  <LoadingSpinner inline size={18} message="Eliminando…" />
+                  <>
+                    <LoadingSpinner inline size={18} message="" />
+                    Eliminando...
+                  </>
                 ) : (
-                  'Eliminar usuario'
+                  '🗑️ Eliminar usuario'
                 )}
               </button>
             </div>
-          </div>
+          </>
         )}
       </div>
     </div>

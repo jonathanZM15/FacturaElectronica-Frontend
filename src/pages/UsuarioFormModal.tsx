@@ -41,6 +41,40 @@ const getRolesPermitidos = (userRole: string): { value: string; label: string }[
   return rolesMap[userRole] || [];
 };
 
+// Transiciones de estado permitidas según el estado actual
+const getEstadosPermitidos = (estadoActual: string): { value: string; label: string; tooltip: string }[] => {
+  const transiciones: Record<string, { value: string; label: string; tooltip: string }[]> = {
+    nuevo: [
+      { value: 'nuevo', label: '🆕 Nuevo', tooltip: 'Usuario recién creado, pendiente de verificación de email' },
+      { value: 'activo', label: '✅ Activo', tooltip: 'Verificar email manualmente y activar usuario' }
+    ],
+    activo: [
+      { value: 'activo', label: '✅ Activo', tooltip: 'Usuario con acceso completo al sistema' },
+      { value: 'suspendido', label: '⏸️ Suspendido', tooltip: 'Suspender temporalmente el acceso del usuario' },
+      { value: 'pendiente_verificacion', label: '⏳ Pendiente Verificación', tooltip: 'Requiere nueva verificación de identidad' },
+      { value: 'retirado', label: '👋 Retirado', tooltip: 'Usuario ya no forma parte de la organización' }
+    ],
+    pendiente_verificacion: [
+      { value: 'pendiente_verificacion', label: '⏳ Pendiente Verificación', tooltip: 'Esperando verificación de identidad' },
+      { value: 'activo', label: '✅ Activo', tooltip: 'Verificación completada, activar usuario' },
+      { value: 'suspendido', label: '⏸️ Suspendido', tooltip: 'Suspender por problemas en verificación' }
+    ],
+    suspendido: [
+      { value: 'suspendido', label: '⏸️ Suspendido', tooltip: 'Usuario temporalmente sin acceso' },
+      { value: 'activo', label: '✅ Activo', tooltip: 'Reactivar acceso del usuario' },
+      { value: 'retirado', label: '👋 Retirado', tooltip: 'Dar de baja permanente al usuario' }
+    ],
+    retirado: [
+      { value: 'retirado', label: '👋 Retirado', tooltip: 'Usuario dado de baja' },
+      { value: 'pendiente_verificacion', label: '⏳ Pendiente Verificación', tooltip: 'Reincorporar usuario (requiere nueva verificación)' }
+    ]
+  };
+
+  return transiciones[estadoActual] || [
+    { value: 'nuevo', label: '🆕 Nuevo', tooltip: 'Usuario recién creado' }
+  ];
+};
+
 const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSubmit, isEditing }) => {
   const { user: currentUser } = useUser();
   const [cedula, setCedula] = React.useState<string>('');
@@ -60,6 +94,11 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
   const rolesPermitidos = React.useMemo(() => {
     return currentUser && currentUser.role ? getRolesPermitidos(currentUser.role) : [];
   }, [currentUser?.role]);
+
+  // Memoizar estadosPermitidos basados en el estado actual del usuario
+  const estadosPermitidos = React.useMemo(() => {
+    return getEstadosPermitidos(estado);
+  }, [estado]);
 
   // Reset form when modal opens/closes
   React.useEffect(() => {
@@ -506,6 +545,50 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
                   </span>
                 )}
               </div>
+
+              {/* Estado - Solo en Edición - Ancho Completo */}
+              {isEditing && (
+                <div className="usuario-form-group full-width">
+                  <label htmlFor="modal-estado" className="usuario-form-label">
+                    <span className="icon">🔄</span>
+                    Estado del Usuario
+                    <span className="required">*</span>
+                  </label>
+                  {initialData?.email === 'admin@factura.local' ? (
+                    <div className="usuario-estado-locked">
+                      <span className="icon">🔒</span>
+                      <strong>✅ Activo</strong>
+                      <span className="help-text">El administrador principal siempre debe estar activo</span>
+                    </div>
+                  ) : (
+                    <>
+                      <select
+                        id="modal-estado"
+                        value={estado}
+                        onChange={(e) => setEstado(e.target.value)}
+                        className={errors.estado ? 'usuario-form-select error' : 'usuario-form-select'}
+                        disabled={loading}
+                      >
+                        {estadosPermitidos.map((est) => (
+                          <option key={est.value} value={est.value} title={est.tooltip}>
+                            {est.label}
+                          </option>
+                        ))}
+                      </select>
+                      <span className="usuario-help-text">
+                        <span className="icon">ℹ️</span>
+                        {estadosPermitidos.find(e => e.value === estado)?.tooltip || 'Selecciona un estado'}
+                      </span>
+                    </>
+                  )}
+                  {errors.estado && (
+                    <span className="usuario-error-text">
+                      <span className="icon">⚠️</span>
+                      {errors.estado}
+                    </span>
+                  )}
+                </div>
+              )}
 
               {/* Contraseña Auto-Generada - Ancho Completo */}
               {!isEditing && (

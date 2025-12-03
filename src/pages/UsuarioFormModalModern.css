@@ -427,6 +427,38 @@
   font-size: 24px;
 }
 
+/* Estado bloqueado para admin */
+.usuario-estado-locked {
+  padding: 16px 20px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  border: 2px solid #10b981;
+  color: #065f46;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.usuario-estado-locked .icon {
+  font-size: 20px;
+}
+
+.usuario-estado-locked strong {
+  font-size: 16px;
+  color: #047857;
+}
+
+.usuario-estado-locked .help-text {
+  flex-basis: 100%;
+  font-size: 13px;
+  color: #059669;
+  font-weight: 400;
+  margin-top: 4px;
+  opacity: 0.9;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .usuario-modal-content {

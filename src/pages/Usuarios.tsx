@@ -4,6 +4,7 @@ import './UsuariosModern.css'; // Estilos modernos para usuarios
 import { usuariosApi } from '../services/usuariosApi';
 import UsuarioFormModal from './UsuarioFormModal';
 import UsuarioDetailModal from './UsuarioDetailModal';
+import UsuarioDeleteModal from './UsuarioDeleteModal';
 import { User } from '../types/user';
 import { useNotification } from '../contexts/NotificationContext';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -31,11 +32,8 @@ const Usuarios: React.FC = () => {
   const [openNew, setOpenNew] = React.useState(false);
   const [openEdit, setOpenEdit] = React.useState(false);
   const [editingUser, setEditingUser] = React.useState<User | null>(null);
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false);
-  const [deletingUserId, setDeletingUserId] = React.useState<number | string | null>(null);
-  const [deletingUserName, setDeletingUserName] = React.useState<string>('');
-  const [deletePassword, setDeletePassword] = React.useState('');
-  const [deleteLoading, setDeleteLoading] = React.useState(false);
+  const [openDelete, setOpenDelete] = React.useState(false);
+  const [deletingUser, setDeletingUser] = React.useState<User | null>(null);
   const [openDetail, setOpenDetail] = React.useState(false);
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
 
@@ -94,16 +92,25 @@ const Usuarios: React.FC = () => {
     }
   };
 
-  // Eliminar usuario
-  const handleDelete = async (id: number | string) => {
-    if (!window.confirm('¿Estás seguro de que deseas eliminar este usuario?')) return;
+  // Abrir modal de eliminación
+  const handleDelete = (user: User) => {
+    setDeletingUser(user);
+    setOpenDelete(true);
+  };
+
+  // Confirmar eliminación con contraseña
+  const handleConfirmDelete = async (password: string) => {
+    if (!deletingUser?.id) return;
+    
     try {
-      await usuariosApi.delete(id, '');
+      await usuariosApi.delete(deletingUser.id, password);
       show({ title: 'Éxito', message: 'Usuario eliminado exitosamente', type: 'success' });
+      setOpenDelete(false);
+      setDeletingUser(null);
       await loadUsers();
     } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.message || 'Error eliminando usuario';
-      show({ title: 'Error', message: msg, type: 'error' });
+      // El error lo maneja el modal
+      throw err;
     }
   };
 
@@ -187,11 +194,11 @@ const Usuarios: React.FC = () => {
           retirado: '#6b7280',
         };
         const estadoDescriptions: Record<string, string> = {
-          nuevo: '👤 Usuario recién creado. Aún no ha verificado su email ni configurado su contraseña.',
-          activo: '✅ Usuario activo. Ha verificado su email y puede acceder al sistema sin restricciones.',
-          pendiente_verificacion: '⏳ Usuario pendiente de verificación. Debe verificar su email para activar su cuenta.',
-          suspendido: '🚫 Usuario suspendido. No puede acceder al sistema temporalmente por decisión administrativa.',
-          retirado: '👋 Usuario retirado. Ya no forma parte del sistema y no tiene acceso.',
+          nuevo: '🆕 Usuario creado, pero sin validar correo. El nombre de usuario y el correo pueden modificarse. Sin acceso al sistema.',
+          activo: '✅ Usuario con correo validado y acceso normal. El nombre de usuario se vuelve inalterable. No puede volver a estado Nuevo.',
+          pendiente_verificacion: '⏳ Estado temporal cuando el usuario solicita cambio de correo. Requiere ingresar su contraseña y verificar el nuevo correo. Sin acceso al sistema.',
+          suspendido: '🚫 Acceso bloqueado temporalmente por decisión de un usuario con jerarquía superior. No puede iniciar sesión hasta su reactivación.',
+          retirado: '👋 Baja formal del usuario dentro del emisor (temporal o permanente). No tiene acceso. Solo puede reactivarse mediante nueva verificación de correo solicitada por el creador.',
         };
         const key = (row.estado || 'nuevo') as string;
         const description = estadoDescriptions[key] || 'Estado sin descripción disponible.';
@@ -320,7 +327,7 @@ const Usuarios: React.FC = () => {
                       </button>
                       <button
                         className="btn-action btn-eliminar"
-                        onClick={() => user.id && handleDelete(user.id)}
+                        onClick={() => handleDelete(user)}
                         title="Eliminar"
                       >
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -434,6 +441,15 @@ const Usuarios: React.FC = () => {
           setOpenDetail(false);
           setSelectedUser(null);
         }}
+      />
+
+      <UsuarioDeleteModal
+        isOpen={openDelete}
+        onClose={() => {
+          setOpenDelete(false);
+          setDeletingUser(null);
+        }}
+        onSubmit={handleConfirmDelete}
       />
     </div>
   );
