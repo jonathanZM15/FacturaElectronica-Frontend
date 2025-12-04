@@ -407,119 +407,68 @@ body, html {
   margin: 0;
 }
 
-/* Paginación moderna - FIJA EN LA PARTE INFERIOR */
-.usuarios-pagination {
+/* Pagination controls */
+.pagination-controls {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
-  padding: 20px 32px;
-  background: white;
-  border-top: 2px solid #e5e7eb;
-  position: sticky;
-  bottom: 0;
-  z-index: 100;
-}
-
-.pagination-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  color: #6b7280;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.pagination-select {
-  padding: 6px 32px 6px 12px;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  background: white;
-  color: #374151;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23667eea' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 8px center;
-}
-
-.pagination-select:hover {
-  border-color: #667eea;
-  background-color: #f8f9ff;
-}
-
-.pagination-select:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
-.pagination-center {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.pagination-info-text {
-  color: #374151;
-  font-weight: 600;
-  font-size: 14px;
-}
-
-.btn-pagination {
-  padding: 8px;
-  background: white;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 0;
-  font-weight: 600;
-  color: #6b7280;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0;
-  width: 36px;
-  height: 36px;
-}
-
-.btn-pagination svg {
-  width: 20px;
-  height: 20px;
-  stroke: #6b7280;
-}
-
-.btn-pagination:hover:not(:disabled) {
-  background: #667eea;
-  border-color: #667eea;
-}
-
-.btn-pagination:hover:not(:disabled) svg {
-  stroke: white;
-}
-
-.btn-pagination:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-  background: #f9fafb;
-  border-color: #e5e7eb;
-}
-
-.btn-pagination:disabled svg {
-  stroke: #d1d5db;
+  padding: 16px 20px;
+  border-top: 1px solid #e5e7eb;
+  background: #fafbfc;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
 }
 
 .pagination-info {
-  padding: 10px 20px;
-  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-  border-radius: 10px;
-  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
   color: #374151;
-  font-size: 14px;
+}
+
+.items-per-page-select {
+  padding: 4px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.page-range {
+  margin-left: 12px;
+  font-weight: 500;
+}
+
+.pagination-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.page-btn {
+  min-width: 32px;
+  height: 32px;
+  padding: 4px 8px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.page-btn:hover:not(:disabled) {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 /* Centrar todos los encabezados */

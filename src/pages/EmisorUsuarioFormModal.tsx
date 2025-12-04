@@ -42,6 +42,10 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
   const [selectedPuntosPorEstablecimiento, setSelectedPuntosPorEstablecimiento] = React.useState<Record<number, number | null>>({});
   const [loading, setLoading] = React.useState(false);
   const [errors, setErrors] = React.useState<Record<string, string>>({});
+  const [checkingEmail, setCheckingEmail] = React.useState(false);
+  const [checkingUsername, setCheckingUsername] = React.useState(false);
+  const [resendingEmail, setResendingEmail] = React.useState(false);
+  const [estado, setEstado] = React.useState<string>('nuevo');
 
   // Obtener roles permitidos según el rol del usuario actual
   const getRolesPermitidos = React.useMemo(() => {
@@ -67,51 +71,11 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
   }, [role, establecimientos, selectedEstablecimientos]);
 
   React.useEffect(() => {
-    setSelectedPuntosPorEstablecimiento((prev) => {
-      const next: Record<number, number | null> = {};
-      let changed = false;
-
-      activeEstablecimientos.forEach((estId) => {
-        const prevHasKey = Object.prototype.hasOwnProperty.call(prev, estId);
-        const prevValue = prevHasKey ? prev[estId] : null;
-        const hasValidPunto = prevValue && puntosEmision.some(
-          (p) => p.id === prevValue && Number(p.establecimiento_id) === Number(estId)
-        ) ? prevValue : null;
-        next[estId] = hasValidPunto;
-        if (!changed && (!prevHasKey || hasValidPunto !== prevValue)) {
-          changed = true;
-        }
-      });
-
-      if (!changed) {
-        const nextKeys = Object.keys(next);
-        const prevKeys = Object.keys(prev);
-        if (nextKeys.length !== prevKeys.length) {
-          changed = true;
-        } else {
-          for (const key of prevKeys) {
-            if (!Object.prototype.hasOwnProperty.call(next, key)) {
-              changed = true;
-              break;
-            }
-          }
-        }
-      }
-
-      return changed ? next : prev;
-    });
-  }, [activeEstablecimientos, puntosEmision]);
-
-  const handlePuntoSelection = React.useCallback((estId: number, puntoId: string) => {
-    setSelectedPuntosPorEstablecimiento((prev) => ({
-      ...prev,
-      [estId]: puntoId ? Number(puntoId) : null
-    }));
-  }, []);
-
-  const getPuntosForEstablecimiento = React.useCallback((estId: number) => {
-    return puntosEmision.filter((p) => Number(p.establecimiento_id) === Number(estId));
-  }, [puntosEmision]);
+    const validPuntos = selectedPuntos.filter(p => availablePuntos.some(ap => ap.id === p));
+    if (validPuntos.length !== selectedPuntos.length) {
+      setSelectedPuntos(validPuntos);
+    }
+  }, [availablePuntos]);
 
   React.useEffect(() => {
     if (open && initialData) {
@@ -121,6 +85,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
       setUsername(initialData.username || '');
       setEmail(initialData.email);
       setRole(initialData.role || 'gerente');
+      setEstado(initialData.estado || 'nuevo');
       setSelectedEstablecimientos([]);
       setSelectedPuntosPorEstablecimiento({});
     } else if (open) {
@@ -131,6 +96,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
       setUsername('');
       setEmail('');
       setRole(getRolesPermitidos.length > 0 ? getRolesPermitidos[0] : 'gerente');
+      setEstado('nuevo');
       setSelectedEstablecimientos([]);
       setSelectedPuntosPorEstablecimiento({});
     }
@@ -168,6 +134,51 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const handleResendEmail = async () => {
+    if (!editingId) return;
+
+    setResendingEmail(true);
+    try {
+      let nuevoEstado = estado;
+      if (estado === 'retirado' || estado === 'suspendido') {
+        nuevoEstado = 'pendiente_verificacion';
+      }
+
+      const response = await usuariosEmisorApi.resendVerificationEmail(emiId, editingId, nuevoEstado);
+      
+      if (nuevoEstado !== estado) {
+        setEstado(nuevoEstado);
+      }
+
+      const mensajes: Record<string, { title: string; message: string }> = {
+        nuevo: {
+          title: '✉️ Correo Reenviado',
+          message: `Correo de verificación enviado a ${email}. El usuario debe verificar su cuenta para activarla.`
+        },
+        retirado: {
+          title: '🔄 Proceso de Reactivación Iniciado',
+          message: `Correo de reactivación enviado a ${email}. Estado cambiado a Pendiente Verificación.`
+        },
+        suspendido: {
+          title: '🔄 Proceso de Reactivación Iniciado',
+          message: `Correo de reactivación enviado a ${email}. Estado cambiado a Pendiente Verificación.`
+        }
+      };
+
+      const notif = mensajes[estado] || { 
+        title: '✅ Correo Enviado', 
+        message: response.data?.message || 'Correo enviado exitosamente' 
+      };
+
+      show({ title: notif.title, message: notif.message, type: 'success' });
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || 'Error al reenviar el correo';
+      show({ title: '❌ Error', message: errorMsg, type: 'error' });
+    } finally {
+      setResendingEmail(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -255,7 +266,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
             {/* Cédula */}
             <div>
               <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, color: '#333' }}>
-                Cédula *
+                Cédula <span style={{ color: '#ff6b6b' }}>*</span>
               </label>
               <input
                 type="text"
@@ -282,7 +293,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
             {/* Nombres */}
             <div>
               <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, color: '#333' }}>
-                Nombres *
+                Nombres <span style={{ color: '#ff6b6b' }}>*</span>
               </label>
               <input
                 type="text"
@@ -307,7 +318,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
             {/* Apellidos */}
             <div>
               <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, color: '#333' }}>
-                Apellidos *
+                Apellidos <span style={{ color: '#ff6b6b' }}>*</span>
               </label>
               <input
                 type="text"
@@ -332,17 +343,15 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
             {/* Username */}
             <div>
               <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, color: '#333' }}>
-                Nombre de usuario *
+                Nombre de usuario <span style={{ color: '#ff6b6b' }}>*</span>
               </label>
               <input
                 type="text"
                 value={username}
-                onChange={(e) => {
-                  setUsername(e.target.value);
-                  if (errors.username) setErrors({ ...errors, username: '' });
-                }}
+                onChange={handleUsernameChange}
                 placeholder="usuario1"
                 autoComplete="off"
+                disabled={loading || checkingUsername}
                 style={{
                   width: '100%',
                   padding: '10px 12px',
@@ -352,23 +361,22 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                   boxSizing: 'border-box'
                 }}
               />
+              {checkingUsername && <span style={{ color: '#1a63d6', fontSize: 12, marginTop: 4, display: 'block' }}>⏳ Verificando disponibilidad...</span>}
               {errors.username && <span style={{ color: '#ff6b6b', fontSize: 12, marginTop: 4, display: 'block' }}>{errors.username}</span>}
             </div>
 
             {/* Email */}
             <div>
               <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, color: '#333' }}>
-                Email *
+                Email <span style={{ color: '#ff6b6b' }}>*</span>
               </label>
               <input
                 type="email"
                 value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  if (errors.email) setErrors({ ...errors, email: '' });
-                }}
-                placeholder="usuario@example.com"
+                onChange={handleEmailChange}
+                placeholder="usuario@dominio.com"
                 autoComplete="off"
+                disabled={loading || checkingEmail}
                 style={{
                   width: '100%',
                   padding: '10px 12px',
@@ -378,13 +386,14 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                   boxSizing: 'border-box'
                 }}
               />
+              {checkingEmail && <span style={{ color: '#1a63d6', fontSize: 12, marginTop: 4, display: 'block' }}>⏳ Verificando disponibilidad...</span>}
               {errors.email && <span style={{ color: '#ff6b6b', fontSize: 12, marginTop: 4, display: 'block' }}>{errors.email}</span>}
             </div>
 
             {/* Rol */}
             <div>
               <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, color: '#333' }}>
-                Rol *
+                Rol <span style={{ color: '#ff6b6b' }}>*</span>
               </label>
               <select
                 value={role}
@@ -437,10 +446,19 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
           {(role === 'gerente' || role === 'cajero') && (
             <div style={{ marginBottom: 16 }}>
               <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#333' }}>
-                Establecimientos * (Obligatorio para {role})
+                Establecimientos <span style={{ color: '#ff6b6b' }}>*</span> <span style={{ fontSize: 13, color: '#666', fontWeight: 400 }}>(Obligatorio para {role})</span>
               </label>
               {establecimientos.length === 0 ? (
-                <p style={{ fontSize: 14, color: '#999', margin: 0 }}>No hay establecimientos disponibles</p>
+                <div style={{ 
+                  padding: 12, 
+                  backgroundColor: '#fff3cd', 
+                  border: '1px solid #ffc107',
+                  borderRadius: 6,
+                  fontSize: 14,
+                  color: '#856404'
+                }}>
+                  ⚠️ No hay establecimientos disponibles para asignar. Debe crear establecimientos primero.
+                </div>
               ) : (
                 <div style={{ border: errors.establecimientos ? '2px solid #ff6b6b' : '1px solid #ddd', borderRadius: 6, padding: 12, maxHeight: 180, overflowY: 'auto' }}>
                   {establecimientos.map(est => (
@@ -495,56 +513,31 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                   ? 'Puntos de emisión por establecimiento'
                   : 'Puntos de emisión (uno por establecimiento)'}
               </label>
-              <p style={{ fontSize: 13, color: '#666', margin: '0 0 12px' }}>
-                Selecciona como máximo un punto de emisión para cada establecimiento asignado.
-              </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {activeEstablecimientos.map((estId) => {
-                  const estInfo = establecimientos.find((est) => est.id === estId);
-                  const puntosDisponibles = getPuntosForEstablecimiento(estId);
-                  const selectedPuntoId = selectedPuntosPorEstablecimiento[estId];
-
-                  return (
-                    <div
-                      key={estId}
-                      style={{
-                        border: '1px solid #e0e0e0',
-                        borderRadius: 8,
-                        padding: 12,
-                        background: '#fafafa'
-                      }}
-                    >
-                      <div style={{ fontWeight: 600, marginBottom: 8, color: '#333' }}>
-                        {estInfo ? `${estInfo.codigo} - ${estInfo.nombre}` : `Establecimiento #${estId}`}
-                      </div>
-                      {puntosDisponibles.length === 0 ? (
-                        <p style={{ fontSize: 13, color: '#999', margin: 0 }}>
-                          No hay puntos de emisión disponibles para este establecimiento
-                        </p>
-                      ) : (
-                        <select
-                          value={selectedPuntoId ? String(selectedPuntoId) : ''}
-                          onChange={(e) => handlePuntoSelection(estId, e.target.value)}
-                          style={{
-                            width: '100%',
-                            padding: '8px 10px',
-                            borderRadius: 6,
-                            border: '1px solid #ccc',
-                            fontSize: 14
-                          }}
-                        >
-                          <option value="">Sin punto asignado</option>
-                          {puntosDisponibles.map((punto) => (
-                            <option key={punto.id} value={String(punto.id)}>
-                              {punto.nombre}
-                            </option>
-                          ))}
-                        </select>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+              {availablePuntos.length === 0 ? (
+                <p style={{ fontSize: 14, color: '#999', margin: 0 }}>
+                  No hay puntos de emisión disponibles para los establecimientos seleccionados
+                </p>
+              ) : (
+                <div style={{ border: '1px solid #ddd', borderRadius: 6, padding: 12, maxHeight: 180, overflowY: 'auto' }}>
+                  {availablePuntos.map(punto => (
+                    <label key={punto.id} style={{ display: 'flex', alignItems: 'center', marginBottom: 8, cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedPuntos.includes(punto.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedPuntos([...selectedPuntos, punto.id]);
+                          } else {
+                            setSelectedPuntos(selectedPuntos.filter(id => id !== punto.id));
+                          }
+                        }}
+                        style={{ marginRight: 8, cursor: 'pointer' }}
+                      />
+                      <span>{punto.nombre}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -553,6 +546,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
             <button
               type="button"
               onClick={onClose}
+              disabled={loading || resendingEmail}
               style={{
                 padding: '10px 20px',
                 border: '1px solid #ddd',
@@ -565,16 +559,47 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
             >
               Cancelar
             </button>
+            
+            {/* Botón Reenviar Correo */}
+            {editingId && ['nuevo', 'suspendido', 'retirado'].includes(estado) && (
+              <button
+                type="button"
+                onClick={handleResendEmail}
+                disabled={loading || resendingEmail}
+                style={{
+                  padding: '10px 20px',
+                  border: 'none',
+                  borderRadius: 6,
+                  background: (loading || resendingEmail) ? '#ccc' : 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                  color: '#fff',
+                  cursor: (loading || resendingEmail) ? 'not-allowed' : 'pointer',
+                  fontWeight: 600,
+                  boxShadow: '0 4px 15px rgba(245, 158, 11, 0.4)'
+                }}
+                title={
+                  estado === 'nuevo' 
+                    ? 'Reenviar correo de verificación inicial'
+                    : 'Enviar correo de reactivación (cambiará a Pendiente Verificación)'
+                }
+              >
+                {resendingEmail ? (
+                  <LoadingSpinner inline size={18} message="Enviando…" />
+                ) : (
+                  '📧 Reenviar Correo'
+                )}
+              </button>
+            )}
+
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || resendingEmail || checkingEmail || checkingUsername || Object.values(errors).some(e => e && e.length > 0)}
               style={{
                 padding: '10px 20px',
                 border: 'none',
                 borderRadius: 6,
-                background: loading ? '#ccc' : '#1a63d6',
+                background: (loading || resendingEmail || checkingEmail || checkingUsername || Object.values(errors).some(e => e && e.length > 0)) ? '#ccc' : '#1a63d6',
                 color: '#fff',
-                cursor: loading ? 'not-allowed' : 'pointer',
+                cursor: (loading || resendingEmail || checkingEmail || checkingUsername || Object.values(errors).some(e => e && e.length > 0)) ? 'not-allowed' : 'pointer',
                 fontWeight: 600
               }}
             >
