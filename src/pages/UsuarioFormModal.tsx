@@ -14,7 +14,16 @@ interface Props {
 }
 
 // Mapping de roles permitidos según el rol del usuario actual
-const getRolesPermitidos = (userRole: string): { value: string; label: string }[] => {
+// Cuando se crea un nuevo usuario, solo se permiten Administrador y Distribuidor
+const getRolesPermitidos = (userRole: string, isCreating: boolean = false): { value: string; label: string }[] => {
+  // Roles permitidos al crear un nuevo usuario
+  if (isCreating) {
+    return [
+      { value: 'administrador', label: '👨‍💼 Administrador' },
+      { value: 'distribuidor', label: '📦 Distribuidor' }
+    ];
+  }
+
   const rolesMap: Record<string, { value: string; label: string }[]> = {
     administrador: [
       { value: 'administrador', label: '👨‍💼 Administrador' },
@@ -92,8 +101,8 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
 
   // Memoizar rolesPermitidos para evitar recálculos infinitos
   const rolesPermitidos = React.useMemo(() => {
-    return currentUser && currentUser.role ? getRolesPermitidos(currentUser.role) : [];
-  }, [currentUser?.role]);
+    return currentUser && currentUser.role ? getRolesPermitidos(currentUser.role, !isEditing) : [];
+  }, [currentUser?.role, isEditing]);
 
   // Memoizar estadosPermitidos basados en el estado actual del usuario
   const estadosPermitidos = React.useMemo(() => {
@@ -119,7 +128,7 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
       setUsername('');
       setEmail('');
       const userRole = currentUser?.role;
-      const defaultRoles = userRole ? getRolesPermitidos(userRole) : [];
+      const defaultRoles = userRole ? getRolesPermitidos(userRole, true) : [];
       setRole(defaultRoles.length > 0 ? defaultRoles[0].value : 'administrador');
       setEstado('nuevo');
     }

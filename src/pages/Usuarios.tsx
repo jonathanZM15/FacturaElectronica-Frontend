@@ -345,70 +345,58 @@ const Usuarios: React.FC = () => {
         </div>
         
         {/* Paginación dentro de la tabla - SIEMPRE VISIBLE */}
-        <div className="usuarios-pagination">
-          <div className="pagination-left">
-            <span style={{ marginRight: '8px' }}>Filas por página:</span>
+        <div className="pagination-controls">
+          <div className="pagination-info">
+            Filas por página: 
             <select 
               value={itemsPerPage} 
               onChange={(e) => {
                 setItemsPerPage(Number(e.target.value));
                 setCurrentPage(1);
               }}
-              className="pagination-select"
+              className="items-per-page-select"
             >
               <option value={5}>5</option>
               <option value={10}>10</option>
               <option value={15}>15</option>
             </select>
-            <span className="pagination-info-text" style={{ marginLeft: '16px' }}>
-              {totalItems > 0 ? `${((currentPage - 1) * itemsPerPage) + 1}-${Math.min(currentPage * itemsPerPage, totalItems)} de ${totalItems}` : '0-0 de 0'}
+            <span className="page-range">
+              {totalItems === 0 ? '0-0' : `${(currentPage - 1) * itemsPerPage + 1}-${Math.min(currentPage * itemsPerPage, totalItems)}`} de {totalItems}
             </span>
           </div>
-          <div className="pagination-center">
-            <button
-              className="btn-pagination"
-              onClick={() => setCurrentPage(1)}
+          
+          <div className="pagination-buttons">
+            <button 
+              onClick={() => setCurrentPage(1)} 
               disabled={currentPage === 1}
               title="Primera página"
+              className="page-btn"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="11 17 6 12 11 7" />
-                <polyline points="18 17 13 12 18 7" />
-              </svg>
+              ⟪
             </button>
-            <button
-              className="btn-pagination"
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+            <button 
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
               disabled={currentPage === 1}
               title="Página anterior"
+              className="page-btn"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
+              ‹
             </button>
-            <span className="pagination-info">
-              Página {currentPage} de {totalPages || 1}
-            </span>
-            <button
-              className="btn-pagination"
-              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-              disabled={currentPage === totalPages || totalPages === 0}
+            <button 
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
+              disabled={currentPage >= totalPages}
               title="Página siguiente"
+              className="page-btn"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
+              ›
             </button>
-            <button
-              className="btn-pagination"
-              onClick={() => setCurrentPage(totalPages)}
-              disabled={currentPage === totalPages || totalPages === 0}
+            <button 
+              onClick={() => setCurrentPage(totalPages)} 
+              disabled={currentPage >= totalPages}
               title="Última página"
+              className="page-btn"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="13 17 18 12 13 7" />
-                <polyline points="6 17 11 12 6 7" />
-              </svg>
+              ⟫
             </button>
           </div>
         </div>
