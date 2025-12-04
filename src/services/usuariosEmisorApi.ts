@@ -38,5 +38,24 @@ export const usuariosEmisorApi = {
     return api.delete(`/emisores/${emiId}/usuarios/${userId}`, {
       data: { password }
     });
+  },
+
+  // Verificar disponibilidad de email
+  checkEmail: async (email: string) => {
+    return api.get(`/usuarios/check/email`, {
+      params: { email }
+    });
+  },
+
+  // Verificar disponibilidad de username
+  checkUsername: async (username: string) => {
+    return api.get(`/usuarios/check/username`, {
+      params: { username }
+    });
+  },
+
+  // Reenviar correo de verificación
+  resendVerificationEmail: async (emiId: string | number, userId: string | number, nuevoEstado?: string) => {
+    return api.post(`/emisores/${emiId}/usuarios/${userId}/resend-verification`, { estado: nuevoEstado });
   }
 };

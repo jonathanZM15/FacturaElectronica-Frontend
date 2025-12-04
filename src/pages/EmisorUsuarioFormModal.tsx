@@ -42,6 +42,10 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
   const [selectedPuntos, setSelectedPuntos] = React.useState<number[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [errors, setErrors] = React.useState<Record<string, string>>({});
+  const [checkingEmail, setCheckingEmail] = React.useState(false);
+  const [checkingUsername, setCheckingUsername] = React.useState(false);
+  const [resendingEmail, setResendingEmail] = React.useState(false);
+  const [estado, setEstado] = React.useState<string>('nuevo');
 
   // Obtener roles permitidos según el rol del usuario actual
   const getRolesPermitidos = React.useMemo(() => {
@@ -79,6 +83,54 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
     }
   }, [availablePuntos]);
 
+  // Validar email en tiempo real
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setEmail(value);
+    setErrors(prev => ({ ...prev, email: '' }));
+
+    if (!editingId && value.length > 3 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+      setCheckingEmail(true);
+      const timer = setTimeout(async () => {
+        try {
+          await usuariosEmisorApi.checkEmail(value);
+          setErrors(prev => ({ ...prev, email: '❌ Este correo ya está registrado' }));
+        } catch (err: any) {
+          if (err?.response?.status === 404) {
+            setErrors(prev => ({ ...prev, email: '' }));
+          }
+        } finally {
+          setCheckingEmail(false);
+        }
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  };
+
+  // Validar username en tiempo real
+  const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setUsername(value);
+    setErrors(prev => ({ ...prev, username: '' }));
+
+    if (!editingId && value.length >= 3) {
+      setCheckingUsername(true);
+      const timer = setTimeout(async () => {
+        try {
+          await usuariosEmisorApi.checkUsername(value);
+          setErrors(prev => ({ ...prev, username: '❌ Este usuario ya está registrado' }));
+        } catch (err: any) {
+          if (err?.response?.status === 404) {
+            setErrors(prev => ({ ...prev, username: '' }));
+          }
+        } finally {
+          setCheckingUsername(false);
+        }
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  };
+
   React.useEffect(() => {
     if (open && initialData) {
       setCedula(initialData.cedula || '');
@@ -87,6 +139,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
       setUsername(initialData.username || '');
       setEmail(initialData.email);
       setRole(initialData.role || 'gerente');
+      setEstado(initialData.estado || 'nuevo');
       setSelectedEstablecimientos([]);
       setSelectedPuntos([]);
     } else if (open) {
@@ -97,6 +150,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
       setUsername('');
       setEmail('');
       setRole(getRolesPermitidos.length > 0 ? getRolesPermitidos[0] : 'gerente');
+      setEstado('nuevo');
       setSelectedEstablecimientos([]);
       setSelectedPuntos([]);
     }
@@ -134,6 +188,51 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const handleResendEmail = async () => {
+    if (!editingId) return;
+
+    setResendingEmail(true);
+    try {
+      let nuevoEstado = estado;
+      if (estado === 'retirado' || estado === 'suspendido') {
+        nuevoEstado = 'pendiente_verificacion';
+      }
+
+      const response = await usuariosEmisorApi.resendVerificationEmail(emiId, editingId, nuevoEstado);
+      
+      if (nuevoEstado !== estado) {
+        setEstado(nuevoEstado);
+      }
+
+      const mensajes: Record<string, { title: string; message: string }> = {
+        nuevo: {
+          title: '✉️ Correo Reenviado',
+          message: `Correo de verificación enviado a ${email}. El usuario debe verificar su cuenta para activarla.`
+        },
+        retirado: {
+          title: '🔄 Proceso de Reactivación Iniciado',
+          message: `Correo de reactivación enviado a ${email}. Estado cambiado a Pendiente Verificación.`
+        },
+        suspendido: {
+          title: '🔄 Proceso de Reactivación Iniciado',
+          message: `Correo de reactivación enviado a ${email}. Estado cambiado a Pendiente Verificación.`
+        }
+      };
+
+      const notif = mensajes[estado] || { 
+        title: '✅ Correo Enviado', 
+        message: response.data?.message || 'Correo enviado exitosamente' 
+      };
+
+      show({ title: notif.title, message: notif.message, type: 'success' });
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || 'Error al reenviar el correo';
+      show({ title: '❌ Error', message: errorMsg, type: 'error' });
+    } finally {
+      setResendingEmail(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -217,7 +316,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
             {/* Cédula */}
             <div>
               <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, color: '#333' }}>
-                Cédula *
+                Cédula <span style={{ color: '#ff6b6b' }}>*</span>
               </label>
               <input
                 type="text"
@@ -244,7 +343,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
             {/* Nombres */}
             <div>
               <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, color: '#333' }}>
-                Nombres *
+                Nombres <span style={{ color: '#ff6b6b' }}>*</span>
               </label>
               <input
                 type="text"
@@ -269,7 +368,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
             {/* Apellidos */}
             <div>
               <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, color: '#333' }}>
-                Apellidos *
+                Apellidos <span style={{ color: '#ff6b6b' }}>*</span>
               </label>
               <input
                 type="text"
@@ -294,17 +393,15 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
             {/* Username */}
             <div>
               <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, color: '#333' }}>
-                Nombre de usuario *
+                Nombre de usuario <span style={{ color: '#ff6b6b' }}>*</span>
               </label>
               <input
                 type="text"
                 value={username}
-                onChange={(e) => {
-                  setUsername(e.target.value);
-                  if (errors.username) setErrors({ ...errors, username: '' });
-                }}
+                onChange={handleUsernameChange}
                 placeholder="usuario1"
                 autoComplete="off"
+                disabled={loading || checkingUsername}
                 style={{
                   width: '100%',
                   padding: '10px 12px',
@@ -314,23 +411,22 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                   boxSizing: 'border-box'
                 }}
               />
+              {checkingUsername && <span style={{ color: '#1a63d6', fontSize: 12, marginTop: 4, display: 'block' }}>⏳ Verificando disponibilidad...</span>}
               {errors.username && <span style={{ color: '#ff6b6b', fontSize: 12, marginTop: 4, display: 'block' }}>{errors.username}</span>}
             </div>
 
             {/* Email */}
             <div>
               <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, color: '#333' }}>
-                Email *
+                Email <span style={{ color: '#ff6b6b' }}>*</span>
               </label>
               <input
                 type="email"
                 value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  if (errors.email) setErrors({ ...errors, email: '' });
-                }}
-                placeholder="usuario@example.com"
+                onChange={handleEmailChange}
+                placeholder="usuario@dominio.com"
                 autoComplete="off"
+                disabled={loading || checkingEmail}
                 style={{
                   width: '100%',
                   padding: '10px 12px',
@@ -340,13 +436,14 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                   boxSizing: 'border-box'
                 }}
               />
+              {checkingEmail && <span style={{ color: '#1a63d6', fontSize: 12, marginTop: 4, display: 'block' }}>⏳ Verificando disponibilidad...</span>}
               {errors.email && <span style={{ color: '#ff6b6b', fontSize: 12, marginTop: 4, display: 'block' }}>{errors.email}</span>}
             </div>
 
             {/* Rol */}
             <div>
               <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, color: '#333' }}>
-                Rol *
+                Rol <span style={{ color: '#ff6b6b' }}>*</span>
               </label>
               <select
                 value={role}
@@ -399,10 +496,19 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
           {(role === 'gerente' || role === 'cajero') && (
             <div style={{ marginBottom: 16 }}>
               <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#333' }}>
-                Establecimientos * (Obligatorio para {role})
+                Establecimientos <span style={{ color: '#ff6b6b' }}>*</span> <span style={{ fontSize: 13, color: '#666', fontWeight: 400 }}>(Obligatorio para {role})</span>
               </label>
               {establecimientos.length === 0 ? (
-                <p style={{ fontSize: 14, color: '#999', margin: 0 }}>No hay establecimientos disponibles</p>
+                <div style={{ 
+                  padding: 12, 
+                  backgroundColor: '#fff3cd', 
+                  border: '1px solid #ffc107',
+                  borderRadius: 6,
+                  fontSize: 14,
+                  color: '#856404'
+                }}>
+                  ⚠️ No hay establecimientos disponibles para asignar. Debe crear establecimientos primero.
+                </div>
               ) : (
                 <div style={{ border: errors.establecimientos ? '2px solid #ff6b6b' : '1px solid #ddd', borderRadius: 6, padding: 12, maxHeight: 180, overflowY: 'auto' }}>
                   {establecimientos.map(est => (
@@ -451,9 +557,16 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                 Puntos de Emisión (Opcional)
               </label>
               {availablePuntos.length === 0 ? (
-                <p style={{ fontSize: 14, color: '#999', margin: 0 }}>
-                  No hay puntos de emisión disponibles para los establecimientos seleccionados
-                </p>
+                <div style={{ 
+                  padding: 12, 
+                  backgroundColor: '#e3f2fd', 
+                  border: '1px solid #2196f3',
+                  borderRadius: 6,
+                  fontSize: 14,
+                  color: '#0d47a1'
+                }}>
+                  ℹ️ No hay puntos de emisión disponibles para los establecimientos seleccionados. Puede crear puntos de emisión más tarde.
+                </div>
               ) : (
                 <div style={{ border: '1px solid #ddd', borderRadius: 6, padding: 12, maxHeight: 180, overflowY: 'auto' }}>
                   {availablePuntos.map(punto => (
@@ -483,6 +596,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
             <button
               type="button"
               onClick={onClose}
+              disabled={loading || resendingEmail}
               style={{
                 padding: '10px 20px',
                 border: '1px solid #ddd',
@@ -495,16 +609,47 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
             >
               Cancelar
             </button>
+            
+            {/* Botón Reenviar Correo */}
+            {editingId && ['nuevo', 'suspendido', 'retirado'].includes(estado) && (
+              <button
+                type="button"
+                onClick={handleResendEmail}
+                disabled={loading || resendingEmail}
+                style={{
+                  padding: '10px 20px',
+                  border: 'none',
+                  borderRadius: 6,
+                  background: (loading || resendingEmail) ? '#ccc' : 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                  color: '#fff',
+                  cursor: (loading || resendingEmail) ? 'not-allowed' : 'pointer',
+                  fontWeight: 600,
+                  boxShadow: '0 4px 15px rgba(245, 158, 11, 0.4)'
+                }}
+                title={
+                  estado === 'nuevo' 
+                    ? 'Reenviar correo de verificación inicial'
+                    : 'Enviar correo de reactivación (cambiará a Pendiente Verificación)'
+                }
+              >
+                {resendingEmail ? (
+                  <LoadingSpinner inline size={18} message="Enviando…" />
+                ) : (
+                  '📧 Reenviar Correo'
+                )}
+              </button>
+            )}
+
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || resendingEmail || checkingEmail || checkingUsername || Object.values(errors).some(e => e && e.length > 0)}
               style={{
                 padding: '10px 20px',
                 border: 'none',
                 borderRadius: 6,
-                background: loading ? '#ccc' : '#1a63d6',
+                background: (loading || resendingEmail || checkingEmail || checkingUsername || Object.values(errors).some(e => e && e.length > 0)) ? '#ccc' : '#1a63d6',
                 color: '#fff',
-                cursor: loading ? 'not-allowed' : 'pointer',
+                cursor: (loading || resendingEmail || checkingEmail || checkingUsername || Object.values(errors).some(e => e && e.length > 0)) ? 'not-allowed' : 'pointer',
                 fontWeight: 600
               }}
             >

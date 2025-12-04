@@ -1,6 +1,7 @@
 import React from 'react';
 import { User } from '../types/user';
 import { useUser } from '../contexts/userContext';
+import { useNotification } from '../contexts/NotificationContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { usuariosApi } from '../services/usuariosApi';
 import './UsuarioFormModalModern.css';
@@ -86,6 +87,7 @@ const getEstadosPermitidos = (estadoActual: string): { value: string; label: str
 
 const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSubmit, isEditing }) => {
   const { user: currentUser } = useUser();
+  const { show } = useNotification();
   const [cedula, setCedula] = React.useState<string>('');
   const [nombres, setNombres] = React.useState<string>('');
   const [apellidos, setApellidos] = React.useState<string>('');
@@ -98,6 +100,7 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
   const [checkingUsername, setCheckingUsername] = React.useState<boolean>(false);
   const [checkingCedula, setCheckingCedula] = React.useState<boolean>(false);
   const [checkingEmail, setCheckingEmail] = React.useState<boolean>(false);
+  const [resendingEmail, setResendingEmail] = React.useState<boolean>(false);
 
   // Memoizar rolesPermitidos para evitar recálculos infinitos
   const rolesPermitidos = React.useMemo(() => {
@@ -341,6 +344,63 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const handleResendEmail = async () => {
+    if (!initialData?.id) return;
+
+    setResendingEmail(true);
+    try {
+      // Determinar el nuevo estado según el estado actual
+      let nuevoEstado = estado;
+      if (estado === 'retirado' || estado === 'suspendido') {
+        nuevoEstado = 'pendiente_verificacion';
+      }
+      // Si es 'nuevo', se mantiene como 'nuevo'
+
+      const response = await usuariosApi.resendVerificationEmail(initialData.id, nuevoEstado);
+      
+      // Actualizar estado local si cambió
+      if (nuevoEstado !== estado) {
+        setEstado(nuevoEstado);
+      }
+
+      const mensajes: Record<string, { title: string; message: string }> = {
+        nuevo: {
+          title: '✉️ Correo Reenviado',
+          message: `Correo de verificación enviado a ${initialData.email}. El usuario debe verificar su cuenta para activarla.`
+        },
+        retirado: {
+          title: '🔄 Proceso de Reactivación Iniciado',
+          message: `Correo de reactivación enviado a ${initialData.email}. Estado cambiado a Pendiente Verificación. El usuario debe verificar su correo para reactivar su cuenta.`
+        },
+        suspendido: {
+          title: '🔄 Proceso de Reactivación Iniciado',
+          message: `Correo de reactivación enviado a ${initialData.email}. Estado cambiado a Pendiente Verificación. El usuario debe verificar su correo para reactivar su cuenta.`
+        }
+      };
+
+      const notif = mensajes[estado] || { 
+        title: '✅ Correo Enviado', 
+        message: response.data?.message || 'Correo enviado exitosamente' 
+      };
+
+      show({ 
+        title: notif.title, 
+        message: notif.message, 
+        type: 'success' 
+      });
+
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || 'Error al reenviar el correo';
+      show({ 
+        title: '❌ Error', 
+        message: errorMsg, 
+        type: 'error' 
+      });
+    } finally {
+      setResendingEmail(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -627,15 +687,43 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
               type="button" 
               className="usuario-btn usuario-btn-cancel" 
               onClick={onClose} 
-              disabled={loading}
+              disabled={loading || resendingEmail}
             >
               Cancelar
             </button>
+            
+            {/* Botón Reenviar Correo - Solo visible en edición para estados específicos */}
+            {isEditing && initialData && ['nuevo', 'suspendido', 'retirado'].includes(estado) && (
+              <button 
+                type="button"
+                className="usuario-btn usuario-btn-resend"
+                onClick={handleResendEmail}
+                disabled={loading || resendingEmail}
+                title={
+                  estado === 'nuevo' 
+                    ? 'Reenviar correo de verificación inicial'
+                    : 'Enviar correo de reactivación (cambiará a Pendiente Verificación)'
+                }
+              >
+                {resendingEmail ? (
+                  <>
+                    <LoadingSpinner inline size={18} message="" />
+                    Enviando...
+                  </>
+                ) : (
+                  <>
+                    📧 Reenviar Correo
+                  </>
+                )}
+              </button>
+            )}
+
             <button 
               type="submit" 
               className="usuario-btn usuario-btn-submit" 
               disabled={
                 loading || 
+                resendingEmail ||
                 rolesPermitidos.length === 0 || 
                 checkingUsername || 
                 checkingCedula || 

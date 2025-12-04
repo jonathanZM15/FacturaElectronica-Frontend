@@ -41,4 +41,9 @@ export const usuariosApi = {
   checkEmail(email: string) {
     return api.get('/api/usuarios/check/email', { params: { email } });
   },
+
+  // Reenviar correo de verificación (con cambio de estado opcional)
+  resendVerificationEmail(id: number | string, nuevoEstado?: string) {
+    return api.post(`/api/usuarios/${id}/resend-verification`, { estado: nuevoEstado });
+  },
 };
