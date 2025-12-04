@@ -37,8 +37,6 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
   const [apellidos, setApellidos] = React.useState('');
   const [username, setUsername] = React.useState('');
   const [email, setEmail] = React.useState('');
-  const [password, setPassword] = React.useState('');
-  const [passwordConfirmation, setPasswordConfirmation] = React.useState('');
   const [role, setRole] = React.useState<string>('gerente');
   const [selectedEstablecimientos, setSelectedEstablecimientos] = React.useState<number[]>([]);
   const [selectedPuntos, setSelectedPuntos] = React.useState<number[]>([]);
@@ -89,8 +87,6 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
       setUsername(initialData.username || '');
       setEmail(initialData.email);
       setRole(initialData.role || 'gerente');
-      setPassword('');
-      setPasswordConfirmation('');
       setSelectedEstablecimientos([]);
       setSelectedPuntos([]);
     } else if (open) {
@@ -100,8 +96,6 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
       setApellidos('');
       setUsername('');
       setEmail('');
-      setPassword('');
-      setPasswordConfirmation('');
       setRole(getRolesPermitidos.length > 0 ? getRolesPermitidos[0] : 'gerente');
       setSelectedEstablecimientos([]);
       setSelectedPuntos([]);
@@ -126,19 +120,6 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
     }
     if (username.length < 3) {
       newErrors.username = 'Mínimo 3 caracteres';
-    }
-
-    if (!editingId) {
-      if (!password) {
-        newErrors.password = 'Contraseña requerida';
-      } else if (password.length < 8) {
-        newErrors.password = 'Mínimo 8 caracteres';
-      } else if (!password.match(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/)) {
-        newErrors.password = 'Debe tener mayúscula, minúscula, número y símbolo';
-      }
-      if (password !== passwordConfirmation) {
-        newErrors.passwordConfirmation = 'Las contraseñas no coinciden';
-      }
     }
 
     // Validar restricciones de asociación por rol
@@ -184,16 +165,15 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
       }
 
       if (!editingId) {
-        payload.password = password;
-        payload.password_confirmation = passwordConfirmation;
+        // No enviar contraseña - se genera automáticamente en el backend
         const res = await usuariosEmisorApi.create(emiId, payload);
-        show({ title: 'Éxito', message: 'Usuario creado correctamente', type: 'success' });
+        show({ 
+          title: '✅ Usuario creado', 
+          message: `Se ha enviado un correo a ${email} para verificar la cuenta y establecer su contraseña`, 
+          type: 'success' 
+        });
         onCreated?.(res.data?.data);
       } else {
-        if (password) {
-          payload.password = password;
-          payload.password_confirmation = passwordConfirmation;
-        }
         const res = await usuariosEmisorApi.update(emiId, editingId, payload);
         show({ title: 'Éxito', message: 'Usuario actualizado correctamente', type: 'success' });
         onUpdated?.(res.data?.data);
@@ -396,58 +376,22 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
             </div>
           </div>
 
-          {/* Password (solo en creación) */}
+          {/* Contraseña Auto-Generada - Solo en creación */}
           {!editingId && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
-              <div>
-                <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, color: '#333' }}>
-                  Contraseña *
-                </label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    if (errors.password) setErrors({ ...errors, password: '' });
-                  }}
-                  placeholder="••••••••"
-                  autoComplete="new-password"
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    border: errors.password ? '2px solid #ff6b6b' : '1px solid #ddd',
-                    borderRadius: 6,
-                    fontSize: 14,
-                    boxSizing: 'border-box'
-                  }}
-                />
-                {errors.password && <span style={{ color: '#ff6b6b', fontSize: 12, marginTop: 4, display: 'block' }}>{errors.password}</span>}
+            <div style={{ 
+              marginBottom: 16, 
+              padding: 16, 
+              background: 'linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%)',
+              border: '2px solid #4caf50',
+              borderRadius: 8
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                <span style={{ fontSize: 24 }}>🔐</span>
+                <strong style={{ color: '#2e7d32', fontSize: 15 }}>Contraseña Auto-Generada</strong>
               </div>
-
-              <div>
-                <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, color: '#333' }}>
-                  Confirmar contraseña *
-                </label>
-                <input
-                  type="password"
-                  value={passwordConfirmation}
-                  onChange={(e) => {
-                    setPasswordConfirmation(e.target.value);
-                    if (errors.passwordConfirmation) setErrors({ ...errors, passwordConfirmation: '' });
-                  }}
-                  placeholder="••••••••"
-                  autoComplete="new-password"
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    border: errors.passwordConfirmation ? '2px solid #ff6b6b' : '1px solid #ddd',
-                    borderRadius: 6,
-                    fontSize: 14,
-                    boxSizing: 'border-box'
-                  }}
-                />
-                {errors.passwordConfirmation && <span style={{ color: '#ff6b6b', fontSize: 12, marginTop: 4, display: 'block' }}>{errors.passwordConfirmation}</span>}
-              </div>
+              <p style={{ margin: 0, fontSize: 13, color: '#388e3c', lineHeight: 1.5 }}>
+                ℹ️ El usuario recibirá un correo electrónico para <strong>verificar su cuenta</strong> y establecer su propia contraseña de forma segura.
+              </p>
             </div>
           )}
 
