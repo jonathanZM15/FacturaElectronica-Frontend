@@ -39,7 +39,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
   const [email, setEmail] = React.useState('');
   const [role, setRole] = React.useState<string>('gerente');
   const [selectedEstablecimientos, setSelectedEstablecimientos] = React.useState<number[]>([]);
-  const [selectedPuntos, setSelectedPuntos] = React.useState<number[]>([]);
+  const [selectedPuntosPorEstablecimiento, setSelectedPuntosPorEstablecimiento] = React.useState<Record<number, number | null>>({});
   const [loading, setLoading] = React.useState(false);
   const [errors, setErrors] = React.useState<Record<string, string>>({});
 
@@ -59,25 +59,59 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
     return rolesMap[rol] || [];
   }, [currentUser]);
 
-  // Filtrar puntos según establecimientos seleccionados
-  const availablePuntos = React.useMemo(() => {
-    if (selectedEstablecimientos.length === 0) return [];
-    
-    return puntosEmision.filter(p => {
-      return selectedEstablecimientos.includes(p.establecimiento_id) ||
-             selectedEstablecimientos.includes(Number(p.establecimiento_id)) ||
-             selectedEstablecimientos.includes(String(p.establecimiento_id) as any);
-    });
-  }, [selectedEstablecimientos, puntosEmision]);
-
-  // Si se cambian establecimientos, actualizar puntos seleccionados
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  React.useEffect(() => {
-    const validPuntos = selectedPuntos.filter(p => availablePuntos.some(ap => ap.id === p));
-    if (validPuntos.length !== selectedPuntos.length) {
-      setSelectedPuntos(validPuntos);
+  const activeEstablecimientos = React.useMemo(() => {
+    if (role === 'emisor') {
+      return establecimientos.map(est => est.id);
     }
-  }, [availablePuntos]);
+    return selectedEstablecimientos;
+  }, [role, establecimientos, selectedEstablecimientos]);
+
+  React.useEffect(() => {
+    setSelectedPuntosPorEstablecimiento((prev) => {
+      const next: Record<number, number | null> = {};
+      let changed = false;
+
+      activeEstablecimientos.forEach((estId) => {
+        const prevHasKey = Object.prototype.hasOwnProperty.call(prev, estId);
+        const prevValue = prevHasKey ? prev[estId] : null;
+        const hasValidPunto = prevValue && puntosEmision.some(
+          (p) => p.id === prevValue && Number(p.establecimiento_id) === Number(estId)
+        ) ? prevValue : null;
+        next[estId] = hasValidPunto;
+        if (!changed && (!prevHasKey || hasValidPunto !== prevValue)) {
+          changed = true;
+        }
+      });
+
+      if (!changed) {
+        const nextKeys = Object.keys(next);
+        const prevKeys = Object.keys(prev);
+        if (nextKeys.length !== prevKeys.length) {
+          changed = true;
+        } else {
+          for (const key of prevKeys) {
+            if (!Object.prototype.hasOwnProperty.call(next, key)) {
+              changed = true;
+              break;
+            }
+          }
+        }
+      }
+
+      return changed ? next : prev;
+    });
+  }, [activeEstablecimientos, puntosEmision]);
+
+  const handlePuntoSelection = React.useCallback((estId: number, puntoId: string) => {
+    setSelectedPuntosPorEstablecimiento((prev) => ({
+      ...prev,
+      [estId]: puntoId ? Number(puntoId) : null
+    }));
+  }, []);
+
+  const getPuntosForEstablecimiento = React.useCallback((estId: number) => {
+    return puntosEmision.filter((p) => Number(p.establecimiento_id) === Number(estId));
+  }, [puntosEmision]);
 
   React.useEffect(() => {
     if (open && initialData) {
@@ -88,7 +122,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
       setEmail(initialData.email);
       setRole(initialData.role || 'gerente');
       setSelectedEstablecimientos([]);
-      setSelectedPuntos([]);
+      setSelectedPuntosPorEstablecimiento({});
     } else if (open) {
       // Reset form
       setCedula('');
@@ -98,7 +132,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
       setEmail('');
       setRole(getRolesPermitidos.length > 0 ? getRolesPermitidos[0] : 'gerente');
       setSelectedEstablecimientos([]);
-      setSelectedPuntos([]);
+      setSelectedPuntosPorEstablecimiento({});
     }
     setErrors({});
   }, [open, initialData, getRolesPermitidos]);
@@ -153,15 +187,19 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
         estado: 'activo'
       };
 
+      const puntosAsignados = activeEstablecimientos
+        .map((estId) => selectedPuntosPorEstablecimiento[estId] ?? null)
+        .filter((p): p is number => Boolean(p));
+
       // Aplicar reglas de asociación según el rol
       if (role === 'emisor') {
-        // Emisor: no es obligatorio, se asocia automáticamente a todos
+        // Emisor: no es obligatorio, se asocia automáticamente a todos, pero se permiten puntos por establecimiento
         payload.establecimientos_ids = [];
-        payload.puntos_emision_ids = [];
+        payload.puntos_emision_ids = puntosAsignados;
       } else if (role === 'gerente' || role === 'cajero') {
         // Gerente y Cajero: establecimientos obligatorios
         payload.establecimientos_ids = selectedEstablecimientos.length > 0 ? selectedEstablecimientos : [];
-        payload.puntos_emision_ids = selectedPuntos.length > 0 ? selectedPuntos : [];
+        payload.puntos_emision_ids = puntosAsignados;
       }
 
       if (!editingId) {
@@ -355,7 +393,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                   // Limpiar establecimientos y puntos al cambiar de rol
                   if (e.target.value === 'emisor') {
                     setSelectedEstablecimientos([]);
-                    setSelectedPuntos([]);
+                    setSelectedPuntosPorEstablecimiento({});
                   }
                 }}
                 style={{
@@ -412,9 +450,14 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                         checked={selectedEstablecimientos.includes(est.id)}
                         onChange={(e) => {
                           if (e.target.checked) {
-                            setSelectedEstablecimientos([...selectedEstablecimientos, est.id]);
+                            setSelectedEstablecimientos(prev => [...prev, est.id]);
                           } else {
-                            setSelectedEstablecimientos(selectedEstablecimientos.filter(id => id !== est.id));
+                            setSelectedEstablecimientos(prev => prev.filter(id => id !== est.id));
+                            setSelectedPuntosPorEstablecimiento(prev => {
+                              if (!(est.id in prev)) return prev;
+                              const { [est.id]: _removed, ...rest } = prev;
+                              return rest;
+                            });
                           }
                           if (errors.establecimientos) setErrors({ ...errors, establecimientos: '' });
                         }}
@@ -439,42 +482,69 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
               borderRadius: 4
             }}>
               <p style={{ margin: 0, fontSize: 14, color: '#1565c0' }}>
-                ℹ️ El rol <strong>Emisor</strong> se asocia automáticamente a todos los establecimientos de la empresa.
+                ℹ️ El rol <strong>Emisor</strong> se asocia automáticamente a todos los establecimientos de la empresa. Define abajo el punto de emisión que usará en cada uno.
               </p>
             </div>
           )}
 
-          {/* Puntos de Emisión - mostrar solo si hay establecimientos seleccionados */}
-          {selectedEstablecimientos.length > 0 && (
+          {/* Puntos de Emisión - uno por establecimiento */}
+          {activeEstablecimientos.length > 0 && (
             <div style={{ marginBottom: 16 }}>
-              <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#333' }}>
-                Puntos de Emisión (Opcional)
+              <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, color: '#333' }}>
+                {role === 'emisor'
+                  ? 'Puntos de emisión por establecimiento'
+                  : 'Puntos de emisión (uno por establecimiento)'}
               </label>
-              {availablePuntos.length === 0 ? (
-                <p style={{ fontSize: 14, color: '#999', margin: 0 }}>
-                  No hay puntos de emisión disponibles para los establecimientos seleccionados
-                </p>
-              ) : (
-                <div style={{ border: '1px solid #ddd', borderRadius: 6, padding: 12, maxHeight: 180, overflowY: 'auto' }}>
-                  {availablePuntos.map(punto => (
-                    <label key={punto.id} style={{ display: 'flex', alignItems: 'center', marginBottom: 8, cursor: 'pointer' }}>
-                      <input
-                        type="checkbox"
-                        checked={selectedPuntos.includes(punto.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedPuntos([...selectedPuntos, punto.id]);
-                          } else {
-                            setSelectedPuntos(selectedPuntos.filter(id => id !== punto.id));
-                          }
-                        }}
-                        style={{ marginRight: 8, cursor: 'pointer' }}
-                      />
-                      <span>{punto.nombre}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
+              <p style={{ fontSize: 13, color: '#666', margin: '0 0 12px' }}>
+                Selecciona como máximo un punto de emisión para cada establecimiento asignado.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {activeEstablecimientos.map((estId) => {
+                  const estInfo = establecimientos.find((est) => est.id === estId);
+                  const puntosDisponibles = getPuntosForEstablecimiento(estId);
+                  const selectedPuntoId = selectedPuntosPorEstablecimiento[estId];
+
+                  return (
+                    <div
+                      key={estId}
+                      style={{
+                        border: '1px solid #e0e0e0',
+                        borderRadius: 8,
+                        padding: 12,
+                        background: '#fafafa'
+                      }}
+                    >
+                      <div style={{ fontWeight: 600, marginBottom: 8, color: '#333' }}>
+                        {estInfo ? `${estInfo.codigo} - ${estInfo.nombre}` : `Establecimiento #${estId}`}
+                      </div>
+                      {puntosDisponibles.length === 0 ? (
+                        <p style={{ fontSize: 13, color: '#999', margin: 0 }}>
+                          No hay puntos de emisión disponibles para este establecimiento
+                        </p>
+                      ) : (
+                        <select
+                          value={selectedPuntoId ? String(selectedPuntoId) : ''}
+                          onChange={(e) => handlePuntoSelection(estId, e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '8px 10px',
+                            borderRadius: 6,
+                            border: '1px solid #ccc',
+                            fontSize: 14
+                          }}
+                        >
+                          <option value="">Sin punto asignado</option>
+                          {puntosDisponibles.map((punto) => (
+                            <option key={punto.id} value={String(punto.id)}>
+                              {punto.nombre}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 
