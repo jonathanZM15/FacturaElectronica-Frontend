@@ -46,6 +46,22 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
   const [checkingUsername, setCheckingUsername] = React.useState(false);
   const [resendingEmail, setResendingEmail] = React.useState(false);
   const [estado, setEstado] = React.useState<string>('nuevo');
+  const usernameCheckTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const emailCheckTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isEditing = React.useMemo(() => Boolean(editingId), [editingId]);
+
+  React.useEffect(() => {
+    return () => {
+      if (usernameCheckTimeout.current) {
+        clearTimeout(usernameCheckTimeout.current);
+        usernameCheckTimeout.current = null;
+      }
+      if (emailCheckTimeout.current) {
+        clearTimeout(emailCheckTimeout.current);
+        emailCheckTimeout.current = null;
+      }
+    };
+  }, []);
 
   // Obtener roles permitidos según el rol del usuario actual
   const getRolesPermitidos = React.useMemo(() => {
@@ -71,11 +87,50 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
   }, [role, establecimientos, selectedEstablecimientos]);
 
   React.useEffect(() => {
-    const validPuntos = selectedPuntos.filter(p => availablePuntos.some(ap => ap.id === p));
-    if (validPuntos.length !== selectedPuntos.length) {
-      setSelectedPuntos(validPuntos);
-    }
-  }, [availablePuntos]);
+    setSelectedPuntosPorEstablecimiento((prev) => {
+      const next: Record<number, number | null> = {};
+      let changed = false;
+
+      activeEstablecimientos.forEach((estId) => {
+        const prevValue = Object.prototype.hasOwnProperty.call(prev, estId) ? prev[estId] : null;
+        const isValid = prevValue && puntosEmision.some(
+          (p) => p.id === prevValue && Number(p.establecimiento_id) === Number(estId)
+        ) ? prevValue : null;
+        next[estId] = isValid;
+        if (!changed && isValid !== prevValue) {
+          changed = true;
+        }
+      });
+
+      if (!changed) {
+        const prevKeys = Object.keys(prev);
+        const nextKeys = Object.keys(next);
+        if (prevKeys.length !== nextKeys.length) {
+          changed = true;
+        } else {
+          for (const key of prevKeys) {
+            if (!Object.prototype.hasOwnProperty.call(next, Number(key))) {
+              changed = true;
+              break;
+            }
+          }
+        }
+      }
+
+      return changed ? next : prev;
+    });
+  }, [activeEstablecimientos, puntosEmision]);
+
+  const handlePuntoSelection = React.useCallback((estId: number, value: string) => {
+    setSelectedPuntosPorEstablecimiento((prev) => ({
+      ...prev,
+      [estId]: value ? Number(value) : null
+    }));
+  }, []);
+
+  const getPuntosForEstablecimiento = React.useCallback((estId: number) => {
+    return puntosEmision.filter((p) => Number(p.establecimiento_id) === Number(estId));
+  }, [puntosEmision]);
 
   React.useEffect(() => {
     if (open && initialData) {
@@ -109,10 +164,10 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
     if (!cedula.match(/^\d{10}$/)) {
       newErrors.cedula = 'Debe contener exactamente 10 dígitos';
     }
-    if (!nombres.match(/^[\p{L}\s\-'áéíóúñÁÉÍÓÚÑ]+$/u) || nombres.length < 3) {
+    if (!nombres.match(/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s\-'`]+$/) || nombres.length < 3) {
       newErrors.nombres = 'Solo letras, mínimo 3 caracteres';
     }
-    if (!apellidos.match(/^[\p{L}\s\-'áéíóúñÁÉÍÓÚÑ]+$/u) || apellidos.length < 3) {
+    if (!apellidos.match(/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s\-'`]+$/) || apellidos.length < 3) {
       newErrors.apellidos = 'Solo letras, mínimo 3 caracteres';
     }
     if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
@@ -134,6 +189,84 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setUsername(value);
+
+    let error = '';
+    if (value.length > 0 && value.length < 3) {
+      error = 'El nombre de usuario debe tener al menos 3 caracteres';
+    }
+    setErrors((prev) => ({ ...prev, username: error }));
+
+    if (usernameCheckTimeout.current) {
+      clearTimeout(usernameCheckTimeout.current);
+      usernameCheckTimeout.current = null;
+    }
+
+    if (value.length >= 3 && (!isEditing || value !== initialData?.username)) {
+      setCheckingUsername(true);
+      usernameCheckTimeout.current = setTimeout(async () => {
+        try {
+          await usuariosEmisorApi.checkUsername(value);
+          setErrors((prev) => ({ ...prev, username: '❌ Este nombre de usuario ya existe' }));
+        } catch (err: any) {
+          if (err?.response?.status === 404) {
+            setErrors((prev) => ({ ...prev, username: '' }));
+          } else {
+            show({ title: 'Error', message: 'No se pudo verificar el nombre de usuario', type: 'error' });
+          }
+        } finally {
+          setCheckingUsername(false);
+        }
+      }, 500);
+    } else {
+      setCheckingUsername(false);
+    }
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setEmail(value);
+
+    let error = '';
+    if (value.length > 0) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!value.includes('@')) {
+        error = 'El correo debe contener @';
+      } else if (!emailRegex.test(value)) {
+        error = 'Email inválido. Use formato: usuario@dominio.com';
+      }
+    }
+    setErrors((prev) => ({ ...prev, email: error }));
+
+    if (emailCheckTimeout.current) {
+      clearTimeout(emailCheckTimeout.current);
+      emailCheckTimeout.current = null;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (value.length > 0 && emailRegex.test(value) && (!isEditing || value !== initialData?.email)) {
+      setCheckingEmail(true);
+      emailCheckTimeout.current = setTimeout(async () => {
+        try {
+          await usuariosEmisorApi.checkEmail(value);
+          setErrors((prev) => ({ ...prev, email: '❌ Este correo ya está registrado' }));
+        } catch (err: any) {
+          if (err?.response?.status === 404) {
+            setErrors((prev) => ({ ...prev, email: '' }));
+          } else {
+            show({ title: 'Error', message: 'No se pudo verificar el correo', type: 'error' });
+          }
+        } finally {
+          setCheckingEmail(false);
+        }
+      }, 500);
+    } else {
+      setCheckingEmail(false);
+    }
   };
 
   const handleResendEmail = async () => {
@@ -513,31 +646,56 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                   ? 'Puntos de emisión por establecimiento'
                   : 'Puntos de emisión (uno por establecimiento)'}
               </label>
-              {availablePuntos.length === 0 ? (
-                <p style={{ fontSize: 14, color: '#999', margin: 0 }}>
-                  No hay puntos de emisión disponibles para los establecimientos seleccionados
-                </p>
-              ) : (
-                <div style={{ border: '1px solid #ddd', borderRadius: 6, padding: 12, maxHeight: 180, overflowY: 'auto' }}>
-                  {availablePuntos.map(punto => (
-                    <label key={punto.id} style={{ display: 'flex', alignItems: 'center', marginBottom: 8, cursor: 'pointer' }}>
-                      <input
-                        type="checkbox"
-                        checked={selectedPuntos.includes(punto.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedPuntos([...selectedPuntos, punto.id]);
-                          } else {
-                            setSelectedPuntos(selectedPuntos.filter(id => id !== punto.id));
-                          }
-                        }}
-                        style={{ marginRight: 8, cursor: 'pointer' }}
-                      />
-                      <span>{punto.nombre}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
+              <p style={{ fontSize: 13, color: '#666', margin: '4px 0 12px' }}>
+                Selecciona como máximo un punto de emisión para cada establecimiento asignado.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {activeEstablecimientos.map((estId) => {
+                  const estInfo = establecimientos.find((est) => est.id === estId);
+                  const puntosDisponibles = getPuntosForEstablecimiento(estId);
+                  const selectedPuntoId = selectedPuntosPorEstablecimiento[estId];
+
+                  return (
+                    <div
+                      key={estId}
+                      style={{
+                        border: '1px solid #e0e0e0',
+                        borderRadius: 8,
+                        padding: 12,
+                        background: '#fafafa'
+                      }}
+                    >
+                      <div style={{ fontWeight: 600, marginBottom: 8, color: '#333' }}>
+                        {estInfo ? `${estInfo.codigo} - ${estInfo.nombre}` : `Establecimiento #${estId}`}
+                      </div>
+                      {puntosDisponibles.length === 0 ? (
+                        <p style={{ fontSize: 13, color: '#999', margin: 0 }}>
+                          No hay puntos de emisión disponibles para este establecimiento
+                        </p>
+                      ) : (
+                        <select
+                          value={selectedPuntoId != null ? String(selectedPuntoId) : ''}
+                          onChange={(e) => handlePuntoSelection(estId, e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '8px 10px',
+                            borderRadius: 6,
+                            border: '1px solid #ccc',
+                            fontSize: 14
+                          }}
+                        >
+                          <option value="">Sin punto asignado</option>
+                          {puntosDisponibles.map((punto) => (
+                            <option key={punto.id} value={String(punto.id)}>
+                              {punto.nombre}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 
