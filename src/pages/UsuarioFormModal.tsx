@@ -235,20 +235,20 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
     // Validación en tiempo real
     let error = '';
     if (value.length > 0) {
-      // Verificar que tenga formato de email
+      // Verificar que tenga formato de email válido
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!value.includes('@')) {
         error = 'El correo debe contener @';
-      } else if (!value.includes('gmail.com') && !value.includes('factura.local')) {
-        error = 'El correo debe terminar en @gmail.com o @factura.local';
-      } else if (!/^[^\s@]+@(gmail\.com|factura\.local)$/.test(value)) {
-        error = 'Email inválido. Use formato: usuario@gmail.com o usuario@factura.local';
+      } else if (!emailRegex.test(value)) {
+        error = 'Email inválido. Use formato: usuario@dominio.com';
       }
     }
     
     setErrors(prev => ({ ...prev, email: error }));
     
     // Verificar disponibilidad si tiene formato correcto
-    if (value.length > 0 && /^[^\s@]+@(gmail\.com|factura\.local)$/.test(value) && !isEditing) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (value.length > 0 && emailRegex.test(value) && !isEditing) {
       setCheckingEmail(true);
       const timer = setTimeout(async () => {
         try {
@@ -318,9 +318,10 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
       newErrors.username = 'El nombre de usuario debe tener al menos 3 caracteres';
     }
 
-    // Email: validación básica y debe ser gmail.com o factura.local
-    if (!email || !/^[^\s@]+@(gmail\.com|factura\.local)$/.test(email)) {
-      newErrors.email = 'Email inválido. Use formato: usuario@gmail.com o usuario@factura.local';
+    // Email: validación de formato estándar
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailRegex.test(email)) {
+      newErrors.email = 'Email inválido. Use formato: usuario@dominio.com';
     }
 
     // Rol - Validar que está en los roles permitidos
