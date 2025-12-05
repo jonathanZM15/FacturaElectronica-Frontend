@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import './Emisores.css';
+import './UsuarioDeleteModalModern.css';
 import { emisoresApi } from '../services/emisoresApi';
 import EmisorFormModal from './EmisorFormModal';
 import ImageViewerModal from './ImageViewerModal';
@@ -773,51 +774,122 @@ const Emisores: React.FC = () => {
 
     {/* Step 1: Confirmation modal (shows RUC + name) */}
     {deleteOpen && (
-      <div className="mf-modal-overlay" role="dialog" aria-modal="true">
-        <div className="mf-modal" style={{ width: 'min(620px,92vw)', padding: 22 }}>
-          <h3 style={{ margin: 0, color: '#1a63d6', fontSize: 22, textAlign: 'center' }}>Eliminación de emisor</h3>
-          <div style={{ height: 12 }} />
-          <p style={{ textAlign: 'center', fontSize: 16, margin: '0 0 8px', fontWeight: 700 }}>¿Está seguro que desea eliminar al emisor:</p>
-          <p style={{ textAlign: 'center', marginTop: 6, marginBottom: 12 }}>
-            <span style={{ color: '#c62828', fontWeight: 800, fontSize: 16 }}>{/* RUC */}
-              {data.find(d => d.id === deletingId)?.ruc ?? ''}
-            </span>
-            <span> - </span>
-            <span style={{ color: '#c62828', fontWeight: 800 }}>{deletingName}</span>
-          </p>
-          <p style={{ textAlign: 'center', marginTop: 0, marginBottom: 18, fontSize: 15 }}>y todos sus datos asociados?</p>
-
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
-            <button className="mf-btn-cancel" onClick={() => setDeleteOpen(false)} style={{ padding: '10px 22px', borderRadius: 20 }}>CANCELAR</button>
-            <button className="mf-btn-confirm" onClick={() => { setDeleteOpen(false); setDeletePasswordOpen(true); }} style={{ padding: '10px 22px', borderRadius: 20, background: '#ff6b6b' }}>CONFIRMAR</button>
+      <div className="delete-modal-overlay">
+        <div className="delete-modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="delete-modal-header">
+            <h2>
+              <span className="icon">⚠️</span>
+              Eliminar emisor
+            </h2>
+            <button 
+              className="delete-modal-close" 
+              onClick={() => setDeleteOpen(false)}
+            >
+              ✕
+            </button>
           </div>
 
-          <style>{`
-            .mf-modal-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.35); display:flex; align-items:center; justify-content:center; z-index:3000; }
-            .mf-modal{ width:min(540px, 92vw); background:#fff; border-radius:12px; padding:28px 24px; box-shadow:0 20px 60px rgba(0,0,0,.25); text-align:center; }
-            .mf-btn-cancel{ padding:10px 18px; border-radius:8px; background:#fff; color:#333; border:2px solid #000; font-weight:700; cursor:pointer; }
-            .mf-btn-confirm{ padding:10px 18px; border-radius:8px; background:#ff6b6b; color:#fff; border:none; font-weight:700; cursor:pointer; }
-            .mf-btn-cancel:disabled, .mf-btn-confirm:disabled{ opacity:0.6; cursor:not-allowed; }
-          `}</style>
+          <div className="delete-modal-body">
+            <p className="delete-confirmation-text">
+              ¿Está seguro que desea eliminar al emisor:
+            </p>
+            <p style={{ textAlign: 'center', marginTop: 12, marginBottom: 20, fontSize: 18 }}>
+              <span style={{ color: '#dc2626', fontWeight: 800 }}>{data.find(d => d.id === deletingId)?.ruc ?? ''}</span>
+              <span style={{ fontWeight: 600 }}> - </span>
+              <span style={{ color: '#dc2626', fontWeight: 800 }}>{deletingName}</span>
+            </p>
+            <p className="delete-info-text" style={{ textAlign: 'center' }}>
+              y todos sus datos asociados?
+            </p>
+          </div>
+
+          <div className="delete-modal-footer">
+            <button 
+              type="button"
+              className="delete-btn delete-btn-cancel" 
+              onClick={() => setDeleteOpen(false)}
+            >
+              Cancelar
+            </button>
+            <button 
+              type="button"
+              className="delete-btn delete-btn-danger" 
+              onClick={() => { setDeleteOpen(false); setDeletePasswordOpen(true); }}
+            >
+              🗑️ Confirmar
+            </button>
+          </div>
         </div>
       </div>
     )}
 
     {/* History prepared modal: shows backup link and allows admin to proceed to deletion */}
     {historyPreparedOpen && (
-      <div className="mf-modal-overlay" role="dialog" aria-modal="true">
-        <div className="mf-modal" style={{ width: 'min(620px,92vw)', padding: 22 }}>
-          <h3 style={{ margin: 0, color: '#1a63d6', fontSize: 22, textAlign: 'center' }}>Respaldo generado</h3>
-          <div style={{ height: 12 }} />
-          <p style={{ textAlign: 'center', fontSize: 15, margin: '0 0 12px' }}>Se generó un respaldo con la información del emisor y se envió una notificación al cliente (si aplica).</p>
-          {backupUrl && (
-            <p style={{ textAlign: 'center', marginBottom: 12 }}>
-              <a href={backupUrl} target="_blank" rel="noreferrer">Descargar respaldo</a>
+      <div className="delete-modal-overlay">
+        <div className="delete-modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="delete-modal-header">
+            <h2>
+              <span className="icon">💾</span>
+              Respaldo generado
+            </h2>
+            <button 
+              className="delete-modal-close" 
+              onClick={() => setHistoryPreparedOpen(false)}
+            >
+              ✕
+            </button>
+          </div>
+
+          <div className="delete-modal-body">
+            <p className="delete-confirmation-text">
+              Se generó un respaldo con la información del emisor y se envió una notificación al cliente (si aplica).
             </p>
-          )}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
-            <button className="mf-btn-cancel" onClick={() => setHistoryPreparedOpen(false)} style={{ padding: '10px 22px', borderRadius: 20 }}>CANCELAR</button>
-            <button className="mf-btn-confirm" onClick={() => { setHistoryPreparedOpen(false); setDeletingWithHistory(true); setDeletePassword(''); setDeleteError(null); setDeletePasswordOpen(true); }} style={{ padding: '10px 22px', borderRadius: 20, background: '#ff6b6b' }}>ELIMINAR PERMANENTEMENTE</button>
+            {backupUrl && (
+              <p style={{ textAlign: 'center', margin: '16px 0' }}>
+                <a 
+                  href={backupUrl} 
+                  target="_blank" 
+                  rel="noreferrer"
+                  style={{ 
+                    color: '#2563eb', 
+                    fontWeight: 600, 
+                    textDecoration: 'none',
+                    borderBottom: '2px solid #2563eb'
+                  }}
+                >
+                  📥 Descargar respaldo
+                </a>
+              </p>
+            )}
+            <div className="delete-warning-box" style={{ marginTop: 16 }}>
+              <span className="icon">⚠️</span>
+              <div>
+                <strong>Advertencia:</strong> Al continuar, se eliminará permanentemente el emisor del sistema.
+              </div>
+            </div>
+          </div>
+
+          <div className="delete-modal-footer">
+            <button 
+              type="button"
+              className="delete-btn delete-btn-cancel" 
+              onClick={() => setHistoryPreparedOpen(false)}
+            >
+              Cancelar
+            </button>
+            <button 
+              type="button"
+              className="delete-btn delete-btn-danger" 
+              onClick={() => { 
+                setHistoryPreparedOpen(false); 
+                setDeletingWithHistory(true); 
+                setDeletePassword(''); 
+                setDeleteError(null); 
+                setDeletePasswordOpen(true); 
+              }}
+            >
+              🗑️ Eliminar permanentemente
+            </button>
           </div>
         </div>
       </div>
@@ -825,61 +897,125 @@ const Emisores: React.FC = () => {
 
     {/* Step 2: Password entry modal */}
     {deletePasswordOpen && (
-      <div className="mf-modal-overlay" role="dialog" aria-modal="true">
-        <div className="mf-modal" style={{ width: 'min(520px,92vw)', padding: 22 }}>
-          <h3 style={{ margin: 0, color: '#1a63d6', fontSize: 22, textAlign: 'center' }}>Eliminación de emisor</h3>
-          <div style={{ height: 12 }} />
-          <p style={{ textAlign: 'center', fontSize: 16, margin: '0 0 12px', fontWeight: 600 }}>Ingresa tu clave de administrador para confirmar la eliminación del emisor</p>
-
-          <div style={{ margin: '8px 0 6px' }}>
-            <input
-              type="password"
-              value={deletePassword}
-              onChange={(e) => setDeletePassword(e.target.value)}
-              placeholder="Clave de administrador"
-              style={{ width: '100%', padding: '12px 2px', borderRadius: 8, border: '1px solid #d0d0d0', fontSize: 16 }}
-              autoFocus
-            />
-            {deleteError && <div style={{ color: '#b00020', marginTop: 8 }}>{deleteError}</div>}
+      <div className="delete-modal-overlay">
+        <div className="delete-modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="delete-modal-header">
+            <h2>
+              <span className="icon">🔒</span>
+              Verificar contraseña
+            </h2>
+            <button 
+              className="delete-modal-close" 
+              onClick={() => { 
+                setDeletePasswordOpen(false); 
+                setDeletePassword(''); 
+              }}
+            >
+              ✕
+            </button>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 14 }}>
-            <button className="mf-btn-cancel" onClick={() => { setDeletePasswordOpen(false); setDeletePassword(''); }} disabled={deleteLoading}>CANCELAR</button>
-            <button className="mf-btn-confirm" onClick={async () => {
-              if (!deletingId) return;
-              setDeleteLoading(true);
-              setDeleteError(null);
-              try {
-                if (deletingWithHistory) {
-                  await emisoresApi.deletePermanent(deletingId, deletePassword);
-                } else {
-                  await emisoresApi.delete(deletingId, deletePassword);
+          <div className="delete-modal-body">
+            <p className="delete-password-text">
+              Ingresa tu clave de administrador para confirmar la eliminación del emisor
+            </p>
+
+            <div className="delete-form-group">
+              <label htmlFor="delete-password" className="delete-form-label">
+                Clave de administrador *
+              </label>
+              <input
+                id="delete-password"
+                type="password"
+                value={deletePassword}
+                onChange={(e) => setDeletePassword(e.target.value)}
+                placeholder="••••••••"
+                className={deleteError ? 'delete-form-input error' : 'delete-form-input'}
+                autoFocus
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && deletePassword && !deleteLoading) {
+                    (async () => {
+                      if (!deletingId) return;
+                      setDeleteLoading(true);
+                      setDeleteError(null);
+                      try {
+                        if (deletingWithHistory) {
+                          await emisoresApi.deletePermanent(deletingId, deletePassword);
+                        } else {
+                          await emisoresApi.delete(deletingId, deletePassword);
+                        }
+                        setData((prev) => {
+                          const newData = prev.filter(p => p.id !== deletingId);
+                          setTotalItems(newData.length);
+                          return newData;
+                        });
+                        setDeletePasswordOpen(false);
+                        setDeletingWithHistory(false);
+                        show({ title: 'Éxito', message: 'Emisor eliminado correctamente', type: 'success' });
+                      } catch (err: any) {
+                        const msg = err?.response?.data?.message || 'No se pudo eliminar el emisor';
+                        setDeleteError(msg);
+                      } finally {
+                        setDeleteLoading(false);
+                      }
+                    })();
+                  }
+                }}
+              />
+              {deleteError && (
+                <span className="delete-error-text">
+                  <span className="icon">⚠</span>
+                  {deleteError}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="delete-modal-footer">
+            <button 
+              type="button"
+              className="delete-btn delete-btn-cancel" 
+              onClick={() => { 
+                setDeletePasswordOpen(false); 
+                setDeletePassword(''); 
+              }} 
+              disabled={deleteLoading}
+            >
+              Cancelar
+            </button>
+            <button 
+              type="button"
+              className="delete-btn delete-btn-danger" 
+              onClick={async () => {
+                if (!deletingId) return;
+                setDeleteLoading(true);
+                setDeleteError(null);
+                try {
+                  if (deletingWithHistory) {
+                    await emisoresApi.deletePermanent(deletingId, deletePassword);
+                  } else {
+                    await emisoresApi.delete(deletingId, deletePassword);
+                  }
+                  setData((prev) => {
+                    const newData = prev.filter(p => p.id !== deletingId);
+                    setTotalItems(newData.length);
+                    return newData;
+                  });
+                  setDeletePasswordOpen(false);
+                  setDeletingWithHistory(false);
+                  show({ title: 'Éxito', message: 'Emisor eliminado correctamente', type: 'success' });
+                } catch (err: any) {
+                  const msg = err?.response?.data?.message || 'No se pudo eliminar el emisor';
+                  setDeleteError(msg);
+                } finally {
+                  setDeleteLoading(false);
                 }
-                // remove from list
-                setData((prev) => {
-                  const newData = prev.filter(p => p.id !== deletingId);
-                  setTotalItems(newData.length);
-                  return newData;
-                });
-                setDeletePasswordOpen(false);
-                setDeletingWithHistory(false);
-                show({ title: 'Éxito', message: 'Emisor eliminado correctamente', type: 'success' });
-              } catch (err: any) {
-                const msg = err?.response?.data?.message || 'No se pudo eliminar el emisor';
-                setDeleteError(msg);
-              } finally {
-                setDeleteLoading(false);
-              }
-            }} disabled={deleteLoading || deletePassword.length === 0}>{deleteLoading ? 'Eliminando…' : 'CONFIRMAR'}</button>
+              }} 
+              disabled={deleteLoading || deletePassword.length === 0}
+            >
+              {deleteLoading ? 'Eliminando…' : '🗑️ Eliminar'}
+            </button>
           </div>
-
-          <style>{`
-            .mf-modal-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.35); display:flex; align-items:center; justify-content:center; z-index:3000; }
-            .mf-modal{ width:min(540px, 92vw); background:#fff; border-radius:12px; padding:28px 24px; box-shadow:0 20px 60px rgba(0,0,0,.25); text-align:center; }
-            .mf-btn-cancel{ padding:10px 18px; border-radius:8px; background:#fff; color:#333; border:2px solid #000; font-weight:700; cursor:pointer; }
-            .mf-btn-confirm{ padding:10px 18px; border-radius:8px; background:#ff6b6b; color:#fff; border:none; font-weight:700; cursor:pointer; }
-            .mf-btn-cancel:disabled, .mf-btn-confirm:disabled{ opacity:0.6; cursor:not-allowed; }
-          `}</style>
         </div>
       </div>
     )}

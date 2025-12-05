@@ -48,7 +48,7 @@ const UsuarioDetailModal: React.FC<Props> = ({ open, onClose, user }) => {
   const estadoBadge = getEstadoBadge(user.estado || 'nuevo');
 
   return (
-    <div className="modal-overlay-detail" onClick={onClose}>
+    <div className="modal-overlay-detail">
       <div className="modal-content-detail" onClick={(e) => e.stopPropagation()}>
         {/* Header con gradiente */}
         <div className="modal-header-detail">

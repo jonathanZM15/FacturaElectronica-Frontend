@@ -56,7 +56,7 @@ const UsuarioDeleteModal: React.FC<Props> = ({ isOpen, onClose, onSubmit }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="delete-modal-overlay" onClick={onClose}>
+    <div className="delete-modal-overlay">
       <div className="delete-modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="delete-modal-header">
           <h2>

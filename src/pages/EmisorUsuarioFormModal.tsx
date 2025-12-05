@@ -375,31 +375,26 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
 
   return (
     <div className="mf-modal-overlay" role="dialog" aria-modal="true">
-      <div className="mf-modal" style={{ width: 'min(650px, 92vw)', maxHeight: '90vh', overflowY: 'auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <h2 style={{ margin: 0, color: '#1a63d6' }}>
+      <div className="mf-modal">
+        <div className="modal-header">
+          <h2>
             {editingId ? 'Editar usuario' : 'Registrar nuevo usuario'}
           </h2>
           <button
             onClick={onClose}
-            style={{
-              background: 'none',
-              border: 'none',
-              fontSize: 24,
-              cursor: 'pointer',
-              color: '#666'
-            }}
+            className="modal-close-btn"
+            type="button"
           >
             ✕
           </button>
         </div>
 
         <form onSubmit={handleSubmit}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+          <div className="usuario-form-grid">
             {/* Cédula */}
-            <div>
-              <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, color: '#333' }}>
-                Cédula <span style={{ color: '#ff6b6b' }}>*</span>
+            <div className={`usuario-form-group ${errors.cedula ? 'error' : ''}`}>
+              <label>
+                Cédula <span className="required-asterisk">*</span>
               </label>
               <input
                 type="text"
@@ -411,22 +406,14 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                 }}
                 placeholder="1234567890"
                 maxLength={10}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  border: errors.cedula ? '2px solid #ff6b6b' : '1px solid #ddd',
-                  borderRadius: 6,
-                  fontSize: 14,
-                  boxSizing: 'border-box'
-                }}
               />
-              {errors.cedula && <span style={{ color: '#ff6b6b', fontSize: 12, marginTop: 4, display: 'block' }}>{errors.cedula}</span>}
+              {errors.cedula && <span className="usuario-form-error">{errors.cedula}</span>}
             </div>
 
             {/* Nombres */}
-            <div>
-              <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, color: '#333' }}>
-                Nombres <span style={{ color: '#ff6b6b' }}>*</span>
+            <div className={`usuario-form-group ${errors.nombres ? 'error' : ''}`}>
+              <label>
+                Nombres <span className="required-asterisk">*</span>
               </label>
               <input
                 type="text"
@@ -436,22 +423,14 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                   if (errors.nombres) setErrors({ ...errors, nombres: '' });
                 }}
                 placeholder="Juan Carlos"
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  border: errors.nombres ? '2px solid #ff6b6b' : '1px solid #ddd',
-                  borderRadius: 6,
-                  fontSize: 14,
-                  boxSizing: 'border-box'
-                }}
               />
-              {errors.nombres && <span style={{ color: '#ff6b6b', fontSize: 12, marginTop: 4, display: 'block' }}>{errors.nombres}</span>}
+              {errors.nombres && <span className="usuario-form-error">{errors.nombres}</span>}
             </div>
 
             {/* Apellidos */}
-            <div>
-              <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, color: '#333' }}>
-                Apellidos <span style={{ color: '#ff6b6b' }}>*</span>
+            <div className={`usuario-form-group ${errors.apellidos ? 'error' : ''}`}>
+              <label>
+                Apellidos <span className="required-asterisk">*</span>
               </label>
               <input
                 type="text"
@@ -461,22 +440,14 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                   if (errors.apellidos) setErrors({ ...errors, apellidos: '' });
                 }}
                 placeholder="Pérez López"
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  border: errors.apellidos ? '2px solid #ff6b6b' : '1px solid #ddd',
-                  borderRadius: 6,
-                  fontSize: 14,
-                  boxSizing: 'border-box'
-                }}
               />
-              {errors.apellidos && <span style={{ color: '#ff6b6b', fontSize: 12, marginTop: 4, display: 'block' }}>{errors.apellidos}</span>}
+              {errors.apellidos && <span className="usuario-form-error">{errors.apellidos}</span>}
             </div>
 
             {/* Username */}
-            <div>
-              <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, color: '#333' }}>
-                Nombre de usuario <span style={{ color: '#ff6b6b' }}>*</span>
+            <div className={`usuario-form-group ${errors.username ? 'error' : ''}`}>
+              <label>
+                Nombre de usuario <span className="required-asterisk">*</span>
               </label>
               <input
                 type="text"
@@ -623,18 +594,15 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
             </div>
           )}
 
-          {/* Mensaje informativo para emisor */}
+          {/* Info box para rol emisor */}
           {role === 'emisor' && (
-            <div style={{ 
-              marginBottom: 16, 
-              padding: 12, 
-              backgroundColor: '#e3f2fd', 
-              borderLeft: '4px solid #1a63d6',
-              borderRadius: 4
-            }}>
-              <p style={{ margin: 0, fontSize: 14, color: '#1565c0' }}>
-                ℹ️ El rol <strong>Emisor</strong> se asocia automáticamente a todos los establecimientos de la empresa. Define abajo el punto de emisión que usará en cada uno.
-              </p>
+            <div className="info-box info">
+              <span className="info-box-icon">ℹ️</span>
+              <div className="info-box-content">
+                <p className="info-box-text">
+                  El rol <strong>Emisor</strong> se asocia automáticamente a todos los establecimientos de la empresa. Define abajo el punto de emisión que usará en cada uno.
+                </p>
+              </div>
             </div>
           )}
 
@@ -700,20 +668,12 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
           )}
 
           {/* Botones de acción */}
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 24 }}>
+          <div className="usuario-form-actions">
             <button
               type="button"
               onClick={onClose}
               disabled={loading || resendingEmail}
-              style={{
-                padding: '10px 20px',
-                border: '1px solid #ddd',
-                borderRadius: 6,
-                background: '#fff',
-                color: '#333',
-                cursor: 'pointer',
-                fontWeight: 600
-              }}
+              className="btn-cancel"
             >
               Cancelar
             </button>
@@ -724,16 +684,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                 type="button"
                 onClick={handleResendEmail}
                 disabled={loading || resendingEmail}
-                style={{
-                  padding: '10px 20px',
-                  border: 'none',
-                  borderRadius: 6,
-                  background: (loading || resendingEmail) ? '#ccc' : 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                  color: '#fff',
-                  cursor: (loading || resendingEmail) ? 'not-allowed' : 'pointer',
-                  fontWeight: 600,
-                  boxShadow: '0 4px 15px rgba(245, 158, 11, 0.4)'
-                }}
+                className="btn-resend-email"
                 title={
                   estado === 'nuevo' 
                     ? 'Reenviar correo de verificación inicial'
@@ -743,7 +694,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                 {resendingEmail ? (
                   <LoadingSpinner inline size={18} message="Enviando…" />
                 ) : (
-                  '📧 Reenviar Correo'
+                  <>📧 Reenviar Correo</>
                 )}
               </button>
             )}
@@ -751,15 +702,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
             <button
               type="submit"
               disabled={loading || resendingEmail || checkingEmail || checkingUsername || Object.values(errors).some(e => e && e.length > 0)}
-              style={{
-                padding: '10px 20px',
-                border: 'none',
-                borderRadius: 6,
-                background: (loading || resendingEmail || checkingEmail || checkingUsername || Object.values(errors).some(e => e && e.length > 0)) ? '#ccc' : '#1a63d6',
-                color: '#fff',
-                cursor: (loading || resendingEmail || checkingEmail || checkingUsername || Object.values(errors).some(e => e && e.length > 0)) ? 'not-allowed' : 'pointer',
-                fontWeight: 600
-              }}
+              className="btn-submit"
             >
               {loading ? (
                 <LoadingSpinner inline size={18} message="Guardando…" />
@@ -769,23 +712,6 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
             </button>
           </div>
         </form>
-        <style>{`
-          .mf-modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.35);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 3000;
-          }
-          .mf-modal {
-            background: white;
-            border-radius: 8px;
-            padding: 30px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-          }
-        `}</style>
       </div>
     </div>
   );

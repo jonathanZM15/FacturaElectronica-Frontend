@@ -125,22 +125,143 @@ const ChangePassword: React.FC = () => {
           Crea una contraseña segura para tu cuenta
         </p>
 
-        <div className="update-password-requirements">
-          <p style={{ fontWeight: 600, marginBottom: '12px', color: '#0d6efd' }}>
-            📋 Requisitos de la contraseña:
-          </p>
-          <ul style={{ 
-            textAlign: 'left', 
-            paddingLeft: '24px', 
-            marginTop: '8px',
-            lineHeight: '1.8'
+        <div className="update-password-requirements" style={{
+          background: 'linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%)',
+          padding: '24px',
+          borderRadius: '12px',
+          border: '1px solid #e0e7ff',
+          marginBottom: '28px'
+        }}>
+          <p style={{ 
+            fontWeight: 700, 
+            marginBottom: '20px', 
+            color: '#0d6efd',
+            fontSize: '17px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '10px'
           }}>
-            <li>Mínimo 8 caracteres</li>
-            <li>Al menos una letra mayúscula (A-Z)</li>
-            <li>Al menos una letra minúscula (a-z)</li>
-            <li>Al menos un número (0-9)</li>
-            <li>Al menos un carácter especial (!@#$%^&*)</li>
-          </ul>
+            <span style={{ fontSize: '22px' }}>📋</span>
+            Requisitos de la contraseña:
+          </p>
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(2, 1fr)',
+            gap: '12px',
+            maxWidth: '700px',
+            margin: '0 auto'
+          }}>
+            <div style={{ 
+              padding: '12px 16px', 
+              background: 'white',
+              borderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              boxShadow: '0 2px 6px rgba(13, 110, 253, 0.1)',
+              fontSize: '14px',
+              color: '#333',
+              transition: 'all 0.3s ease'
+            }}>
+              <span style={{ 
+                color: '#0d6efd', 
+                fontSize: '20px', 
+                fontWeight: 'bold',
+                minWidth: '20px',
+                textAlign: 'center'
+              }}>✓</span>
+              <span>Mínimo 8 caracteres</span>
+            </div>
+            <div style={{ 
+              padding: '12px 16px', 
+              background: 'white',
+              borderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              boxShadow: '0 2px 6px rgba(13, 110, 253, 0.1)',
+              fontSize: '14px',
+              color: '#333',
+              transition: 'all 0.3s ease'
+            }}>
+              <span style={{ 
+                color: '#0d6efd', 
+                fontSize: '20px', 
+                fontWeight: 'bold',
+                minWidth: '20px',
+                textAlign: 'center'
+              }}>✓</span>
+              <span>Una letra mayúscula (A-Z)</span>
+            </div>
+            <div style={{ 
+              padding: '12px 16px', 
+              background: 'white',
+              borderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              boxShadow: '0 2px 6px rgba(13, 110, 253, 0.1)',
+              fontSize: '14px',
+              color: '#333',
+              transition: 'all 0.3s ease'
+            }}>
+              <span style={{ 
+                color: '#0d6efd', 
+                fontSize: '20px', 
+                fontWeight: 'bold',
+                minWidth: '20px',
+                textAlign: 'center'
+              }}>✓</span>
+              <span>Una letra minúscula (a-z)</span>
+            </div>
+            <div style={{ 
+              padding: '12px 16px', 
+              background: 'white',
+              borderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              boxShadow: '0 2px 6px rgba(13, 110, 253, 0.1)',
+              fontSize: '14px',
+              color: '#333',
+              transition: 'all 0.3s ease'
+            }}>
+              <span style={{ 
+                color: '#0d6efd', 
+                fontSize: '20px', 
+                fontWeight: 'bold',
+                minWidth: '20px',
+                textAlign: 'center'
+              }}>✓</span>
+              <span>Un número (0-9)</span>
+            </div>
+            <div style={{ 
+              padding: '12px 16px', 
+              background: 'white',
+              borderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              boxShadow: '0 2px 6px rgba(13, 110, 253, 0.1)',
+              fontSize: '14px',
+              color: '#333',
+              gridColumn: 'span 2',
+              maxWidth: '400px',
+              margin: '0 auto',
+              width: '100%',
+              transition: 'all 0.3s ease'
+            }}>
+              <span style={{ 
+                color: '#0d6efd', 
+                fontSize: '20px', 
+                fontWeight: 'bold',
+                minWidth: '20px',
+                textAlign: 'center'
+              }}>✓</span>
+              <span>Un carácter especial (!@#$%^&*)</span>
+            </div>
+          </div>
         </div>
 
         {errors.general && (
@@ -167,7 +288,7 @@ const ChangePassword: React.FC = () => {
                 disabled={loading || !token}
                 aria-label="Mostrar/Ocultar contraseña"
               >
-                {showPassword ? '👁️' : '👁️‍🗨️'}
+                {showPassword ? '🐵' : '🙈'}
               </button>
             </div>
             {errors.password && (
@@ -192,7 +313,7 @@ const ChangePassword: React.FC = () => {
                 disabled={loading || !token}
                 aria-label="Mostrar/Ocultar confirmación"
               >
-                {showPasswordConfirmation ? '👁️' : '👁️‍🗨️'}
+                {showPasswordConfirmation ? '🐵' : '🙈'}
               </button>
             </div>
             {errors.password_confirmation && (
@@ -216,15 +337,20 @@ const ChangePassword: React.FC = () => {
         </form>
 
         <div style={{ 
-          marginTop: '32px', 
-          padding: '16px', 
-          background: 'rgba(13, 110, 253, 0.05)',
+          marginTop: '32px',
+          marginBottom: '48px',
+          padding: '18px 20px', 
+          background: 'linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(255, 152, 0, 0.08) 100%)',
+          borderLeft: '4px solid #ffc107',
           borderRadius: '8px',
           fontSize: '14px',
           color: '#666'
         }}>
-          <p style={{ margin: 0 }}>
-            💡 <strong>Consejo de seguridad:</strong> Usa una contraseña única que no hayas usado en otros sitios.
+          <p style={{ margin: 0, display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+            <span style={{ fontSize: '18px' }}>💡</span>
+            <span>
+              <strong style={{ color: '#f59e0b' }}>Consejo de seguridad:</strong> Usa una contraseña única que no hayas usado en otros sitios.
+            </span>
           </p>
         </div>
 

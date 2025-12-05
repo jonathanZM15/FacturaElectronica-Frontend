@@ -119,7 +119,7 @@ const VerifyEmail: React.FC = () => {
           </div>
         )}
 
-        {!loading && errorMessage && (
+        {!loading && !success && errorMessage && (
           <div style={{ textAlign: 'center', padding: '40px 0' }}>
             <div style={{ 
               fontSize: '64px', 
