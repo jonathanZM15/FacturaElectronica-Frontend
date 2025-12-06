@@ -4,6 +4,15 @@ import { useNotification } from '../contexts/NotificationContext';
 import { useUser } from '../contexts/userContext';
 import { User } from '../types/user';
 import LoadingSpinner from '../components/LoadingSpinner';
+import {
+  navigateToEstablecimiento,
+  navigateToPuntoEmision,
+  openUsuarioDetail,
+  formatEstablecimientoInfo,
+  formatPuntoEmisionInfo,
+  formatCreadorInfo,
+  shouldShowCreador
+} from '../helpers/navigation';
 import './EmisorUsuarios.css';
 import './UsuarioDeleteModalModern.css';
 
@@ -16,6 +25,25 @@ interface EmisorUsuariosListProps {
 }
 
 type DisplayUser = User & { isDistributorCreator?: boolean };
+
+type SortField = 'cedula' | 'nombres' | 'username' | 'email' | 'estado' | 'role' | 'created_at' | 'updated_at';
+type SortDirection = 'asc' | 'desc';
+
+interface Filters {
+  cedula: string;
+  nombres: string;
+  apellidos: string;
+  username: string;
+  email: string;
+  roles: string[];
+  estados: string[];
+  creator: string;
+  establishment: string;
+  dateFrom: string;
+  dateTo: string;
+  updateDateFrom: string;
+  updateDateTo: string;
+}
 
 const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
   emiId,
@@ -35,6 +63,24 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
   const [deleteConfirm, setDeleteConfirm] = React.useState<User | null>(null);
   const [deletePassword, setDeletePassword] = React.useState('');
   const [deleting, setDeleting] = React.useState(false);
+  const [sortField, setSortField] = React.useState<SortField>('created_at');
+  const [sortDirection, setSortDirection] = React.useState<SortDirection>('desc');
+  const [showFilters, setShowFilters] = React.useState(false);
+  const [filters, setFilters] = React.useState<Filters>({
+    cedula: '',
+    nombres: '',
+    apellidos: '',
+    username: '',
+    email: '',
+    roles: [],
+    estados: [],
+    creator: '',
+    establishment: '',
+    dateFrom: '',
+    dateTo: '',
+    updateDateFrom: '',
+    updateDateTo: ''
+  });
 
   const load = React.useCallback(async () => {
     if (!emiId) return;
@@ -51,6 +97,12 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
         data = data.filter((u: User) => u.id === user.id);
       }
       
+      // Aplicar filtros locales
+      data = applyFilters(data);
+      
+      // Aplicar ordenamiento
+      data = applySorting(data);
+      
       setUsuarios(Array.isArray(data) ? data : []);
       setTotal(meta.total || 0);
       setLastPage(meta.last_page || 1);
@@ -62,9 +114,189 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
     }
   }, [emiId, page, perPage, show, user]);
 
+  const applyFilters = (data: User[]): User[] => {
+    return data.filter((u) => {
+      // Filtro por cédula
+      if (filters.cedula && !u.cedula?.toLowerCase().includes(filters.cedula.toLowerCase())) {
+        return false;
+      }
+      
+      // Filtro por nombres
+      if (filters.nombres && !u.nombres?.toLowerCase().includes(filters.nombres.toLowerCase())) {
+        return false;
+      }
+      
+      // Filtro por apellidos
+      if (filters.apellidos && !u.apellidos?.toLowerCase().includes(filters.apellidos.toLowerCase())) {
+        return false;
+      }
+      
+      // Filtro por username
+      if (filters.username && !u.username?.toLowerCase().includes(filters.username.toLowerCase())) {
+        return false;
+      }
+      
+      // Filtro por email
+      if (filters.email && !u.email?.toLowerCase().includes(filters.email.toLowerCase())) {
+        return false;
+      }
+      
+      // Filtro por roles (multi-select)
+      if (filters.roles.length > 0 && !filters.roles.includes(u.role)) {
+        return false;
+      }
+      
+      // Filtro por estados (multi-select)
+      if (filters.estados.length > 0 && !filters.estados.includes(u.estado || 'activo')) {
+        return false;
+      }
+      
+      // Filtro por creador
+      if (filters.creator) {
+        const creatorText = `${u.created_by_role || ''} ${u.created_by_username || ''} ${u.created_by_nombres || ''} ${u.created_by_apellidos || ''}`.toLowerCase();
+        if (!creatorText.includes(filters.creator.toLowerCase())) {
+          return false;
+        }
+      }
+      
+      // Filtro por establecimiento
+      if (filters.establishment) {
+        const establishments = u.establecimientos || [];
+        const hasMatch = establishments.some(est => 
+          est.codigo.toLowerCase().includes(filters.establishment.toLowerCase()) ||
+          est.nombre.toLowerCase().includes(filters.establishment.toLowerCase())
+        );
+        if (!hasMatch) return false;
+      }
+      
+      // Filtro por rango de fechas de creación
+      if (filters.dateFrom && u.created_at) {
+        const createdDate = new Date(u.created_at);
+        const fromDate = new Date(filters.dateFrom);
+        if (createdDate < fromDate) return false;
+      }
+      
+      if (filters.dateTo && u.created_at) {
+        const createdDate = new Date(u.created_at);
+        const toDate = new Date(filters.dateTo);
+        toDate.setHours(23, 59, 59, 999);
+        if (createdDate > toDate) return false;
+      }
+      
+      // Filtro por rango de fechas de actualización
+      if (filters.updateDateFrom && u.updated_at) {
+        const updatedDate = new Date(u.updated_at);
+        const fromDate = new Date(filters.updateDateFrom);
+        if (updatedDate < fromDate) return false;
+      }
+      
+      if (filters.updateDateTo && u.updated_at) {
+        const updatedDate = new Date(u.updated_at);
+        const toDate = new Date(filters.updateDateTo);
+        toDate.setHours(23, 59, 59, 999);
+        if (updatedDate > toDate) return false;
+      }
+      
+      return true;
+    });
+  };
+
+  const applySorting = (data: User[]): User[] => {
+    return [...data].sort((a, b) => {
+      let aVal: any;
+      let bVal: any;
+      
+      switch (sortField) {
+        case 'cedula':
+          aVal = a.cedula || '';
+          bVal = b.cedula || '';
+          break;
+        case 'nombres':
+          aVal = `${a.nombres || ''} ${a.apellidos || ''}`;
+          bVal = `${b.nombres || ''} ${b.apellidos || ''}`;
+          break;
+        case 'username':
+          aVal = a.username || '';
+          bVal = b.username || '';
+          break;
+        case 'email':
+          aVal = a.email || '';
+          bVal = b.email || '';
+          break;
+        case 'estado':
+          aVal = a.estado || 'activo';
+          bVal = b.estado || 'activo';
+          break;
+        case 'role':
+          aVal = a.role || '';
+          bVal = b.role || '';
+          break;
+        case 'created_at':
+          aVal = new Date(a.created_at || 0).getTime();
+          bVal = new Date(b.created_at || 0).getTime();
+          break;
+        case 'updated_at':
+          aVal = new Date(a.updated_at || 0).getTime();
+          bVal = new Date(b.updated_at || 0).getTime();
+          break;
+        default:
+          return 0;
+      }
+      
+      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  };
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      cedula: '',
+      nombres: '',
+      apellidos: '',
+      username: '',
+      email: '',
+      roles: [],
+      estados: [],
+      creator: '',
+      establishment: '',
+      dateFrom: '',
+      dateTo: '',
+      updateDateFrom: '',
+      updateDateTo: ''
+    });
+  };
+
+  const toggleRoleFilter = (role: string) => {
+    setFilters(prev => ({
+      ...prev,
+      roles: prev.roles.includes(role)
+        ? prev.roles.filter(r => r !== role)
+        : [...prev.roles, role]
+    }));
+  };
+
+  const toggleEstadoFilter = (estado: string) => {
+    setFilters(prev => ({
+      ...prev,
+      estados: prev.estados.includes(estado)
+        ? prev.estados.filter(e => e !== estado)
+        : [...prev.estados, estado]
+    }));
+  };
+
   React.useEffect(() => {
     load();
-  }, [load, refreshTrigger]);
+  }, [load, refreshTrigger, sortField, sortDirection, filters]);
 
   const handleDelete = async (usuario: User) => {
     if (!deletePassword) {
@@ -125,15 +357,224 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
     return list;
   }, [usuarios, user, distributorCreator]);
 
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) return '⇅';
+    return sortDirection === 'asc' ? '↑' : '↓';
+  };
+
   return (
     <div className="emisor-usuarios-container">
       
       <div className="usuarios-header">
         <h3>Usuarios del emisor</h3>
-        <button onClick={onOpenModal} className="btn-new-user">
-          Nuevo +
-        </button>
+        <div className="header-actions">
+          <button 
+            onClick={() => setShowFilters(!showFilters)} 
+            className="btn-toggle-filters"
+            title={showFilters ? "Ocultar filtros" : "Mostrar filtros"}
+          >
+            🔍 {showFilters ? 'Ocultar' : 'Filtros'}
+          </button>
+          <button onClick={onOpenModal} className="btn-new-user">
+            Nuevo +
+          </button>
+        </div>
       </div>
+
+      {/* Panel de filtros */}
+      {showFilters && (
+        <div className="filters-panel">
+          <div className="filters-grid">
+            <div className="filter-group">
+              <label>Cédula</label>
+              <input
+                type="text"
+                value={filters.cedula}
+                onChange={(e) => setFilters({...filters, cedula: e.target.value})}
+                placeholder="Buscar por cédula"
+              />
+            </div>
+
+            <div className="filter-group">
+              <label>Nombres</label>
+              <input
+                type="text"
+                value={filters.nombres}
+                onChange={(e) => setFilters({...filters, nombres: e.target.value})}
+                placeholder="Buscar por nombres"
+              />
+            </div>
+
+            <div className="filter-group">
+              <label>Apellidos</label>
+              <input
+                type="text"
+                value={filters.apellidos}
+                onChange={(e) => setFilters({...filters, apellidos: e.target.value})}
+                placeholder="Buscar por apellidos"
+              />
+            </div>
+
+            <div className="filter-group">
+              <label>Username</label>
+              <input
+                type="text"
+                value={filters.username}
+                onChange={(e) => setFilters({...filters, username: e.target.value})}
+                placeholder="Buscar por username"
+              />
+            </div>
+
+            <div className="filter-group">
+              <label>Email</label>
+              <input
+                type="text"
+                value={filters.email}
+                onChange={(e) => setFilters({...filters, email: e.target.value})}
+                placeholder="Buscar por email"
+              />
+            </div>
+
+            <div className="filter-group">
+              <label>Roles</label>
+              <div className="checkbox-group">
+                <label className="checkbox-label">
+                  <input 
+                    type="checkbox" 
+                    checked={filters.roles.includes('emisor')}
+                    onChange={() => toggleRoleFilter('emisor')}
+                  />
+                  Emisor
+                </label>
+                <label className="checkbox-label">
+                  <input 
+                    type="checkbox" 
+                    checked={filters.roles.includes('gerente')}
+                    onChange={() => toggleRoleFilter('gerente')}
+                  />
+                  Gerente
+                </label>
+                <label className="checkbox-label">
+                  <input 
+                    type="checkbox" 
+                    checked={filters.roles.includes('cajero')}
+                    onChange={() => toggleRoleFilter('cajero')}
+                  />
+                  Cajero
+                </label>
+              </div>
+            </div>
+
+            <div className="filter-group">
+              <label>Estados</label>
+              <div className="checkbox-group">
+                <label className="checkbox-label">
+                  <input 
+                    type="checkbox" 
+                    checked={filters.estados.includes('nuevo')}
+                    onChange={() => toggleEstadoFilter('nuevo')}
+                  />
+                  Nuevo
+                </label>
+                <label className="checkbox-label">
+                  <input 
+                    type="checkbox" 
+                    checked={filters.estados.includes('activo')}
+                    onChange={() => toggleEstadoFilter('activo')}
+                  />
+                  Activo
+                </label>
+                <label className="checkbox-label">
+                  <input 
+                    type="checkbox" 
+                    checked={filters.estados.includes('pendiente_verificacion')}
+                    onChange={() => toggleEstadoFilter('pendiente_verificacion')}
+                  />
+                  Pendiente
+                </label>
+                <label className="checkbox-label">
+                  <input 
+                    type="checkbox" 
+                    checked={filters.estados.includes('suspendido')}
+                    onChange={() => toggleEstadoFilter('suspendido')}
+                  />
+                  Suspendido
+                </label>
+                <label className="checkbox-label">
+                  <input 
+                    type="checkbox" 
+                    checked={filters.estados.includes('retirado')}
+                    onChange={() => toggleEstadoFilter('retirado')}
+                  />
+                  Retirado
+                </label>
+              </div>
+            </div>
+
+            <div className="filter-group">
+              <label>Establecimiento</label>
+              <input
+                type="text"
+                value={filters.establishment}
+                onChange={(e) => setFilters({...filters, establishment: e.target.value})}
+                placeholder="Código o nombre"
+              />
+            </div>
+
+            <div className="filter-group">
+              <label>Usuario creador</label>
+              <input
+                type="text"
+                value={filters.creator}
+                onChange={(e) => setFilters({...filters, creator: e.target.value})}
+                placeholder="Buscar por creador"
+              />
+            </div>
+
+            <div className="filter-group">
+              <label>Fecha creación desde</label>
+              <input
+                type="date"
+                value={filters.dateFrom}
+                onChange={(e) => setFilters({...filters, dateFrom: e.target.value})}
+              />
+            </div>
+
+            <div className="filter-group">
+              <label>Fecha creación hasta</label>
+              <input
+                type="date"
+                value={filters.dateTo}
+                onChange={(e) => setFilters({...filters, dateTo: e.target.value})}
+              />
+            </div>
+
+            <div className="filter-group">
+              <label>Actualización desde</label>
+              <input
+                type="date"
+                value={filters.updateDateFrom}
+                onChange={(e) => setFilters({...filters, updateDateFrom: e.target.value})}
+              />
+            </div>
+
+            <div className="filter-group">
+              <label>Actualización hasta</label>
+              <input
+                type="date"
+                value={filters.updateDateTo}
+                onChange={(e) => setFilters({...filters, updateDateTo: e.target.value})}
+              />
+            </div>
+          </div>
+
+          <div className="filters-actions">
+            <button onClick={clearFilters} className="btn-clear-filters">
+              🗑️ Limpiar filtros
+            </button>
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <LoadingSpinner message="Cargando usuarios del emisor…" fullHeight />
@@ -148,12 +589,33 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
               <table className="tabla-emisores">
                 <thead>
                   <tr>
-                    <th className="th-sticky sticky-left-1">Cédula</th>
-                    <th>Nombres</th>
-                    <th>Username</th>
-                    <th>Email</th>
-                    <th>Estado</th>
-                    <th>Rol</th>
+                    <th className="th-sticky sticky-left-1 sortable" onClick={() => handleSort('cedula')}>
+                      Cédula {getSortIcon('cedula')}
+                    </th>
+                    <th className="sortable" onClick={() => handleSort('nombres')}>
+                      Nombres {getSortIcon('nombres')}
+                    </th>
+                    <th className="sortable" onClick={() => handleSort('username')}>
+                      Username {getSortIcon('username')}
+                    </th>
+                    <th className="sortable" onClick={() => handleSort('email')}>
+                      Email {getSortIcon('email')}
+                    </th>
+                    <th className="sortable" onClick={() => handleSort('estado')}>
+                      Estado {getSortIcon('estado')}
+                    </th>
+                    <th className="sortable" onClick={() => handleSort('role')}>
+                      Rol {getSortIcon('role')}
+                    </th>
+                    <th>Establecimientos</th>
+                    <th>Puntos de Emisión</th>
+                    <th>Usuario creador</th>
+                    <th className="sortable" onClick={() => handleSort('created_at')}>
+                      Creado {getSortIcon('created_at')}
+                    </th>
+                    <th className="sortable" onClick={() => handleSort('updated_at')}>
+                      Actualizado {getSortIcon('updated_at')}
+                    </th>
                     <th className="th-sticky sticky-right">Acciones</th>
                   </tr>
                 </thead>
@@ -167,6 +629,9 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
                                      u.role === 'cajero' ? 'role-cajero' :
                                      u.role === 'distribuidor' ? 'role-distribuidor' :
                                      'role-emisor';
+
+                    const establecimientos = u.establecimientos || [];
+                    const puntosEmision = u.puntos_emision || [];
 
                     return (
                       <tr
@@ -193,6 +658,74 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
                           <span className={`role-badge ${roleClass}`}>
                             {isDistributorCreatorRow ? 'distribuidor' : u.role}
                           </span>
+                        </td>
+                        <td>
+                          {establecimientos.length > 0 ? (
+                            <div className="list-items">
+                              {establecimientos.map((est, idx) => (
+                                <div key={idx} className="list-item-link">
+                                  <a href="#" onClick={(e) => {
+                                    e.preventDefault();
+                                    navigateToEstablecimiento(emiId, est.id);
+                                  }}>
+                                    {formatEstablecimientoInfo(est.codigo, est.nombre)}
+                                  </a>
+                                </div>
+                              ))}
+                            </div>
+                          ) : '—'}
+                        </td>
+                        <td>
+                          {puntosEmision.length > 0 ? (
+                            <div className="list-items">
+                              {puntosEmision.map((punto, idx) => (
+                                <div key={idx} className="list-item-link">
+                                  <a href="#" onClick={(e) => {
+                                    e.preventDefault();
+                                    if (punto.establecimiento_id) {
+                                      navigateToPuntoEmision(emiId, punto.establecimiento_id, punto.id);
+                                    }
+                                  }}>
+                                    {formatPuntoEmisionInfo(punto.establecimiento_codigo, punto.codigo, punto.nombre)}
+                                  </a>
+                                </div>
+                              ))}
+                            </div>
+                          ) : '—'}
+                        </td>
+                        <td>
+                          {shouldShowCreador(u.created_by_role) && u.created_by_username ? (
+                            <div className="creator-info">
+                              <a href="#" onClick={(e) => {
+                                e.preventDefault();
+                                if (u.created_by_id) {
+                                  // Buscar el usuario creador en la lista para mostrar su detalle
+                                  // Por ahora solo mostramos el log
+                                  console.log('Ver usuario creador:', u.created_by_id);
+                                }
+                              }}>
+                                {formatCreadorInfo(u.created_by_role, u.created_by_username, u.created_by_nombres, u.created_by_apellidos)}
+                              </a>
+                            </div>
+                          ) : '—'}
+                        </td>
+                        <td>
+                          {u.created_at ? new Date(u.created_at).toLocaleDateString('es-ES', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          }) : '—'}
+                        </td>
+                        <td>
+                          {u.updated_at ? new Date(u.updated_at).toLocaleDateString('es-ES', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          }) : '—'}
                         </td>
                         <td className="td-sticky sticky-right">
                           <div className="acciones">
@@ -222,11 +755,18 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
 
           {/* Pagination */}
           <div className="pagination-container">
+            <div className="pagination-info-left">
+              Mostrando {displayUsuarios.length} de {total} usuarios
+            </div>
             <div className="per-page-selector">
               <span>Filas por página:</span>
-              <select value={perPage} onChange={(e) => setPerPage(Number(e.target.value))}>
+              <select value={perPage} onChange={(e) => {
+                setPerPage(Number(e.target.value));
+                setPage(1);
+              }}>
                 <option value={5}>5</option>
                 <option value={10}>10</option>
+                <option value={15}>15</option>
                 <option value={25}>25</option>
                 <option value={50}>50</option>
               </select>

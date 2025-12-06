@@ -4,6 +4,7 @@ import { useUser } from '../contexts/userContext';
 import { useNotification } from '../contexts/NotificationContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { usuariosApi } from '../services/usuariosApi';
+import { validateCedulaEcuatoriana, validateEmail, validateUsername, validateNombre } from '../helpers/validations';
 import './UsuarioFormModalModern.css';
 
 interface Props {
@@ -142,20 +143,19 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
     const value = e.target.value.replace(/\D/g, '').slice(0, 10);
     setCedula(value);
     
-    let error = '';
-    if (value.length !== 10 && value.length > 0) {
-      error = 'La cédula debe tener exactamente 10 dígitos';
-    }
+    // Validar formato de cédula ecuatoriana
+    const validation = validateCedulaEcuatoriana(value);
+    let error = validation.valid ? '' : (validation.error || '');
     
     setErrors(prev => ({ ...prev, cedula: error }));
     
-    // Verificar disponibilidad si tiene 10 dígitos
-    if (value.length === 10 && !isEditing) {
+    // Verificar disponibilidad si tiene 10 dígitos y es válida
+    if (value.length === 10 && !error && !isEditing) {
       setCheckingCedula(true);
       const timer = setTimeout(async () => {
         try {
           await usuariosApi.checkCedula(value);
-          setErrors(prev => ({ ...prev, cedula: '❌ Esta cédula ya está registrada' }));
+          setErrors(prev => ({ ...prev, cedula: '❌ Esta cédula ya está registrada en el sistema' }));
         } catch (err: any) {
           // Si da error 404, significa que no existe, es válida
           if (err?.response?.status === 404) {
@@ -178,13 +178,9 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
     value = value.replace(/[^a-záéíóúñA-ZÁÉÍÓÚÑ\s'-]/g, '');
     setNombres(value);
     
-    // Validación en tiempo real
-    let error = '';
-    if (value.length > 0 && value.length < 3) {
-      error = 'El nombre debe tener al menos 3 caracteres';
-    } else if (value.length > 0 && !/^[a-záéíóúñA-ZÁÉÍÓÚÑ\s'-]+$/.test(value)) {
-      error = 'Solo se permiten caracteres alfabéticos';
-    }
+    // Validación usando helper
+    const validation = validateNombre(value, 'nombres');
+    const error = validation.valid ? '' : (validation.error || '');
     
     setErrors({ ...errors, nombres: error });
   };
@@ -195,13 +191,9 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
     value = value.replace(/[^a-záéíóúñA-ZÁÉÍÓÚÑ\s'-]/g, '');
     setApellidos(value);
     
-    // Validación en tiempo real
-    let error = '';
-    if (value.length > 0 && value.length < 3) {
-      error = 'El apellido debe tener al menos 3 caracteres';
-    } else if (value.length > 0 && !/^[a-záéíóúñA-ZÁÉÍÓÚÑ\s'-]+$/.test(value)) {
-      error = 'Solo se permiten caracteres alfabéticos';
-    }
+    // Validación usando helper
+    const validation = validateNombre(value, 'apellidos');
+    const error = validation.valid ? '' : (validation.error || '');
     
     setErrors({ ...errors, apellidos: error });
   };
@@ -210,20 +202,19 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
     const value = e.target.value;
     setUsername(value);
     
-    let error = '';
-    if (value.length > 0 && value.length < 3) {
-      error = 'El nombre de usuario debe tener al menos 3 caracteres';
-    }
+    // Validación usando helper
+    const validation = validateUsername(value);
+    const error = validation.valid ? '' : (validation.error || '');
     
     setErrors(prev => ({ ...prev, username: error }));
     
-    // Verificar disponibilidad si tiene al menos 3 caracteres
-    if (value.length >= 3 && !isEditing) {
+    // Verificar disponibilidad si es válido y tiene al menos 4 caracteres
+    if (value.length >= 4 && !error && !isEditing) {
       setCheckingUsername(true);
       const timer = setTimeout(async () => {
         try {
           await usuariosApi.checkUsername(value);
-          setErrors(prev => ({ ...prev, username: '❌ Este nombre de usuario ya existe' }));
+          setErrors(prev => ({ ...prev, username: '❌ Este nombre de usuario ya está registrado. Por favor elige otro.' }));
         } catch (err: any) {
           // Si da error 404, significa que no existe, es válido
           if (err?.response?.status === 404) {
@@ -244,28 +235,19 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
     const value = e.target.value;
     setEmail(value);
     
-    // Validación en tiempo real
-    let error = '';
-    if (value.length > 0) {
-      // Verificar que tenga formato de email válido
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!value.includes('@')) {
-        error = 'El correo debe contener @';
-      } else if (!emailRegex.test(value)) {
-        error = 'Email inválido. Use formato: usuario@dominio.com';
-      }
-    }
+    // Validación usando helper
+    const validation = validateEmail(value);
+    const error = validation.valid ? '' : (validation.error || '');
     
     setErrors(prev => ({ ...prev, email: error }));
     
-    // Verificar disponibilidad si tiene formato correcto
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (value.length > 0 && emailRegex.test(value) && !isEditing) {
+    // Verificar disponibilidad si es válido y no está editando
+    if (validation.valid && !isEditing) {
       setCheckingEmail(true);
       const timer = setTimeout(async () => {
         try {
           await usuariosApi.checkEmail(value);
-          setErrors(prev => ({ ...prev, email: '❌ Este correo ya está registrado' }));
+          setErrors(prev => ({ ...prev, email: '❌ Este correo electrónico ya está registrado en el sistema. Por favor usa otro.' }));
         } catch (err: any) {
           // Si da error 404, significa que no existe, es válido
           if (err?.response?.status === 404) {

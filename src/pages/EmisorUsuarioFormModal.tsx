@@ -3,6 +3,7 @@ import { useNotification } from '../contexts/NotificationContext';
 import { useUser } from '../contexts/userContext';
 import { usuariosEmisorApi } from '../services/usuariosEmisorApi';
 import { User } from '../types/user';
+import { validateCedulaEcuatoriana, validateEmail, validateUsername, validateNombre } from '../helpers/validations';
 import './UsuarioFormModal.css';
 import LoadingSpinner from '../components/LoadingSpinner';
 
@@ -180,19 +181,18 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
     const value = e.target.value;
     setUsername(value);
 
-    let error = '';
-    if (value.length > 0 && value.length < 3) {
-      error = 'El nombre de usuario debe tener al menos 3 caracteres';
-    }
+    // Validación usando helper
+    const validation = validateUsername(value);
+    const error = validation.valid ? '' : (validation.error || '');
     setErrors((prev) => ({ ...prev, username: error }));
 
-    // Verificar disponibilidad si tiene al menos 3 caracteres
-    if (value.length >= 3 && (!isEditing || value !== initialData?.username)) {
+    // Verificar disponibilidad si es válido y tiene al menos 4 caracteres
+    if (value.length >= 4 && !error && (!isEditing || value !== initialData?.username)) {
       const timer = setTimeout(async () => {
         setCheckingUsername(true);
         try {
           await usuariosEmisorApi.checkUsername(value);
-          setErrors((prev) => ({ ...prev, username: '❌ Este nombre de usuario ya existe' }));
+          setErrors((prev) => ({ ...prev, username: '❌ Este nombre de usuario ya está registrado. Por favor elige otro.' }));
         } catch (err: any) {
           if (err?.response?.status === 404) {
             setErrors((prev) => ({ ...prev, username: '' }));
@@ -210,25 +210,18 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
     const value = e.target.value;
     setEmail(value);
 
-    let error = '';
-    if (value.length > 0) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!value.includes('@')) {
-        error = 'El correo debe contener @';
-      } else if (!emailRegex.test(value)) {
-        error = 'Email inválido. Use formato: usuario@dominio.com';
-      }
-    }
+    // Validación usando helper
+    const validation = validateEmail(value);
+    const error = validation.valid ? '' : (validation.error || '');
     setErrors((prev) => ({ ...prev, email: error }));
 
-    // Verificar disponibilidad si tiene formato correcto
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (value.length > 0 && emailRegex.test(value) && (!isEditing || value !== initialData?.email)) {
+    // Verificar disponibilidad si es válido y no está editando
+    if (validation.valid && (!isEditing || value !== initialData?.email)) {
       const timer = setTimeout(async () => {
         setCheckingEmail(true);
         try {
           await usuariosEmisorApi.checkEmail(value);
-          setErrors((prev) => ({ ...prev, email: '❌ Este correo ya está registrado' }));
+          setErrors((prev) => ({ ...prev, email: '❌ Este correo electrónico ya está registrado en el sistema. Por favor usa otro.' }));
         } catch (err: any) {
           if (err?.response?.status === 404) {
             setErrors((prev) => ({ ...prev, email: '' }));
@@ -240,6 +233,36 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
         }
       }, 500);
     }
+  };
+
+  // Handlers de validación
+  const handleCedulaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+    setCedula(value);
+    
+    const validation = validateCedulaEcuatoriana(value);
+    const error = validation.valid ? '' : (validation.error || '');
+    setErrors((prev) => ({ ...prev, cedula: error }));
+  };
+
+  const handleNombresChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value;
+    value = value.replace(/[^a-záéíóúñA-ZÁÉÍÓÚÑ\s'-]/g, '');
+    setNombres(value);
+    
+    const validation = validateNombre(value, 'nombres');
+    const error = validation.valid ? '' : (validation.error || '');
+    setErrors((prev) => ({ ...prev, nombres: error }));
+  };
+
+  const handleApellidosChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value;
+    value = value.replace(/[^a-záéíóúñA-ZÁÉÍÓÚÑ\s'-]/g, '');
+    setApellidos(value);
+    
+    const validation = validateNombre(value, 'apellidos');
+    const error = validation.valid ? '' : (validation.error || '');
+    setErrors((prev) => ({ ...prev, apellidos: error }));
   };
 
   const handleResendEmail = async () => {
@@ -372,11 +395,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
               <input
                 type="text"
                 value={cedula}
-                onChange={(e) => {
-                  const v = e.target.value.replace(/\D/g, '').slice(0, 10);
-                  setCedula(v);
-                  if (errors.cedula) setErrors({ ...errors, cedula: '' });
-                }}
+                onChange={handleCedulaChange}
                 placeholder="1234567890"
                 maxLength={10}
               />
@@ -391,10 +410,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
               <input
                 type="text"
                 value={nombres}
-                onChange={(e) => {
-                  setNombres(e.target.value);
-                  if (errors.nombres) setErrors({ ...errors, nombres: '' });
-                }}
+                onChange={handleNombresChange}
                 placeholder="Juan Carlos"
               />
               {errors.nombres && <span className="usuario-form-error">{errors.nombres}</span>}
@@ -408,10 +424,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
               <input
                 type="text"
                 value={apellidos}
-                onChange={(e) => {
-                  setApellidos(e.target.value);
-                  if (errors.apellidos) setErrors({ ...errors, apellidos: '' });
-                }}
+                onChange={handleApellidosChange}
                 placeholder="Pérez López"
               />
               {errors.apellidos && <span className="usuario-form-error">{errors.apellidos}</span>}

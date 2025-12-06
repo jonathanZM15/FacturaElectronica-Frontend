@@ -661,3 +661,50 @@ body, html {
     padding: 10px 14px;
   }
 }
+
+/* Nuevas columnas - Emisor, Establecimientos, Puntos */
+.emisor-info a {
+  color: #0d6efd;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.emisor-info a:hover {
+  color: #0b5ed7;
+  text-decoration: underline;
+}
+
+.list-items {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 300px;
+}
+
+.list-item-link a {
+  color: #0d6efd;
+  text-decoration: none;
+  font-size: 12px;
+  transition: color 0.2s ease;
+}
+
+.list-item-link a:hover {
+  color: #0b5ed7;
+  text-decoration: underline;
+}
+
+.creator-link {
+  color: #8b5cf6;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 13px;
+  transition: color 0.2s ease;
+}
+
+.creator-link:hover {
+  color: #7c3aed;
+  text-decoration: underline;
+}
+

@@ -8,6 +8,17 @@ import UsuarioDeleteModal from './UsuarioDeleteModal';
 import { User } from '../types/user';
 import { useNotification } from '../contexts/NotificationContext';
 import LoadingSpinner from '../components/LoadingSpinner';
+import {
+  navigateToEmisor,
+  navigateToEstablecimiento,
+  navigateToPuntoEmision,
+  openUsuarioDetail,
+  formatEmisorInfo,
+  formatEstablecimientoInfo,
+  formatPuntoEmisionInfo,
+  formatCreadorInfo,
+  shouldShowCreador
+} from '../helpers/navigation';
 
 interface ListResponse {
   data: User[];
@@ -19,6 +30,26 @@ interface ListResponse {
     from: number;
     to: number;
   };
+}
+
+type SortField = 'cedula' | 'nombres' | 'username' | 'email' | 'estado' | 'role' | 'created_at' | 'updated_at';
+type SortDirection = 'asc' | 'desc';
+
+interface Filters {
+  cedula: string;
+  nombres: string;
+  apellidos: string;
+  username: string;
+  email: string;
+  roles: string[];
+  estados: string[];
+  creator: string;
+  establishment: string;
+  emisor: string;
+  dateFrom: string;
+  dateTo: string;
+  updateDateFrom: string;
+  updateDateTo: string;
 }
 
 const Usuarios: React.FC = () => {
@@ -36,6 +67,25 @@ const Usuarios: React.FC = () => {
   const [deletingUser, setDeletingUser] = React.useState<User | null>(null);
   const [openDetail, setOpenDetail] = React.useState(false);
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
+  const [sortField, setSortField] = React.useState<SortField>('created_at');
+  const [sortDirection, setSortDirection] = React.useState<SortDirection>('desc');
+  const [showFilters, setShowFilters] = React.useState(false);
+  const [filters, setFilters] = React.useState<Filters>({
+    cedula: '',
+    nombres: '',
+    apellidos: '',
+    username: '',
+    email: '',
+    roles: [],
+    estados: [],
+    creator: '',
+    establishment: '',
+    emisor: '',
+    dateFrom: '',
+    dateTo: '',
+    updateDateFrom: '',
+    updateDateTo: ''
+  });
 
   // Cargar usuarios
   const loadUsers = React.useCallback(async () => {
@@ -62,6 +112,184 @@ const Usuarios: React.FC = () => {
   React.useEffect(() => {
     loadUsers();
   }, [loadUsers]);
+
+  // Aplicar filtros locales
+  const applyFilters = (data: User[]): User[] => {
+    return data.filter((u) => {
+      if (filters.cedula && !u.cedula?.toLowerCase().includes(filters.cedula.toLowerCase())) {
+        return false;
+      }
+      if (filters.nombres && !u.nombres?.toLowerCase().includes(filters.nombres.toLowerCase())) {
+        return false;
+      }
+      if (filters.apellidos && !u.apellidos?.toLowerCase().includes(filters.apellidos.toLowerCase())) {
+        return false;
+      }
+      if (filters.username && !u.username?.toLowerCase().includes(filters.username.toLowerCase())) {
+        return false;
+      }
+      if (filters.email && !u.email?.toLowerCase().includes(filters.email.toLowerCase())) {
+        return false;
+      }
+      if (filters.roles.length > 0 && !filters.roles.includes(u.role)) {
+        return false;
+      }
+      if (filters.estados.length > 0 && !filters.estados.includes(u.estado || 'activo')) {
+        return false;
+      }
+      if (filters.creator) {
+        const creatorText = `${u.created_by_role || ''} ${u.created_by_username || ''} ${u.created_by_nombres || ''} ${u.created_by_apellidos || ''}`.toLowerCase();
+        if (!creatorText.includes(filters.creator.toLowerCase())) {
+          return false;
+        }
+      }
+      if (filters.establishment) {
+        const establishments = u.establecimientos || [];
+        const hasMatch = establishments.some(est => 
+          est.codigo.toLowerCase().includes(filters.establishment.toLowerCase()) ||
+          est.nombre.toLowerCase().includes(filters.establishment.toLowerCase())
+        );
+        if (!hasMatch) return false;
+      }
+      if (filters.emisor) {
+        const emisorText = `${u.emisor_ruc || ''} ${u.emisor_razon_social || ''}`.toLowerCase();
+        if (!emisorText.includes(filters.emisor.toLowerCase())) {
+          return false;
+        }
+      }
+      if (filters.dateFrom && u.created_at) {
+        const createdDate = new Date(u.created_at);
+        const fromDate = new Date(filters.dateFrom);
+        if (createdDate < fromDate) return false;
+      }
+      if (filters.dateTo && u.created_at) {
+        const createdDate = new Date(u.created_at);
+        const toDate = new Date(filters.dateTo);
+        toDate.setHours(23, 59, 59, 999);
+        if (createdDate > toDate) return false;
+      }
+      if (filters.updateDateFrom && u.updated_at) {
+        const updatedDate = new Date(u.updated_at);
+        const fromDate = new Date(filters.updateDateFrom);
+        if (updatedDate < fromDate) return false;
+      }
+      if (filters.updateDateTo && u.updated_at) {
+        const updatedDate = new Date(u.updated_at);
+        const toDate = new Date(filters.updateDateTo);
+        toDate.setHours(23, 59, 59, 999);
+        if (updatedDate > toDate) return false;
+      }
+      return true;
+    });
+  };
+
+  // Aplicar ordenamiento
+  const applySorting = (data: User[]): User[] => {
+    return [...data].sort((a, b) => {
+      let aVal: any;
+      let bVal: any;
+      
+      switch (sortField) {
+        case 'cedula':
+          aVal = a.cedula || '';
+          bVal = b.cedula || '';
+          break;
+        case 'nombres':
+          aVal = `${a.nombres || ''} ${a.apellidos || ''}`;
+          bVal = `${b.nombres || ''} ${b.apellidos || ''}`;
+          break;
+        case 'username':
+          aVal = a.username || '';
+          bVal = b.username || '';
+          break;
+        case 'email':
+          aVal = a.email || '';
+          bVal = b.email || '';
+          break;
+        case 'estado':
+          aVal = a.estado || 'activo';
+          bVal = b.estado || 'activo';
+          break;
+        case 'role':
+          aVal = a.role || '';
+          bVal = b.role || '';
+          break;
+        case 'created_at':
+          aVal = new Date(a.created_at || 0).getTime();
+          bVal = new Date(b.created_at || 0).getTime();
+          break;
+        case 'updated_at':
+          aVal = new Date(a.updated_at || 0).getTime();
+          bVal = new Date(b.updated_at || 0).getTime();
+          break;
+        default:
+          return 0;
+      }
+      
+      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  };
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      cedula: '',
+      nombres: '',
+      apellidos: '',
+      username: '',
+      email: '',
+      roles: [],
+      estados: [],
+      creator: '',
+      establishment: '',
+      emisor: '',
+      dateFrom: '',
+      dateTo: '',
+      updateDateFrom: '',
+      updateDateTo: ''
+    });
+  };
+
+  const toggleRoleFilter = (role: string) => {
+    setFilters(prev => ({
+      ...prev,
+      roles: prev.roles.includes(role)
+        ? prev.roles.filter(r => r !== role)
+        : [...prev.roles, role]
+    }));
+  };
+
+  const toggleEstadoFilter = (estado: string) => {
+    setFilters(prev => ({
+      ...prev,
+      estados: prev.estados.includes(estado)
+        ? prev.estados.filter(e => e !== estado)
+        : [...prev.estados, estado]
+    }));
+  };
+
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) return '⇅';
+    return sortDirection === 'asc' ? '↑' : '↓';
+  };
+
+  // Aplicar filtros y ordenamiento a los usuarios cargados
+  const filteredAndSortedUsers = React.useMemo(() => {
+    let result = users;
+    result = applyFilters(result);
+    result = applySorting(result);
+    return result;
+  }, [users, filters, sortField, sortDirection]);
 
   // Crear usuario
   const handleCreate = async (newData: User & { password_confirmation?: string }) => {
@@ -221,6 +449,117 @@ const Usuarios: React.FC = () => {
       }
     },
     { 
+      key: 'emisor_ruc' as keyof User, 
+      label: 'Emisor', 
+      width: 300,
+      render: (row) => {
+        if (!row.emisor_ruc && !row.emisor_razon_social) return '-';
+        return (
+          <div className="emisor-info">
+            <a href="#" onClick={(e) => {
+              e.preventDefault();
+              if (row.emisor_id) {
+                navigateToEmisor(row.emisor_id);
+              }
+            }}>
+              {formatEmisorInfo(row.emisor_ruc, row.emisor_razon_social)}
+            </a>
+          </div>
+        );
+      }
+    },
+    { 
+      key: 'establecimientos' as keyof User, 
+      label: 'Establecimientos', 
+      width: 250,
+      render: (row) => {
+        const establecimientos = row.establecimientos || [];
+        if (establecimientos.length === 0) return '-';
+        
+        return (
+          <div className="list-items">
+            {establecimientos.map((est, idx) => (
+              <div key={idx} className="list-item-link">
+                <a href="#" onClick={(e) => {
+                  e.preventDefault();
+                  if (row.emisor_id) {
+                    navigateToEstablecimiento(row.emisor_id, est.id);
+                  }
+                }}>
+                  {formatEstablecimientoInfo(est.codigo, est.nombre)}
+                </a>
+              </div>
+            ))}
+          </div>
+        );
+      }
+    },
+    { 
+      key: 'puntos_emision' as keyof User, 
+      label: 'Puntos de Emisión', 
+      width: 280,
+      render: (row) => {
+        const puntosEmision = row.puntos_emision || [];
+        if (puntosEmision.length === 0) return '-';
+        
+        return (
+          <div className="list-items">
+            {puntosEmision.map((punto, idx) => (
+              <div key={idx} className="list-item-link">
+                <a href="#" onClick={(e) => {
+                  e.preventDefault();
+                  if (row.emisor_id && punto.establecimiento_id) {
+                    navigateToPuntoEmision(row.emisor_id, punto.establecimiento_id, punto.id);
+                  }
+                }}>
+                  {formatPuntoEmisionInfo(punto.establecimiento_codigo, punto.codigo, punto.nombre)}
+                </a>
+              </div>
+            ))}
+          </div>
+        );
+      }
+    },
+    { 
+      key: 'created_by_username' as keyof User, 
+      label: 'Usuario creador', 
+      width: 300,
+      render: (row) => {
+        if (!row.created_by_username) return '-';
+        
+        // No mostrar si el creador es Admin o Distribuidor
+        if (!shouldShowCreador(row.created_by_role)) {
+          return '-';
+        }
+        
+        const creatorInfo = formatCreadorInfo(
+          row.created_by_role,
+          row.created_by_username,
+          row.created_by_nombres,
+          row.created_by_apellidos
+        );
+        
+        return (
+          <span 
+            className="creator-link"
+            onClick={() => {
+              if (row.created_by_id) {
+                openUsuarioDetail(row, setSelectedUser, setOpenDetail);
+              }
+            }}
+            style={{
+              cursor: row.created_by_id ? 'pointer' : 'default',
+              color: row.created_by_id ? '#6366f1' : '#64748b',
+              fontWeight: 500,
+              fontSize: '13px'
+            }}
+          >
+            {creatorInfo}
+          </span>
+        );
+      }
+    },
+    { 
       key: 'created_at', 
       label: 'Fecha de creación', 
       width: 180,
@@ -230,22 +569,249 @@ const Usuarios: React.FC = () => {
         return date.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
       }
     },
+    { 
+      key: 'updated_at', 
+      label: 'Última actualización', 
+      width: 180,
+      render: (row) => {
+        if (!row.updated_at) return '-';
+        const date = new Date(row.updated_at);
+        return date.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      }
+    },
   ];
 
   return (
     <div className="usuarios-page-container">
       <div className="usuarios-header">
         <h1>Gestión de Usuarios</h1>
-        <button 
-          className="btn-nuevo"
-          onClick={() => setOpenNew(true)}
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-          Nuevo Usuario
-        </button>
+        <div className="header-actions">
+          <button 
+            onClick={() => setShowFilters(!showFilters)} 
+            className="btn-toggle-filters"
+            title={showFilters ? "Ocultar filtros" : "Mostrar filtros"}
+            style={{
+              background: showFilters ? 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)' : 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '12px',
+              padding: '14px 24px',
+              cursor: 'pointer',
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              marginRight: '12px'
+            }}
+          >
+            🔍 {showFilters ? 'Ocultar' : 'Filtros'}
+          </button>
+          <button 
+            className="btn-nuevo"
+            onClick={() => setOpenNew(true)}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            Nuevo Usuario
+          </button>
+        </div>
       </div>
+
+      {/* Panel de filtros avanzados */}
+      {showFilters && (
+        <div className="filters-panel" style={{
+          background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+          border: '2px solid #dee2e6',
+          borderRadius: '12px',
+          padding: '20px',
+          marginBottom: '16px',
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)'
+        }}>
+          <div className="filters-grid" style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+            gap: '16px',
+            marginBottom: '16px'
+          }}>
+            <div className="filter-group">
+              <label style={{fontSize: '13px', fontWeight: 600, color: '#374151'}}>Cédula</label>
+              <input
+                type="text"
+                value={filters.cedula}
+                onChange={(e) => setFilters({...filters, cedula: e.target.value})}
+                placeholder="Buscar por cédula"
+                style={{padding: '8px 12px', borderRadius: '6px', border: '1px solid #d1d5db'}}
+              />
+            </div>
+
+            <div className="filter-group">
+              <label style={{fontSize: '13px', fontWeight: 600, color: '#374151'}}>Nombres</label>
+              <input
+                type="text"
+                value={filters.nombres}
+                onChange={(e) => setFilters({...filters, nombres: e.target.value})}
+                placeholder="Buscar por nombres"
+                style={{padding: '8px 12px', borderRadius: '6px', border: '1px solid #d1d5db'}}
+              />
+            </div>
+
+            <div className="filter-group">
+              <label style={{fontSize: '13px', fontWeight: 600, color: '#374151'}}>Apellidos</label>
+              <input
+                type="text"
+                value={filters.apellidos}
+                onChange={(e) => setFilters({...filters, apellidos: e.target.value})}
+                placeholder="Buscar por apellidos"
+                style={{padding: '8px 12px', borderRadius: '6px', border: '1px solid #d1d5db'}}
+              />
+            </div>
+
+            <div className="filter-group">
+              <label style={{fontSize: '13px', fontWeight: 600, color: '#374151'}}>Username</label>
+              <input
+                type="text"
+                value={filters.username}
+                onChange={(e) => setFilters({...filters, username: e.target.value})}
+                placeholder="Buscar por username"
+                style={{padding: '8px 12px', borderRadius: '6px', border: '1px solid #d1d5db'}}
+              />
+            </div>
+
+            <div className="filter-group">
+              <label style={{fontSize: '13px', fontWeight: 600, color: '#374151'}}>Email</label>
+              <input
+                type="text"
+                value={filters.email}
+                onChange={(e) => setFilters({...filters, email: e.target.value})}
+                placeholder="Buscar por email"
+                style={{padding: '8px 12px', borderRadius: '6px', border: '1px solid #d1d5db'}}
+              />
+            </div>
+
+            <div className="filter-group">
+              <label style={{fontSize: '13px', fontWeight: 600, color: '#374151'}}>Emisor</label>
+              <input
+                type="text"
+                value={filters.emisor}
+                onChange={(e) => setFilters({...filters, emisor: e.target.value})}
+                placeholder="RUC o razón social"
+                style={{padding: '8px 12px', borderRadius: '6px', border: '1px solid #d1d5db'}}
+              />
+            </div>
+
+            <div className="filter-group">
+              <label style={{fontSize: '13px', fontWeight: 600, color: '#374151'}}>Establecimiento</label>
+              <input
+                type="text"
+                value={filters.establishment}
+                onChange={(e) => setFilters({...filters, establishment: e.target.value})}
+                placeholder="Código o nombre"
+                style={{padding: '8px 12px', borderRadius: '6px', border: '1px solid #d1d5db'}}
+              />
+            </div>
+
+            <div className="filter-group">
+              <label style={{fontSize: '13px', fontWeight: 600, color: '#374151'}}>Usuario creador</label>
+              <input
+                type="text"
+                value={filters.creator}
+                onChange={(e) => setFilters({...filters, creator: e.target.value})}
+                placeholder="Buscar por creador"
+                style={{padding: '8px 12px', borderRadius: '6px', border: '1px solid #d1d5db'}}
+              />
+            </div>
+
+            <div className="filter-group">
+              <label style={{fontSize: '13px', fontWeight: 600, color: '#374151'}}>Roles</label>
+              <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+                {['administrador', 'distribuidor', 'emisor', 'gerente', 'cajero'].map(role => (
+                  <label key={role} style={{display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer'}}>
+                    <input 
+                      type="checkbox" 
+                      checked={filters.roles.includes(role)}
+                      onChange={() => toggleRoleFilter(role)}
+                      style={{cursor: 'pointer'}}
+                    />
+                    {role.charAt(0).toUpperCase() + role.slice(1)}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="filter-group">
+              <label style={{fontSize: '13px', fontWeight: 600, color: '#374151'}}>Estados</label>
+              <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+                {['nuevo', 'activo', 'pendiente_verificacion', 'suspendido', 'retirado'].map(estado => (
+                  <label key={estado} style={{display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer'}}>
+                    <input 
+                      type="checkbox" 
+                      checked={filters.estados.includes(estado)}
+                      onChange={() => toggleEstadoFilter(estado)}
+                      style={{cursor: 'pointer'}}
+                    />
+                    {estado === 'pendiente_verificacion' ? 'Pendiente' : estado.charAt(0).toUpperCase() + estado.slice(1)}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="filter-group">
+              <label style={{fontSize: '13px', fontWeight: 600, color: '#374151'}}>Fecha creación desde</label>
+              <input
+                type="date"
+                value={filters.dateFrom}
+                onChange={(e) => setFilters({...filters, dateFrom: e.target.value})}
+                style={{padding: '8px 12px', borderRadius: '6px', border: '1px solid #d1d5db'}}
+              />
+            </div>
+
+            <div className="filter-group">
+              <label style={{fontSize: '13px', fontWeight: 600, color: '#374151'}}>Fecha creación hasta</label>
+              <input
+                type="date"
+                value={filters.dateTo}
+                onChange={(e) => setFilters({...filters, dateTo: e.target.value})}
+                style={{padding: '8px 12px', borderRadius: '6px', border: '1px solid #d1d5db'}}
+              />
+            </div>
+
+            <div className="filter-group">
+              <label style={{fontSize: '13px', fontWeight: 600, color: '#374151'}}>Actualización desde</label>
+              <input
+                type="date"
+                value={filters.updateDateFrom}
+                onChange={(e) => setFilters({...filters, updateDateFrom: e.target.value})}
+                style={{padding: '8px 12px', borderRadius: '6px', border: '1px solid #d1d5db'}}
+              />
+            </div>
+
+            <div className="filter-group">
+              <label style={{fontSize: '13px', fontWeight: 600, color: '#374151'}}>Actualización hasta</label>
+              <input
+                type="date"
+                value={filters.updateDateTo}
+                onChange={(e) => setFilters({...filters, updateDateTo: e.target.value})}
+                style={{padding: '8px 12px', borderRadius: '6px', border: '1px solid #d1d5db'}}
+              />
+            </div>
+          </div>
+
+          <div style={{display: 'flex', justifyContent: 'flex-end', gap: '12px', paddingTop: '12px', borderTop: '1px solid #dee2e6'}}>
+            <button onClick={clearFilters} style={{
+              background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '10px 20px',
+              cursor: 'pointer',
+              fontWeight: 600
+            }}>
+              🗑️ Limpiar filtros
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Búsqueda */}
       <div className="usuarios-search-container">
@@ -296,14 +862,14 @@ const Usuarios: React.FC = () => {
                   <LoadingSpinner message="Cargando usuarios…" />
                 </td>
               </tr>
-            ) : users.length === 0 ? (
+            ) : filteredAndSortedUsers.length === 0 ? (
               <tr>
                 <td colSpan={columns.length + 1} style={{ textAlign: 'center', padding: '20px', color: '#9ca3af' }}>
                   No hay usuarios registrados
                 </td>
               </tr>
             ) : (
-              users.map(user => (
+              filteredAndSortedUsers.map(user => (
                 <tr key={user.id}>
                   {columns.map(col => (
                     <td key={`${user.id}-${col.key}`}>
@@ -340,6 +906,9 @@ const Usuarios: React.FC = () => {
         
         {/* Paginación dentro de la tabla - SIEMPRE VISIBLE */}
         <div className="pagination-controls">
+          <div className="pagination-info-left" style={{fontSize: '13px', color: '#374151', fontWeight: 500}}>
+            Mostrando {filteredAndSortedUsers.length} de {totalItems} usuarios
+          </div>
           <div className="pagination-info">
             Filas por página: 
             <select 
@@ -353,6 +922,8 @@ const Usuarios: React.FC = () => {
               <option value={5}>5</option>
               <option value={10}>10</option>
               <option value={15}>15</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
             </select>
             <span className="page-range">
               {totalItems === 0 ? '0-0' : `${(currentPage - 1) * itemsPerPage + 1}-${Math.min(currentPage * itemsPerPage, totalItems)}`} de {totalItems}
@@ -422,6 +993,19 @@ const Usuarios: React.FC = () => {
         onClose={() => {
           setOpenDetail(false);
           setSelectedUser(null);
+        }}
+        onEdit={() => {
+          if (selectedUser) {
+            setEditingUser(selectedUser);
+            setOpenEdit(true);
+            setOpenDetail(false);
+          }
+        }}
+        onDelete={() => {
+          if (selectedUser) {
+            handleDelete(selectedUser);
+            setOpenDetail(false);
+          }
         }}
       />
 
