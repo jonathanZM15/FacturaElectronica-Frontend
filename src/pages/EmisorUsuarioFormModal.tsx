@@ -46,22 +46,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
   const [checkingUsername, setCheckingUsername] = React.useState(false);
   const [resendingEmail, setResendingEmail] = React.useState(false);
   const [estado, setEstado] = React.useState<string>('nuevo');
-  const usernameCheckTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-  const emailCheckTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const isEditing = React.useMemo(() => Boolean(editingId), [editingId]);
-
-  React.useEffect(() => {
-    return () => {
-      if (usernameCheckTimeout.current) {
-        clearTimeout(usernameCheckTimeout.current);
-        usernameCheckTimeout.current = null;
-      }
-      if (emailCheckTimeout.current) {
-        clearTimeout(emailCheckTimeout.current);
-        emailCheckTimeout.current = null;
-      }
-    };
-  }, []);
 
   // Obtener roles permitidos según el rol del usuario actual
   const getRolesPermitidos = React.useMemo(() => {
@@ -201,14 +186,10 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
     }
     setErrors((prev) => ({ ...prev, username: error }));
 
-    if (usernameCheckTimeout.current) {
-      clearTimeout(usernameCheckTimeout.current);
-      usernameCheckTimeout.current = null;
-    }
-
+    // Verificar disponibilidad si tiene al menos 3 caracteres
     if (value.length >= 3 && (!isEditing || value !== initialData?.username)) {
-      setCheckingUsername(true);
-      usernameCheckTimeout.current = setTimeout(async () => {
+      const timer = setTimeout(async () => {
+        setCheckingUsername(true);
         try {
           await usuariosEmisorApi.checkUsername(value);
           setErrors((prev) => ({ ...prev, username: '❌ Este nombre de usuario ya existe' }));
@@ -222,8 +203,6 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
           setCheckingUsername(false);
         }
       }, 500);
-    } else {
-      setCheckingUsername(false);
     }
   };
 
@@ -242,15 +221,11 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
     }
     setErrors((prev) => ({ ...prev, email: error }));
 
-    if (emailCheckTimeout.current) {
-      clearTimeout(emailCheckTimeout.current);
-      emailCheckTimeout.current = null;
-    }
-
+    // Verificar disponibilidad si tiene formato correcto
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (value.length > 0 && emailRegex.test(value) && (!isEditing || value !== initialData?.email)) {
-      setCheckingEmail(true);
-      emailCheckTimeout.current = setTimeout(async () => {
+      const timer = setTimeout(async () => {
+        setCheckingEmail(true);
         try {
           await usuariosEmisorApi.checkEmail(value);
           setErrors((prev) => ({ ...prev, email: '❌ Este correo ya está registrado' }));
@@ -264,8 +239,6 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
           setCheckingEmail(false);
         }
       }, 500);
-    } else {
-      setCheckingEmail(false);
     }
   };
 
@@ -455,7 +428,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                 onChange={handleUsernameChange}
                 placeholder="usuario1"
                 autoComplete="off"
-                disabled={loading || checkingUsername}
+                disabled={loading}
                 style={{
                   width: '100%',
                   padding: '10px 12px',
@@ -465,8 +438,11 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                   boxSizing: 'border-box'
                 }}
               />
-              {checkingUsername && <span style={{ color: '#1a63d6', fontSize: 12, marginTop: 4, display: 'block' }}>⏳ Verificando disponibilidad...</span>}
-              {errors.username && <span style={{ color: '#ff6b6b', fontSize: 12, marginTop: 4, display: 'block' }}>{errors.username}</span>}
+              {checkingUsername ? (
+                <span style={{ color: '#1a63d6', fontSize: 12, marginTop: 4, display: 'block' }}>⏳ Verificando disponibilidad...</span>
+              ) : (
+                errors.username && <span style={{ color: '#ff6b6b', fontSize: 12, marginTop: 4, display: 'block' }}>{errors.username}</span>
+              )}
             </div>
 
             {/* Email */}
@@ -480,7 +456,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                 onChange={handleEmailChange}
                 placeholder="usuario@dominio.com"
                 autoComplete="off"
-                disabled={loading || checkingEmail}
+                disabled={loading}
                 style={{
                   width: '100%',
                   padding: '10px 12px',
@@ -490,8 +466,11 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                   boxSizing: 'border-box'
                 }}
               />
-              {checkingEmail && <span style={{ color: '#1a63d6', fontSize: 12, marginTop: 4, display: 'block' }}>⏳ Verificando disponibilidad...</span>}
-              {errors.email && <span style={{ color: '#ff6b6b', fontSize: 12, marginTop: 4, display: 'block' }}>{errors.email}</span>}
+              {checkingEmail ? (
+                <span style={{ color: '#1a63d6', fontSize: 12, marginTop: 4, display: 'block' }}>⏳ Verificando disponibilidad...</span>
+              ) : (
+                errors.email && <span style={{ color: '#ff6b6b', fontSize: 12, marginTop: 4, display: 'block' }}>{errors.email}</span>
+              )}
             </div>
 
             {/* Rol */}
@@ -529,68 +508,202 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
 
           {/* Contraseña Auto-Generada - Solo en creación */}
           {!editingId && (
-            <div style={{ 
-              marginBottom: 16, 
-              padding: 16, 
-              background: 'linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%)',
-              border: '2px solid #4caf50',
-              borderRadius: 8
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                <span style={{ fontSize: 24 }}>🔐</span>
-                <strong style={{ color: '#2e7d32', fontSize: 15 }}>Contraseña Auto-Generada</strong>
+            <div className="info-box success">
+              <span className="info-box-icon">🔐</span>
+              <div className="info-box-content">
+                <p className="info-box-title">Contraseña Auto-Generada</p>
+                <p className="info-box-text">
+                  ℹ️ El usuario recibirá un correo electrónico para <strong>verificar su cuenta</strong> y establecer su propia contraseña de forma segura.
+                </p>
               </div>
-              <p style={{ margin: 0, fontSize: 13, color: '#388e3c', lineHeight: 1.5 }}>
-                ℹ️ El usuario recibirá un correo electrónico para <strong>verificar su cuenta</strong> y establecer su propia contraseña de forma segura.
-              </p>
             </div>
           )}
 
           {/* Establecimientos - mostrar solo para gerente/cajero */}
           {(role === 'gerente' || role === 'cajero') && (
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#333' }}>
-                Establecimientos <span style={{ color: '#ff6b6b' }}>*</span> <span style={{ fontSize: 13, color: '#666', fontWeight: 400 }}>(Obligatorio para {role})</span>
-              </label>
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ 
+                background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                padding: '16px 20px',
+                borderRadius: '12px 12px 0 0',
+                borderBottom: '3px solid #f59e0b',
+                marginBottom: 0
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span style={{ fontSize: 28 }}>🏢</span>
+                  <div>
+                    <h3 style={{ 
+                      margin: 0, 
+                      fontSize: 16, 
+                      fontWeight: 700, 
+                      color: '#78350f',
+                      letterSpacing: '-0.02em'
+                    }}>
+                      Establecimientos <span style={{ color: '#dc2626' }}>*</span>
+                    </h3>
+                    <p style={{ 
+                      fontSize: 13, 
+                      color: '#92400e', 
+                      margin: '4px 0 0',
+                      fontWeight: 500
+                    }}>
+                      Obligatorio para {role} - Selecciona los establecimientos asignados
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
               {establecimientos.length === 0 ? (
                 <div style={{ 
-                  padding: 12, 
-                  backgroundColor: '#fff3cd', 
-                  border: '1px solid #ffc107',
-                  borderRadius: 6,
-                  fontSize: 14,
-                  color: '#856404'
+                  background: '#ffffff',
+                  border: '1px solid #e2e8f0',
+                  borderTop: 'none',
+                  borderRadius: '0 0 12px 12px',
+                  padding: '20px'
                 }}>
-                  ⚠️ No hay establecimientos disponibles para asignar. Debe crear establecimientos primero.
+                  <div style={{ 
+                    padding: '16px 20px',
+                    background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                    border: '2px dashed #fbbf24',
+                    borderRadius: 10,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12
+                  }}>
+                    <span style={{ fontSize: 24 }}>⚠️</span>
+                    <p style={{ fontSize: 14, color: '#92400e', margin: 0, fontWeight: 600 }}>
+                      No hay establecimientos disponibles para asignar. Debe crear establecimientos primero.
+                    </p>
+                  </div>
                 </div>
               ) : (
-                <div style={{ border: errors.establecimientos ? '2px solid #ff6b6b' : '1px solid #ddd', borderRadius: 6, padding: 12, maxHeight: 180, overflowY: 'auto' }}>
-                  {establecimientos.map(est => (
-                    <label key={est.id} style={{ display: 'flex', alignItems: 'center', marginBottom: 8, cursor: 'pointer' }}>
-                      <input
-                        type="checkbox"
-                        checked={selectedEstablecimientos.includes(est.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedEstablecimientos(prev => [...prev, est.id]);
-                          } else {
-                            setSelectedEstablecimientos(prev => prev.filter(id => id !== est.id));
-                            setSelectedPuntosPorEstablecimiento(prev => {
-                              if (!(est.id in prev)) return prev;
-                              const { [est.id]: _removed, ...rest } = prev;
-                              return rest;
-                            });
-                          }
-                          if (errors.establecimientos) setErrors({ ...errors, establecimientos: '' });
+                <div style={{ 
+                  background: '#ffffff',
+                  border: errors.establecimientos ? '2px solid #ef4444' : '1px solid #e2e8f0',
+                  borderTop: 'none',
+                  borderRadius: '0 0 12px 12px',
+                  padding: '20px',
+                  maxHeight: 240,
+                  overflowY: 'auto'
+                }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {establecimientos.map((est, index) => (
+                      <label 
+                        key={est.id} 
+                        style={{ 
+                          display: 'flex', 
+                          alignItems: 'center',
+                          padding: '12px 16px',
+                          background: selectedEstablecimientos.includes(est.id) 
+                            ? 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)' 
+                            : 'linear-gradient(135deg, #fafbfc 0%, #f1f5f9 100%)',
+                          border: selectedEstablecimientos.includes(est.id)
+                            ? '2px solid #f59e0b'
+                            : '2px solid #e2e8f0',
+                          borderRadius: 10,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          position: 'relative',
+                          overflow: 'hidden'
                         }}
-                        style={{ marginRight: 8, cursor: 'pointer' }}
-                      />
-                      <span>{est.codigo} - {est.nombre}</span>
-                    </label>
-                  ))}
+                        onMouseEnter={(e) => {
+                          if (!selectedEstablecimientos.includes(est.id)) {
+                            e.currentTarget.style.borderColor = '#cbd5e1';
+                            e.currentTarget.style.background = 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!selectedEstablecimientos.includes(est.id)) {
+                            e.currentTarget.style.borderColor = '#e2e8f0';
+                            e.currentTarget.style.background = 'linear-gradient(135deg, #fafbfc 0%, #f1f5f9 100%)';
+                          }
+                        }}
+                      >
+                        <div style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: '4px',
+                          height: '100%',
+                          background: selectedEstablecimientos.includes(est.id)
+                            ? 'linear-gradient(180deg, #f59e0b, #d97706)'
+                            : 'transparent'
+                        }}></div>
+                        
+                        <input
+                          type="checkbox"
+                          checked={selectedEstablecimientos.includes(est.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedEstablecimientos(prev => [...prev, est.id]);
+                            } else {
+                              setSelectedEstablecimientos(prev => prev.filter(id => id !== est.id));
+                              setSelectedPuntosPorEstablecimiento(prev => {
+                                if (!(est.id in prev)) return prev;
+                                const { [est.id]: _removed, ...rest } = prev;
+                                return rest;
+                              });
+                            }
+                            if (errors.establecimientos) setErrors({ ...errors, establecimientos: '' });
+                          }}
+                          style={{ 
+                            marginRight: 12, 
+                            cursor: 'pointer',
+                            width: 18,
+                            height: 18,
+                            accentColor: '#f59e0b'
+                          }}
+                        />
+                        
+                        <div style={{ 
+                          width: 32, 
+                          height: 32, 
+                          borderRadius: '50%',
+                          background: selectedEstablecimientos.includes(est.id)
+                            ? 'linear-gradient(135deg, #fbbf24, #f59e0b)'
+                            : 'linear-gradient(135deg, #e2e8f0, #cbd5e1)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          marginRight: 12,
+                          fontSize: 14,
+                          fontWeight: 700,
+                          color: selectedEstablecimientos.includes(est.id) ? '#ffffff' : '#64748b',
+                          flexShrink: 0
+                        }}>
+                          {selectedEstablecimientos.includes(est.id) ? '✓' : String(index + 1).padStart(2, '0')}
+                        </div>
+                        
+                        <span style={{ 
+                          fontWeight: 600, 
+                          color: selectedEstablecimientos.includes(est.id) ? '#78350f' : '#475569',
+                          fontSize: 14
+                        }}>
+                          {est.codigo} - {est.nombre}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
               )}
-              {errors.establecimientos && <span style={{ color: '#ff6b6b', fontSize: 12, marginTop: 4, display: 'block' }}>{errors.establecimientos}</span>}
+              
+              {errors.establecimientos && (
+                <div style={{ 
+                  marginTop: 8,
+                  padding: '10px 14px',
+                  background: '#fef2f2',
+                  border: '1px solid #fca5a5',
+                  borderRadius: 6,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8
+                }}>
+                  <span style={{ fontSize: 16 }}>❌</span>
+                  <span style={{ color: '#dc2626', fontSize: 13, fontWeight: 600 }}>
+                    {errors.establecimientos}
+                  </span>
+                </div>
+              )}
             </div>
           )}
 
@@ -608,17 +721,51 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
 
           {/* Puntos de Emisión - uno por establecimiento */}
           {activeEstablecimientos.length > 0 && (
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, color: '#333' }}>
-                {role === 'emisor'
-                  ? 'Puntos de emisión por establecimiento'
-                  : 'Puntos de emisión (uno por establecimiento)'}
-              </label>
-              <p style={{ fontSize: 13, color: '#666', margin: '4px 0 12px' }}>
-                Selecciona como máximo un punto de emisión para cada establecimiento asignado.
-              </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {activeEstablecimientos.map((estId) => {
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ 
+                background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+                padding: '16px 20px',
+                borderRadius: '12px 12px 0 0',
+                borderBottom: '3px solid #6366f1',
+                marginBottom: 0
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span style={{ fontSize: 28 }}>📍</span>
+                  <div>
+                    <h3 style={{ 
+                      margin: 0, 
+                      fontSize: 16, 
+                      fontWeight: 700, 
+                      color: '#1e293b',
+                      letterSpacing: '-0.02em'
+                    }}>
+                      {role === 'emisor'
+                        ? 'Puntos de emisión por establecimiento'
+                        : 'Puntos de emisión'}
+                    </h3>
+                    <p style={{ 
+                      fontSize: 13, 
+                      color: '#64748b', 
+                      margin: '4px 0 0',
+                      fontWeight: 500
+                    }}>
+                      Selecciona como máximo un punto de emisión para cada establecimiento asignado
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div style={{ 
+                background: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderTop: 'none',
+                borderRadius: '0 0 12px 12px',
+                padding: '20px',
+                display: 'flex', 
+                flexDirection: 'column', 
+                gap: 14
+              }}>
+                {activeEstablecimientos.map((estId, index) => {
                   const estInfo = establecimientos.find((est) => est.id === estId);
                   const puntosDisponibles = getPuntosForEstablecimiento(estId);
                   const selectedPuntoId = selectedPuntosPorEstablecimiento[estId];
@@ -627,39 +774,123 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                     <div
                       key={estId}
                       style={{
-                        border: '1px solid #e0e0e0',
-                        borderRadius: 8,
-                        padding: 12,
-                        background: '#fafafa'
+                        background: 'linear-gradient(135deg, #fafbfc 0%, #f1f5f9 100%)',
+                        border: '2px solid #e2e8f0',
+                        borderRadius: 10,
+                        padding: '16px 18px',
+                        transition: 'all 0.3s ease',
+                        position: 'relative',
+                        overflow: 'hidden'
                       }}
                     >
-                      <div style={{ fontWeight: 600, marginBottom: 8, color: '#333' }}>
-                        {estInfo ? `${estInfo.codigo} - ${estInfo.nombre}` : `Establecimiento #${estId}`}
+                      <div style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '4px',
+                        height: '100%',
+                        background: `linear-gradient(180deg, ${
+                          index % 3 === 0 ? '#6366f1' : index % 3 === 1 ? '#8b5cf6' : '#ec4899'
+                        }, ${
+                          index % 3 === 0 ? '#4f46e5' : index % 3 === 1 ? '#7c3aed' : '#db2777'
+                        })`
+                      }}></div>
+                      
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: 10, 
+                        marginBottom: 12,
+                        paddingLeft: 12
+                      }}>
+                        <div style={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: '50%',
+                          background: `linear-gradient(135deg, ${
+                            index % 3 === 0 ? '#dbeafe' : index % 3 === 1 ? '#f3e8ff' : '#fce7f3'
+                          }, ${
+                            index % 3 === 0 ? '#bfdbfe' : index % 3 === 1 ? '#e9d5ff' : '#fbcfe8'
+                          })`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 16,
+                          fontWeight: 700,
+                          color: index % 3 === 0 ? '#1e40af' : index % 3 === 1 ? '#6b21a8' : '#be185d',
+                          flexShrink: 0
+                        }}>
+                          {String(index + 1).padStart(2, '0')}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ 
+                            fontWeight: 700, 
+                            color: '#1e293b',
+                            fontSize: 15,
+                            letterSpacing: '-0.01em'
+                          }}>
+                            {estInfo ? `${estInfo.codigo} - ${estInfo.nombre}` : `Establecimiento #${estId}`}
+                          </div>
+                        </div>
                       </div>
-                      {puntosDisponibles.length === 0 ? (
-                        <p style={{ fontSize: 13, color: '#999', margin: 0 }}>
-                          No hay puntos de emisión disponibles para este establecimiento
-                        </p>
-                      ) : (
-                        <select
-                          value={selectedPuntoId != null ? String(selectedPuntoId) : ''}
-                          onChange={(e) => handlePuntoSelection(estId, e.target.value)}
-                          style={{
-                            width: '100%',
-                            padding: '8px 10px',
-                            borderRadius: 6,
-                            border: '1px solid #ccc',
-                            fontSize: 14
-                          }}
-                        >
-                          <option value="">Sin punto asignado</option>
-                          {puntosDisponibles.map((punto) => (
-                            <option key={punto.id} value={String(punto.id)}>
-                              {punto.nombre}
-                            </option>
-                          ))}
-                        </select>
-                      )}
+                      
+                      <div style={{ paddingLeft: 12 }}>
+                        {puntosDisponibles.length === 0 ? (
+                          <div style={{ 
+                            padding: '12px 16px',
+                            background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                            border: '2px dashed #fbbf24',
+                            borderRadius: 8,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 10
+                          }}>
+                            <span style={{ fontSize: 20 }}>⚠️</span>
+                            <p style={{ fontSize: 13, color: '#92400e', margin: 0, fontWeight: 600 }}>
+                              No hay puntos de emisión disponibles para este establecimiento
+                            </p>
+                          </div>
+                        ) : (
+                          <div style={{ position: 'relative' }}>
+                            <select
+                              value={selectedPuntoId != null ? String(selectedPuntoId) : ''}
+                              onChange={(e) => handlePuntoSelection(estId, e.target.value)}
+                              style={{
+                                width: '100%',
+                                padding: '12px 16px',
+                                borderRadius: 8,
+                                border: '2px solid #cbd5e1',
+                                fontSize: 14,
+                                fontWeight: 600,
+                                color: '#334155',
+                                background: '#ffffff',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                                outline: 'none'
+                              }}
+                              onFocus={(e) => {
+                                e.target.style.borderColor = index % 3 === 0 ? '#6366f1' : index % 3 === 1 ? '#8b5cf6' : '#ec4899';
+                                e.target.style.boxShadow = `0 0 0 3px ${
+                                  index % 3 === 0 ? 'rgba(99, 102, 241, 0.1)' : 
+                                  index % 3 === 1 ? 'rgba(139, 92, 246, 0.1)' : 
+                                  'rgba(236, 72, 153, 0.1)'
+                                }`;
+                              }}
+                              onBlur={(e) => {
+                                e.target.style.borderColor = '#cbd5e1';
+                                e.target.style.boxShadow = 'none';
+                              }}
+                            >
+                              <option value="">🔘 Sin punto asignado</option>
+                              {puntosDisponibles.map((punto) => (
+                                <option key={punto.id} value={String(punto.id)}>
+                                  ✓ {punto.nombre}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
@@ -701,7 +932,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
 
             <button
               type="submit"
-              disabled={loading || resendingEmail || checkingEmail || checkingUsername || Object.values(errors).some(e => e && e.length > 0)}
+              disabled={loading || resendingEmail || Object.values(errors).some(e => e && e.length > 0)}
               className="btn-submit"
             >
               {loading ? (
