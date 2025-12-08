@@ -62,23 +62,15 @@ const getEstadosPermitidos = (estadoActual: string): { value: string; label: str
     activo: [
       { value: 'activo', label: '✅ Activo', tooltip: 'Usuario con acceso completo al sistema' },
       { value: 'suspendido', label: '⏸️ Suspendido', tooltip: 'Suspender temporalmente el acceso del usuario' },
-      { value: 'pendiente_verificacion', label: '⏳ Pendiente Verificación', tooltip: 'Requiere nueva verificación de identidad' },
       { value: 'retirado', label: '👋 Retirado', tooltip: 'Usuario ya no forma parte de la organización' }
     ],
     pendiente_verificacion: [
-      { value: 'pendiente_verificacion', label: '⏳ Pendiente Verificación', tooltip: 'Esperando verificación de identidad' },
       { value: 'activo', label: '✅ Activo', tooltip: 'Verificación completada, activar usuario' },
-      { value: 'suspendido', label: '⏸️ Suspendido', tooltip: 'Suspender por problemas en verificación' }
+      { value: 'suspendido', label: '⏸️ Suspendido', tooltip: 'Suspender temporalmente el acceso del usuario' },
+      { value: 'retirado', label: '👋 Retirado', tooltip: 'Usuario ya no forma parte de la organización' }
     ],
-    suspendido: [
-      { value: 'suspendido', label: '⏸️ Suspendido', tooltip: 'Usuario temporalmente sin acceso' },
-      { value: 'activo', label: '✅ Activo', tooltip: 'Reactivar acceso del usuario' },
-      { value: 'retirado', label: '👋 Retirado', tooltip: 'Dar de baja permanente al usuario' }
-    ],
-    retirado: [
-      { value: 'retirado', label: '👋 Retirado', tooltip: 'Usuario dado de baja' },
-      { value: 'pendiente_verificacion', label: '⏳ Pendiente Verificación', tooltip: 'Reincorporar usuario (requiere nueva verificación)' }
-    ]
+    suspendido: [],
+    retirado: []
   };
 
   return transiciones[estadoActual] || [
@@ -452,7 +444,7 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
                   placeholder="0123456789"
                   maxLength={10}
                   className={errors.cedula ? 'usuario-form-input error' : 'usuario-form-input'}
-                  disabled={loading}
+                  disabled={loading || (isEditing && estado !== 'nuevo')}
                   autoComplete="off"
                 />
                 {errors.cedula && (
@@ -477,7 +469,7 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
                   onChange={handleEmailChange}
                   placeholder="usuario@example.com"
                   className={errors.email ? 'usuario-form-input error' : 'usuario-form-input'}
-                  disabled={loading}
+                  disabled={loading || (isEditing && estado !== 'nuevo')}
                   autoComplete="off"
                 />
                 {errors.email && (
@@ -502,7 +494,7 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
                   onChange={handleNombresChange}
                   placeholder="Ingrese sus nombres"
                   className={errors.nombres ? 'usuario-form-input error' : 'usuario-form-input'}
-                  disabled={loading}
+                  disabled={loading || (isEditing && estado !== 'nuevo')}
                   autoComplete="off"
                 />
                 {errors.nombres && (
@@ -527,7 +519,7 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
                   onChange={handleApellidosChange}
                   placeholder="Ingrese sus apellidos"
                   className={errors.apellidos ? 'usuario-form-input error' : 'usuario-form-input'}
-                  disabled={loading}
+                  disabled={loading || (isEditing && estado !== 'nuevo')}
                   autoComplete="off"
                 />
                 {errors.apellidos && (
@@ -552,7 +544,7 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
                   onChange={handleUsernameChange}
                   placeholder="nombre_usuario"
                   className={errors.username ? 'usuario-form-input error' : 'usuario-form-input'}
-                  disabled={loading}
+                  disabled={loading || (isEditing && estado !== 'nuevo')}
                   autoComplete="off"
                 />
                 {errors.username && (
@@ -598,8 +590,8 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
                 )}
               </div>
 
-              {/* Estado - Solo en Edición - Ancho Completo */}
-              {isEditing && (
+              {/* Estado - Solo en Edición y cuando el estado no es "Nuevo" - Ancho Completo */}
+              {isEditing && estado !== 'nuevo' && (
                 <div className="usuario-form-group full-width">
                   <label htmlFor="modal-estado" className="usuario-form-label">
                     <span className="icon">🔄</span>
@@ -611,6 +603,16 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
                       <span className="icon">🔒</span>
                       <strong>✅ Activo</strong>
                       <span className="help-text">El administrador principal siempre debe estar activo</span>
+                    </div>
+                  ) : (estado === 'retirado' || estado === 'suspendido') ? (
+                    <div className="usuario-estado-locked">
+                      <span className="icon">ℹ️</span>
+                      <strong>
+                        {estado === 'retirado' ? '👋 Retirado' : '⏸️ Suspendido'}
+                      </strong>
+                      <span className="help-text">
+                        Para cambiar el estado, usa el botón "Reenviar Correo" para iniciar el proceso de verificación
+                      </span>
                     </div>
                   ) : (
                     <>
