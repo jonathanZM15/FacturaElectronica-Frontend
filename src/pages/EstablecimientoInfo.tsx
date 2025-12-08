@@ -19,6 +19,23 @@ const EstablecimientoInfo: React.FC = () => {
   const { show } = useNotification();
   const { user } = useUser();
   const role = user?.role?.toLowerCase?.() ?? '';
+
+  // Normaliza puntos_emision_ids manejando doble JSON y devuelve array
+  const userPuntosIds = React.useMemo(() => {
+    let ids: any = (user as any)?.puntos_emision_ids ?? [];
+    try {
+      if (typeof ids === 'string') {
+        ids = JSON.parse(ids);
+        if (typeof ids === 'string') {
+          ids = JSON.parse(ids);
+        }
+      }
+    } catch (e) {
+      console.error('❌ Error parseando puntos_emision_ids', e);
+      ids = [];
+    }
+    return Array.isArray(ids) ? ids : [];
+  }, [user]);
   const [loading, setLoading] = React.useState(false);
   const [est, setEst] = React.useState<any | null>(null);
   const [company, setCompany] = React.useState<any | null>(null);
@@ -45,7 +62,8 @@ const EstablecimientoInfo: React.FC = () => {
   // Punto emisión modal states
   const [puntoFormOpen, setPuntoFormOpen] = React.useState(false);
   const [selectedPunto, setSelectedPunto] = React.useState<PuntoEmision | null>(null);
-  const isLimitedRole = role === 'gerente' || role === 'cajero';
+  // Emisor con puntos asignados específicos también se considera limitado para el filtro
+  const isLimitedRole = role === 'gerente' || role === 'cajero' || (role === 'emisor' && userPuntosIds.length > 0);
 
   // Filtrado de puntos de emisión
   type PuntoCol = 'codigo'|'nombre'|'estado';
@@ -83,23 +101,12 @@ const EstablecimientoInfo: React.FC = () => {
         let dataEst = rEst.data?.data ?? rEst.data;
         const dataComp = rComp.data?.data ?? rComp.data;
         
-        // Filtrar puntos de emisión para Gerente/Cajero
+        // Filtrar puntos de emisión para roles limitados (gerente/cajero o emisor con puntos asignados)
         if (user && isLimitedRole && dataEst?.puntos_emision) {
-          let user_puntos_ids = (user as any).puntos_emision_ids || [];
+          const user_puntos_ids = userPuntosIds;
           
           console.log('🔍 [EstablecimientoInfo] Filtrando puntos para:', role || user?.role);
-          console.log('  📦 puntos_emision_ids RAW:', user_puntos_ids);
-          
-          if (typeof user_puntos_ids === 'string') {
-            try {
-              user_puntos_ids = JSON.parse(user_puntos_ids);
-              console.log('  ✅ Parseado exitoso:', user_puntos_ids);
-            } catch (e) {
-              console.error('  ❌ Error parsing:', e);
-              user_puntos_ids = [];
-            }
-          }
-          
+          console.log('  📦 puntos_emision_ids (normalizados):', user_puntos_ids);
           console.log('  📍 Puntos antes del filtro:', dataEst.puntos_emision.length);
           
           if (Array.isArray(user_puntos_ids) && user_puntos_ids.length > 0) {
@@ -107,7 +114,6 @@ const EstablecimientoInfo: React.FC = () => {
               const isAssigned = user_puntos_ids.includes(p.id) ||
                                 user_puntos_ids.includes(Number(p.id)) ||
                                 user_puntos_ids.includes(String(p.id));
-              console.log(`  ${isAssigned ? '✅' : '❌'} Punto ${p.id} (${p.codigo}): ${isAssigned ? 'INCLUIDO' : 'EXCLUIDO'}`);
               return isAssigned;
             });
             console.log('  📍 Puntos después del filtro:', dataEst.puntos_emision.length);
