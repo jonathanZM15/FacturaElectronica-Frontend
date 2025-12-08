@@ -14,6 +14,7 @@ export interface PuntoEmision {
   nombre: string;
   estado?: string;
   establecimiento_codigo?: string;
+  establecimiento_nombre?: string;
 }
 
 export interface User {

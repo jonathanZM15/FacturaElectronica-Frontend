@@ -692,6 +692,22 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
 
                     const establecimientos = u.establecimientos || [];
                     const puntosEmision = u.puntos_emision || [];
+                    
+                    // Si no hay establecimientos pero sí puntos de emisión, 
+                    // inferir establecimientos únicos desde los puntos
+                    let displayEstablecimientos = establecimientos;
+                    if (establecimientos.length === 0 && puntosEmision.length > 0) {
+                      const estIdsFromPuntos = Array.from(new Set(puntosEmision.map((p: any) => p.establecimiento_id).filter(Boolean)));
+                      // Crear objetos de establecimiento básicos desde los puntos
+                      displayEstablecimientos = estIdsFromPuntos.map((estId: any) => {
+                        const punto = puntosEmision.find((p: any) => p.establecimiento_id === estId);
+                        return {
+                          id: estId,
+                          codigo: (punto as any)?.establecimiento_codigo || '???',
+                          nombre: (punto as any)?.establecimiento_nombre || `Establecimiento ${estId}`,
+                        };
+                      });
+                    }
 
                     return (
                       <tr
@@ -735,9 +751,9 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
                           </span>
                         </td>
                         <td>
-                          {establecimientos.length > 0 ? (
+                          {displayEstablecimientos.length > 0 ? (
                             <div className="list-items">
-                              {establecimientos.map((est, idx) => (
+                              {displayEstablecimientos.map((est: any, idx: number) => (
                                 <div key={idx} className="list-item-link">
                                   <a href="#" onClick={(e) => {
                                     e.preventDefault();

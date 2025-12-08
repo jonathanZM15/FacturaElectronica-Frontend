@@ -137,8 +137,25 @@ const UsuarioDetailModal: React.FC<Props> = ({ open, onClose, user, loading = fa
     });
   };
 
-  const establecimientos = (user.establecimientos || []) as Establecimiento[];
+  const establecimientosRaw = (user.establecimientos || []) as Establecimiento[];
   const puntosEmision = (user.puntos_emision || []) as PuntoEmision[];
+  
+  // Si no hay establecimientos asignados pero sí puntos de emisión,
+  // inferir establecimientos únicos desde los puntos
+  let establecimientos = establecimientosRaw;
+  if (establecimientosRaw.length === 0 && puntosEmision.length > 0) {
+    const estIdsFromPuntos = Array.from(new Set(puntosEmision.map((p: any) => p.establecimiento_id).filter(Boolean)));
+    establecimientos = estIdsFromPuntos.map((estId: any) => {
+      const punto = puntosEmision.find((p: any) => p.establecimiento_id === estId);
+      return {
+        id: estId,
+        codigo: (punto as any)?.establecimiento_codigo || '???',
+        nombre: (punto as any)?.establecimiento_nombre || `Establecimiento ${estId}`,
+        estado: 'ACTIVO'
+      } as Establecimiento;
+    });
+  }
+  
   const puntosSinEstablecimiento = puntosPorEstablecimiento['sin_establecimiento'] || [];
   const estadoBadge = getEstadoBadge(user.estado || 'nuevo');
   const emisorBadge = getEmisorEstadoBadge(user.emisor_estado);
