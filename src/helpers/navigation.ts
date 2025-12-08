@@ -6,10 +6,7 @@
  * Navega al detalle de un emisor
  */
 export const navigateToEmisor = (emisorId: number | string) => {
-  // TODO: Implementar navegación cuando se cree la página de detalle de emisor
-  console.log('Navegar a emisor:', emisorId);
-  // En el futuro: window.location.href = `/emisores/${emisorId}`;
-  // O mejor con React Router: navigate(`/emisores/${emisorId}`);
+  window.location.href = `/emisores/${emisorId}`;
 };
 
 /**
@@ -19,9 +16,7 @@ export const navigateToEstablecimiento = (
   emisorId: number | string,
   establecimientoId: number | string
 ) => {
-  console.log('Navegar a establecimiento:', { emisorId, establecimientoId });
-  // TODO: Implementar navegación
-  // window.location.href = `/emisores/${emisorId}/establecimientos/${establecimientoId}`;
+  window.location.href = `/emisores/${emisorId}/establecimientos/${establecimientoId}`;
 };
 
 /**
@@ -32,9 +27,7 @@ export const navigateToPuntoEmision = (
   establecimientoId: number | string,
   puntoEmisionId: number | string
 ) => {
-  console.log('Navegar a punto de emisión:', { emisorId, establecimientoId, puntoEmisionId });
-  // TODO: Implementar navegación
-  // window.location.href = `/emisores/${emisorId}/establecimientos/${establecimientoId}/puntos/${puntoEmisionId}`;
+  window.location.href = `/emisores/${emisorId}/establecimientos/${establecimientoId}/puntos/${puntoEmisionId}`;
 };
 
 /**

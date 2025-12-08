@@ -20,6 +20,7 @@ interface EmisorUsuariosListProps {
   emiId: string | number;
   onEdit?: (usuario: User) => void;
   onOpenModal?: () => void;
+  onViewDetail?: (usuario: User) => void;
   refreshTrigger?: number;
   distributorCreator?: User | null;
 }
@@ -49,6 +50,7 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
   emiId,
   onEdit,
   onOpenModal,
+  onViewDetail,
   refreshTrigger,
   distributorCreator
 }) => {
@@ -90,11 +92,18 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
       let data = res.data?.data ?? [];
       const meta = res.data?.meta ?? {};
       
-      // Roles con visibilidad limitada: gerente ve cajeros y su propio usuario; cajero solo se ve a sí mismo
+      // Excluir al usuario actual de la lista (emisor, gerente, cajero no deben verse a sí mismos)
+      if (user?.role === 'emisor' || user?.role === 'gerente' || user?.role === 'cajero') {
+        data = data.filter((u: User) => u.id !== user.id);
+      }
+      
+      // Gerente solo ve cajeros
       if (user?.role === 'gerente') {
-        data = data.filter((u: User) => u.role === 'cajero' || u.id === user.id);
-      } else if (user?.role === 'cajero') {
-        data = data.filter((u: User) => u.id === user.id);
+        data = data.filter((u: User) => u.role === 'cajero');
+      }
+      // Cajero no ve a nadie (lista vacía manejada por backend)
+      if (user?.role === 'cajero') {
+        data = [];
       }
       
       // Aplicar filtros locales
@@ -318,17 +327,68 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
     }
   };
 
+  /**
+   * Determina si el usuario actual puede editar/eliminar un usuario específico
+   * Restricciones:
+   * - Administrador: Puede editar/eliminar cualquier usuario
+   * - Distribuidor: Solo usuarios de emisores que él registró
+   * - Emisor: Solo gerentes y cajeros de su emisor
+   * - Gerente: Solo cajeros asociados a sus establecimientos (y a sí mismo para ver)
+   * - Cajero: Solo puede verse a sí mismo (sin editar/eliminar otros)
+   */
   const canEditUser = React.useCallback((usuario: User) => {
     if (!user) return false;
-    if (user.role === 'administrador' || user.role === 'emisor' || user.role === 'distribuidor') {
+    
+    // Administrador puede editar/eliminar cualquier usuario
+    if (user.role === 'administrador') {
       return true;
     }
+    
+    // Distribuidor puede editar/eliminar usuarios de emisores que registró
+    if (user.role === 'distribuidor') {
+      return true; // La restricción real está en el backend
+    }
+    
+    // Emisor puede editar/eliminar gerentes y cajeros de su emisor
+    if (user.role === 'emisor') {
+      return usuario.role === 'gerente' || usuario.role === 'cajero';
+    }
+    
+    // Gerente puede editar/eliminar cajeros asociados a sus establecimientos
+    // También puede editar su propio perfil
     if (user.role === 'gerente') {
-      return usuario.role === 'cajero' || usuario.id === user.id;
+      if (usuario.id === user.id) return true; // Puede editarse a sí mismo
+      if (usuario.role !== 'cajero') return false; // Solo puede editar cajeros
+      
+      // Verificar si el cajero está en los mismos establecimientos que el gerente
+      let gerenteEsts = user.establecimientos_ids || [];
+      let cajeroEsts = usuario.establecimientos_ids || [];
+      
+      // Parsear si es string
+      if (typeof gerenteEsts === 'string') {
+        try { gerenteEsts = JSON.parse(gerenteEsts); } catch { gerenteEsts = []; }
+      }
+      if (typeof cajeroEsts === 'string') {
+        try { cajeroEsts = JSON.parse(cajeroEsts); } catch { cajeroEsts = []; }
+      }
+      
+      // Asegurar que sean arrays
+      if (!Array.isArray(gerenteEsts)) gerenteEsts = [];
+      if (!Array.isArray(cajeroEsts)) cajeroEsts = [];
+      
+      // El cajero debe tener al menos un establecimiento en común con el gerente
+      const hasCommonEst = gerenteEsts.some((estId: number | string) => 
+        cajeroEsts.includes(estId) || cajeroEsts.includes(Number(estId)) || cajeroEsts.includes(String(estId))
+      );
+      
+      return hasCommonEst;
     }
+    
+    // Cajero solo puede verse a sí mismo, no editar/eliminar a nadie
     if (user.role === 'cajero') {
-      return usuario.id === user.id;
+      return false; // No puede editar ni eliminar
     }
+    
     return false;
   }, [user]);
 
@@ -638,7 +698,22 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
                         key={`${u.id}-${isDistributorCreatorRow ? 'distribuidor' : 'usuario'}`}
                         className={isDistributorCreatorRow ? 'distributor-row' : ''}
                       >
-                        <td className="td-sticky sticky-left-1 cedula-cell">{u.cedula || '—'}</td>
+                        <td className="td-sticky sticky-left-1 cedula-cell">
+                          {onViewDetail && u.cedula ? (
+                            <a 
+                              href="#" 
+                              onClick={(e) => {
+                                e.preventDefault();
+                                onViewDetail(u);
+                              }}
+                              style={{ color: '#6366f1', textDecoration: 'none', fontWeight: 500 }}
+                            >
+                              {u.cedula}
+                            </a>
+                          ) : (
+                            <span>{u.cedula || '—'}</span>
+                          )}
+                        </td>
                         <td>
                           {u.nombres} {u.apellidos}
                           {isDistributorCreatorRow && (

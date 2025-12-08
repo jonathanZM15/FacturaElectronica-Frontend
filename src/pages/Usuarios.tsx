@@ -2,6 +2,7 @@ import React from 'react';
 import './Emisores.css'; // Reutilizar estilos de Emisores
 import './UsuariosModern.css'; // Estilos modernos para usuarios
 import { usuariosApi } from '../services/usuariosApi';
+import { emisoresApi } from '../services/emisoresApi';
 import UsuarioFormModal from './UsuarioFormModal';
 import UsuarioDetailModal from './UsuarioDetailModal';
 import UsuarioDeleteModal from './UsuarioDeleteModal';
@@ -12,7 +13,6 @@ import {
   navigateToEmisor,
   navigateToEstablecimiento,
   navigateToPuntoEmision,
-  openUsuarioDetail,
   formatEmisorInfo,
   formatEstablecimientoInfo,
   formatPuntoEmisionInfo,
@@ -67,6 +67,7 @@ const Usuarios: React.FC = () => {
   const [deletingUser, setDeletingUser] = React.useState<User | null>(null);
   const [openDetail, setOpenDetail] = React.useState(false);
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
+  const [detailLoading, setDetailLoading] = React.useState(false);
   const [sortField, setSortField] = React.useState<SortField>('created_at');
   const [sortDirection, setSortDirection] = React.useState<SortDirection>('desc');
   const [showFilters, setShowFilters] = React.useState(false);
@@ -342,6 +343,58 @@ const Usuarios: React.FC = () => {
     }
   };
 
+  const handleOpenDetail = React.useCallback(
+    async (initialUser?: User | null, userIdOverride?: number | string) => {
+      const targetId = userIdOverride ?? initialUser?.id;
+      if (!targetId) return;
+
+      if (initialUser) {
+        setSelectedUser(initialUser);
+      } else {
+        setSelectedUser(null);
+      }
+
+      setOpenDetail(true);
+      setDetailLoading(true);
+
+      try {
+        const response = await usuariosApi.get(targetId);
+        let detailedUser: User | null = response.data?.data ?? initialUser ?? null;
+        if (!detailedUser) {
+          throw new Error('No se pudo cargar la información del usuario');
+        }
+
+        if (detailedUser.emisor_id) {
+          try {
+            const emisorResponse = await emisoresApi.get(detailedUser.emisor_id);
+            const emisorData = emisorResponse.data?.data;
+            if (emisorData) {
+              detailedUser = {
+                ...detailedUser,
+                emisor_ruc: emisorData.ruc,
+                emisor_razon_social: emisorData.razon_social,
+                emisor_estado: emisorData.estado,
+              };
+            }
+          } catch (emisorError) {
+            console.error('Error cargando emisor asociado al usuario', emisorError);
+          }
+        }
+
+        setSelectedUser(detailedUser);
+      } catch (err: any) {
+        const msg = err?.response?.data?.message || err?.message || 'Error obteniendo detalles del usuario';
+        show({ title: 'Error', message: msg, type: 'error' });
+        if (!initialUser) {
+          setOpenDetail(false);
+        }
+      } finally {
+        setDetailLoading(false);
+      }
+    },
+    [show]
+  );
+
   const totalPages = Math.ceil(totalItems / itemsPerPage);
 
   const columns: Array<{
@@ -357,10 +410,7 @@ const Usuarios: React.FC = () => {
       render: (row) => (
         <span 
           className="cedula-link"
-          onClick={() => {
-            setSelectedUser(row);
-            setOpenDetail(true);
-          }}
+          onClick={() => handleOpenDetail(row)}
         >
           <span className="cedula-numero">{row.cedula || 'Sin cédula'}</span>
         </span>
@@ -544,7 +594,7 @@ const Usuarios: React.FC = () => {
             className="creator-link"
             onClick={() => {
               if (row.created_by_id) {
-                openUsuarioDetail(row, setSelectedUser, setOpenDetail);
+                handleOpenDetail(null, row.created_by_id);
               }
             }}
             style={{
@@ -990,9 +1040,11 @@ const Usuarios: React.FC = () => {
       <UsuarioDetailModal
         open={openDetail}
         user={selectedUser}
+        loading={detailLoading}
         onClose={() => {
           setOpenDetail(false);
           setSelectedUser(null);
+          setDetailLoading(false);
         }}
         onEdit={() => {
           if (selectedUser) {

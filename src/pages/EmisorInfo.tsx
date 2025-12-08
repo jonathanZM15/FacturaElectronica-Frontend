@@ -5,6 +5,7 @@ import EmisorFormModal from './EmisorFormModal';
 import EstablishmentFormModal from './EstablishmentFormModal';
 import EmisorUsuarioFormModal from './EmisorUsuarioFormModal';
 import EmisorUsuariosList from './EmisorUsuariosList';
+import UsuarioDetailModal from './UsuarioDetailModal';
 import { establecimientosApi } from '../services/establecimientosApi';
 import { puntosEmisionApi } from '../services/puntosEmisionApi';
 import { useNotification } from '../contexts/NotificationContext';
@@ -16,6 +17,7 @@ import { getImageUrl } from '../helpers/imageUrl';
 import { User } from '../types/user';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { usuariosApi } from '../services/usuariosApi';
+import { usuariosEmisorApi } from '../services/usuariosEmisorApi';
 
 const EmisorInfo: React.FC = () => {
   const { id } = useParams();
@@ -40,6 +42,42 @@ const EmisorInfo: React.FC = () => {
   const [refreshUsers, setRefreshUsers] = React.useState(0);
   const isLimitedRole = role === 'gerente' || role === 'cajero';
   const [distributorCreator, setDistributorCreator] = React.useState<User | null>(null);
+  
+  // Estado para modal de detalle de usuario
+  const [selectedUserDetail, setSelectedUserDetail] = React.useState<User | null>(null);
+  const [openUserDetail, setOpenUserDetail] = React.useState(false);
+  const [loadingUserDetail, setLoadingUserDetail] = React.useState(false);
+
+  // Handler para abrir el detalle de un usuario
+  const handleOpenUserDetail = React.useCallback(async (usuario: User) => {
+    setLoadingUserDetail(true);
+    setOpenUserDetail(true);
+    
+    try {
+      // Fetch detailed user data using emisor-specific API
+      const userRes = await usuariosEmisorApi.get(id!, usuario.id!);
+      let userData = userRes.data?.data ?? userRes.data;
+      
+      // Add emisor info from current company context
+      if (company) {
+        userData = {
+          ...userData,
+          emisor_id: company.id,
+          emisor_ruc: company.ruc,
+          emisor_razon_social: company.razon_social,
+          emisor_estado: company.estado
+        };
+      }
+      
+      setSelectedUserDetail(userData);
+    } catch (error: any) {
+      console.error('Error loading user details:', error);
+      show({ title: 'Error', message: 'No se pudo cargar la información del usuario', type: 'error' });
+      setOpenUserDetail(false);
+    } finally {
+      setLoadingUserDetail(false);
+    }
+  }, [id, company, show]);
 
   // Detectar si viene de un establecimiento para mostrar la pestaña de establecimientos
   React.useEffect(() => {
@@ -894,6 +932,7 @@ const EmisorInfo: React.FC = () => {
                 setEditUser(null);
                 setOpenNewUser(true);
               }}
+              onViewDetail={handleOpenUserDetail}
               refreshTrigger={refreshUsers}
               distributorCreator={distributorCreator}
             />
@@ -944,6 +983,17 @@ const EmisorInfo: React.FC = () => {
           }}
         />
       )}
+
+      {/* Usuario Detail Modal */}
+      <UsuarioDetailModal
+        open={openUserDetail}
+        onClose={() => {
+          setOpenUserDetail(false);
+          setSelectedUserDetail(null);
+        }}
+        user={selectedUserDetail}
+        loading={loadingUserDetail}
+      />
 
       {/* Usuario Emisor Modal */}
       <EmisorUsuarioFormModal
