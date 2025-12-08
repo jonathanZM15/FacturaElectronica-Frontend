@@ -491,7 +491,7 @@ const EmisorInfo: React.FC = () => {
                     <div className="info-row"><span className="info-label">Fecha de actualización:</span><span className="info-value">{company?.updated_at ?? '-'}</span></div>
                     <div className="info-row"><span className="info-label">Fecha de último comprobante:</span><span className="info-value">{company?.ultimo_comprobante ?? '-'}</span></div>
                     <div className="info-row"><span className="info-label">Fecha último inicio de sesión:</span><span className="info-value">{company?.ultimo_login ?? '-'}</span></div>
-                    <div className="info-row"><span className="info-label">Registrador:</span><span className="info-value">{company?.registrador ?? '-'}</span></div>
+                    <div className="info-row"><span className="info-label">Registrador:</span><span className="info-value">{company?.created_by_username ?? company?.registrador ?? '-'}</span></div>
                   </div>
                 </div>
               </div>

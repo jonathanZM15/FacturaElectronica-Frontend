@@ -78,12 +78,11 @@ export const formatEstablecimientoInfo = (codigo?: string, nombre?: string): str
  * Formatea información del punto de emisión para mostrar
  */
 export const formatPuntoEmisionInfo = (
-  codigoEst?: string,
   codigo?: string,
   nombre?: string
 ): string => {
   if (!codigo && !nombre) return '—';
-  return `${codigoEst || '—'} – ${codigo || '—'} – ${nombre || '—'}`;
+  return `${codigo || '—'} – ${nombre || '—'}`;
 };
 
 /**
@@ -95,16 +94,13 @@ export const formatCreadorInfo = (
   nombres?: string,
   apellidos?: string
 ): string => {
-  if (!username) return '—';
-  return `${(role || '').toUpperCase()} – ${username || ''} – ${nombres || ''} ${apellidos || ''}`.trim();
+  // Solo mostrar el username del creador para evitar ruido visual
+  return username || '—';
 };
 
 /**
  * Determina si se debe mostrar el usuario creador
- * No se muestra si el creador es Admin o Distribuidor
  */
 export const shouldShowCreador = (creadorRole?: string): boolean => {
-  if (!creadorRole) return false;
-  const role = creadorRole.toLowerCase();
-  return role !== 'administrador' && role !== 'distribuidor';
+  return !!creadorRole;
 };

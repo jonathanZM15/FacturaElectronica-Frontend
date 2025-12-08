@@ -686,7 +686,7 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
                                       navigateToPuntoEmision(emiId, punto.establecimiento_id, punto.id);
                                     }
                                   }}>
-                                    {formatPuntoEmisionInfo(punto.establecimiento_codigo, punto.codigo, punto.nombre)}
+                                    {formatPuntoEmisionInfo(punto.codigo, punto.nombre)}
                                   </a>
                                 </div>
                               ))}

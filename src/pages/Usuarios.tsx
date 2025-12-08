@@ -512,7 +512,7 @@ const Usuarios: React.FC = () => {
                     navigateToPuntoEmision(row.emisor_id, punto.establecimiento_id, punto.id);
                   }
                 }}>
-                  {formatPuntoEmisionInfo(punto.establecimiento_codigo, punto.codigo, punto.nombre)}
+                  {formatPuntoEmisionInfo(punto.codigo, punto.nombre)}
                 </a>
               </div>
             ))}

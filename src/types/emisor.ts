@@ -37,4 +37,5 @@ export interface Emisor {
   created_by_name?: string;
   updated_by_name?: string;
   ruc_editable?: boolean;
+  created_by_username?: string;
 }
