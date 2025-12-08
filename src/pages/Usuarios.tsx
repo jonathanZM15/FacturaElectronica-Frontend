@@ -455,7 +455,7 @@ const Usuarios: React.FC = () => {
     {
       key: 'estado',
       label: 'Estados',
-      width: 180,
+      width: 200,
       render: (row) => {
         const labelMap: Record<string, string> = {
           nuevo: 'Nuevo',

@@ -313,18 +313,19 @@ body, html {
 .badge-rol,
 .badge-estado {
   display: inline-block;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-weight: 700;
-  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-weight: 600;
+  font-size: 11px;
   color: white;
   text-transform: capitalize;
   letter-spacing: 0.3px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
   transition: all 0.3s ease;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .badge-rol:hover,
@@ -548,17 +549,20 @@ body, html {
   align-items: center;
   justify-content: center;
   text-align: center;
-  z-index: 10;
+  z-index: 1;
+  max-width: 170px;
+  margin: 0 auto;
 }
 
 .tooltip-container .badge-estado {
   position: relative;
   z-index: 1;
+  max-width: 100%;
 }
 
 .tooltip-container:hover,
 .tooltip-container:focus-within {
-  z-index: 9999;
+  z-index: 1000;
 }
 
 .tooltip-container:hover .badge-estado,
