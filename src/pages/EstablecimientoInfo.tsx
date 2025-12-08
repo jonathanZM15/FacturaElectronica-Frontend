@@ -83,8 +83,10 @@ const EstablecimientoInfo: React.FC = () => {
         let dataEst = rEst.data?.data ?? rEst.data;
         const dataComp = rComp.data?.data ?? rComp.data;
         
-        // Filtrar puntos de emisión para Gerente/Cajero
-        if (user && isLimitedRole && dataEst?.puntos_emision) {
+        // Filtrar puntos de emisión para Emisor, Gerente y Cajero
+        const shouldFilterPuntos = user && (role === 'emisor' || role === 'gerente' || role === 'cajero');
+        
+        if (shouldFilterPuntos && dataEst?.puntos_emision) {
           let user_puntos_ids = (user as any).puntos_emision_ids || [];
           
           console.log('🔍 [EstablecimientoInfo] Filtrando puntos para:', role || user?.role);

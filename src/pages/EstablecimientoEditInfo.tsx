@@ -76,8 +76,32 @@ const EstablecimientoEditInfo: React.FC = () => {
           establecimientosApi.show(id, estId),
           emisoresApi.get(id)
         ]);
-        const dataEst = rEst.data?.data ?? rEst.data;
+        let dataEst = rEst.data?.data ?? rEst.data;
         const dataComp = rComp.data?.data ?? rComp.data;
+        
+        // Filtrar puntos de emisión para Emisor, Gerente y Cajero
+        const shouldFilterPuntos = user && (role === 'emisor' || role === 'gerente' || role === 'cajero');
+        
+        if (shouldFilterPuntos && dataEst?.puntos_emision) {
+          let user_puntos_ids = (user as any).puntos_emision_ids || [];
+          
+          if (typeof user_puntos_ids === 'string') {
+            try {
+              user_puntos_ids = JSON.parse(user_puntos_ids);
+            } catch (e) {
+              user_puntos_ids = [];
+            }
+          }
+          
+          if (Array.isArray(user_puntos_ids) && user_puntos_ids.length > 0) {
+            dataEst.puntos_emision = dataEst.puntos_emision.filter((p: any) => {
+              return user_puntos_ids.includes(p.id) ||
+                     user_puntos_ids.includes(Number(p.id)) ||
+                     user_puntos_ids.includes(String(p.id));
+            });
+          }
+        }
+        
         setEst(dataEst);
         setCompany(dataComp);
         setCodigoEditable(dataEst.codigo_editable ?? true);
@@ -86,7 +110,7 @@ const EstablecimientoEditInfo: React.FC = () => {
       } finally { setLoading(false); }
     };
     load();
-  }, [id, estId, show]);
+  }, [id, estId, show, user, role]);
 
   // Close puntos date picker on outside click
   React.useEffect(() => {

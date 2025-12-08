@@ -180,8 +180,10 @@ const EmisorInfo: React.FC = () => {
       const r = await puntosEmisionApi.listByEmisor(companyId);
       let data = r.data?.data ?? r.data ?? [];
       
-      // Si el usuario es gerente o cajero, filtrar puntos de emisión asignados
-      if (user && isLimitedRole) {
+      // Si el usuario es emisor, gerente o cajero, filtrar puntos de emisión asignados
+      const shouldFilterPuntos = user && (role === 'emisor' || role === 'gerente' || role === 'cajero');
+      
+      if (shouldFilterPuntos) {
         let user_puntos_ids = (user as any).puntos_emision_ids || [];
         
         console.log('🔍 Filtrando puntos de emisión para:', role || user?.role);
@@ -222,7 +224,7 @@ const EmisorInfo: React.FC = () => {
       console.error('Error loading puntos de emisión:', e);
       setPuntosEmision([]);
     }
-  }, [user, isLimitedRole, role]);
+  }, [user, role]);
 
   React.useEffect(() => { load(); }, [load]);
   React.useEffect(() => { 
