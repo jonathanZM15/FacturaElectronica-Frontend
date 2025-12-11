@@ -176,55 +176,18 @@ const EmisorInfo: React.FC = () => {
   const loadPuntosEmision = React.useCallback(async (companyId?: number | string) => {
     if (!companyId) return;
     try {
-      // Cargar puntos de emisión desde la API
-      const r = await puntosEmisionApi.listByEmisor(companyId);
+      // Cargar todos los puntos de emisión de los establecimientos accesibles
+      // forAssignment=true hace que el backend devuelva todos los puntos de los establecimientos
+      // asignados al usuario, no solo los puntos específicos asignados
+      const r = await puntosEmisionApi.listByEmisor(companyId, true);
       let data = r.data?.data ?? r.data ?? [];
-      
-      // Si el usuario es emisor, gerente o cajero, filtrar puntos de emisión asignados
-      const shouldFilterPuntos = user && (role === 'emisor' || role === 'gerente' || role === 'cajero');
-      
-      if (shouldFilterPuntos) {
-        let user_puntos_ids = (user as any).puntos_emision_ids || [];
-        
-        console.log('🔍 Filtrando puntos de emisión para:', role || user?.role);
-        console.log('  📦 puntos_emision_ids RAW:', user_puntos_ids);
-        
-        // Si es JSON string, parsearlo
-        if (typeof user_puntos_ids === 'string') {
-          try {
-            user_puntos_ids = JSON.parse(user_puntos_ids);
-            console.log('  ✅ Parseado exitoso:', user_puntos_ids);
-          } catch (e) {
-            console.error('  ❌ Error parsing puntos_emision_ids:', e);
-            user_puntos_ids = [];
-          }
-        }
-        
-        console.log('  📍 puntos_emision_ids (final):', user_puntos_ids);
-        console.log('  📍 Es array?', Array.isArray(user_puntos_ids));
-        console.log('  📍 Longitud:', user_puntos_ids.length);
-        
-        // Filtrar por puntos de emisión específicos asignados al usuario
-        if (Array.isArray(user_puntos_ids) && user_puntos_ids.length > 0) {
-          data = data.filter((pe: any) => {
-            const isAssigned = user_puntos_ids.includes(pe.id) ||
-                              user_puntos_ids.includes(Number(pe.id)) ||
-                              user_puntos_ids.includes(String(pe.id));
-            console.log(`  ${isAssigned ? '✅' : '❌'} Punto ${pe.id} (${pe.codigo} - ${pe.nombre}): ${isAssigned ? 'INCLUIDO' : 'EXCLUIDO'}`);
-            return isAssigned;
-          });
-          console.log('  🎯 Puntos filtrados:', data.length);
-        } else {
-          console.log('  ⚠️ No hay puntos_emision_ids o está vacío - mostrando todos');
-        }
-      }
       
       setPuntosEmision(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error('Error loading puntos de emisión:', e);
       setPuntosEmision([]);
     }
-  }, [user, role]);
+  }, []);
 
   React.useEffect(() => { load(); }, [load]);
   React.useEffect(() => { 
