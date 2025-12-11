@@ -8,6 +8,7 @@ import UsuarioDetailModal from './UsuarioDetailModal';
 import UsuarioDeleteModal from './UsuarioDeleteModal';
 import { User } from '../types/user';
 import { useNotification } from '../contexts/NotificationContext';
+import { useUser } from '../contexts/userContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import {
   navigateToEmisor,
@@ -60,6 +61,7 @@ const Usuarios: React.FC = () => {
   const [totalItems, setTotalItems] = React.useState(0);
   const [searchQuery, setSearchQuery] = React.useState('');
   const { show } = useNotification();
+  const { user: currentUser } = useUser();
   const [openNew, setOpenNew] = React.useState(false);
   const [openEdit, setOpenEdit] = React.useState(false);
   const [editingUser, setEditingUser] = React.useState<User | null>(null);
@@ -279,6 +281,53 @@ const Usuarios: React.FC = () => {
     }));
   };
 
+  /**
+   * Verifica si el usuario actual puede editar/eliminar usuarios
+   * Solo administrador y distribuidor tienen estos permisos
+   */
+  const canEditOrDeleteUser = React.useCallback((targetUser: User): boolean => {
+    if (!currentUser) return false;
+    
+    // Solo administrador y distribuidor pueden editar/eliminar
+    if (currentUser.role === 'administrador' || currentUser.role === 'distribuidor') {
+      return true;
+    }
+    
+    return false;
+  }, [currentUser]);
+
+  /**
+   * Verifica si el usuario actual puede editar un usuario específico
+   * Condiciones:
+   *  - El usuario autenticado debe ser administrador o distribuidor
+   *  - Solo se permiten ediciones sobre usuarios cuyo rol sea administrador o distribuidor
+   */
+  const canEditUser = React.useCallback((targetUser: User): boolean => {
+    if (!currentUser) return false;
+
+    const currentIsAllowed = currentUser.role === 'administrador' || currentUser.role === 'distribuidor';
+    if (!currentIsAllowed) return false;
+
+    const targetIsAllowed = targetUser.role === 'administrador' || targetUser.role === 'distribuidor';
+    return targetIsAllowed;
+  }, [currentUser]);
+
+  /**
+   * Verifica si un usuario puede ser eliminado (debe estar en estado "Nuevo")
+   */
+  const canDeleteUser = React.useCallback((targetUser: User): boolean => {
+    if (!canEditOrDeleteUser(targetUser)) {
+      return false;
+    }
+    
+    // Solo se puede eliminar si el estado es "Nuevo"
+    if (targetUser.estado !== 'nuevo') {
+      return false;
+    }
+    
+    return true;
+  }, [canEditOrDeleteUser]);
+
   const getSortIcon = (field: SortField) => {
     if (sortField !== field) return '⇅';
     return sortDirection === 'asc' ? '↑' : '↓';
@@ -323,6 +372,16 @@ const Usuarios: React.FC = () => {
 
   // Abrir modal de eliminación
   const handleDelete = (user: User) => {
+    // Validar que el usuario esté en estado "Nuevo"
+    if (user.estado !== 'nuevo') {
+      show({ 
+        title: '❌ No permitido', 
+        message: `Solo se pueden eliminar usuarios en estado "Nuevo". Este usuario está en estado "${user.estado}". Para cambiar su estado a "Retirado", utiliza la opción editar.`, 
+        type: 'error' 
+      });
+      return;
+    }
+    
     setDeletingUser(user);
     setOpenDelete(true);
   };
@@ -934,14 +993,28 @@ const Usuarios: React.FC = () => {
                           setEditingUser(user);
                           setOpenEdit(true);
                         }}
-                        title="Editar"
+                        disabled={!canEditUser(user)}
+                        title={
+                          canEditUser(user)
+                            ? 'Editar'
+                            : !currentUser || (currentUser.role !== 'administrador' && currentUser.role !== 'distribuidor')
+                            ? 'Solo un usuario con rol Administrador o Distribuidor puede editar'
+                            : 'Solo se pueden editar usuarios con rol Administrador o Distribuidor'
+                        }
                       >
                         ✏️
                       </button>
                       <button
                         className="btn-action btn-eliminar"
                         onClick={() => handleDelete(user)}
-                        title="Eliminar"
+                        disabled={!canDeleteUser(user)}
+                        title={
+                          !canEditOrDeleteUser(user)
+                            ? 'Solo administrador o distribuidor puede eliminar'
+                            : user.estado !== 'nuevo'
+                            ? 'Solo se pueden eliminar usuarios en estado Nuevo'
+                            : 'Eliminar'
+                        }
                       >
                         🗑️
                       </button>

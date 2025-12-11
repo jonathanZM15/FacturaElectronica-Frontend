@@ -308,6 +308,18 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
   }, [load, refreshTrigger, sortField, sortDirection, filters]);
 
   const handleDelete = async (usuario: User) => {
+    // Validar que el usuario esté en estado "Nuevo"
+    if (usuario.estado !== 'nuevo') {
+      show({ 
+        title: '❌ No permitido', 
+        message: `Solo se pueden eliminar usuarios en estado "Nuevo". Este usuario está en estado "${usuario.estado}". Para cambiar su estado a "Retirado", utiliza la opción editar.`, 
+        type: 'error' 
+      });
+      setDeleteConfirm(null);
+      setDeletePassword('');
+      return;
+    }
+
     if (!deletePassword) {
       show({ title: 'Error', message: 'Ingresa tu contraseña', type: 'error' });
       return;
@@ -391,6 +403,24 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
     
     return false;
   }, [user]);
+
+  /**
+   * Determina si el usuario actual puede eliminar un usuario específico
+   * Adicional a las restricciones de canEditUser, solo se puede eliminar si el estado es "Nuevo"
+   */
+  const canDeleteUser = React.useCallback((usuario: User) => {
+    // Primero verificar si tiene permisos de edición
+    if (!canEditUser(usuario)) {
+      return false;
+    }
+    
+    // Solo se puede eliminar si el estado es "Nuevo"
+    if (usuario.estado !== 'nuevo') {
+      return false;
+    }
+    
+    return true;
+  }, [canEditUser]);
 
   const displayUsuarios = React.useMemo<DisplayUser[]>(() => {
     let list: DisplayUser[] = Array.isArray(usuarios)
@@ -683,7 +713,7 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
                   {displayUsuarios.map((u, index) => {
                     const isDistributorCreatorRow = !!u.isDistributorCreator;
                     const editEnabled = canEditUser(u);
-                    const deleteEnabled = editEnabled;
+                    const deleteEnabled = canDeleteUser(u);
                     
                     const roleClass = u.role === 'gerente' ? 'role-gerente' :
                                      u.role === 'cajero' ? 'role-cajero' :
@@ -920,51 +950,90 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
             </div>
 
             <div className="delete-modal-body">
-              <p className="delete-confirmation-text">
-                ¿Está seguro de eliminar a <strong>{deleteConfirm.nombres} {deleteConfirm.apellidos}</strong>?
-              </p>
+              {deleteConfirm.estado !== 'nuevo' ? (
+                <>
+                  <div style={{ 
+                    padding: '16px', 
+                    backgroundColor: '#fef3c7', 
+                    border: '1px solid #fcd34d', 
+                    borderRadius: '8px', 
+                    marginBottom: '16px'
+                  }}>
+                    <p style={{ margin: 0, color: '#92400e', fontWeight: 500 }}>
+                      ⚠️ No se puede eliminar este usuario
+                    </p>
+                    <p style={{ margin: '8px 0 0 0', color: '#92400e', fontSize: '14px' }}>
+                      Solo se pueden eliminar usuarios en estado "Nuevo". Este usuario está en estado "<strong>{deleteConfirm.estado}</strong>".
+                    </p>
+                    <p style={{ margin: '8px 0 0 0', color: '#92400e', fontSize: '14px' }}>
+                      Para cambiar su estado a "Retirado" o "Suspendido", utiliza la opción editar del usuario.
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="delete-confirmation-text">
+                    ¿Está seguro de eliminar a <strong>{deleteConfirm.nombres} {deleteConfirm.apellidos}</strong>?
+                  </p>
 
-              <div className="delete-form-group">
-                <label htmlFor="delete-password" className="delete-form-label">
-                  Ingresa tu contraseña para confirmar *
-                </label>
-                <input
-                  id="delete-password"
-                  type="password"
-                  value={deletePassword}
-                  onChange={(e) => setDeletePassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="delete-form-input"
-                  autoFocus
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter' && deletePassword && !deleting) {
-                      handleDelete(deleteConfirm);
-                    }
-                  }}
-                />
-              </div>
+                  <div className="delete-form-group">
+                    <label htmlFor="delete-password" className="delete-form-label">
+                      Ingresa tu contraseña para confirmar *
+                    </label>
+                    <input
+                      id="delete-password"
+                      type="password"
+                      value={deletePassword}
+                      onChange={(e) => setDeletePassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="delete-form-input"
+                      autoFocus
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter' && deletePassword && !deleting) {
+                          handleDelete(deleteConfirm);
+                        }
+                      }}
+                    />
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="delete-modal-footer">
-              <button
-                type="button"
-                className="delete-btn delete-btn-cancel"
-                onClick={() => {
-                  setDeleteConfirm(null);
-                  setDeletePassword('');
-                }}
-                disabled={deleting}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                className="delete-btn delete-btn-danger"
-                onClick={() => handleDelete(deleteConfirm)}
-                disabled={deleting || !deletePassword}
-              >
-                {deleting ? 'Eliminando...' : '🗑️ Eliminar'}
-              </button>
+              {deleteConfirm.estado !== 'nuevo' ? (
+                <button
+                  type="button"
+                  className="delete-btn delete-btn-cancel"
+                  onClick={() => {
+                    setDeleteConfirm(null);
+                    setDeletePassword('');
+                  }}
+                >
+                  Cerrar
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="delete-btn delete-btn-cancel"
+                    onClick={() => {
+                      setDeleteConfirm(null);
+                      setDeletePassword('');
+                    }}
+                    disabled={deleting}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    className="delete-btn delete-btn-danger"
+                    onClick={() => handleDelete(deleteConfirm)}
+                    disabled={deleting || !deletePassword}
+                  >
+                    {deleting ? 'Eliminando...' : '🗑️ Eliminar'}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
