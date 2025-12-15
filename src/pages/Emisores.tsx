@@ -119,7 +119,7 @@ const dynamicColumns: Array<{
 const Emisores: React.FC = () => {
   const [data, setData] = React.useState<Emisor[]>([]);
   const { show } = useNotification();
-  const { user } = useUser();
+  const { user, loading: userLoading } = useUser();
   const [loading, setLoading] = React.useState(false);
   // Dynamic filtering
   type FilterField = 'ruc'|'razon_social'|'estado'|'tipo_plan'|'cantidad_creados_gt'|'cantidad_restantes_lt'|'nombre_comercial'|'direccion_matriz'|'correo_remitente'|'regimen_tributario'|'tipo_persona'|'ambiente'|'tipo_emision'|'registrador';
@@ -179,6 +179,8 @@ const Emisores: React.FC = () => {
   // Image viewer states
   const [viewerOpen, setViewerOpen] = React.useState(false);
   const [viewerImage, setViewerImage] = React.useState<string | null>(null);
+  const lastAutoLoadSignature = React.useRef<string | null>(null);
+  const hasAutoLoadedRef = React.useRef(false);
 
   const formatDate = React.useCallback((iso: string) => {
     if (!iso) return '';
@@ -224,6 +226,7 @@ const Emisores: React.FC = () => {
   }, [dateOpen]);
 
   const load = React.useCallback(async () => {
+    if (userLoading) return;
     setLoading(true);
     setError(null);
     try {
@@ -269,11 +272,34 @@ const Emisores: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [activeFilter, filterValue, estado, q, desde, hasta, user]);
+  }, [activeFilter, filterValue, estado, q, desde, hasta, user, userLoading]);
 
   React.useEffect(() => {
+    if (userLoading) return;
+
+    const signature = JSON.stringify({
+      activeFilter,
+      filterValue,
+      estado,
+      q,
+      desde,
+      hasta,
+      userId: user?.id ?? null,
+      userRole: user?.role ?? null,
+      userEmisorId: (user as any)?.emisor_id ?? null,
+    });
+
+    const alreadyLoadedSameParams =
+      hasAutoLoadedRef.current && lastAutoLoadSignature.current === signature;
+
+    if (alreadyLoadedSameParams) {
+      return;
+    }
+
+    hasAutoLoadedRef.current = true;
+    lastAutoLoadSignature.current = signature;
     load();
-  }, [load]);
+  }, [load, activeFilter, filterValue, estado, q, desde, hasta, user, userLoading]);
 
   // Debounce reload when typing filter
   React.useEffect(() => {

@@ -10,6 +10,7 @@ import { User } from '../types/user';
 import { useNotification } from '../contexts/NotificationContext';
 import { useUser } from '../contexts/userContext';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { useRealtimeResource } from '../hooks/useRealtimeResource';
 import {
   navigateToEmisor,
   navigateToEstablecimiento,
@@ -54,11 +55,8 @@ interface Filters {
 }
 
 const Usuarios: React.FC = () => {
-  const [users, setUsers] = React.useState<User[]>([]);
-  const [loading, setLoading] = React.useState(false);
   const [currentPage, setCurrentPage] = React.useState(1);
   const [itemsPerPage, setItemsPerPage] = React.useState(10);
-  const [totalItems, setTotalItems] = React.useState(0);
   const [searchQuery, setSearchQuery] = React.useState('');
   const { show } = useNotification();
   const { user: currentUser } = useUser();
@@ -90,31 +88,47 @@ const Usuarios: React.FC = () => {
     updateDateTo: ''
   });
 
-  // Cargar usuarios
-  const loadUsers = React.useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await usuariosApi.list({
-        page: currentPage,
-        per_page: itemsPerPage,
-        search: searchQuery,
-      });
-      
-      const data = response.data as ListResponse;
-      setUsers(data.data);
-      setTotalItems(data.meta.total);
-    } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.message || 'Error cargando usuarios';
-      show({ title: 'Error', message: msg, type: 'error' });
-    } finally {
-      setLoading(false);
-    }
-  }, [currentPage, itemsPerPage, searchQuery, show]);
+  const usuariosListParams = React.useMemo(() => ({
+    page: currentPage,
+    per_page: itemsPerPage,
+    search: searchQuery,
+  }), [currentPage, itemsPerPage, searchQuery]);
 
-  // Cargar en el primer render y cuando cambien los filtros
+  const usuariosCacheKey = React.useMemo(
+    () => `usuarios:list:${usuariosListParams.page}:${usuariosListParams.per_page}:${usuariosListParams.search || ''}`,
+    [usuariosListParams]
+  );
+
+  const fetchUsuarios = React.useCallback(async () => {
+    const response = await usuariosApi.list(usuariosListParams);
+    return response.data as ListResponse;
+  }, [usuariosListParams]);
+
+  const {
+    data: usuariosResponse,
+    loading: loadingUsuarios,
+    error: usuariosError,
+    refetch: refetchUsuarios,
+  } = useRealtimeResource<ListResponse>({
+    cacheKey: usuariosCacheKey,
+    fetcher: fetchUsuarios,
+    interval: 15000,
+    ttl: 1000 * 10,
+    enabled: true,
+    useCacheOnMount: true,
+  });
+
   React.useEffect(() => {
-    loadUsers();
-  }, [loadUsers]);
+    if (!usuariosError) return;
+    const msg =
+      (usuariosError as any)?.response?.data?.message ||
+      (usuariosError as Error)?.message ||
+      'Error cargando usuarios';
+    show({ title: 'Error', message: msg, type: 'error' });
+  }, [usuariosError, show]);
+
+  const users = usuariosResponse?.data ?? [];
+  const totalItems = usuariosResponse?.meta?.total ?? 0;
 
   // Aplicar filtros locales
   const applyFilters = (data: User[]): User[] => {
@@ -348,7 +362,7 @@ const Usuarios: React.FC = () => {
       show({ title: 'Éxito', message: 'Usuario creado exitosamente', type: 'success' });
       setOpenNew(false);
       setCurrentPage(1);
-      await loadUsers();
+      await refetchUsuarios({ forceFresh: true });
     } catch (err: any) {
       const msg = err?.response?.data?.message || err?.message || 'Error creando usuario';
       show({ title: 'Error', message: msg, type: 'error' });
@@ -363,7 +377,7 @@ const Usuarios: React.FC = () => {
       show({ title: 'Éxito', message: 'Usuario actualizado exitosamente', type: 'success' });
       setOpenEdit(false);
       setEditingUser(null);
-      await loadUsers();
+      await refetchUsuarios({ forceFresh: true });
     } catch (err: any) {
       const msg = err?.response?.data?.message || err?.message || 'Error actualizando usuario';
       show({ title: 'Error', message: msg, type: 'error' });
@@ -395,7 +409,7 @@ const Usuarios: React.FC = () => {
       show({ title: 'Éxito', message: 'Usuario eliminado exitosamente', type: 'success' });
       setOpenDelete(false);
       setDeletingUser(null);
-      await loadUsers();
+      await refetchUsuarios({ forceFresh: true });
     } catch (err: any) {
       // El error lo maneja el modal
       throw err;
@@ -965,7 +979,7 @@ const Usuarios: React.FC = () => {
               </tr>
             </thead>
           <tbody>
-            {loading ? (
+            {loadingUsuarios ? (
               <tr>
                 <td colSpan={columns.length + 1} style={{ textAlign: 'center', padding: '20px' }}>
                   <LoadingSpinner message="Cargando usuarios…" />
