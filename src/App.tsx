@@ -19,6 +19,7 @@ import EstablecimientoEditInfo from './pages/EstablecimientoEditInfo';
 import PuntoEmisionInfo from './pages/PuntoEmisionInfo';
 import Usuarios from './pages/Usuarios';
 import UsuarioInfo from './pages/UsuarioInfo';
+import Planes from './pages/Planes';
 import Blank from './pages/Blank';
 
 const ChangePasswordAuthed: React.FC = () => {
@@ -63,12 +64,14 @@ function App() {
                 <Route path="/usuarios" element={<Usuarios />} />
                 <Route path="/usuarios/:id" element={<UsuarioInfo />} />
                 
+                {/* Planes */}
+                <Route path="/planes" element={<Planes />} />
+                
                 {/* Compatibilidad: redirige /Navbar a /emisores */}
                 <Route path="/Navbar" element={<Navigate to="/emisores" replace />} />
 
                 {/* Secciones en blanco por ahora */}
                 <Route path="/dashboard" element={<Blank />} />
-                <Route path="/planes" element={<Blank />} />
                 <Route path="/impuestos" element={<Blank />} />
               </Route>
 

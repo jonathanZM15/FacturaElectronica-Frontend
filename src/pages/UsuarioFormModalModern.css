@@ -386,6 +386,34 @@
   transform: translateY(0);
 }
 
+/* Botones alternativos: primary y secondary */
+.usuario-btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.usuario-btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+}
+
+.usuario-btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.usuario-btn-secondary {
+  background: white;
+  color: #374151;
+  border: 2px solid #e5e7eb;
+}
+
+.usuario-btn-secondary:hover:not(:disabled) {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  transform: translateY(-1px);
+}
+
 /* Botón Reenviar Correo */
 .usuario-btn-resend {
   background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
