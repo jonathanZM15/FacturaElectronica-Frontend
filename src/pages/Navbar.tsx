@@ -64,8 +64,8 @@ const Navbar: React.FC = () => {
             </li>
           )}
           
-          {/* Planes: Admin y Distribuidor */}
-          {user && (user.role === 'administrador' || user.role === 'distribuidor') && (
+          {/* Planes: solo Administrador */}
+          {user && user.role === 'administrador' && (
             <li className="nav-item">
               <NavLink to="/planes" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
                 <span className="icon">📊</span>

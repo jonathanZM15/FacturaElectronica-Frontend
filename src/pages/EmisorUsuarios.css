@@ -437,7 +437,9 @@
 }
 
 .filter-group input[type="text"],
-.filter-group input[type="date"] {
+.filter-group input[type="date"],
+.filter-group input[type="number"],
+.filter-group select {
   padding: 8px 12px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
@@ -447,7 +449,9 @@
 }
 
 .filter-group input[type="text"]:focus,
-.filter-group input[type="date"]:focus {
+.filter-group input[type="date"]:focus,
+.filter-group input[type="number"]:focus,
+.filter-group select:focus {
   outline: none;
   border-color: #8b5cf6;
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
