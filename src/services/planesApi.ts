@@ -51,8 +51,8 @@ export const planesApi = {
   },
 
   // Eliminar plan (soft delete)
-  delete(id: number | string) {
-    return api.delete(`/api/planes/${id}`);
+  delete(id: number | string, payload?: { password: string }) {
+    return api.delete(`/api/planes/${id}`, { data: payload });
   },
 
   // Obtener lista de períodos disponibles

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Plan, planesApi } from '../services/planesApi';
 import { useNotification } from '../contexts/NotificationContext';
+import { useUser } from '../contexts/userContext';
 import './UsuarioDeleteModalModern.css';
 
 interface Props {
@@ -12,92 +13,123 @@ interface Props {
 
 const PlanDeleteModal: React.FC<Props> = ({ open, plan, onClose, onSuccess }) => {
   const { show } = useNotification();
+  const { user: currentUser } = useUser();
   const [loading, setLoading] = React.useState(false);
+  const [password, setPassword] = React.useState('');
+  const [error, setError] = React.useState<string | null>(null);
+  const passwordInputRef = React.useRef<HTMLInputElement | null>(null);
 
   const handleDelete = async () => {
-    if (!plan.id) return;
+    if (!plan.id || !password) return;
 
     try {
       setLoading(true);
-      await planesApi.delete(plan.id);
-      show({ title: 'Éxito', message: 'Plan eliminado correctamente', type: 'success' });
+      setError(null);
+      await planesApi.delete(plan.id, { password });
+      show({ title: '✅ Éxito', message: 'Plan eliminado exitosamente', type: 'success' });
+      setPassword('');
       onSuccess();
+      onClose();
     } catch (err: any) {
       const msg = err?.response?.data?.message || err?.message || 'Error al eliminar el plan';
+      setError(msg);
       show({ title: 'Error', message: msg, type: 'error' });
     } finally {
       setLoading(false);
     }
   };
 
+  const handleClose = () => {
+    setPassword('');
+    setError(null);
+    onClose();
+  };
+
   if (!open) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="delete-modal-container" onClick={(e) => e.stopPropagation()}>
+    <div className="delete-modal-overlay" onClick={handleClose}>
+      <div className="delete-modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="delete-modal-header">
-          <div className="delete-icon-container">
-            <span className="delete-icon">🗑️</span>
-          </div>
-          <h2>¿Eliminar Plan?</h2>
-          <button className="close-button" onClick={onClose}>×</button>
+          <h2>
+            <span className="icon">⚠️</span>
+            Eliminar Plan
+          </h2>
+          <button
+            className="delete-modal-close"
+            onClick={handleClose}
+            disabled={loading}
+          >
+            ✕
+          </button>
         </div>
 
         <div className="delete-modal-body">
-          <p className="warning-text">
-            Estás a punto de eliminar el siguiente plan:
+          <p className="delete-confirmation-text">
+            ¿Está seguro de eliminar el plan <strong>{plan.nombre}</strong>?
           </p>
-          
-          <div className="plan-info-card">
-            <div className="info-row">
-              <span className="label">Nombre:</span>
-              <span className="value">{plan.nombre}</span>
+
+          <div className="delete-warning-box">
+            <span className="icon">⚠️</span>
+            <div>
+              <strong>Información del plan a eliminar:</strong>
+              <div style={{ marginTop: '8px', fontSize: '14px' }}>
+                <div>Nombre: <strong>{plan.nombre}</strong></div>
+                <div>Precio: <strong>${parseFloat(String(plan.precio)).toFixed(2)}</strong> - {plan.periodo}</div>
+                <div>Comprobantes: <strong>{plan.cantidad_comprobantes.toLocaleString()}</strong></div>
+                <div>Estado: <strong>{plan.estado}</strong></div>
+              </div>
             </div>
-            <div className="info-row">
-              <span className="label">Precio:</span>
-              <span className="value">
-                ${plan.precio.toFixed(2)} - {plan.periodo}
-              </span>
-            </div>
-            <div className="info-row">
-              <span className="label">Comprobantes:</span>
-              <span className="value">{plan.cantidad_comprobantes.toLocaleString()}</span>
-            </div>
-            <div className="info-row">
-              <span className="label">Estado:</span>
-              <span className={`badge ${plan.estado === 'Activo' ? 'badge-success' : 'badge-danger'}`}>
-                {plan.estado}
-              </span>
-            </div>
-            {plan.observacion && (
-              <div className="info-row">
-                <span className="label">Observación:</span>
-                <span className="value">{plan.observacion}</span>
+          </div>
+
+          <div className="delete-form-group">
+            <label htmlFor="delete-password" className="delete-form-label">
+              Ingresa tu contraseña para confirmar *
+            </label>
+            <input
+              ref={passwordInputRef}
+              id="delete-password"
+              type="password"
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setError(null);
+              }}
+              placeholder="••••••••"
+              className={`delete-form-input ${error ? 'error' : ''}`}
+              disabled={loading}
+              autoFocus
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && password && !loading) {
+                  handleDelete();
+                }
+              }}
+            />
+            {error && (
+              <div className="delete-error-text">
+                <span className="icon">❌</span>
+                {error}
               </div>
             )}
           </div>
-
-          <div className="alert alert-warning">
-            <strong>⚠️ Advertencia:</strong> Esta acción no se puede deshacer. El plan será eliminado del sistema.
-          </div>
         </div>
 
-        <div className="delete-modal-actions">
-          <button 
-            type="button" 
-            className="btn-secondary" 
-            onClick={onClose}
+        <div className="delete-modal-footer">
+          <button
+            type="button"
+            className="delete-btn delete-btn-cancel"
+            onClick={handleClose}
             disabled={loading}
           >
             Cancelar
           </button>
-          <button 
-            type="button" 
-            className="btn-danger" 
+          <button
+            type="button"
+            className="delete-btn delete-btn-danger"
             onClick={handleDelete}
-            disabled={loading}
+            disabled={loading || !password}
           >
-            {loading ? 'Eliminando...' : 'Sí, Eliminar Plan'}
+            {loading ? 'Eliminando...' : '🗑️ Eliminar'}
           </button>
         </div>
       </div>

@@ -179,8 +179,8 @@ const PlanFormModal: React.FC<Props> = ({ open, onClose, onSuccess, plan }) => {
         // Actualizar plan existente
         await planesApi.update(plan.id, formData);
         show({ 
-          title: '✅ Éxito', 
-          message: 'Plan actualizado correctamente',
+          title: '✅ Plan actualizado exitosamente', 
+          message: 'El plan ha sido actualizado correctamente',
           type: 'success' 
         });
       } else {
@@ -200,10 +200,27 @@ const PlanFormModal: React.FC<Props> = ({ open, onClose, onSuccess, plan }) => {
     } catch (err: any) {
       // Manejo mejorado de errores específicos
       let errorMessage = 'Error al guardar el plan';
+      const fieldErrors: Record<string, string> = {};
       
-      // Si viene del backend con validaciones
+      // Si viene del backend con validaciones por campo
       if (err?.response?.data?.errors) {
         const errors = err.response.data.errors;
+        
+        // Mapear errores a los campos
+        Object.keys(errors).forEach(field => {
+          if (errors[field] && errors[field][0]) {
+            fieldErrors[field] = errors[field][0];
+            
+            // Si es error de nombre duplicado
+            if (field === 'nombre' && errors[field][0].toLowerCase().includes('ya')) {
+              fieldErrors[field] = 'Ya existe un plan con este nombre';
+            }
+          }
+        });
+        
+        setErrors(fieldErrors);
+        
+        // Mensaje general
         const firstError = Object.keys(errors)[0];
         if (firstError && errors[firstError][0]) {
           errorMessage = errors[firstError][0];
@@ -214,6 +231,7 @@ const PlanFormModal: React.FC<Props> = ({ open, onClose, onSuccess, plan }) => {
         // Manejo especial para nombre duplicado
         if (errorMessage.toLowerCase().includes('ya existe')) {
           errorMessage = '❌ Ya existe un plan con este nombre.';
+          setErrors({ nombre: 'Ya existe un plan con este nombre' });
         }
       }
       
