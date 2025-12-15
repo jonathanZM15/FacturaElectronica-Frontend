@@ -783,6 +783,11 @@ const EmisorInfo: React.FC = () => {
                         >
                           Dirección {sortByEst === 'direccion' ? (sortDirEst === 'asc' ? '▲' : '▼') : '▾'} {activeEstFilter === 'direccion' && <span style={{ color: '#ff8c00' }}>●</span>}
                         </th>
+                        <th style={{ minWidth: 150 }}>Correo</th>
+                        <th style={{ minWidth: 140 }}>Teléfono</th>
+                        <th style={{ minWidth: 160 }}>Inicio Actividades</th>
+                        <th style={{ minWidth: 160 }}>Reinicio Actividades</th>
+                        <th style={{ minWidth: 160 }}>Cierre Establecimiento</th>
                         <th style={{ minWidth: 120 }}>Logo</th>
                         <th 
                           className="sortable" 
@@ -795,19 +800,37 @@ const EmisorInfo: React.FC = () => {
                         >
                           Estado {sortByEst === 'estado' ? (sortDirEst === 'asc' ? '▲' : '▼') : '▾'} {activeEstFilter === 'estado' && <span style={{ color: '#ff8c00' }}>●</span>}
                         </th>
+                        <th style={{ minWidth: 300 }}>Usuarios Asociados</th>
                         <th className="th-sticky sticky-right">Acciones</th>
                       </tr>
                     </thead>
 
                     <tbody>
                       {paginatedEsts.length === 0 ? (
-                        <tr><td className="loading-row" colSpan={7}>No hay establecimientos registrados.</td></tr>
+                        <tr><td className="loading-row" colSpan={13}>No hay establecimientos registrados.</td></tr>
                       ) : paginatedEsts.map((est) => (
                         <tr key={est.id}>
                           <td style={{ textAlign: 'center' }}><Link className="link-ruc" to={`/emisores/${company?.id}/establecimientos/${est.id}`}>{est.codigo}</Link></td>
                           <td style={{ textAlign: 'center' }}>{est.nombre}</td>
                           <td style={{ textAlign: 'center' }}>{est.nombre_comercial || '-'}</td>
                           <td style={{ textAlign: 'center' }}>{est.direccion || '-'}</td>
+                          <td style={{ textAlign: 'center', fontSize: 13, color: '#3b82f6' }}>{est.correo || '-'}</td>
+                          <td style={{ textAlign: 'center' }}>{est.telefono || '-'}</td>
+                          <td style={{ textAlign: 'center', fontSize: 13 }}>
+                            {est.fecha_inicio_actividades 
+                              ? new Date(est.fecha_inicio_actividades).toLocaleDateString('es-EC', { year: 'numeric', month: '2-digit', day: '2-digit' })
+                              : '-'}
+                          </td>
+                          <td style={{ textAlign: 'center', fontSize: 13 }}>
+                            {est.fecha_reinicio_actividades 
+                              ? new Date(est.fecha_reinicio_actividades).toLocaleDateString('es-EC', { year: 'numeric', month: '2-digit', day: '2-digit' })
+                              : '-'}
+                          </td>
+                          <td style={{ textAlign: 'center', fontSize: 13 }}>
+                            {est.fecha_cierre_establecimiento 
+                              ? new Date(est.fecha_cierre_establecimiento).toLocaleDateString('es-EC', { year: 'numeric', month: '2-digit', day: '2-digit' })
+                              : '-'}
+                          </td>
                           <td style={{ textAlign: 'center' }}>
                             {(est.logo_url || est.logo_path || est.logo) ? (
                               <img 
@@ -839,6 +862,50 @@ const EmisorInfo: React.FC = () => {
                                 : '0 2px 8px rgba(0, 0, 0, 0.05)',
                               display: 'inline-block'
                             }}>{est.estado === 'ABIERTO' ? 'Activo' : 'Cerrado'}</div>
+                          </td>
+                          <td style={{ textAlign: 'left', fontSize: 13 }}>
+                            {est.usuarios && est.usuarios.length > 0 ? (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                {est.usuarios.map((usr: any, idx: number) => (
+                                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <span style={{ fontWeight: 600, color: '#666' }}>
+                                      {usr.role?.toUpperCase() || 'SIN_ROL'}
+                                    </span>
+                                    <span>–</span>
+                                    <a 
+                                      href="#" 
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        handleOpenUserDetail(usr);
+                                      }}
+                                      style={{ 
+                                        color: '#1e40af', 
+                                        textDecoration: 'none',
+                                        fontWeight: 500,
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s'
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        e.currentTarget.style.textDecoration = 'underline';
+                                        e.currentTarget.style.color = '#1e3a8a';
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        e.currentTarget.style.textDecoration = 'none';
+                                        e.currentTarget.style.color = '#1e40af';
+                                      }}
+                                    >
+                                      {usr.username || 'N/A'}
+                                    </a>
+                                    <span>–</span>
+                                    <span style={{ color: '#333' }}>
+                                      {usr.nombres || ''} {usr.apellidos || ''}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <span>-</span>
+                            )}
                           </td>
                           <td className="td-sticky sticky-right acciones">
                             <button 

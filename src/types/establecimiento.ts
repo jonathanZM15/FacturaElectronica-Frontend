@@ -13,4 +13,11 @@ export interface Establecimiento {
   fecha_inicio_actividades?: string | null;
   fecha_reinicio_actividades?: string | null;
   fecha_cierre_establecimiento?: string | null;
+  usuarios?: Array<{
+    id: number;
+    username: string;
+    role: string;
+    nombres: string;
+    apellidos: string;
+  }>;
 }
