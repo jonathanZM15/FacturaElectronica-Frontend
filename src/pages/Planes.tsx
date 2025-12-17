@@ -260,12 +260,12 @@ const Planes: React.FC = () => {
               </div>
 
               <div className="filter-group">
-                <label>Precio</label>
+                <label>Precio (≤)</label>
                 <input
                   type="number"
                   value={filters.precio}
                   onChange={(e) => updateFilter('precio', e.target.value)}
-                  placeholder="Precio..."
+                  placeholder="Máximo..."
                   min="0"
                   step="0.01"
                 />
@@ -385,7 +385,6 @@ const Planes: React.FC = () => {
                   <th onClick={() => handleSort('periodo')} style={{ cursor: 'pointer' }}>
                     Período {renderSortIcon('periodo')}
                   </th>
-                  <th>Colores</th>
                   <th onClick={() => handleSort('observacion')} style={{ cursor: 'pointer' }}>
                     Observación {renderSortIcon('observacion')}
                   </th>
@@ -410,7 +409,7 @@ const Planes: React.FC = () => {
               <tbody>
                 {planes.length === 0 ? (
                   <tr>
-                    <td colSpan={12} style={{ textAlign: 'center', padding: '2rem' }}>
+                    <td colSpan={11} style={{ textAlign: 'center', padding: '2rem' }}>
                       {Object.values(filters).some(v => Array.isArray(v) ? v.length > 0 : v !== '')
                         ? 'No se encontraron planes con los filtros aplicados'
                         : 'No hay planes registrados'}
@@ -427,30 +426,6 @@ const Planes: React.FC = () => {
                         <strong>{formatPrecio(plan.precio)}</strong>
                       </td>
                       <td>{plan.periodo}</td>
-                      <td>
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                          <div
-                            style={{
-                              width: '30px',
-                              height: '30px',
-                              backgroundColor: plan.color_fondo,
-                              border: '1px solid #ddd',
-                              borderRadius: '4px',
-                            }}
-                            title={`Fondo: ${plan.color_fondo}`}
-                          />
-                          <div
-                            style={{
-                              width: '30px',
-                              height: '30px',
-                              backgroundColor: plan.color_texto,
-                              border: '1px solid #ddd',
-                              borderRadius: '4px',
-                            }}
-                            title={`Texto: ${plan.color_texto}`}
-                          />
-                        </div>
-                      </td>
                       <td>
                         {plan.observacion
                           ? (plan.observacion.length > 80

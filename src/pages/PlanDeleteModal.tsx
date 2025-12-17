@@ -1,7 +1,6 @@
 import React from 'react';
 import { Plan, planesApi } from '../services/planesApi';
 import { useNotification } from '../contexts/NotificationContext';
-import { useUser } from '../contexts/userContext';
 import './UsuarioDeleteModalModern.css';
 
 interface Props {
@@ -13,7 +12,6 @@ interface Props {
 
 const PlanDeleteModal: React.FC<Props> = ({ open, plan, onClose, onSuccess }) => {
   const { show } = useNotification();
-  const { user: currentUser } = useUser();
   const [loading, setLoading] = React.useState(false);
   const [password, setPassword] = React.useState('');
   const [error, setError] = React.useState<string | null>(null);
@@ -26,7 +24,7 @@ const PlanDeleteModal: React.FC<Props> = ({ open, plan, onClose, onSuccess }) =>
       setLoading(true);
       setError(null);
       await planesApi.delete(plan.id, { password });
-      show({ title: '✅ Éxito', message: 'Plan eliminado exitosamente', type: 'success' });
+      show({ title: '✅ Plan eliminado exitosamente.', message: 'El plan ha sido eliminado de la base de datos', type: 'success' });
       setPassword('');
       onSuccess();
       onClose();

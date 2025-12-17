@@ -6,6 +6,7 @@ import EstablishmentFormModal from './EstablishmentFormModal';
 import EmisorUsuarioFormModal from './EmisorUsuarioFormModal';
 import EmisorUsuariosList from './EmisorUsuariosList';
 import UsuarioDetailModal from './UsuarioDetailModal';
+import SuscripcionesList from './SuscripcionesList';
 import { establecimientosApi } from '../services/establecimientosApi';
 import { puntosEmisionApi } from '../services/puntosEmisionApi';
 import { useNotification } from '../contexts/NotificationContext';
@@ -28,7 +29,7 @@ const EmisorInfo: React.FC = () => {
   const role = user?.role?.toLowerCase?.() ?? '';
   const [loading, setLoading] = React.useState(false);
   const [company, setCompany] = React.useState<any | null>(null);
-  const [tab, setTab] = React.useState<'emisor'|'establecimientos'|'usuarios'|'planes'>('emisor');
+  const [tab, setTab] = React.useState<'emisor'|'establecimientos'|'usuarios'|'suscripciones'>('emisor');
   const [openEdit, setOpenEdit] = React.useState(false);
   const [openNewEst, setOpenNewEst] = React.useState(false);
   const [editEst, setEditEst] = React.useState<any | null>(null);
@@ -396,7 +397,7 @@ const EmisorInfo: React.FC = () => {
 
       <div style={{ marginTop: 12 }}>
           <nav style={{ display: 'flex', gap: 12 }}>
-          {(['emisor','establecimientos','usuarios','planes'] as const).map((t) => (
+          {(['emisor','establecimientos','usuarios','suscripciones'] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -410,7 +411,7 @@ const EmisorInfo: React.FC = () => {
                 cursor: 'pointer'
               }}
             >
-              {t === 'emisor' ? 'Emisor' : t === 'establecimientos' ? 'Establecimientos' : t === 'usuarios' ? 'Usuarios' : 'Planes'}
+              {t === 'emisor' ? 'Emisor' : t === 'establecimientos' ? 'Establecimientos' : t === 'usuarios' ? 'Usuarios' : 'Suscripciones'}
             </button>
           ))}
         </nav>
@@ -970,8 +971,8 @@ const EmisorInfo: React.FC = () => {
             />
           )}
 
-          {tab === 'planes' && (
-            <div>Información de planes (pendiente integrar)</div>
+          {tab === 'suscripciones' && company?.id && (
+            <SuscripcionesList emisorId={company.id} />
           )}
         </div>
       </div>

@@ -712,3 +712,266 @@ tbody tr:hover .td-sticky {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
+
+/* ====== ESTILOS PARA PANEL DE FILTROS DE SUSCRIPCIONES ====== */
+.filters-panel {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.filters-panel h3 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  color: #374151;
+  font-weight: 600;
+}
+
+.filter-section {
+  margin-bottom: 16px;
+}
+
+.filter-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+
+.filter-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.filter-select {
+  padding: 10px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  background: #fff;
+  color: #374151;
+  min-width: 180px;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.filter-select:hover {
+  border-color: #9ca3af;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.filter-input {
+  padding: 10px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  background: #fff;
+  color: #374151;
+  min-width: 160px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.filter-input:hover {
+  border-color: #9ca3af;
+}
+
+.filter-input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.filter-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.btn-secondary {
+  padding: 10px 20px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  color: #374151;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-danger {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: #fff;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  transform: translateY(-1px);
+}
+
+.btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ====== ESTILOS PARA TABLA CON ORDENAMIENTO ====== */
+.sortable-header {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.sortable-header:hover {
+  background: linear-gradient(135deg, #4c1d95 0%, #6d28d9 100%) !important;
+}
+
+.sort-icon {
+  margin-left: 6px;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+/* ====== ESTILOS PARA ENLACES Y ARCHIVOS ====== */
+.user-link {
+  color: #6366f1;
+  text-decoration: none;
+  font-size: 12px;
+  word-break: break-word;
+  transition: color 0.2s;
+}
+
+.user-link:hover {
+  color: #4f46e5;
+  text-decoration: underline;
+}
+
+.file-link {
+  color: #059669;
+  text-decoration: none;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.2s;
+}
+
+.file-link:hover {
+  color: #047857;
+  text-decoration: underline;
+}
+
+/* ====== ESTILOS PARA BOTONES DE ACCIÓN EN FILAS ====== */
+.action-buttons {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  align-items: center;
+}
+
+.action-buttons .btn-icon {
+  padding: 6px 10px;
+  font-size: 14px;
+}
+
+/* ====== ESTILOS PARA MODAL DE ELIMINACIÓN ====== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-container {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 500px;
+  width: 90%;
+  overflow: hidden;
+}
+
+.modal-sm {
+  max-width: 400px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #e5e7eb;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 18px;
+  color: #92400e;
+}
+
+.modal-header .close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #92400e;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.modal-body p {
+  margin: 0 0 12px 0;
+  color: #374151;
+}
+
+.modal-body .warning-text {
+  color: #dc2626;
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 20px;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
