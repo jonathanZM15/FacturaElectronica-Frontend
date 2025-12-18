@@ -422,7 +422,7 @@ const SuscripcionFormModal: React.FC<Props> = ({ open, emisorId, suscripcion, on
 
   return (
     <div className="usuario-modal-overlay">
-      <div className="usuario-modal-content usuario-modal-content-barra-izquierda" style={{ maxWidth: '750px' }}>
+      <div className="usuario-modal-content usuario-modal-content-barra-izquierda">
         <div className="usuario-modal-barra-izquierda" style={{ backgroundColor: isEditMode ? '#3b82f6' : '#10b981' }}></div>
         <div className="usuario-modal-main">
           <div className="usuario-modal-header" style={{ position: 'relative' }}>
