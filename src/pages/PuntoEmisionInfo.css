@@ -17,14 +17,14 @@
 /* ========== HEADER PREMIUM ========== */
 .punto-info-header {
   position: relative;
-  background: linear-gradient(135deg, #0f766e 0%, #0d9488 30%, #14b8a6 70%, #2dd4bf 100%);
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 30%, #4c1d95 70%, #581c87 100%);
   margin: 16px;
   padding: 0;
   border-radius: 24px;
   overflow: hidden;
   box-shadow: 
-    0 20px 60px rgba(13, 148, 136, 0.3),
-    0 8px 25px rgba(15, 118, 110, 0.2),
+    0 20px 60px rgba(88, 28, 135, 0.3),
+    0 8px 25px rgba(30, 27, 75, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
@@ -32,8 +32,8 @@
   position: absolute;
   inset: 0;
   background: 
-    radial-gradient(ellipse at top right, rgba(255, 255, 255, 0.15) 0%, transparent 50%),
-    radial-gradient(ellipse at bottom left, rgba(45, 212, 191, 0.2) 0%, transparent 50%);
+    radial-gradient(ellipse at top right, rgba(167, 139, 250, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at bottom left, rgba(236, 72, 153, 0.1) 0%, transparent 50%);
   pointer-events: none;
 }
 
@@ -172,7 +172,7 @@
 .punto-back-btn:hover {
   background: rgba(255, 255, 255, 0.25);
   transform: translateX(-5px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 25px rgba(88, 28, 135, 0.3);
 }
 
 /* ========== BREADCRUMB CARDS ========== */
