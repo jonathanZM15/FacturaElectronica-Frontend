@@ -1,4 +1,5 @@
 import React from 'react';
+import ReactDOM from 'react-dom';
 import { Link } from 'react-router-dom';
 import './Emisores.css';
 import './UsuarioDeleteModalModern.css';
@@ -28,18 +29,36 @@ const dynamicColumns: Array<{
   { 
     key: 'estado', 
     label: 'Estado',
-    width: 120,
+    width: 140,
     render: (row) => {
       const isActivo = row.estado === 'ACTIVO';
       return (
         <span style={{
-          display: 'inline-block',
-          padding: '6px 12px',
-          borderRadius: '20px',
-          fontWeight: 600,
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '6px',
+          padding: '8px 16px',
+          borderRadius: '25px',
+          fontWeight: 700,
+          fontSize: '12px',
+          letterSpacing: '0.5px',
           color: '#fff',
-          background: isActivo ? '#22c55e' : '#9ca3af'
+          background: isActivo 
+            ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' 
+            : 'linear-gradient(135deg, #9ca3af 0%, #6b7280 100%)',
+          boxShadow: isActivo 
+            ? '0 4px 15px rgba(16, 185, 129, 0.4)' 
+            : '0 4px 15px rgba(156, 163, 175, 0.4)',
+          textTransform: 'uppercase',
+          animation: isActivo ? 'pulseGlow 2s ease-in-out infinite' : 'none'
         }}>
+          <span style={{ 
+            width: '8px', 
+            height: '8px', 
+            borderRadius: '50%', 
+            background: '#fff',
+            boxShadow: '0 0 8px rgba(255,255,255,0.8)'
+          }}></span>
           {row.estado}
         </span>
       );
@@ -166,6 +185,7 @@ const Emisores: React.FC = () => {
   const [dateOpen, setDateOpen] = React.useState(false);
   const dateRef = React.useRef<HTMLDivElement | null>(null);
   const desdeInputRef = React.useRef<HTMLInputElement | null>(null);
+  const hastaInputRef = React.useRef<HTMLInputElement | null>(null);
 
   // Pagination states
   const [currentPage, setCurrentPage] = React.useState(1);
@@ -212,17 +232,10 @@ const Emisores: React.FC = () => {
   // Scroll sync refs para una sola área scrollable
   const scrollContainerRef = React.useRef<HTMLDivElement | null>(null);
 
-  // Close date popover on outside click and focus first input on open
+  // Focus first input when date modal opens (no outside click handler - modal uses Portal)
   React.useEffect(() => {
     if (!dateOpen) return;
-    const onDocClick = (e: MouseEvent) => {
-      if (dateRef.current && !dateRef.current.contains(e.target as Node)) {
-        setDateOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', onDocClick);
     setTimeout(() => desdeInputRef.current?.focus(), 0);
-    return () => document.removeEventListener('mousedown', onDocClick);
   }, [dateOpen]);
 
   const load = React.useCallback(async () => {
@@ -394,23 +407,260 @@ const Emisores: React.FC = () => {
               <span className={`end ${hasta ? 'has' : ''}`}>{hasta ? formatDate(hasta) : 'Fecha Final'}</span>
               <span className="icon" aria-hidden>📅</span>
             </button>
-            {dateOpen && (
-              <div className="date-range-popover" role="dialog">
-                <div className="row">
-                  <label>Desde
-                    <input ref={desdeInputRef} type="date" value={desde} onChange={(e) => setDesde(e.target.value)} />
-                  </label>
-                  <label>Hasta
-                    <input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} />
-                  </label>
+          </div>
+
+          {/* Date Modal - Rendered via Portal */}
+          {dateOpen && ReactDOM.createPortal(
+            <>
+              {/* Overlay oscuro - NO cierra el modal, solo la X */}
+              <div 
+                style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: 'rgba(15, 23, 42, 0.7)',
+                  backdropFilter: 'blur(8px)',
+                  WebkitBackdropFilter: 'blur(8px)',
+                  zIndex: 999998,
+                  animation: 'fadeIn 0.2s ease'
+                }}
+              />
+              {/* Modal de fechas */}
+              <div 
+                role="dialog"
+                style={{
+                  position: 'fixed',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  zIndex: 999999,
+                  width: '480px',
+                  maxWidth: '95vw',
+                  backgroundColor: '#ffffff',
+                  borderRadius: '24px',
+                  boxShadow: '0 25px 80px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(99, 102, 241, 0.2)',
+                  padding: '28px',
+                  border: '3px solid #6366f1',
+                  animation: 'popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
+                }}
+              >
+                {/* Header */}
+                <div style={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '24px',
+                  paddingBottom: '20px',
+                  borderBottom: '2px solid #e5e7eb'
+                }}>
+                  <div style={{ 
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '14px'
+                  }}>
+                    <div style={{
+                      width: '50px',
+                      height: '50px',
+                      borderRadius: '14px',
+                      background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 6px 16px rgba(99, 102, 241, 0.35)'
+                    }}>
+                      <span style={{ fontSize: '24px' }}>📆</span>
+                    </div>
+                    <div>
+                      <h4 style={{ 
+                        margin: 0, 
+                        fontSize: '18px', 
+                        fontWeight: 700, 
+                        color: '#1e1b4b'
+                      }}>
+                        Filtrar por Fecha
+                      </h4>
+                      <p style={{ 
+                        margin: '4px 0 0 0', 
+                        fontSize: '13px', 
+                        color: '#6b7280'
+                      }}>
+                        Selecciona el rango de fechas
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setDateOpen(false)}
+                    style={{
+                      backgroundColor: '#f3f4f6',
+                      border: '2px solid #e5e7eb',
+                      fontSize: '16px',
+                      cursor: 'pointer',
+                      color: '#6b7280',
+                      borderRadius: '10px',
+                      width: '40px',
+                      height: '40px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#fee2e2';
+                      e.currentTarget.style.borderColor = '#fca5a5';
+                      e.currentTarget.style.color = '#ef4444';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#f3f4f6';
+                      e.currentTarget.style.borderColor = '#e5e7eb';
+                      e.currentTarget.style.color = '#6b7280';
+                    }}
+                  >
+                    ✕
+                  </button>
                 </div>
-                <div className="actions">
-                  <button type="button" onClick={() => { setDesde(''); setHasta(''); setDateOpen(false); }}>Limpiar</button>
-                  <button type="button" className="primary" onClick={() => setDateOpen(false)}>Aplicar</button>
+
+                {/* Campos de fecha */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '16px',
+                  backgroundColor: '#f8fafc',
+                  padding: '20px',
+                  borderRadius: '14px',
+                  border: '2px solid #e5e7eb'
+                }}>
+                  <div style={{
+                    backgroundColor: '#ffffff',
+                    padding: '16px',
+                    borderRadius: '12px',
+                    border: '2px solid #e5e7eb'
+                  }}>
+                    <label style={{ 
+                      display: 'block',
+                      fontSize: '14px',
+                      fontWeight: 700,
+                      color: '#4f46e5',
+                      marginBottom: '10px'
+                    }}>
+                      🗓️ Fecha Inicio
+                    </label>
+                    <input 
+                      ref={desdeInputRef} 
+                      type="date" 
+                      value={desde} 
+                      onChange={(e) => setDesde(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        border: '2px solid #e5e7eb',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        fontWeight: 600,
+                        backgroundColor: '#ffffff',
+                        color: '#374151',
+                        cursor: 'pointer',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  </div>
+                  <div style={{
+                    backgroundColor: '#ffffff',
+                    padding: '16px',
+                    borderRadius: '12px',
+                    border: '2px solid #e5e7eb'
+                  }}>
+                    <label style={{ 
+                      display: 'block',
+                      fontSize: '14px',
+                      fontWeight: 700,
+                      color: '#4f46e5',
+                      marginBottom: '10px'
+                    }}>
+                      🗓️ Fecha Fin
+                    </label>
+                    <input 
+                      ref={hastaInputRef}
+                      type="date" 
+                      value={hasta} 
+                      onChange={(e) => setHasta(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        border: '2px solid #e5e7eb',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        fontWeight: 600,
+                        backgroundColor: '#ffffff',
+                        color: '#374151',
+                        cursor: 'pointer',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Botones de acción */}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: '12px',
+                  marginTop: '24px',
+                  paddingTop: '20px',
+                  borderTop: '2px solid #e5e7eb'
+                }}>
+                  <button 
+                    type="button" 
+                    onClick={(e) => { 
+                      e.preventDefault();
+                      e.stopPropagation();
+                      // Limpiar estados de forma síncrona
+                      setDesde('');
+                      setHasta('');
+                    }}
+                    style={{
+                      padding: '12px 24px',
+                      borderRadius: '10px',
+                      border: '2px solid #e5e7eb',
+                      backgroundColor: '#ffffff',
+                      fontWeight: 700,
+                      fontSize: '14px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      color: '#374151'
+                    }}
+                  >
+                    🗑️ Limpiar
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => { setDateOpen(false); load(); }}
+                    style={{
+                      padding: '12px 24px',
+                      borderRadius: '10px',
+                      border: 'none',
+                      background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                      fontWeight: 700,
+                      fontSize: '14px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      color: '#ffffff',
+                      boxShadow: '0 4px 14px rgba(99, 102, 241, 0.4)'
+                    }}
+                  >
+                    ✓ Aplicar
+                  </button>
                 </div>
               </div>
-            )}
-          </div>
+            </>,
+            document.body
+          )}
 
           {/* Dynamic filter input (activated by clicking column headers) */}
           <div className="estado-search">
@@ -485,9 +735,9 @@ const Emisores: React.FC = () => {
               {activeFilter && filterValue && (
                 <button
                   type="button"
-                  style={{ marginLeft: 8, background: 'transparent', border: 'none', color: '#1e40af', cursor: 'pointer', fontSize: 12 }}
+                  style={{ marginLeft: 8, background: 'transparent', border: 'none', color: '#6366f1', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}
                   onClick={() => { setFilterValue(''); }}
-                >Limpiar</button>
+                >✕ Limpiar</button>
               )}
             </small>
           </div>
@@ -499,16 +749,16 @@ const Emisores: React.FC = () => {
             style={{
               opacity: (user?.role === 'gerente' || user?.role === 'emisor' || user?.role === 'cajero') ? 0.5 : 1,
               cursor: (user?.role === 'gerente' || user?.role === 'emisor' || user?.role === 'cajero') ? 'not-allowed' : 'pointer',
-              backgroundColor: (user?.role === 'gerente' || user?.role === 'emisor' || user?.role === 'cajero') ? '#ccc' : undefined
+              background: (user?.role === 'gerente' || user?.role === 'emisor' || user?.role === 'cajero') ? 'linear-gradient(135deg, #9ca3af 0%, #6b7280 100%)' : undefined
             }}
             title={user?.role === 'gerente' ? 'Los gerentes no pueden crear emisores' : user?.role === 'emisor' ? 'Los emisores no pueden crear emisores' : user?.role === 'cajero' ? 'Los cajeros no pueden crear emisores' : 'Crear nuevo emisor'}
           >
-            Nuevo +
+            <span style={{ marginRight: '8px', fontSize: '18px' }}>✨</span> Nuevo
           </button>
         </div>
       </div>
 
-      {error && <div className="alert-error">⚠ {error}</div>}
+      {error && <div className="alert-error"><span style={{ marginRight: '8px' }}>⚠️</span> {error}</div>}
 
       <div className="tabla-wrapper">
         <div className="tabla-scroll-container" ref={scrollContainerRef}>
@@ -525,7 +775,11 @@ const Emisores: React.FC = () => {
                   }}
                   style={{ cursor: 'pointer' }}
                 >
-                  RUC {sortBy === 'ruc' ? (sortOrder === 'asc' ? '▲' : '▼') : '▾'} {activeFilter === 'ruc' && <span style={{ color: '#ff8c00' }}>●</span>}
+                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    RUC 
+                    <span style={{ opacity: sortBy === 'ruc' ? 1 : 0.5 }}>{sortBy === 'ruc' ? (sortOrder === 'asc' ? '↑' : '↓') : '↕'}</span>
+                    {activeFilter === 'ruc' && <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#fbbf24', boxShadow: '0 0 8px #fbbf24' }}></span>}
+                  </span>
                 </th>
                 <th 
                   className="th-sticky sticky-left-2 sortable" 
@@ -536,7 +790,11 @@ const Emisores: React.FC = () => {
                   }}
                   style={{ cursor: 'pointer' }}
                 >
-                  Razón Social {sortBy === 'razon_social' ? (sortOrder === 'asc' ? '▲' : '▼') : '▾'} {activeFilter === 'razon_social' && <span style={{ color: '#ff8c00' }}>●</span>}
+                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    Razón Social 
+                    <span style={{ opacity: sortBy === 'razon_social' ? 1 : 0.5 }}>{sortBy === 'razon_social' ? (sortOrder === 'asc' ? '↑' : '↓') : '↕'}</span>
+                    {activeFilter === 'razon_social' && <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#fbbf24', boxShadow: '0 0 8px #fbbf24' }}></span>}
+                  </span>
                 </th>
 
                 {/* Columnas dinámicas */}
@@ -575,13 +833,21 @@ const Emisores: React.FC = () => {
                           }
                         }}
                     >
-                      {c.label} {c.key !== 'logo' && (sortBy === c.key ? (sortOrder === 'asc' ? '▲' : '▼') : '▾')} {activeFilter === filterField && <span style={{ color: '#ff8c00' }}>●</span>}
+                      <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                        {c.label} 
+                        {c.key !== 'logo' && <span style={{ opacity: sortBy === c.key ? 1 : 0.5 }}>{sortBy === c.key ? (sortOrder === 'asc' ? '↑' : '↓') : '↕'}</span>}
+                        {activeFilter === filterField && <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#fbbf24', boxShadow: '0 0 8px #fbbf24' }}></span>}
+                      </span>
                     </th>
                   );
                 })}
 
                 {/* Fijo derecha */}
-                <th className="th-sticky sticky-right">Acciones</th>
+                <th className="th-sticky sticky-right">
+                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    ⚡ Acciones
+                  </span>
+                </th>
               </tr>
             </thead>
 
@@ -645,6 +911,7 @@ const Emisores: React.FC = () => {
                       const rawValue = row[c.key as keyof Emisor] as any;
                       const isNumber = typeof rawValue === 'number';
                       const isRestantes = c.key === 'cantidad_restantes';
+                      const isCantidad = c.key === 'cantidad_creados';
 
                       return (
                         <td
@@ -654,10 +921,25 @@ const Emisores: React.FC = () => {
                             minWidth: c.width ?? 200,
                             width: c.width ?? 200,
                             fontWeight: isNumber ? 700 : 'normal',
-                            color: isRestantes ? '#e24444' : (isNumber ? '#1b4ab4' : 'inherit')
+                            color: isRestantes ? '#ef4444' : (isCantidad ? '#6366f1' : (isNumber ? '#6366f1' : 'inherit'))
                           }}
                         >
-                          {content ?? '-'}
+                          {isNumber && !isRestantes ? (
+                            <span style={{
+                              background: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)',
+                              padding: '6px 14px',
+                              borderRadius: '20px',
+                              fontWeight: 700
+                            }}>{content}</span>
+                          ) : isRestantes ? (
+                            <span style={{
+                              background: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)',
+                              padding: '6px 14px',
+                              borderRadius: '20px',
+                              fontWeight: 700,
+                              color: '#dc2626'
+                            }}>{content}</span>
+                          ) : (content ?? '-')}
                         </td>
                       );
                     })}
@@ -665,7 +947,7 @@ const Emisores: React.FC = () => {
                     {/* Fijo derecha */}
                     <td className="td-sticky sticky-right acciones">
                       <button 
-                        title={canEditEmit(row) ? "Editar" : "No tienes permisos para editar"}
+                        title={canEditEmit(row) ? "Editar emisor" : "No tienes permisos para editar"}
                         disabled={!canEditEmit(row)}
                         onClick={async () => {
                           try {
@@ -719,8 +1001,20 @@ const Emisores: React.FC = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={dynamicColumns.length + 3} style={{ textAlign: 'center', padding: 12 }}>
-                    Sin resultados
+                  <td colSpan={dynamicColumns.length + 3} style={{ textAlign: 'center', padding: '60px 20px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+                      <span style={{ fontSize: '64px', opacity: 0.5 }}>🏢</span>
+                      <span style={{ fontSize: '18px', color: '#6b7280', fontWeight: 500 }}>
+                        {activeFilter && filterValue 
+                          ? 'No se encontraron emisores con ese filtro' 
+                          : 'No hay emisores registrados'}
+                      </span>
+                      <span style={{ fontSize: '14px', color: '#9ca3af' }}>
+                        {activeFilter && filterValue 
+                          ? 'Intenta con otro término de búsqueda' 
+                          : 'Haz clic en "✨ Nuevo" para agregar uno'}
+                      </span>
+                    </div>
                   </td>
                 </tr>
               )}
@@ -731,7 +1025,7 @@ const Emisores: React.FC = () => {
         {/* Pagination controls */}
         <div className="pagination-controls">
           <div className="pagination-info">
-            Filas por página: 
+            <span style={{ color: '#6b7280' }}>Filas por página:</span>
             <select 
               value={itemsPerPage} 
               onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}

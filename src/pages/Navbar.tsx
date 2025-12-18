@@ -37,18 +37,26 @@ const Navbar: React.FC = () => {
           {/* Dashboard Administrativo: solo Admin */}
           {user && user.role === 'administrador' && (
             <li className="nav-item">
-              <NavLink to="/dashboard" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                  <span className="icon">👤</span>
-                  <span className="label">Dashboard Administrativo</span>
-                </NavLink>
+              <NavLink 
+                to="/dashboard" 
+                className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                data-tooltip="Dashboard"
+              >
+                <span className="icon">📊</span>
+                <span className="label">Dashboard Administrativo</span>
+              </NavLink>
             </li>
           )}
           
           {/* Emisores: Admin, Distribuidor, Emisor y Gerente */}
           {user && (user.role === 'administrador' || user.role === 'distribuidor' || user.role === 'emisor' || user.role === 'gerente') && (
             <li className="nav-item">
-              <NavLink to="/emisores" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                <span className="icon">📧</span>
+              <NavLink 
+                to="/emisores" 
+                className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                data-tooltip="Emisores"
+              >
+                <span className="icon">🏢</span>
                 <span className="label">Emisores</span>
               </NavLink>
             </li>
@@ -57,7 +65,11 @@ const Navbar: React.FC = () => {
           {/* Usuarios: solo visible para Administradores */}
           {user && user.role === 'administrador' && (
             <li className="nav-item">
-              <NavLink to="/usuarios" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+              <NavLink 
+                to="/usuarios" 
+                className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                data-tooltip="Usuarios"
+              >
                 <span className="icon">👥</span>
                 <span className="label">Usuarios</span>
               </NavLink>
@@ -67,8 +79,12 @@ const Navbar: React.FC = () => {
           {/* Planes: solo Administrador */}
           {user && user.role === 'administrador' && (
             <li className="nav-item">
-              <NavLink to="/planes" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                <span className="icon">📊</span>
+              <NavLink 
+                to="/planes" 
+                className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                data-tooltip="Planes"
+              >
+                <span className="icon">💎</span>
                 <span className="label">Planes</span>
               </NavLink>
             </li>
@@ -77,7 +93,11 @@ const Navbar: React.FC = () => {
           {/* Impuestos: solo Admin */}
           {user && user.role === 'administrador' && (
             <li className="nav-item">
-              <NavLink to="/impuestos" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+              <NavLink 
+                to="/impuestos" 
+                className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                data-tooltip="Impuestos"
+              >
                 <span className="icon">🧾</span>
                 <span className="label">Impuestos</span>
               </NavLink>
@@ -87,7 +107,11 @@ const Navbar: React.FC = () => {
           {/* Retenciones: solo Admin */}
           {user && user.role === 'administrador' && (
             <li className="nav-item">
-              <NavLink to="/retenciones" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+              <NavLink 
+                to="/retenciones" 
+                className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                data-tooltip="Retenciones"
+              >
                 <span className="icon">📋</span>
                 <span className="label">Retenciones</span>
               </NavLink>

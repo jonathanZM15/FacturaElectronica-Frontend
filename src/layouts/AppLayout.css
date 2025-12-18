@@ -1,22 +1,30 @@
+/* ====== APP LAYOUT - CONTENIDO PRINCIPAL ====== */
+
 .app-content {
   /* Desplaza el contenido para no quedar debajo del header/Sidebar fijos */
-  margin-top: 60px;      /* altura del header */
-  margin-left: 250px;    /* ancho del sidebar cuando está abierto */
-  padding: 16px;
-  min-height: calc(100vh - 60px);
-  background: #fff;
+  margin-top: 70px;      /* altura del header actualizada */
+  margin-left: 280px;    /* ancho del sidebar cuando está abierto */
+  padding: 24px;
+  min-height: calc(100vh - 70px);
+  background: linear-gradient(180deg, #fafbff 0%, #f5f7fa 100%);
   box-sizing: border-box;
-  transition: margin-left 200ms ease; /* Transición suave al cambiar el margen */
+  transition: margin-left 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Cuando el sidebar está cerrado, el contenido ocupa todo el ancho */
+/* Cuando el sidebar está cerrado (colapsado a iconos) */
 .app-content.sidebar-closed {
-  /* when sidebar is collapsed, keep a small left margin to accommodate icons-only rail */
-  margin-left: 72px;
+  margin-left: 88px; /* ancho del sidebar colapsado */
 }
 
-@media (max-width: 900px) {
+/* Responsive - móviles */
+@media (max-width: 768px) {
   .app-content {
+    margin-top: 60px;
+    margin-left: 0;
+    padding: 16px;
+  }
+  
+  .app-content.sidebar-closed {
     margin-left: 0;
   }
 }
