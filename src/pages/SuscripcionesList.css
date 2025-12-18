@@ -330,27 +330,58 @@
   background: white;
 }
 
-/* Tabla */
+/* ===============================================
+   TABLA DE SUSCRIPCIONES - DISEÑO PREMIUM
+   =============================================== */
 .susc-table-wrapper {
   background: white;
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   border: 1px solid #e2e8f0;
 }
 
 .susc-table-scroll {
   overflow-x: auto;
+  overflow-y: auto;
+  max-height: calc(100vh - 400px);
+  min-height: 300px;
+  scrollbar-width: thin;
+  scrollbar-color: #667eea #f1f5f9;
+}
+
+.susc-table-scroll::-webkit-scrollbar {
+  height: 14px;
+  width: 14px;
+}
+
+.susc-table-scroll::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+.susc-table-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 10px;
+  border: 3px solid #f1f5f9;
+}
+
+.susc-table-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #5a5fd6, #6b4f9e);
+}
+
+.susc-table-scroll::-webkit-scrollbar-corner {
+  background: #f1f5f9;
 }
 
 .susc-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 1400px;
+  min-width: 2200px;
 }
 
 .susc-table thead {
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -358,14 +389,145 @@
 
 .susc-table th {
   padding: 14px 12px;
-  text-align: left;
+  text-align: center;
   font-size: 11px;
-  font-weight: 600;
-  color: #475569;
+  font-weight: 700;
+  color: #ffffff;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  border-bottom: 2px solid #e2e8f0;
+  border-bottom: none;
   white-space: nowrap;
+}
+
+.susc-table td {
+  padding: 12px 10px;
+  text-align: center;
+  font-size: 13px;
+  color: #334155;
+  border-bottom: 1px solid #e2e8f0;
+  vertical-align: middle;
+}
+
+/* 19 Columnas - Anchos definidos */
+.susc-table th:nth-child(1),
+.susc-table td:nth-child(1) { width: 150px; min-width: 150px; } /* 1. Plan - sticky */
+
+.susc-table th:nth-child(2),
+.susc-table td:nth-child(2) { width: 90px; min-width: 90px; } /* 2. Comp. Plan */
+
+.susc-table th:nth-child(3),
+.susc-table td:nth-child(3) { width: 80px; min-width: 80px; } /* 3. Creados */
+
+.susc-table th:nth-child(4),
+.susc-table td:nth-child(4) { width: 90px; min-width: 90px; } /* 4. Restantes */
+
+.susc-table th:nth-child(5),
+.susc-table td:nth-child(5) { width: 100px; min-width: 100px; } /* 5. F. Inicio */
+
+.susc-table th:nth-child(6),
+.susc-table td:nth-child(6) { width: 100px; min-width: 100px; } /* 6. F. Fin */
+
+.susc-table th:nth-child(7),
+.susc-table td:nth-child(7) { width: 130px; min-width: 130px; } /* 7. Estado Susc */
+
+.susc-table th:nth-child(8),
+.susc-table td:nth-child(8) { width: 120px; min-width: 120px; } /* 8. Estado Trans */
+
+.susc-table th:nth-child(9),
+.susc-table td:nth-child(9) { width: 90px; min-width: 90px; } /* 9. Monto */
+
+.susc-table th:nth-child(10),
+.susc-table td:nth-child(10) { width: 100px; min-width: 100px; } /* 10. F. Pago */
+
+.susc-table th:nth-child(11),
+.susc-table td:nth-child(11) { width: 110px; min-width: 110px; } /* 11. Comprobante */
+
+.susc-table th:nth-child(12),
+.susc-table td:nth-child(12) { width: 90px; min-width: 90px; } /* 12. Factura */
+
+.susc-table th:nth-child(13),
+.susc-table td:nth-child(13) { width: 130px; min-width: 130px; } /* 13. Registrador */
+
+.susc-table th:nth-child(14),
+.susc-table td:nth-child(14) { width: 120px; min-width: 120px; } /* 14. Est. Comisión */
+
+.susc-table th:nth-child(15),
+.susc-table td:nth-child(15) { width: 90px; min-width: 90px; } /* 15. Comisión */
+
+.susc-table th:nth-child(16),
+.susc-table td:nth-child(16) { width: 100px; min-width: 100px; } /* 16. Comp. Com. */
+
+.susc-table th:nth-child(17),
+.susc-table td:nth-child(17) { width: 100px; min-width: 100px; } /* 17. Registro */
+
+.susc-table th:nth-child(18),
+.susc-table td:nth-child(18) { width: 110px; min-width: 110px; } /* 18. Actualización */
+
+.susc-table th:nth-child(19),
+.susc-table td:nth-child(19) { width: 120px; min-width: 120px; } /* 19. Acciones - sticky */
+
+/* Columna PLAN - Sticky a la izquierda */
+.susc-table th:first-child,
+.susc-table td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 5;
+}
+
+.susc-table th:first-child {
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+  z-index: 15;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+}
+
+.susc-table td:first-child {
+  background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+  border-right: 2px solid #c7d2fe;
+  font-weight: 600;
+}
+
+.susc-table tbody tr:hover td:first-child {
+  background: linear-gradient(135deg, #ddd6fe 0%, #c4b5fd 100%);
+}
+
+/* Columna ACCIONES - Sticky a la derecha (columna 19) */
+.susc-table th:nth-child(19),
+.susc-table td:nth-child(19) {
+  position: sticky;
+  right: 0;
+  z-index: 5;
+}
+
+.susc-table th:nth-child(19) {
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+  z-index: 15;
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.15);
+}
+
+.susc-table td:nth-child(19) {
+  background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+  border-left: 2px solid #c7d2fe;
+}
+
+.susc-table tbody tr:hover td:nth-child(19) {
+  background: linear-gradient(135deg, #ddd6fe 0%, #c4b5fd 100%);
+}
+
+/* Filas del body */
+.susc-table tbody tr {
+  transition: all 0.2s ease;
+}
+
+.susc-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.susc-table tbody tr:nth-child(even) {
+  background: #fafbfc;
+}
+
+.susc-table tbody tr:nth-child(even):hover {
+  background: #f1f5f9;
 }
 
 .susc-table th.sortable {
@@ -375,59 +537,42 @@
 }
 
 .susc-table th.sortable:hover {
-  background: #e2e8f0;
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .susc-th-content {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
 }
 
 .susc-sort-icon {
   font-size: 12px;
-  color: #94a3b8;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .susc-sort-icon.active {
-  color: #f97316;
-}
-
-.susc-table tbody tr {
-  transition: all 0.2s ease;
-  border-bottom: 1px solid #f1f5f9;
-}
-
-.susc-table tbody tr:hover {
-  background: #fefce8;
-}
-
-.susc-table tbody tr:last-child {
-  border-bottom: none;
-}
-
-.susc-table td {
-  padding: 14px 12px;
-  font-size: 13px;
-  color: #334155;
-  vertical-align: middle;
+  color: #fbbf24;
 }
 
 /* Plan Cell */
 .susc-plan-cell {
-  max-width: 200px;
+  max-width: 140px;
+  text-align: left;
 }
 
 .susc-plan-name {
-  font-weight: 600;
-  color: #1e293b;
+  font-weight: 700;
+  color: #4f46e5;
   font-size: 13px;
+  text-transform: capitalize;
 }
 
 .susc-plan-details {
   font-size: 11px;
   color: #64748b;
-  margin-top: 2px;
+  margin-top: 4px;
 }
 
 /* Comprobantes */
@@ -605,11 +750,16 @@
 .susc-actions {
   display: flex;
   gap: 6px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: nowrap;
 }
 
 .susc-btn-action {
   width: 32px;
   height: 32px;
+  min-width: 32px;
+  min-height: 32px;
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -618,6 +768,7 @@
   justify-content: center;
   font-size: 14px;
   transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
 .susc-btn-action.edit {

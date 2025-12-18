@@ -246,7 +246,8 @@ const SuscripcionesList: React.FC<Props> = ({ emisorId }) => {
   const formatPlan = (suscripcion: Suscripcion) => {
     if (!suscripcion.plan) return '-';
     const { nombre, periodo, cantidad_comprobantes, precio } = suscripcion.plan;
-    return `${nombre.toUpperCase()} - ${periodo.toUpperCase()} - ${cantidad_comprobantes} C - $${precio.toFixed(2)}`;
+    const precioNum = typeof precio === 'number' ? precio : parseFloat(precio) || 0;
+    return `${nombre?.toUpperCase() || '-'} - ${periodo?.toUpperCase() || '-'} - ${cantidad_comprobantes || 0} C - $${precioNum.toFixed(2)}`;
   };
 
   // Formatear usuario registrador: ROL – USERNAME – NOMBRES – APELLIDOS
@@ -723,7 +724,7 @@ const SuscripcionesList: React.FC<Props> = ({ emisorId }) => {
                             <div className="susc-plan-cell">
                               <div className="susc-plan-name">{suscripcion.plan?.nombre || '-'}</div>
                               <div className="susc-plan-details">
-                                {suscripcion.plan?.periodo} • ${suscripcion.plan?.precio?.toFixed(2)}
+                                {suscripcion.plan?.periodo || '-'} • ${(typeof suscripcion.plan?.precio === 'number' ? suscripcion.plan.precio : parseFloat(String(suscripcion.plan?.precio ?? '0'))).toFixed(2)}
                               </div>
                             </div>
                           </td>

@@ -351,13 +351,16 @@
 
 .est-table-wrapper {
   overflow-x: auto;
+  overflow-y: auto;
   max-height: calc(100vh - 450px);
   min-height: 300px;
+  scrollbar-width: thin;
+  scrollbar-color: #667eea #f1f5f9;
 }
 
 .est-table-wrapper::-webkit-scrollbar {
-  height: 10px;
-  width: 10px;
+  height: 12px;
+  width: 12px;
 }
 
 .est-table-wrapper::-webkit-scrollbar-track {
@@ -368,12 +371,22 @@
 .est-table-wrapper::-webkit-scrollbar-thumb {
   background: linear-gradient(135deg, #667eea, #764ba2);
   border-radius: 10px;
+  border: 2px solid #f1f5f9;
+}
+
+.est-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #5a5fcf, #6b4f9e);
+}
+
+.est-table-wrapper::-webkit-scrollbar-corner {
+  background: #f1f5f9;
 }
 
 .est-table {
   width: 100%;
   border-collapse: collapse;
-  table-layout: auto;
+  table-layout: fixed;
+  min-width: 1200px;
 }
 
 .est-table thead {
@@ -387,9 +400,9 @@
 }
 
 .est-table thead th {
-  padding: 16px 14px;
+  padding: 16px 12px;
   text-align: center;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: #fff;
   text-transform: uppercase;
@@ -397,6 +410,37 @@
   white-space: nowrap;
   border: none;
 }
+
+/* Anchos específicos de columnas */
+.est-table thead th:nth-child(1),
+.est-table tbody td:nth-child(1) { width: 80px; min-width: 80px; } /* Código - pequeño */
+
+.est-table thead th:nth-child(2),
+.est-table tbody td:nth-child(2) { width: 180px; min-width: 150px; } /* Nombre - grande */
+
+.est-table thead th:nth-child(3),
+.est-table tbody td:nth-child(3) { width: 160px; min-width: 140px; } /* N. Comercial - grande */
+
+.est-table thead th:nth-child(4),
+.est-table tbody td:nth-child(4) { width: 200px; min-width: 160px; } /* Dirección - más grande */
+
+.est-table thead th:nth-child(5),
+.est-table tbody td:nth-child(5) { width: 220px; min-width: 180px; } /* Correo - grande */
+
+.est-table thead th:nth-child(6),
+.est-table tbody td:nth-child(6) { width: 120px; min-width: 100px; } /* Teléfono */
+
+.est-table thead th:nth-child(7),
+.est-table tbody td:nth-child(7) { width: 70px; min-width: 70px; } /* Logo - pequeño */
+
+.est-table thead th:nth-child(8),
+.est-table tbody td:nth-child(8) { width: 100px; min-width: 90px; } /* Estado */
+
+.est-table thead th:nth-child(9),
+.est-table tbody td:nth-child(9) { width: 120px; min-width: 100px; } /* Usuarios */
+
+.est-table thead th:nth-child(10),
+.est-table tbody td:nth-child(10) { width: 100px; min-width: 100px; } /* Acciones - pequeño */
 
 .est-table thead th.sortable {
   cursor: pointer;
@@ -442,11 +486,14 @@
 }
 
 .est-table tbody td {
-  padding: 16px 14px;
+  padding: 14px 12px;
   text-align: center;
   vertical-align: middle;
-  font-size: 14px;
+  font-size: 13px;
   color: #374151;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Columnas sticky */
@@ -455,7 +502,6 @@
   position: sticky;
   left: 0;
   z-index: 5;
-  min-width: 100px;
 }
 
 .est-table thead th:first-child {
@@ -477,7 +523,6 @@
   position: sticky;
   right: 0;
   z-index: 5;
-  min-width: 140px;
 }
 
 .est-table thead th:last-child {
