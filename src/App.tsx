@@ -20,6 +20,8 @@ import PuntoEmisionInfo from './pages/PuntoEmisionInfo';
 import Usuarios from './pages/Usuarios';
 import UsuarioInfo from './pages/UsuarioInfo';
 import Planes from './pages/Planes';
+import TiposImpuesto from './pages/TiposImpuesto';
+import TiposRetencion from './pages/TiposRetencion';
 import Blank from './pages/Blank';
 
 const ChangePasswordAuthed: React.FC = () => {
@@ -67,12 +69,17 @@ function App() {
                 {/* Planes */}
                 <Route path="/planes" element={<Planes />} />
                 
+                {/* Tipos de Impuesto */}
+                <Route path="/impuestos" element={<TiposImpuesto />} />
+                
+                {/* Tipos de Retención */}
+                <Route path="/retenciones" element={<TiposRetencion />} />
+                
                 {/* Compatibilidad: redirige /Navbar a /emisores */}
                 <Route path="/Navbar" element={<Navigate to="/emisores" replace />} />
 
                 {/* Secciones en blanco por ahora */}
                 <Route path="/dashboard" element={<Blank />} />
-                <Route path="/impuestos" element={<Blank />} />
               </Route>
 
               <Route path="*" element={<Navigate to="/" replace />} />

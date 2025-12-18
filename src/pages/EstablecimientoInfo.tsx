@@ -136,7 +136,7 @@ const EstablecimientoInfo: React.FC = () => {
   if (loading) {
     return (
       <div style={{ padding: 32 }}>
-        <LoadingSpinner fullHeight message="Cargando establecimiento…" />
+        <LoadingSpinner fullHeight />
       </div>
     );
   }

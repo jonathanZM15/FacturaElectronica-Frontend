@@ -882,7 +882,7 @@ const EmisorFormModal: React.FC<Props> = (props) => {
 
         {loading && (
           <div className="mf-loading-overlay" aria-hidden>
-            <LoadingSpinner message="Procesando emisor…" />
+            <LoadingSpinner />
           </div>
         )}
       </div>

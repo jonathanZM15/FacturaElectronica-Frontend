@@ -9,7 +9,7 @@ type LoadingSpinnerProps = {
 };
 
 const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
-  message = 'Cargando…',
+  message,
   size = 56,
   fullHeight = false,
   inline = false,

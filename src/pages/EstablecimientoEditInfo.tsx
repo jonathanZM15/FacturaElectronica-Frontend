@@ -11,6 +11,7 @@ import { PuntoEmision } from '../types/puntoEmision';
 import { getImageUrl } from '../helpers/imageUrl';
 import LoadingSpinner from '../components/LoadingSpinner';
 import './UsuarioDeleteModalModern.css';
+import './EstablecimientoDetail.css';
 
 const EstablecimientoEditInfo: React.FC = () => {
   const { id, estId } = useParams();
@@ -130,7 +131,7 @@ const EstablecimientoEditInfo: React.FC = () => {
   if (loading) {
     return (
       <div style={{ padding: 32 }}>
-        <LoadingSpinner fullHeight message="Cargando información del establecimiento…" />
+        <LoadingSpinner fullHeight />
       </div>
     );
   }
@@ -142,68 +143,31 @@ const EstablecimientoEditInfo: React.FC = () => {
   };
 
   return (
-    <div style={{ 
-      padding: '24px 32px',
-      background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
-      minHeight: '100vh',
-      maxWidth: '100%',
-      overflowX: 'hidden'
-    }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-      {/* Header con gradiente */}
-      <div style={{ 
-        background: 'linear-gradient(135deg, #5b21b6 0%, #7c3aed 100%)',
-        borderRadius: '16px',
-        padding: '24px 28px',
-        marginBottom: '24px',
-        boxShadow: '0 8px 24px rgba(124, 58, 237, 0.25)',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-      }}>
-        <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-          <div style={{
-            width: '56px',
-            height: '56px',
-            background: 'rgba(255, 255, 255, 0.2)',
-            borderRadius: '12px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '28px',
-            backdropFilter: 'blur(10px)'
-          }}>
-            🏢
-          </div>
-          <div>
-            <h2 style={{ margin: 0, color: '#fff', fontSize: '26px', fontWeight: 700 }}>
-              {est?.nombre ?? '—'}
-            </h2>
-            <div style={{ 
-              marginTop: '6px',
-              color: 'rgba(255, 255, 255, 0.9)', 
-              fontSize: '15px',
-              fontWeight: 600,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}>
-              <span style={{
-                background: 'rgba(255, 255, 255, 0.25)',
-                padding: '4px 12px',
-                borderRadius: '6px',
-                backdropFilter: 'blur(10px)'
-              }}>
+    <div className="estd-container">
+      <div className="estd-content">
+      {/* Header moderno */}
+      <div className="estd-header">
+        <div className="estd-header-left">
+          <div className="estd-header-icon">🏢</div>
+          <div className="estd-header-info">
+            <h2>{est?.nombre ?? '—'}</h2>
+            <div className="estd-header-badge">
+              <span className="estd-codigo-badge">
                 📋 Código: {est?.codigo ?? ''}
               </span>
+              {est?.estado && (
+                <span className={`estd-status-badge ${est.estado === 'ABIERTO' ? 'abierto' : 'cerrado'}`}>
+                  {est.estado === 'ABIERTO' ? '✅ Activo' : '🔒 Cerrado'}
+                </span>
+              )}
             </div>
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+        <div className="estd-header-right">
           <div style={{ position: 'relative' }}>
             <button
-              className="actions-btn"
+              className="estd-actions-btn"
               onClick={() => {
                 if (isLimitedRole) return;
                 setActionsOpen((s) => !s);
@@ -211,92 +175,22 @@ const EstablecimientoEditInfo: React.FC = () => {
               aria-expanded={actionsOpen}
               disabled={isLimitedRole}
               title={isLimitedRole ? 'Tu rol no permite modificar establecimientos' : 'Acciones del establecimiento'}
-              style={{ 
-                padding: '10px 18px', 
-                borderRadius: '10px', 
-                background: isLimitedRole ? 'rgba(255, 255, 255, 0.5)' : 'rgba(255, 255, 255, 0.95)', 
-                color: isLimitedRole ? '#9ca3af' : '#5b21b6', 
-                border: 'none', 
-                cursor: isLimitedRole ? 'not-allowed' : 'pointer',
-                fontWeight: 700,
-                fontSize: '14px',
-                boxShadow: isLimitedRole ? 'none' : '0 4px 12px rgba(0, 0, 0, 0.15)',
-                opacity: isLimitedRole ? 0.7 : 1,
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => {
-                if (isLimitedRole) return;
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.2)';
-              }}
-              onMouseLeave={(e) => {
-                if (isLimitedRole) return;
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-              }}
             >
               ⚙️ Acciones ▾
             </button>
             {!isLimitedRole && actionsOpen && (
-              <div role="menu" style={{ 
-                position: 'absolute', 
-                right: 0, 
-                top: '110%', 
-                background: '#fff', 
-                border: 'none',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.15)', 
-                borderRadius: '12px', 
-                zIndex: 50,
-                overflow: 'hidden',
-                minWidth: '240px'
-              }}>
+              <div className="estd-actions-menu">
                 <button 
-                  role="menuitem" 
-                  onClick={() => { setOpenEdit(true); setActionsOpen(false); }} 
-                  className="menu-item" 
-                  style={{ 
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    padding: '14px 18px', 
-                    width: '100%', 
-                    textAlign: 'left', 
-                    background: 'transparent', 
-                    border: 'none', 
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    color: '#374151',
-                    transition: 'background 0.2s ease'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = '#f3f4f6'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  className="estd-menu-item"
+                  onClick={() => { setOpenEdit(true); setActionsOpen(false); }}
                 >
                   <span style={{ fontSize: '18px' }}>✏️</span>
                   <span>Editar establecimiento</span>
                 </button>
-                <div style={{ height: '1px', background: '#e5e7eb', margin: '0 12px' }}></div>
+                <div className="estd-menu-divider"></div>
                 <button 
-                  role="menuitem" 
-                  onClick={openDeleteModal} 
-                  className="menu-item" 
-                  style={{ 
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    padding: '14px 18px', 
-                    width: '100%', 
-                    textAlign: 'left', 
-                    background: 'transparent', 
-                    border: 'none', 
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    color: '#dc2626',
-                    transition: 'background 0.2s ease'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = '#fef2f2'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  className="estd-menu-item danger"
+                  onClick={openDeleteModal}
                 >
                   <span style={{ fontSize: '18px' }}>🗑️</span>
                   <span>Eliminar establecimiento</span>
@@ -306,115 +200,53 @@ const EstablecimientoEditInfo: React.FC = () => {
           </div>
 
           <button 
-            onClick={() => navigate(`/emisores/${id}?tab=establecimientos`)} 
-            style={{ 
-              padding: '10px 18px', 
-              borderRadius: '10px',
-              background: 'rgba(255, 255, 255, 0.2)',
-              color: '#fff',
-              border: '2px solid rgba(255, 255, 255, 0.3)',
-              cursor: 'pointer',
-              fontWeight: 700,
-              fontSize: '14px',
-              backdropFilter: 'blur(10px)',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
-              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.5)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
-              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
-            }}
+            className="estd-back-btn"
+            onClick={() => navigate(`/emisores/${id}?tab=establecimientos`)}
           >
             ← Volver
           </button>
         </div>
       </div>
 
-      {/* Grid de cards modernos - Ajustado para dar más espacio al logo */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 20 }}>
+      {/* Grid de cards */}
+      <div className="estd-grid">
         {/* Datos del establecimiento */}
-        <div style={{ 
-          background: '#fff',
-          borderRadius: '16px',
-          padding: '24px 28px',
-          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
-          border: '1px solid #e5e7eb',
-          transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = 'translateY(-4px)';
-          e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.12)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = 'translateY(0)';
-          e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.08)';
-        }}
-        >
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '12px',
-            marginBottom: '20px',
-            paddingBottom: '16px',
-            borderBottom: '2px solid #f3f4f6'
-          }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              background: 'linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%)',
-              borderRadius: '10px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '20px',
-              color: '#fff'
-            }}>
-              📊
-            </div>
-            <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1f2937' }}>Datos del establecimiento</h4>
+        {/* Card: Datos del establecimiento */}
+        <div className="estd-card">
+          <div className="estd-card-header">
+            <div className="estd-card-icon purple">📊</div>
+            <h4>Datos del establecimiento</h4>
           </div>
 
-          <div style={{ display: 'grid', gap: '12px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: '16px', alignItems: 'baseline' }}>
-              <span style={{ fontWeight: 600, color: '#6b7280', fontSize: '14px' }}>📋 Código:</span>
-              <span style={{ color: '#1f2937', fontSize: '14px', fontWeight: 600 }}>{est?.codigo ?? '-'}</span>
+          <div className="estd-card-body">
+            <div className="estd-info-row">
+              <span className="estd-info-label">📋 Código:</span>
+              <span className="estd-info-value highlight">{est?.codigo ?? '-'}</span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: '16px', alignItems: 'baseline' }}>
-              <span style={{ fontWeight: 600, color: '#6b7280', fontSize: '14px' }}>🏢 Nombre:</span>
-              <span style={{ color: '#1f2937', fontSize: '14px', fontWeight: 600 }}>{est?.nombre ?? '-'}</span>
+            <div className="estd-info-row">
+              <span className="estd-info-label">🏢 Nombre:</span>
+              <span className="estd-info-value highlight">{est?.nombre ?? '-'}</span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: '16px', alignItems: 'baseline' }}>
-              <span style={{ fontWeight: 600, color: '#6b7280', fontSize: '14px' }}>🏪 Nombre comercial:</span>
-              <span style={{ color: '#1f2937', fontSize: '14px' }}>{est?.nombre_comercial ?? '-'}</span>
+            <div className="estd-info-row">
+              <span className="estd-info-label">🏪 Nombre comercial:</span>
+              <span className="estd-info-value">{est?.nombre_comercial ?? '-'}</span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: '16px', alignItems: 'baseline' }}>
-              <span style={{ fontWeight: 600, color: '#6b7280', fontSize: '14px' }}>📍 Dirección:</span>
-              <span style={{ color: '#1f2937', fontSize: '14px' }}>{est?.direccion ?? '-'}</span>
+            <div className="estd-info-row">
+              <span className="estd-info-label">📍 Dirección:</span>
+              <span className="estd-info-value">{est?.direccion ?? '-'}</span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: '16px', alignItems: 'baseline' }}>
-              <span style={{ fontWeight: 600, color: '#6b7280', fontSize: '14px' }}>✉️ Correo:</span>
-              <span style={{ color: '#1f2937', fontSize: '14px' }}>{est?.correo ?? '-'}</span>
+            <div className="estd-info-row">
+              <span className="estd-info-label">✉️ Correo:</span>
+              <span className="estd-info-value">{est?.correo ?? '-'}</span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: '16px', alignItems: 'baseline' }}>
-              <span style={{ fontWeight: 600, color: '#6b7280', fontSize: '14px' }}>📞 Teléfono:</span>
-              <span style={{ color: '#1f2937', fontSize: '14px' }}>{est?.telefono ?? '-'}</span>
+            <div className="estd-info-row">
+              <span className="estd-info-label">📞 Teléfono:</span>
+              <span className="estd-info-value">{est?.telefono ?? '-'}</span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', gap: '16px', alignItems: 'baseline' }}>
-              <span style={{ fontWeight: 600, color: '#6b7280', fontSize: '14px' }}>🚦 Estado:</span>
+            <div className="estd-info-row">
+              <span className="estd-info-label">🚦 Estado:</span>
               {est?.estado ? (
-                <span style={{ 
-                  background: est.estado === 'ABIERTO' ? 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)' : 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)', 
-                  padding: '6px 14px', 
-                  borderRadius: '8px', 
-                  color: est.estado === 'ABIERTO' ? '#065f46' : '#991b1b', 
-                  fontWeight: 700,
-                  fontSize: '13px',
-                  display: 'inline-block',
-                  boxShadow: est.estado === 'ABIERTO' ? '0 2px 8px rgba(16, 185, 129, 0.2)' : '0 2px 8px rgba(239, 68, 68, 0.2)'
-                }}>
+                <span className={`estd-estado-badge ${est.estado === 'ABIERTO' ? 'activo' : 'inactivo'}`}>
                   {est.estado === 'ABIERTO' ? '✅ Abierto' : '🔒 Cerrado'}
                 </span>
               ) : '-'}
@@ -422,349 +254,133 @@ const EstablecimientoEditInfo: React.FC = () => {
           </div>
         </div>
 
-        {/* Logo card */}
-        <div style={{ 
-          background: '#fff',
-          borderRadius: '16px',
-          padding: '24px 28px',
-          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
-          border: '1px solid #e5e7eb',
-          transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = 'translateY(-4px)';
-          e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.12)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = 'translateY(0)';
-          e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.08)';
-        }}
-        >
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '12px',
-            marginBottom: '20px',
-            paddingBottom: '16px',
-            borderBottom: '2px solid #f3f4f6'
-          }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-              borderRadius: '10px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '20px',
-              color: '#fff'
-            }}>
-              🖼️
-            </div>
-            <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1f2937' }}>Logo</h4>
+        {/* Card: Logo */}
+        <div className="estd-card">
+          <div className="estd-card-header">
+            <div className="estd-card-icon blue">🖼️</div>
+            <h4>Logo</h4>
           </div>
 
           {est?.logo_url ? (
-            <div style={{
-              width: '100%',
-              height: '240px',
-              background: 'linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%)',
-              borderRadius: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '12px',
-              border: '2px solid #e5e7eb',
-              overflow: 'hidden',
-              boxSizing: 'border-box'
-            }}>
+            <div className="estd-logo-container">
               <img 
                 src={getImageUrl(est.logo_url)} 
                 alt="logo" 
-                style={{ 
-                  maxWidth: '100%', 
-                  maxHeight: '100%', 
-                  width: 'auto',
-                  height: 'auto',
-                  objectFit: 'contain',
-                  display: 'block'
-                }} 
+                className="estd-logo-img"
               />
             </div>
           ) : (
-            <div style={{ 
-              width: '100%', 
-              height: '240px', 
-              background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)', 
-              borderRadius: '12px',
-              display: 'flex', 
-              flexDirection: 'column',
-              alignItems: 'center', 
-              justifyContent: 'center',
-              gap: '12px',
-              border: '2px dashed #fbbf24'
-            }}>
-              <div style={{
-                fontSize: '48px',
-                opacity: 0.6
-              }}>🖼️</div>
-              <div style={{
-                color: '#92400e',
-                fontWeight: 600,
-                fontSize: '14px'
-              }}>No hay logo</div>
+            <div className="estd-logo-empty">
+              <div className="estd-logo-empty-icon">🖼️</div>
+              <div className="estd-logo-empty-text">No hay logo</div>
             </div>
           )}
         </div>
 
-        {/* Información adicional */}
-        <div style={{ 
-          gridColumn: '1 / -1',
-          background: '#fff',
-          borderRadius: '16px',
-          padding: '24px 28px',
-          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
-          border: '1px solid #e5e7eb',
-          transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = 'translateY(-4px)';
-          e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.12)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = 'translateY(0)';
-          e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.08)';
-        }}
-        >
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '12px',
-            marginBottom: '20px',
-            paddingBottom: '16px',
-            borderBottom: '2px solid #f3f4f6'
-          }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-              borderRadius: '10px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '20px',
-              color: '#fff'
-            }}>
-              📝
-            </div>
-            <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1f2937' }}>Información adicional</h4>
+        {/* Card: Información adicional */}
+        <div className="estd-card">
+          <div className="estd-card-header">
+            <div className="estd-card-icon orange">📝</div>
+            <h4>Información adicional</h4>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
-            <div style={{ 
-              background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
-              padding: '16px 20px',
-              borderRadius: '12px',
-              border: '1px solid #fbbf24'
-            }}>
-              <div style={{ fontSize: '13px', fontWeight: 600, color: '#78350f', marginBottom: '6px' }}>📅 Actividades económicas</div>
-              <div style={{ fontSize: '14px', color: '#1f2937', fontWeight: 600 }}>{est?.actividades_economicas ?? '-'}</div>
+          <div className="estd-chips-vertical">
+            <div className="estd-chip yellow">
+              <div className="estd-chip-label">📅 Actividades económicas</div>
+              <div className="estd-chip-value">{est?.actividades_economicas ?? '-'}</div>
             </div>
 
-            <div style={{ 
-              background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
-              padding: '16px 20px',
-              borderRadius: '12px',
-              border: '1px solid #3b82f6'
-            }}>
-              <div style={{ fontSize: '13px', fontWeight: 600, color: '#1e3a8a', marginBottom: '6px' }}>🚀 Fecha inicio de actividades</div>
-              <div style={{ fontSize: '14px', color: '#1f2937', fontWeight: 600 }}>{est?.fecha_inicio_actividades ?? '-'}</div>
+            <div className="estd-chip blue">
+              <div className="estd-chip-label">🚀 Fecha inicio de actividades</div>
+              <div className="estd-chip-value">{est?.fecha_inicio_actividades ?? '-'}</div>
             </div>
 
-            <div style={{ 
-              background: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)',
-              padding: '16px 20px',
-              borderRadius: '12px',
-              border: '1px solid #10b981'
-            }}>
-              <div style={{ fontSize: '13px', fontWeight: 600, color: '#064e3b', marginBottom: '6px' }}>🔄 Fecha reinicio de actividades</div>
-              <div style={{ fontSize: '14px', color: '#1f2937', fontWeight: 600 }}>{est?.fecha_reinicio_actividades ?? '-'}</div>
+            <div className="estd-chip green">
+              <div className="estd-chip-label">🔄 Fecha reinicio de actividades</div>
+              <div className="estd-chip-value">{est?.fecha_reinicio_actividades ?? '-'}</div>
             </div>
 
-            <div style={{ 
-              background: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)',
-              padding: '16px 20px',
-              borderRadius: '12px',
-              border: '1px solid #ef4444'
-            }}>
-              <div style={{ fontSize: '13px', fontWeight: 600, color: '#7f1d1d', marginBottom: '6px' }}>🔒 Fecha cierre de establecimiento</div>
-              <div style={{ fontSize: '14px', color: '#1f2937', fontWeight: 600 }}>{est?.fecha_cierre_establecimiento ?? '-'}</div>
+            <div className="estd-chip red">
+              <div className="estd-chip-label">🔒 Fecha cierre de establecimiento</div>
+              <div className="estd-chip-value">{est?.fecha_cierre_establecimiento ?? '-'}</div>
             </div>
           </div>
         </div>
 
-        {/* Emisor asociado */}
-        <div style={{ 
-          gridColumn: '1 / -1',
-          background: '#fff',
-          borderRadius: '16px',
-          padding: '24px 28px',
-          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
-          border: '1px solid #e5e7eb',
-          transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = 'translateY(-4px)';
-          e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.12)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = 'translateY(0)';
-          e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.08)';
-        }}
-        >
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '12px',
-            marginBottom: '20px',
-            paddingBottom: '16px',
-            borderBottom: '2px solid #f3f4f6'
-          }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-              borderRadius: '10px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '20px',
-              color: '#fff'
-            }}>
-              🏛️
-            </div>
-            <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1f2937' }}>Emisor asociado</h4>
+        {/* Card: Emisor asociado */}
+        <div className="estd-card">
+          <div className="estd-card-header">
+            <div className="estd-card-icon green">🏛️</div>
+            <h4>Emisor asociado</h4>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
-            <div>
-              <div style={{ fontSize: '13px', fontWeight: 600, color: '#6b7280', marginBottom: '6px' }}>🔢 RUC</div>
+          <div className="estd-emisor-vertical">
+            <div className="estd-emisor-item">
+              <div className="estd-emisor-label">🔢 RUC</div>
               {company?.id ? (
                 <a 
                   href={`/emisores/${company.id}`} 
                   onClick={(e) => { e.preventDefault(); navigate(`/emisores/${company.id}`); }} 
-                  style={{ 
-                    color: '#7c3aed', 
-                    fontWeight: 700,
-                    fontSize: '15px',
-                    textDecoration: 'none',
-                    transition: 'color 0.2s ease'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.color = '#5b21b6'}
-                  onMouseLeave={(e) => e.currentTarget.style.color = '#7c3aed'}
+                  className="estd-emisor-link"
                 >
                   {company?.ruc}
                 </a>
               ) : (
-                <div style={{ fontSize: '15px', color: '#1f2937', fontWeight: 600 }}>{company?.ruc ?? '-'}</div>
+                <div className="estd-emisor-value">{company?.ruc ?? '-'}</div>
               )}
             </div>
 
-            <div>
-              <div style={{ fontSize: '13px', fontWeight: 600, color: '#6b7280', marginBottom: '6px' }}>🏢 Razón Social</div>
-              <div style={{ fontSize: '15px', color: '#1f2937', fontWeight: 600 }}>{company?.razon_social ?? '-'}</div>
+            <div className="estd-emisor-item">
+              <div className="estd-emisor-label">🏢 Razón Social</div>
+              <div className="estd-emisor-value">{company?.razon_social ?? '-'}</div>
             </div>
           </div>
         </div>
 
-        {/* Actividad de la cuenta */}
-        <div style={{ 
-          gridColumn: '1 / -1',
-          background: 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)',
-          borderRadius: '16px',
-          padding: '24px 28px',
-          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
-          border: '1px solid #d1d5db'
-        }}>
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '12px',
-            marginBottom: '20px',
-            paddingBottom: '16px',
-            borderBottom: '2px solid #d1d5db'
-          }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              background: 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)',
-              borderRadius: '10px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '20px',
-              color: '#fff'
-            }}>
-              ⏱️
-            </div>
-            <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1f2937' }}>Actividad de la cuenta</h4>
+        {/* Card: Actividad de la cuenta */}
+        <div className="estd-card full-width activity">
+          <div className="estd-card-header">
+            <div className="estd-card-icon gray">⏱️</div>
+            <h4>Actividad de la cuenta</h4>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'start' }}>
-              <span style={{ fontSize: '13px', fontWeight: 600, color: '#4b5563' }}>📅 Fecha de creación:</span>
-              <span style={{ fontSize: '13px', color: '#1f2937', fontWeight: 600 }}>{est?.created_at ?? '-'}</span>
+          <div className="estd-activity-grid">
+            <div className="estd-activity-item">
+              <span className="estd-activity-label">📅 Fecha de creación:</span>
+              <span className="estd-activity-value">{est?.created_at ?? '-'}</span>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'start' }}>
-              <span style={{ fontSize: '13px', fontWeight: 600, color: '#4b5563' }}>🔄 Fecha de actualización:</span>
-              <span style={{ fontSize: '13px', color: '#1f2937', fontWeight: 600 }}>{est?.updated_at ?? '-'}</span>
+            <div className="estd-activity-item">
+              <span className="estd-activity-label">🔄 Fecha de actualización:</span>
+              <span className="estd-activity-value">{est?.updated_at ?? '-'}</span>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'start' }}>
-              <span style={{ fontSize: '13px', fontWeight: 600, color: '#4b5563' }}>👤 Creado por:</span>
-              <span style={{ fontSize: '13px', color: '#1f2937', fontWeight: 600 }}>{est?.created_by_name ?? '-'}</span>
+            <div className="estd-activity-item">
+              <span className="estd-activity-label">👤 Creado por:</span>
+              <span className="estd-activity-value">{est?.created_by_name ?? '-'}</span>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'start' }}>
-              <span style={{ fontSize: '13px', fontWeight: 600, color: '#4b5563' }}>✏️ Actualizado por:</span>
-              <span style={{ fontSize: '13px', color: '#1f2937', fontWeight: 600 }}>{est?.updated_by_name ?? '-'}</span>
+            <div className="estd-activity-item">
+              <span className="estd-activity-label">✏️ Actualizado por:</span>
+              <span className="estd-activity-value">{est?.updated_by_name ?? '-'}</span>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Lista de puntos de emisión */}
-        <div style={{ gridColumn: '1 / -1', marginTop: 18, borderRadius: 12, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.05)', background: '#fff' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid #e5e7eb', gap: 12, flexWrap: 'wrap' }}>
-            <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1f2937' }}>Lista de puntos de emisión</h4>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 300, justifyContent: 'flex-end' }}>
+        {/* Card: Lista de puntos de emisión - FUERA del grid para ancho completo */}
+        <div className="estd-puntos-section">
+          <div className="estd-puntos-header">
+            <h4>📍 Lista de puntos de emisión</h4>
+            <div className="estd-puntos-filters">
             {/* Filter UI - Text filter */}
-            <div style={{ 
-              background: '#f8f9fa', 
-              border: '1px solid #dee2e6', 
-              borderRadius: 6, 
-              padding: '0 12px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              height: 44,
-              flex: 1,
-              maxWidth: 400
-            }}>
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+            <div className="estd-filter-input-container">
+              <div className="estd-filter-input-wrapper">
                 {activePuntoFilter === 'estado' ? (
                   <select 
                     value={puntoFilterValue} 
                     onChange={(e) => setPuntoFilterValue(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '6px 8px',
-                      borderRadius: 4,
-                      border: 'none',
-                      fontSize: 14,
-                      fontFamily: 'inherit',
-                      background: 'transparent'
-                    }}
+                    className="estd-filter-select"
                   >
                     <option value="">Todos</option>
                     <option value="activo">Activo</option>
@@ -776,32 +392,15 @@ const EstablecimientoEditInfo: React.FC = () => {
                     placeholder={activePuntoFilter ? `Filtrar por ${puntoFilterLabels[activePuntoFilter]}` : 'Haz clic en un encabezado para filtrar'}
                     value={puntoFilterValue}
                     onChange={(e) => setPuntoFilterValue(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '6px 8px',
-                      borderRadius: 4,
-                      border: 'none',
-                      fontSize: 14,
-                      background: 'transparent',
-                      outline: 'none'
-                    }}
+                    className="estd-filter-input"
                   />
                 )}
               </div>
-              <span style={{ fontSize: 16, color: '#666', flexShrink: 0 }}>🔍</span>
+              <span className="estd-filter-icon">🔍</span>
               {activePuntoFilter && puntoFilterValue && (
                 <button
                   onClick={() => setPuntoFilterValue('')}
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    borderRadius: 4,
-                    padding: '2px 6px',
-                    cursor: 'pointer',
-                    fontSize: 14,
-                    color: '#666',
-                    flexShrink: 0
-                  }}
+                  className="estd-filter-clear"
                 >
                   ×
                 </button>
@@ -809,78 +408,48 @@ const EstablecimientoEditInfo: React.FC = () => {
             </div>
 
             {/* Date range filter */}
-            <div className="date-range" ref={puntosDateRef} style={{ position: 'relative' }}>
+            <div className="estd-date-range" ref={puntosDateRef}>
               <button 
-                className="date-range-display"
+                className="estd-date-range-btn"
                 onClick={() => setPuntosDateOpen((v) => !v)}
-                style={{
-                  padding: '8px 12px',
-                  background: '#fff',
-                  border: '1px solid #dee2e6',
-                  borderRadius: 6,
-                  cursor: 'pointer',
-                  fontSize: 13,
-                  fontWeight: 500,
-                  color: '#666',
-                  display: 'flex',
-                  gap: 6,
-                  alignItems: 'center',
-                  whiteSpace: 'nowrap',
-                  height: 44
-                }}
               >
                 <span>{puntoDesde ? formatDate(puntoDesde) : 'Fecha Inicial'}</span>
                 <span>→</span>
                 <span>{puntoHasta ? formatDate(puntoHasta) : 'Fecha Final'}</span>
               </button>
               {puntosDateOpen && (
-                <div 
-                  className="date-range-popover"
-                  style={{
-                    position: 'absolute',
-                    top: '100%',
-                    left: 0,
-                    marginTop: 4,
-                    background: '#fff',
-                    border: '1px solid #dee2e6',
-                    borderRadius: 8,
-                    padding: 12,
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                    zIndex: 100,
-                    minWidth: 280
-                  }}
-                >
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    <label style={{ fontSize: 12, fontWeight: 500, color: '#666', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <div className="estd-date-popover">
+                  <div className="estd-date-inputs">
+                    <label className="estd-date-label">
                       Desde
                       <input 
                         ref={puntoDesdeInputRef}
                         type="date" 
                         value={puntoDesde} 
                         onChange={(e) => setPuntoDesde(e.target.value)}
-                        style={{ padding: '6px 8px', border: '1px solid #dee2e6', borderRadius: 4, fontSize: 13 }}
+                        className="estd-date-input"
                       />
                     </label>
-                    <label style={{ fontSize: 12, fontWeight: 500, color: '#666', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <label className="estd-date-label">
                       Hasta
                       <input 
                         type="date" 
                         value={puntoHasta} 
                         onChange={(e) => setPuntoHasta(e.target.value)}
-                        style={{ padding: '6px 8px', border: '1px solid #dee2e6', borderRadius: 4, fontSize: 13 }}
+                        className="estd-date-input"
                       />
                     </label>
                   </div>
-                  <div style={{ display: 'flex', gap: 8, marginTop: 12, justifyContent: 'flex-end' }}>
+                  <div className="estd-date-actions">
                     <button 
                       onClick={() => { setPuntoDesde(''); setPuntoHasta(''); setPuntosDateOpen(false); }}
-                      style={{ padding: '6px 12px', background: '#f0f0f0', border: '1px solid #dee2e6', borderRadius: 4, cursor: 'pointer', fontSize: 12, fontWeight: 500, color: '#666' }}
+                      className="estd-date-clear-btn"
                     >
                       Limpiar
                     </button>
                     <button 
                       onClick={() => setPuntosDateOpen(false)}
-                      style={{ padding: '6px 12px', background: '#0d6efd', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 12, fontWeight: 500, color: '#fff' }}
+                      className="estd-date-apply-btn"
                     >
                       Aplicar
                     </button>
@@ -893,7 +462,7 @@ const EstablecimientoEditInfo: React.FC = () => {
             {(puntoDesde || puntoHasta) && (
               <button 
                 onClick={() => { setPuntoDesde(''); setPuntoHasta(''); }}
-                style={{ padding: '4px 8px', background: '#fff', border: '1px solid #dee2e6', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 500, color: '#dc2626', display: 'flex', alignItems: 'center', height: 44 }}
+                className="estd-date-clear-x"
               >
                 ✕
               </button>
@@ -907,50 +476,19 @@ const EstablecimientoEditInfo: React.FC = () => {
               }}
               disabled={isLimitedRole}
               title={isLimitedRole ? 'Tu rol no permite crear puntos de emisión' : 'Crear nuevo punto de emisión'}
-              style={{
-                padding: '11px 24px',
-                background: isLimitedRole 
-                  ? 'linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%)' 
-                  : 'linear-gradient(135deg, #0d6efd 0%, #0b5fd7 100%)',
-                color: isLimitedRole ? '#4b5563' : 'white',
-                border: 'none',
-                borderRadius: '10px',
-                cursor: isLimitedRole ? 'not-allowed' : 'pointer',
-                fontSize: '14px',
-                fontWeight: '700',
-                boxShadow: isLimitedRole ? 'none' : '0 4px 12px rgba(13, 110, 253, 0.3)',
-                transition: 'all 0.3s ease',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                height: '44px',
-                whiteSpace: 'nowrap',
-                opacity: isLimitedRole ? 0.6 : 1
-              }}
-              onMouseEnter={(e) => {
-                if (isLimitedRole) return;
-                (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, #0b5fd7 0%, #084298 100%)';
-                (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-2px)';
-                (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 16px rgba(13, 110, 253, 0.4)';
-              }}
-              onMouseLeave={(e) => {
-                if (isLimitedRole) return;
-                (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, #0d6efd 0%, #0b5fd7 100%)';
-                (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)';
-                (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 12px rgba(13, 110, 253, 0.3)';
-              }}
+              className={`estd-new-punto-btn ${isLimitedRole ? 'disabled' : ''}`}
             >
               + Nuevo
             </button>
           </div>
         </div>
         {activePuntoFilter && (
-          <div style={{ padding: '8px 20px', background: '#f8f9fa', borderBottom: '1px solid #e5e7eb', fontSize: 12, color: '#666' }}>
+          <div className="estd-active-filter-bar">
             Buscando por {puntoFilterLabels[activePuntoFilter]}
             {puntoFilterValue && (
               <button
                 onClick={() => { setPuntoFilterValue(''); }}
-                style={{ marginLeft: 8, background: 'transparent', border: 'none', color: '#1e40af', cursor: 'pointer', fontSize: 12 }}
+                className="estd-filter-clear-text"
               >
                 Limpiar
               </button>
@@ -958,87 +496,24 @@ const EstablecimientoEditInfo: React.FC = () => {
           </div>
         )}
 
-        <div style={{ overflowX: 'auto', overflowY: 'visible', position: 'relative' }}>
-            <table style={{ 
-              width: '100%',
-              minWidth: '1200px',
-              borderCollapse: 'collapse',
-              fontSize: '13px',
-              background: '#fff',
-              border: '1px solid #e5e7eb'
-            }}>
+        <div className="estd-table-wrapper">
+            <table className="estd-table">
               <thead>
-                <tr style={{ 
-                  background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-                  color: '#fff'
-                }}>
-                  <th style={{ 
-                    padding: '12px 10px', 
-                    textAlign: 'left', 
-                    fontWeight: 700,
-                    whiteSpace: 'nowrap',
-                    position: 'sticky',
-                    left: 0,
-                    minWidth: '80px',
-                    maxWidth: '80px',
-                    width: '80px',
-                    background: 'linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)',
-                    zIndex: 10,
-                    boxShadow: '2px 0 4px rgba(0,0,0,0.1)'
-                  }}>CÓDIGO</th>
-                  <th style={{ 
-                    padding: '12px 10px', 
-                    textAlign: 'left', 
-                    fontWeight: 700,
-                    whiteSpace: 'nowrap',
-                    position: 'sticky',
-                    left: '80px',
-                    minWidth: '150px',
-                    maxWidth: '150px',
-                    width: '150px',
-                    background: 'linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)',
-                    zIndex: 10,
-                    boxShadow: '2px 0 4px rgba(0,0,0,0.1)'
-                  }}>NOMBRE</th>
-                  <th style={{ 
-                    padding: '12px 10px', 
-                    textAlign: 'left', 
-                    fontWeight: 700,
-                    whiteSpace: 'nowrap',
-                    position: 'sticky',
-                    left: '230px',
-                    minWidth: '120px',
-                    maxWidth: '120px',
-                    width: '120px',
-                    background: 'linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)',
-                    zIndex: 10,
-                    boxShadow: '2px 0 8px rgba(99, 102, 241, 0.3)',
-                    borderRight: '1px solid rgba(99, 102, 241, 0.3)'
-                  }}>ESTADO</th>
-                  <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>SECUENCIAL FACTURAS</th>
-                  <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>SECUENCIAL LIQUIDACIONES</th>
-                  <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>SECUENCIAL NOTAS CRÉDITO</th>
-                  <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>SECUENCIAL NOTAS DÉBITO</th>
-                  <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>SECUENCIAL GUÍA REM.</th>
-                  <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>SECUENCIAL RETENCIÓN</th>
-                  <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>SECUENCIAL L. PORTE</th>
-                  <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>SECUENCIAL PROFORMA</th>
-                  <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>F. CREACIÓN</th>
-                  <th style={{ padding: '12px 10px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>F. ACTUALIZACIÓN</th>
-                  <th style={{ 
-                    padding: '12px 10px', 
-                    textAlign: 'center', 
-                    fontWeight: 700,
-                    whiteSpace: 'nowrap',
-                    position: 'sticky',
-                    right: 0,
-                    minWidth: '100px',
-                    maxWidth: '100px',
-                    width: '100px',
-                    background: 'linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)',
-                    zIndex: 10,
-                    boxShadow: '-2px 0 4px rgba(0,0,0,0.1)'
-                  }}>ACCIONES</th>
+                <tr>
+                  <th className="estd-th sticky-codigo">CÓDIGO</th>
+                  <th className="estd-th sticky-nombre">NOMBRE</th>
+                  <th className="estd-th sticky-estado">ESTADO</th>
+                  <th className="estd-th">SECUENCIAL FACTURAS</th>
+                  <th className="estd-th">SECUENCIAL LIQUIDACIONES</th>
+                  <th className="estd-th">SECUENCIAL NOTAS CRÉDITO</th>
+                  <th className="estd-th">SECUENCIAL NOTAS DÉBITO</th>
+                  <th className="estd-th">SECUENCIAL GUÍA REM.</th>
+                  <th className="estd-th">SECUENCIAL RETENCIÓN</th>
+                  <th className="estd-th">SECUENCIAL L. PORTE</th>
+                  <th className="estd-th">SECUENCIAL PROFORMA</th>
+                  <th className="estd-th">F. CREACIÓN</th>
+                  <th className="estd-th">F. ACTUALIZACIÓN</th>
+                  <th className="estd-th sticky-acciones">ACCIONES</th>
                 </tr>
               </thead>
               <tbody>
@@ -1068,13 +543,7 @@ const EstablecimientoEditInfo: React.FC = () => {
                   if (puntos.length === 0) {
                     return (
                       <tr>
-                        <td colSpan={13} style={{ 
-                          padding: '40px 20px', 
-                          textAlign: 'center',
-                          color: '#6b7280',
-                          fontSize: '14px',
-                          fontStyle: 'italic'
-                        }}>
+                        <td colSpan={14} className="estd-empty-cell">
                           {activePuntoFilter || puntoDesde || puntoHasta 
                             ? 'No se encontraron puntos de emisión que coincidan con los filtros'
                             : 'No hay puntos de emisión registrados'}
@@ -1086,112 +555,38 @@ const EstablecimientoEditInfo: React.FC = () => {
                   return puntos.map((punto: any, idx: number) => (
                     <tr 
                       key={punto.id ?? idx}
-                      style={{
-                        background: idx % 2 === 0 ? '#fff' : '#f9fafb',
-                        transition: 'background 0.2s'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = '#eff6ff';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = idx % 2 === 0 ? '#fff' : '#f9fafb';
-                      }}
+                      className={`estd-tr ${idx % 2 === 0 ? 'even' : 'odd'}`}
                     >
-                      <td style={{ 
-                        padding: '10px', 
-                        borderBottom: '1px solid #e5e7eb',
-                        fontWeight: 600,
-                        color: '#1f2937',
-                        position: 'sticky',
-                        left: 0,
-                        minWidth: '80px',
-                        maxWidth: '80px',
-                        width: '80px',
-                        background: idx % 2 === 0 ? '#f9fafb' : '#fff',
-                        zIndex: 5,
-                        boxShadow: '2px 0 4px rgba(0,0,0,0.1)',
-                        pointerEvents: 'auto'
-                      }}>
+                      <td className="estd-td sticky-codigo">
                         <a 
                           href={`/emisores/${id}/establecimientos/${estId}/puntos/${punto.id}`}
                           onClick={(e) => { 
                             e.preventDefault(); 
                             navigate(`/emisores/${id}/establecimientos/${estId}/puntos/${punto.id}`); 
                           }} 
-                          style={{ 
-                            color: '#1b4ab4', 
-                            textDecoration: 'underline', 
-                            cursor: 'pointer',
-                            transition: 'color 0.2s ease'
-                          }}
-                          onMouseEnter={(e) => (e.currentTarget.style.color = '#1642a2')}
-                          onMouseLeave={(e) => (e.currentTarget.style.color = '#1b4ab4')}
+                          className="estd-punto-link"
                         >
                           {punto.codigo ?? '-'}
                         </a>
                       </td>
-                      <td style={{ 
-                        padding: '10px', 
-                        borderBottom: '1px solid #e5e7eb',
-                        fontWeight: 600,
-                        color: '#1f2937',
-                        position: 'sticky',
-                        left: '80px',
-                        minWidth: '150px',
-                        maxWidth: '150px',
-                        width: '150px',
-                        background: idx % 2 === 0 ? '#f9fafb' : '#fff',
-                        zIndex: 5,
-                        boxShadow: '2px 0 4px rgba(0,0,0,0.1)'
-                      }}>{punto.nombre ?? '-'}</td>
-                      <td style={{ 
-                        padding: '10px', 
-                        borderBottom: '1px solid #e5e7eb',
-                        position: 'sticky',
-                        left: '230px',
-                        minWidth: '120px',
-                        maxWidth: '120px',
-                        width: '120px',
-                        background: idx % 2 === 0 ? '#f9fafb' : '#fff',
-                        zIndex: 5,
-                        boxShadow: '2px 0 8px rgba(99, 102, 241, 0.15)',
-                        borderRight: '1px solid rgba(99, 102, 241, 0.2)'
-                      }}>
-                        <span style={{
-                          padding: '4px 8px',
-                          borderRadius: '6px',
-                          fontSize: '12px',
-                          fontWeight: 600,
-                          background: punto.estado === 'ACTIVO' ? '#dcfce7' : '#fee2e2',
-                          color: punto.estado === 'ACTIVO' ? '#166534' : '#991b1b'
-                        }}>
+                      <td className="estd-td sticky-nombre">{punto.nombre ?? '-'}</td>
+                      <td className="estd-td sticky-estado">
+                        <span className={`estd-punto-estado ${punto.estado === 'ACTIVO' ? 'activo' : 'inactivo'}`}>
                           {punto.estado ?? '-'}
                         </span>
                       </td>
-                      <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', color: '#374151' }}>{punto.secuencial_factura ?? '-'}</td>
-                      <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', color: '#374151' }}>{punto.secuencial_liquidacion_compra ?? '-'}</td>
-                      <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', color: '#374151' }}>{punto.secuencial_nota_credito ?? '-'}</td>
-                      <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', color: '#374151' }}>{punto.secuencial_nota_debito ?? '-'}</td>
-                      <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', color: '#374151' }}>{punto.secuencial_guia_remision ?? '-'}</td>
-                      <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', color: '#374151' }}>{punto.secuencial_retencion ?? '-'}</td>
-                      <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', color: '#374151' }}>{punto.secuencial_liquidacion_compra ?? '-'}</td>
-                      <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', color: '#374151' }}>{punto.secuencial_proforma ?? '-'}</td>
-                      <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', color: '#374151' }}>{formatDate(punto.created_at)}</td>
-                      <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', color: '#374151' }}>{formatDate(punto.updated_at)}</td>
-                      <td style={{ 
-                        padding: '10px', 
-                        borderBottom: '1px solid #e5e7eb',
-                        textAlign: 'center',
-                        position: 'sticky',
-                        right: 0,
-                        minWidth: '100px',
-                        maxWidth: '100px',
-                        width: '100px',
-                        background: idx % 2 === 0 ? '#f9fafb' : '#fff',
-                        zIndex: 5,
-                        boxShadow: '-2px 0 4px rgba(0,0,0,0.1)'
-                      }}>
-                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                      <td className="estd-td">{punto.secuencial_factura ?? '-'}</td>
+                      <td className="estd-td">{punto.secuencial_liquidacion_compra ?? '-'}</td>
+                      <td className="estd-td">{punto.secuencial_nota_credito ?? '-'}</td>
+                      <td className="estd-td">{punto.secuencial_nota_debito ?? '-'}</td>
+                      <td className="estd-td">{punto.secuencial_guia_remision ?? '-'}</td>
+                      <td className="estd-td">{punto.secuencial_retencion ?? '-'}</td>
+                      <td className="estd-td">{punto.secuencial_liquidacion_compra ?? '-'}</td>
+                      <td className="estd-td">{punto.secuencial_proforma ?? '-'}</td>
+                      <td className="estd-td">{formatDate(punto.created_at)}</td>
+                      <td className="estd-td">{formatDate(punto.updated_at)}</td>
+                      <td className="estd-td sticky-acciones">
+                        <div className="estd-action-buttons">
                           <button
                             onClick={() => {
                               if (isLimitedRole) return;
@@ -1200,28 +595,7 @@ const EstablecimientoEditInfo: React.FC = () => {
                             }}
                             disabled={isLimitedRole}
                             title={isLimitedRole ? 'Tu rol no permite editar puntos de emisión' : 'Editar punto de emisión'}
-                            style={{
-                              padding: '8px',
-                              borderRadius: '6px',
-                              border: 'none',
-                              background: isLimitedRole ? 'linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%)' : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                              color: '#fff',
-                              cursor: isLimitedRole ? 'not-allowed' : 'pointer',
-                              fontSize: '16px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              transition: 'all 0.2s',
-                              opacity: isLimitedRole ? 0.6 : 1
-                            }}
-                            onMouseEnter={(e) => {
-                              if (isLimitedRole) return;
-                              e.currentTarget.style.transform = 'scale(1.1)';
-                            }}
-                            onMouseLeave={(e) => {
-                              if (isLimitedRole) return;
-                              e.currentTarget.style.transform = 'scale(1)';
-                            }}
+                            className={`estd-action-btn edit ${isLimitedRole ? 'disabled' : ''}`}
                           >
                             ✏️
                           </button>
@@ -1233,28 +607,7 @@ const EstablecimientoEditInfo: React.FC = () => {
                             }}
                             disabled={isLimitedRole}
                             title={isLimitedRole ? 'Tu rol no permite eliminar puntos de emisión' : 'Eliminar punto de emisión'}
-                            style={{
-                              padding: '8px',
-                              borderRadius: '6px',
-                              border: 'none',
-                              background: isLimitedRole ? 'linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%)' : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-                              color: '#fff',
-                              cursor: isLimitedRole ? 'not-allowed' : 'pointer',
-                              fontSize: '16px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              transition: 'all 0.2s',
-                              opacity: isLimitedRole ? 0.6 : 1
-                            }}
-                            onMouseEnter={(e) => {
-                              if (isLimitedRole) return;
-                              e.currentTarget.style.transform = 'scale(1.1)';
-                            }}
-                            onMouseLeave={(e) => {
-                              if (isLimitedRole) return;
-                              e.currentTarget.style.transform = 'scale(1)';
-                            }}
+                            className={`estd-action-btn delete ${isLimitedRole ? 'disabled' : ''}`}
                           >
                             🗑️
                           </button>
@@ -1267,7 +620,6 @@ const EstablecimientoEditInfo: React.FC = () => {
             </table>
           </div>
         </div>
-      </div>
 
       {openEdit && (
         <EstablishmentFormModal

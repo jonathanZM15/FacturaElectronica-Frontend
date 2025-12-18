@@ -270,7 +270,7 @@ const CambiarPassword: React.FC<Props> = ({ onSubmit }) => {
               disabled={loading || !password || !passwordConfirmation}
             >
               {loading ? (
-                <LoadingSpinner inline size={18} message="Procesando…" />
+                <LoadingSpinner inline size={18} />
               ) : (
                 publicMode ? 'Actualizar contraseña' : 'ACTUALIZAR'
               )}

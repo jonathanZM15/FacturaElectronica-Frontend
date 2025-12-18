@@ -470,6 +470,7 @@ const Usuarios: React.FC = () => {
 
   const totalPages = Math.ceil(totalItems / itemsPerPage);
 
+  // Columnas principales para la tabla (simplificadas)
   const columns: Array<{
     key: keyof User;
     label: string;
@@ -479,7 +480,7 @@ const Usuarios: React.FC = () => {
     { 
       key: 'cedula', 
       label: 'Cédula', 
-      width: 140,
+      width: 150,
       render: (row) => (
         <span 
           className="cedula-link"
@@ -492,14 +493,25 @@ const Usuarios: React.FC = () => {
     { 
       key: 'nombres', 
       label: 'Nombres y Apellidos', 
-      width: 280,
-      render: (row) => `${row.nombres || ''} ${row.apellidos || ''}`.trim() || '-'
+      width: 220,
+      render: (row) => (
+        <span className="nombre-cell">
+          {`${row.nombres || ''} ${row.apellidos || ''}`.trim() || '-'}
+        </span>
+      )
     },
-    { key: 'username', label: 'Usuario', width: 180 },
+    { 
+      key: 'username', 
+      label: 'Usuario', 
+      width: 140,
+      render: (row) => (
+        <span className="username-cell">{row.username || '-'}</span>
+      )
+    },
     { 
       key: 'email', 
       label: 'Email', 
-      width: 300,
+      width: 260,
       render: (row) => (
         <span className="email-cell">{row.email}</span>
       )
@@ -507,60 +519,58 @@ const Usuarios: React.FC = () => {
     { 
       key: 'role', 
       label: 'Rol',
-      width: 150,
+      width: 140,
       render: (row) => (
         <span 
           className="badge-rol"
           style={{
             background: {
-              'administrador': '#7c3aed',
-              'distribuidor': '#f97316',
-              'emisor': '#3b82f6',
-              'gerente': '#10b981',
-              'cajero': '#8b5cf6'
-            }[row.role as string] || '#9ca3af'
+              'administrador': 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
+              'distribuidor': 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
+              'emisor': 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+              'gerente': 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              'cajero': 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)'
+            }[row.role as string] || 'linear-gradient(135deg, #9ca3af 0%, #6b7280 100%)'
           }}
         >
-          {row.role}
+          {row.role ? row.role.charAt(0).toUpperCase() + row.role.slice(1) : '-'}
         </span>
       )
     },
     {
       key: 'estado',
-      label: 'Estados',
-      width: 200,
+      label: 'Estado',
+      width: 160,
       render: (row) => {
         const labelMap: Record<string, string> = {
           nuevo: 'Nuevo',
           activo: 'Activo',
-          pendiente_verificacion: 'Pendiente de verificación',
+          pendiente_verificacion: 'Pendiente',
           suspendido: 'Suspendido',
           retirado: 'Retirado',
         };
         const colorMap: Record<string, string> = {
-          nuevo: '#6366f1',
-          activo: '#16a34a',
-          pendiente_verificacion: '#f59e0b',
-          suspendido: '#ec4899',
-          retirado: '#6b7280',
+          nuevo: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+          activo: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+          pendiente_verificacion: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+          suspendido: 'linear-gradient(135deg, #ec4899 0%, #db2777 100%)',
+          retirado: 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)',
         };
         const estadoDescriptions: Record<string, string> = {
-          nuevo: '🆕 Usuario creado, pero sin validar correo. El nombre de usuario y el correo pueden modificarse. Sin acceso al sistema.',
-          activo: '✅ Usuario con correo validado y acceso normal. El nombre de usuario se vuelve inalterable. No puede volver a estado Nuevo.',
-          pendiente_verificacion: '⏳ Estado temporal cuando el usuario solicita cambio de correo. Requiere ingresar su contraseña y verificar el nuevo correo. Sin acceso al sistema.',
-          suspendido: '🚫 Acceso bloqueado temporalmente por decisión de un usuario con jerarquía superior. No puede iniciar sesión hasta su reactivación.',
-          retirado: '👋 Baja formal del usuario dentro del emisor (temporal o permanente). No tiene acceso. Solo puede reactivarse mediante nueva verificación de correo solicitada por el creador.',
+          nuevo: '🆕 Usuario creado, pero sin validar correo.',
+          activo: '✅ Usuario con correo validado y acceso normal.',
+          pendiente_verificacion: '⏳ Estado temporal cuando se solicita cambio de correo.',
+          suspendido: '🚫 Acceso bloqueado temporalmente.',
+          retirado: '👋 Baja formal del usuario.',
         };
         const key = (row.estado || 'nuevo') as string;
-        const description = estadoDescriptions[key] || 'Estado sin descripción disponible.';
+        const description = estadoDescriptions[key] || 'Estado sin descripción.';
         
         return (
           <div className="tooltip-container">
             <span 
               className="badge-estado"
-              style={{
-                background: colorMap[key] || '#9ca3af'
-              }}
+              style={{ background: colorMap[key] || 'linear-gradient(135deg, #9ca3af 0%, #6b7280 100%)' }}
             >
               {labelMap[key] || row.estado}
             </span>
@@ -571,6 +581,15 @@ const Usuarios: React.FC = () => {
         );
       }
     },
+  ];
+
+  // Columnas adicionales (visibles opcionalmente o en el detalle)
+  const additionalColumns: Array<{
+    key: keyof User;
+    label: string;
+    width?: number;
+    render?: (row: User) => React.ReactNode;
+  }> = [
     { 
       key: 'emisor_ruc' as keyof User, 
       label: 'Emisor', 
@@ -591,144 +610,31 @@ const Usuarios: React.FC = () => {
         );
       }
     },
-    { 
-      key: 'establecimientos' as keyof User, 
-      label: 'Establecimientos', 
-      width: 250,
-      render: (row) => {
-        const establecimientos = row.establecimientos || [];
-        if (establecimientos.length === 0) return '-';
-        
-        return (
-          <div className="list-items">
-            {establecimientos.map((est, idx) => (
-              <div key={idx} className="list-item-link">
-                <a href="#" onClick={(e) => {
-                  e.preventDefault();
-                  if (row.emisor_id) {
-                    navigateToEstablecimiento(row.emisor_id, est.id);
-                  }
-                }}>
-                  {formatEstablecimientoInfo(est.codigo, est.nombre)}
-                </a>
-              </div>
-            ))}
-          </div>
-        );
-      }
-    },
-    { 
-      key: 'puntos_emision' as keyof User, 
-      label: 'Puntos de Emisión', 
-      width: 280,
-      render: (row) => {
-        const puntosEmision = row.puntos_emision || [];
-        if (puntosEmision.length === 0) return '-';
-        
-        return (
-          <div className="list-items">
-            {puntosEmision.map((punto, idx) => (
-              <div key={idx} className="list-item-link">
-                <a href="#" onClick={(e) => {
-                  e.preventDefault();
-                  if (row.emisor_id && punto.establecimiento_id) {
-                    navigateToPuntoEmision(row.emisor_id, punto.establecimiento_id, punto.id);
-                  }
-                }}>
-                  {formatPuntoEmisionInfo(punto.codigo, punto.nombre)}
-                </a>
-              </div>
-            ))}
-          </div>
-        );
-      }
-    },
-    { 
-      key: 'created_by_username' as keyof User, 
-      label: 'Usuario creador', 
-      width: 300,
-      render: (row) => {
-        if (!row.created_by_username) return '-';
-        
-        // No mostrar si el creador es Admin o Distribuidor
-        if (!shouldShowCreador(row.created_by_role)) {
-          return '-';
-        }
-        
-        const creatorInfo = formatCreadorInfo(
-          row.created_by_role,
-          row.created_by_username,
-          row.created_by_nombres,
-          row.created_by_apellidos
-        );
-        
-        return (
-          <span 
-            className="creator-link"
-            onClick={() => {
-              if (row.created_by_id) {
-                handleOpenDetail(null, row.created_by_id);
-              }
-            }}
-            style={{
-              cursor: row.created_by_id ? 'pointer' : 'default',
-              color: row.created_by_id ? '#6366f1' : '#64748b',
-              fontWeight: 500,
-              fontSize: '13px'
-            }}
-          >
-            {creatorInfo}
-          </span>
-        );
-      }
-    },
-    { 
-      key: 'created_at', 
-      label: 'Fecha de creación', 
-      width: 180,
-      render: (row) => {
-        if (!row.created_at) return '-';
-        const date = new Date(row.created_at);
-        return date.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
-      }
-    },
-    { 
-      key: 'updated_at', 
-      label: 'Última actualización', 
-      width: 180,
-      render: (row) => {
-        if (!row.updated_at) return '-';
-        const date = new Date(row.updated_at);
-        return date.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
-      }
-    },
   ];
+
+  // Calcular estadísticas de usuarios
+  const stats = React.useMemo(() => {
+    const total = users.length;
+    const activos = users.filter(u => u.estado === 'activo').length;
+    const nuevos = users.filter(u => u.estado === 'nuevo').length;
+    const inactivos = users.filter(u => u.estado === 'suspendido' || u.estado === 'retirado').length;
+    return { total, activos, nuevos, inactivos };
+  }, [users]);
+
+  // Las columnas adicionales estarán disponibles en el modal de detalle
 
   return (
     <div className="usuarios-page-container">
+      {/* Header estilo Suscripciones */}
       <div className="usuarios-header">
-        <h1>Gestión de Usuarios</h1>
+        <div className="usuarios-header-left">
+          <div className="usuarios-header-title">
+            <span className="usuarios-header-icon">👥</span>
+            <h1>Gestión de Usuarios</h1>
+          </div>
+          <p className="usuarios-header-subtitle">Administra los usuarios del sistema de facturación</p>
+        </div>
         <div className="header-actions">
-          <button 
-            onClick={() => setShowFilters(!showFilters)} 
-            className="btn-toggle-filters"
-            title={showFilters ? "Ocultar filtros" : "Mostrar filtros"}
-            style={{
-              background: showFilters ? 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)' : 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '12px',
-              padding: '14px 24px',
-              cursor: 'pointer',
-              fontWeight: 600,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              marginRight: '12px'
-            }}
-          >
-            🔍 {showFilters ? 'Ocultar' : 'Filtros'}
-          </button>
           <button 
             className="btn-nuevo"
             onClick={() => setOpenNew(true)}
@@ -741,200 +647,213 @@ const Usuarios: React.FC = () => {
         </div>
       </div>
 
-      {/* Panel de filtros avanzados */}
-      {showFilters && (
-        <div className="filters-panel" style={{
-          background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
-          border: '2px solid #dee2e6',
-          borderRadius: '12px',
-          padding: '20px',
-          marginBottom: '16px',
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)'
-        }}>
-          <div className="filters-grid" style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-            gap: '16px',
-            marginBottom: '16px'
-          }}>
-            <div className="filter-group">
-              <label style={{fontSize: '13px', fontWeight: 600, color: '#374151'}}>Cédula</label>
+      {/* Tarjetas de estadísticas */}
+      <div className="usuarios-stats-grid">
+        <div className="usuarios-stat-card">
+          <div className="usuarios-stat-icon total">📊</div>
+          <div className="usuarios-stat-info">
+            <span className="usuarios-stat-value">{stats.total}</span>
+            <span className="usuarios-stat-label">Total Usuarios</span>
+          </div>
+        </div>
+        <div className="usuarios-stat-card">
+          <div className="usuarios-stat-icon activos">✅</div>
+          <div className="usuarios-stat-info">
+            <span className="usuarios-stat-value">{stats.activos}</span>
+            <span className="usuarios-stat-label">Activos</span>
+          </div>
+        </div>
+        <div className="usuarios-stat-card">
+          <div className="usuarios-stat-icon nuevos">🆕</div>
+          <div className="usuarios-stat-info">
+            <span className="usuarios-stat-value">{stats.nuevos}</span>
+            <span className="usuarios-stat-label">Nuevos</span>
+          </div>
+        </div>
+        <div className="usuarios-stat-card">
+          <div className="usuarios-stat-icon inactivos">⚠️</div>
+          <div className="usuarios-stat-info">
+            <span className="usuarios-stat-value">{stats.inactivos}</span>
+            <span className="usuarios-stat-label">Suspendidos/Retirados</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Filtros de búsqueda colapsables */}
+      <div className="usuarios-filters-section">
+        <button 
+          className="usuarios-filters-toggle"
+          onClick={() => setShowFilters(!showFilters)}
+        >
+          <div className="usuarios-filters-toggle-left">
+            <span>🔍</span>
+            <span>Filtros de Búsqueda</span>
+          </div>
+          <span className={`usuarios-filters-toggle-icon ${showFilters ? 'expanded' : ''}`}>▼</span>
+        </button>
+
+        {showFilters && (
+          <div className="usuarios-filters-content">
+            <div className="usuarios-filters-grid">
+            <div className="usuarios-filter-group">
+              <label>🔢 Cédula</label>
               <input
                 type="text"
                 value={filters.cedula}
                 onChange={(e) => setFilters({...filters, cedula: e.target.value})}
                 placeholder="Buscar por cédula"
-                style={{padding: '8px 12px', borderRadius: '6px', border: '1px solid #d1d5db'}}
               />
             </div>
 
-            <div className="filter-group">
-              <label style={{fontSize: '13px', fontWeight: 600, color: '#374151'}}>Nombres</label>
+            <div className="usuarios-filter-group">
+              <label>👤 Nombres</label>
               <input
                 type="text"
                 value={filters.nombres}
                 onChange={(e) => setFilters({...filters, nombres: e.target.value})}
                 placeholder="Buscar por nombres"
-                style={{padding: '8px 12px', borderRadius: '6px', border: '1px solid #d1d5db'}}
               />
             </div>
 
-            <div className="filter-group">
-              <label style={{fontSize: '13px', fontWeight: 600, color: '#374151'}}>Apellidos</label>
+            <div className="usuarios-filter-group">
+              <label>👥 Apellidos</label>
               <input
                 type="text"
                 value={filters.apellidos}
                 onChange={(e) => setFilters({...filters, apellidos: e.target.value})}
                 placeholder="Buscar por apellidos"
-                style={{padding: '8px 12px', borderRadius: '6px', border: '1px solid #d1d5db'}}
               />
             </div>
 
-            <div className="filter-group">
-              <label style={{fontSize: '13px', fontWeight: 600, color: '#374151'}}>Username</label>
+            <div className="usuarios-filter-group">
+              <label>📝 Username</label>
               <input
                 type="text"
                 value={filters.username}
                 onChange={(e) => setFilters({...filters, username: e.target.value})}
                 placeholder="Buscar por username"
-                style={{padding: '8px 12px', borderRadius: '6px', border: '1px solid #d1d5db'}}
               />
             </div>
 
-            <div className="filter-group">
-              <label style={{fontSize: '13px', fontWeight: 600, color: '#374151'}}>Email</label>
+            <div className="usuarios-filter-group">
+              <label>📧 Email</label>
               <input
                 type="text"
                 value={filters.email}
                 onChange={(e) => setFilters({...filters, email: e.target.value})}
                 placeholder="Buscar por email"
-                style={{padding: '8px 12px', borderRadius: '6px', border: '1px solid #d1d5db'}}
               />
             </div>
 
-            <div className="filter-group">
-              <label style={{fontSize: '13px', fontWeight: 600, color: '#374151'}}>Emisor</label>
+            <div className="usuarios-filter-group">
+              <label>🏢 Emisor</label>
               <input
                 type="text"
                 value={filters.emisor}
                 onChange={(e) => setFilters({...filters, emisor: e.target.value})}
                 placeholder="RUC o razón social"
-                style={{padding: '8px 12px', borderRadius: '6px', border: '1px solid #d1d5db'}}
               />
             </div>
 
-            <div className="filter-group">
-              <label style={{fontSize: '13px', fontWeight: 600, color: '#374151'}}>Establecimiento</label>
+            <div className="usuarios-filter-group">
+              <label>🏪 Establecimiento</label>
               <input
                 type="text"
                 value={filters.establishment}
                 onChange={(e) => setFilters({...filters, establishment: e.target.value})}
                 placeholder="Código o nombre"
-                style={{padding: '8px 12px', borderRadius: '6px', border: '1px solid #d1d5db'}}
               />
             </div>
 
-            <div className="filter-group">
-              <label style={{fontSize: '13px', fontWeight: 600, color: '#374151'}}>Usuario creador</label>
+            <div className="usuarios-filter-group">
+              <label>✍️ Usuario creador</label>
               <input
                 type="text"
                 value={filters.creator}
                 onChange={(e) => setFilters({...filters, creator: e.target.value})}
                 placeholder="Buscar por creador"
-                style={{padding: '8px 12px', borderRadius: '6px', border: '1px solid #d1d5db'}}
               />
             </div>
 
-            <div className="filter-group">
-              <label style={{fontSize: '13px', fontWeight: 600, color: '#374151'}}>Roles</label>
-              <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+            <div className="usuarios-filter-group roles-filter">
+              <label>🎭 Roles</label>
+              <div className="usuarios-checkbox-group">
                 {['administrador', 'distribuidor', 'emisor', 'gerente', 'cajero'].map(role => (
-                  <label key={role} style={{display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer'}}>
+                  <label key={role} className="usuarios-checkbox-label">
                     <input 
                       type="checkbox" 
                       checked={filters.roles.includes(role)}
                       onChange={() => toggleRoleFilter(role)}
-                      style={{cursor: 'pointer'}}
                     />
-                    {role.charAt(0).toUpperCase() + role.slice(1)}
+                    <span className={`usuarios-role-tag ${role}`}>{role.charAt(0).toUpperCase() + role.slice(1)}</span>
                   </label>
                 ))}
               </div>
             </div>
 
-            <div className="filter-group">
-              <label style={{fontSize: '13px', fontWeight: 600, color: '#374151'}}>Estados</label>
-              <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+            <div className="usuarios-filter-group estados-filter">
+              <label>📊 Estados</label>
+              <div className="usuarios-checkbox-group">
                 {['nuevo', 'activo', 'pendiente_verificacion', 'suspendido', 'retirado'].map(estado => (
-                  <label key={estado} style={{display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer'}}>
+                  <label key={estado} className="usuarios-checkbox-label">
                     <input 
                       type="checkbox" 
                       checked={filters.estados.includes(estado)}
                       onChange={() => toggleEstadoFilter(estado)}
-                      style={{cursor: 'pointer'}}
                     />
-                    {estado === 'pendiente_verificacion' ? 'Pendiente' : estado.charAt(0).toUpperCase() + estado.slice(1)}
+                    <span className={`usuarios-estado-tag ${estado}`}>
+                      {estado === 'pendiente_verificacion' ? 'Pendiente' : estado.charAt(0).toUpperCase() + estado.slice(1)}
+                    </span>
                   </label>
                 ))}
               </div>
             </div>
 
-            <div className="filter-group">
-              <label style={{fontSize: '13px', fontWeight: 600, color: '#374151'}}>Fecha creación desde</label>
+            <div className="usuarios-filter-group">
+              <label>📅 Fecha creación desde</label>
               <input
                 type="date"
                 value={filters.dateFrom}
                 onChange={(e) => setFilters({...filters, dateFrom: e.target.value})}
-                style={{padding: '8px 12px', borderRadius: '6px', border: '1px solid #d1d5db'}}
               />
             </div>
 
-            <div className="filter-group">
-              <label style={{fontSize: '13px', fontWeight: 600, color: '#374151'}}>Fecha creación hasta</label>
+            <div className="usuarios-filter-group">
+              <label>📅 Fecha creación hasta</label>
               <input
                 type="date"
                 value={filters.dateTo}
                 onChange={(e) => setFilters({...filters, dateTo: e.target.value})}
-                style={{padding: '8px 12px', borderRadius: '6px', border: '1px solid #d1d5db'}}
               />
             </div>
 
-            <div className="filter-group">
-              <label style={{fontSize: '13px', fontWeight: 600, color: '#374151'}}>Actualización desde</label>
+            <div className="usuarios-filter-group">
+              <label>🔄 Actualización desde</label>
               <input
                 type="date"
                 value={filters.updateDateFrom}
                 onChange={(e) => setFilters({...filters, updateDateFrom: e.target.value})}
-                style={{padding: '8px 12px', borderRadius: '6px', border: '1px solid #d1d5db'}}
               />
             </div>
 
-            <div className="filter-group">
-              <label style={{fontSize: '13px', fontWeight: 600, color: '#374151'}}>Actualización hasta</label>
+            <div className="usuarios-filter-group">
+              <label>🔄 Actualización hasta</label>
               <input
                 type="date"
                 value={filters.updateDateTo}
                 onChange={(e) => setFilters({...filters, updateDateTo: e.target.value})}
-                style={{padding: '8px 12px', borderRadius: '6px', border: '1px solid #d1d5db'}}
               />
             </div>
           </div>
 
-          <div style={{display: 'flex', justifyContent: 'flex-end', gap: '12px', paddingTop: '12px', borderTop: '1px solid #dee2e6'}}>
-            <button onClick={clearFilters} style={{
-              background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '8px',
-              padding: '10px 20px',
-              cursor: 'pointer',
-              fontWeight: 600
-            }}>
+          <div className="usuarios-filters-actions">
+            <button onClick={clearFilters} className="btn-clear-filters">
               🗑️ Limpiar filtros
             </button>
           </div>
-        </div>
-      )}
+          </div>
+        )}
+      </div>
 
       {/* Búsqueda */}
       <div className="usuarios-search-container">
@@ -965,6 +884,11 @@ const Usuarios: React.FC = () => {
       </div>
 
       {/* Tabla */}
+      {loadingUsuarios ? (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 20px' }}>
+          <LoadingSpinner size={48} />
+        </div>
+      ) : (
       <div className="usuarios-table-container">
         <div className="usuarios-table-wrapper">
           <table className="usuarios-table">
@@ -979,13 +903,7 @@ const Usuarios: React.FC = () => {
               </tr>
             </thead>
           <tbody>
-            {loadingUsuarios ? (
-              <tr>
-                <td colSpan={columns.length + 1} style={{ textAlign: 'center', padding: '20px' }}>
-                  <LoadingSpinner message="Cargando usuarios…" />
-                </td>
-              </tr>
-            ) : filteredAndSortedUsers.length === 0 ? (
+            {filteredAndSortedUsers.length === 0 ? (
               <tr>
                 <td colSpan={columns.length + 1} style={{ textAlign: 'center', padding: '20px', color: '#9ca3af' }}>
                   No hay usuarios registrados
@@ -1103,6 +1021,7 @@ const Usuarios: React.FC = () => {
           </div>
         </div>
       </div>
+      )}
 
       {/* Modales */}
       <UsuarioFormModal

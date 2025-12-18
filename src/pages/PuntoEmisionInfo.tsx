@@ -46,7 +46,7 @@ const PuntoEmisionInfo: React.FC = () => {
   if (loading) {
     return (
       <div style={{ padding: '40px 0' }}>
-        <LoadingSpinner fullHeight message="Cargando información del punto…" />
+        <LoadingSpinner fullHeight />
       </div>
     );
   }

@@ -1,6 +1,5 @@
 import React from 'react';
-import './Emisores.css'; // Reutilizar estilos de Emisores
-import './EmisorUsuarios.css'; // Estilos del panel de filtros
+import './PlanesModern.css'; // Estilos modernos para planes
 import { planesApi, Plan } from '../services/planesApi';
 import PlanFormModal from './PlanFormModal';
 import PlanDeleteModal from './PlanDeleteModal';
@@ -204,10 +203,22 @@ const Planes: React.FC = () => {
   // Calcular rango de páginas
   const totalPages = Math.ceil(totalItems / itemsPerPage);
 
+  // Calcular estadísticas
+  const stats = React.useMemo(() => {
+    const total = planes.length;
+    const activos = planes.filter(p => p.estado === 'Activo').length;
+    const inactivos = planes.filter(p => p.estado === 'Desactivado').length;
+    const precioPromedio = planes.length > 0 
+      ? planes.reduce((sum, p) => sum + p.precio, 0) / planes.length 
+      : 0;
+    return { total: totalItems, activos, inactivos, precioPromedio };
+  }, [planes, totalItems]);
+
   if (!isAdmin) {
     return (
-      <div className="emisores-container">
-        <div className="content-header">
+      <div className="planes-page-container">
+        <div className="planes-access-denied">
+          <span className="planes-access-denied-icon">🔒</span>
           <h1>Acceso Denegado</h1>
           <p>No tienes permisos para acceder a esta sección.</p>
         </div>
@@ -216,30 +227,72 @@ const Planes: React.FC = () => {
   }
 
   return (
-    <div className="emisores-container">
-      <div className="content-header">
-        <div className="header-top">
-          <div className="title-section">
+    <div className="planes-page-container">
+      {/* Header */}
+      <div className="planes-header">
+        <div className="planes-header-left">
+          <div className="planes-header-title">
+            <span className="planes-header-icon">📋</span>
             <h1>Gestión de Planes</h1>
-            <p className="subtitle">Administra los planes de facturación del sistema</p>
           </div>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button className="btn-secondary" onClick={() => setShowFilters(!showFilters)}>
-              🔍 {showFilters ? 'Ocultar' : 'Filtros'}
-            </button>
-            <button className="btn-primary" onClick={() => setOpenNew(true)}>
-              <span className="icon">+</span>
-              Nuevo Plan
-            </button>
+          <p className="planes-header-subtitle">Administra los planes de facturación del sistema</p>
+        </div>
+        <button className="btn-nuevo" onClick={() => setOpenNew(true)}>
+          <span>+</span>
+          Nuevo Plan
+        </button>
+      </div>
+
+      {/* Tarjetas de estadísticas */}
+      <div className="planes-stats-grid">
+        <div className="planes-stat-card">
+          <div className="planes-stat-icon total">📊</div>
+          <div className="planes-stat-info">
+            <span className="planes-stat-value">{stats.total}</span>
+            <span className="planes-stat-label">Total Planes</span>
           </div>
         </div>
+        <div className="planes-stat-card">
+          <div className="planes-stat-icon activos">✅</div>
+          <div className="planes-stat-info">
+            <span className="planes-stat-value">{stats.activos}</span>
+            <span className="planes-stat-label">Activos</span>
+          </div>
+        </div>
+        <div className="planes-stat-card">
+          <div className="planes-stat-icon precio">💰</div>
+          <div className="planes-stat-info">
+            <span className="planes-stat-value">{formatPrecio(stats.precioPromedio)}</span>
+            <span className="planes-stat-label">Precio Promedio</span>
+          </div>
+        </div>
+        <div className="planes-stat-card">
+          <div className="planes-stat-icon inactivos">⏸️</div>
+          <div className="planes-stat-info">
+            <span className="planes-stat-value">{stats.inactivos}</span>
+            <span className="planes-stat-label">Desactivados</span>
+          </div>
+        </div>
+      </div>
 
-        {/* Panel de filtros */}
+      {/* Filtros colapsables */}
+      <div className="planes-filters-section">
+        <button 
+          className="planes-filters-toggle"
+          onClick={() => setShowFilters(!showFilters)}
+        >
+          <div className="planes-filters-toggle-left">
+            <span>🔍</span>
+            <span>Filtros de Búsqueda</span>
+          </div>
+          <span className={`planes-filters-toggle-icon ${showFilters ? 'expanded' : ''}`}>▼</span>
+        </button>
+
         {showFilters && (
-          <div className="filters-panel">
-            <div className="filters-grid">
-              <div className="filter-group">
-                <label>Nombre</label>
+          <div className="planes-filters-content">
+            <div className="planes-filters-grid">
+              <div className="planes-filter-group">
+                <label>📝 Nombre</label>
                 <input
                   type="text"
                   value={filters.nombre}
@@ -248,8 +301,8 @@ const Planes: React.FC = () => {
                 />
               </div>
 
-              <div className="filter-group">
-                <label>Cantidad de comprobantes (≥)</label>
+              <div className="planes-filter-group">
+                <label>📦 Comprobantes (≥)</label>
                 <input
                   type="number"
                   value={filters.cantidad_comprobantes}
@@ -259,8 +312,8 @@ const Planes: React.FC = () => {
                 />
               </div>
 
-              <div className="filter-group">
-                <label>Precio (≤)</label>
+              <div className="planes-filter-group">
+                <label>💵 Precio (≤)</label>
                 <input
                   type="number"
                   value={filters.precio}
@@ -271,8 +324,8 @@ const Planes: React.FC = () => {
                 />
               </div>
 
-              <div className="filter-group">
-                <label>Período</label>
+              <div className="planes-filter-group">
+                <label>📅 Período</label>
                 <select
                   value={filters.periodo}
                   onChange={(e) => updateFilter('periodo', e.target.value)}
@@ -287,8 +340,8 @@ const Planes: React.FC = () => {
                 </select>
               </div>
 
-              <div className="filter-group">
-                <label>Observación</label>
+              <div className="planes-filter-group">
+                <label>💬 Observación</label>
                 <input
                   type="text"
                   value={filters.observacion}
@@ -297,30 +350,30 @@ const Planes: React.FC = () => {
                 />
               </div>
 
-              <div className="filter-group">
-                <label>Estado</label>
-                <div className="checkbox-group">
-                  <label className="checkbox-label">
+              <div className="planes-filter-group">
+                <label>📊 Estado</label>
+                <div className="planes-checkbox-group">
+                  <label className="planes-checkbox-label">
                     <input
                       type="checkbox"
                       checked={filters.estados.includes('Activo')}
                       onChange={() => toggleEstadoFilter('Activo')}
                     />
-                    Activo
+                    ✅ Activo
                   </label>
-                  <label className="checkbox-label">
+                  <label className="planes-checkbox-label">
                     <input
                       type="checkbox"
                       checked={filters.estados.includes('Desactivado')}
                       onChange={() => toggleEstadoFilter('Desactivado')}
                     />
-                    Desactivado
+                    ⏸️ Desactivado
                   </label>
                 </div>
               </div>
 
-              <div className="filter-group">
-                <label>Fecha creación desde</label>
+              <div className="planes-filter-group">
+                <label>📅 Creación desde</label>
                 <input
                   type="date"
                   value={filters.createdFrom}
@@ -328,8 +381,8 @@ const Planes: React.FC = () => {
                 />
               </div>
 
-              <div className="filter-group">
-                <label>Fecha creación hasta</label>
+              <div className="planes-filter-group">
+                <label>📅 Creación hasta</label>
                 <input
                   type="date"
                   value={filters.createdTo}
@@ -337,8 +390,8 @@ const Planes: React.FC = () => {
                 />
               </div>
 
-              <div className="filter-group">
-                <label>Fecha actualización desde</label>
+              <div className="planes-filter-group">
+                <label>🔄 Actualización desde</label>
                 <input
                   type="date"
                   value={filters.updatedFrom}
@@ -346,8 +399,8 @@ const Planes: React.FC = () => {
                 />
               </div>
 
-              <div className="filter-group">
-                <label>Fecha actualización hasta</label>
+              <div className="planes-filter-group">
+                <label>🔄 Actualización hasta</label>
                 <input
                   type="date"
                   value={filters.updatedTo}
@@ -356,8 +409,8 @@ const Planes: React.FC = () => {
               </div>
             </div>
 
-            <div className="filters-actions">
-              <button onClick={clearFilters} className="btn-clear-filters">
+            <div className="planes-filters-actions">
+              <button onClick={clearFilters} className="planes-btn-clear">
                 🗑️ Limpiar filtros
               </button>
             </div>
@@ -365,90 +418,121 @@ const Planes: React.FC = () => {
         )}
       </div>
 
+      {/* Tabla */}
       {loading ? (
-        <LoadingSpinner message="Cargando planes..." />
+        <div className="planes-loading">
+          <LoadingSpinner />
+        </div>
       ) : (
         <>
-          <div className="table-container">
-            <table className="data-table">
+          <div className="planes-table-container">
+            <table className="planes-table">
               <thead>
                 <tr>
-                  <th onClick={() => handleSort('nombre')} style={{ cursor: 'pointer' }}>
-                    Nombre {renderSortIcon('nombre')}
+                  <th className="planes-th-sticky-left" onClick={() => handleSort('nombre')} style={{ cursor: 'pointer' }}>
+                    📋 Nombre {renderSortIcon('nombre')}
                   </th>
                   <th onClick={() => handleSort('cantidad_comprobantes')} style={{ cursor: 'pointer' }}>
-                    Cantidad de comprobantes {renderSortIcon('cantidad_comprobantes')}
+                    📦 Comprobantes {renderSortIcon('cantidad_comprobantes')}
                   </th>
                   <th onClick={() => handleSort('precio')} style={{ cursor: 'pointer' }}>
-                    Precio {renderSortIcon('precio')}
+                    💵 Precio {renderSortIcon('precio')}
                   </th>
                   <th onClick={() => handleSort('periodo')} style={{ cursor: 'pointer' }}>
-                    Período {renderSortIcon('periodo')}
+                    📅 Período {renderSortIcon('periodo')}
                   </th>
                   <th onClick={() => handleSort('observacion')} style={{ cursor: 'pointer' }}>
-                    Observación {renderSortIcon('observacion')}
+                    💬 Observación {renderSortIcon('observacion')}
                   </th>
                   <th onClick={() => handleSort('estado')} style={{ cursor: 'pointer' }}>
-                    Estado {renderSortIcon('estado')}
+                    📊 Estado {renderSortIcon('estado')}
                   </th>
                   <th onClick={() => handleSort('comprobantes_minimos')} style={{ cursor: 'pointer' }}>
-                    Comprobantes mínimos {renderSortIcon('comprobantes_minimos')}
+                    📉 Comp. Mín. {renderSortIcon('comprobantes_minimos')}
                   </th>
                   <th onClick={() => handleSort('dias_minimos')} style={{ cursor: 'pointer' }}>
-                    Días mínimos {renderSortIcon('dias_minimos')}
+                    ⏱️ Días Mín. {renderSortIcon('dias_minimos')}
                   </th>
                   <th onClick={() => handleSort('created_at')} style={{ cursor: 'pointer' }}>
-                    Fecha de creación {renderSortIcon('created_at')}
+                    📅 Creación {renderSortIcon('created_at')}
                   </th>
                   <th onClick={() => handleSort('updated_at')} style={{ cursor: 'pointer' }}>
-                    Fecha de actualización {renderSortIcon('updated_at')}
+                    🔄 Actualización {renderSortIcon('updated_at')}
                   </th>
-                  <th className="actions-column">Acciones</th>
+                  <th className="planes-th-sticky-right">⚡ Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {planes.length === 0 ? (
                   <tr>
-                    <td colSpan={11} style={{ textAlign: 'center', padding: '2rem' }}>
-                      {Object.values(filters).some(v => Array.isArray(v) ? v.length > 0 : v !== '')
-                        ? 'No se encontraron planes con los filtros aplicados'
-                        : 'No hay planes registrados'}
+                    <td colSpan={11} className="planes-empty-row">
+                      <div className="planes-empty-state">
+                        <span className="planes-empty-icon">📋</span>
+                        <p>
+                          {Object.values(filters).some(v => Array.isArray(v) ? v.length > 0 : v !== '')
+                            ? 'No se encontraron planes con los filtros aplicados'
+                            : 'No hay planes registrados'}
+                        </p>
+                      </div>
                     </td>
                   </tr>
                 ) : (
                   planes.map((plan) => (
                     <tr key={plan.id}>
-                      <td>
-                        <strong>{plan.nombre}</strong>
-                      </td>
-                      <td>{plan.cantidad_comprobantes.toLocaleString()}</td>
-                      <td>
-                        <strong>{formatPrecio(plan.precio)}</strong>
-                      </td>
-                      <td>{plan.periodo}</td>
-                      <td>
-                        {plan.observacion
-                          ? (plan.observacion.length > 80
-                              ? `${plan.observacion.substring(0, 80)}...`
-                              : plan.observacion)
-                          : '-'}
+                      <td className="planes-td-sticky-left">
+                        <div className="planes-nombre-cell">
+                          <span className="planes-nombre-icon">📋</span>
+                          <strong>{plan.nombre}</strong>
+                        </div>
                       </td>
                       <td>
-                        <span className={`badge ${plan.estado === 'Activo' ? 'badge-success' : 'badge-danger'}`}>
-                          {plan.estado}
+                        <span className="planes-comprobantes-badge">
+                          {plan.cantidad_comprobantes.toLocaleString()}
                         </span>
                       </td>
-                      <td>{plan.comprobantes_minimos}</td>
-                      <td>{plan.dias_minimos}</td>
-                      <td>{formatDate(plan.created_at)}</td>
-                      <td>{formatDate(plan.updated_at)}</td>
-                      <td className="actions-cell">
-                        <button className="btn-icon btn-edit" onClick={() => handleEdit(plan)} title="Editar plan">
-                          ✏️
-                        </button>
-                        <button className="btn-icon btn-delete" onClick={() => handleDelete(plan)} title="Eliminar plan">
-                          🗑️
-                        </button>
+                      <td>
+                        <span className="planes-precio-cell">
+                          {formatPrecio(plan.precio)}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`planes-badge-periodo ${plan.periodo.toLowerCase()}`}>
+                          {plan.periodo}
+                        </span>
+                      </td>
+                      <td className="planes-observacion-cell">
+                        {plan.observacion
+                          ? (plan.observacion.length > 60
+                              ? `${plan.observacion.substring(0, 60)}...`
+                              : plan.observacion)
+                          : <span className="planes-empty-text">-</span>}
+                      </td>
+                      <td>
+                        <span className={`planes-badge-estado ${plan.estado === 'Activo' ? 'activo' : 'inactivo'}`}>
+                          {plan.estado === 'Activo' ? '✅' : '⏸️'} {plan.estado}
+                        </span>
+                      </td>
+                      <td className="planes-number-cell">{plan.comprobantes_minimos}</td>
+                      <td className="planes-number-cell">{plan.dias_minimos}</td>
+                      <td className="planes-date-cell">{formatDate(plan.created_at)}</td>
+                      <td className="planes-date-cell">{formatDate(plan.updated_at)}</td>
+                      <td className="planes-td-sticky-right">
+                        <div className="planes-actions-cell">
+                          <button 
+                            className="planes-btn-action edit" 
+                            onClick={() => handleEdit(plan)} 
+                            title="Editar plan"
+                          >
+                            ✏️
+                          </button>
+                          <button 
+                            className="planes-btn-action delete" 
+                            onClick={() => handleDelete(plan)} 
+                            title="Eliminar plan"
+                          >
+                            🗑️
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -457,56 +541,62 @@ const Planes: React.FC = () => {
             </table>
           </div>
 
-          {/* Pagination */}
-          <div className="pagination-container">
-            <div className="pagination-info-left">
-              Mostrando {planes.length} de {totalItems} planes
+          {/* Paginación */}
+          <div className="planes-pagination">
+            <div className="planes-pagination-info">
+              Mostrando <strong>{planes.length}</strong> de <strong>{totalItems}</strong> planes
             </div>
-            <div className="per-page-selector">
-              <span>Filas por página:</span>
-              <select value={itemsPerPage} onChange={(e) => {
-                setItemsPerPage(Number(e.target.value));
-                setCurrentPage(1);
-              }}>
-                <option value={5}>5</option>
-                <option value={10}>10</option>
-                <option value={15}>15</option>
-                <option value={25}>25</option>
-                <option value={50}>50</option>
-              </select>
-            </div>
-            <div className="pagination-controls">
-              <button
-                onClick={() => setCurrentPage(1)}
-                disabled={currentPage === 1}
-                className="pagination-btn"
-              >
-                ⟪
-              </button>
-              <button
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className="pagination-btn"
-              >
-                ‹
-              </button>
-              <span className="pagination-info">
-                Página {currentPage} de {totalPages}
-              </span>
-              <button
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-                className="pagination-btn"
-              >
-                ›
-              </button>
-              <button
-                onClick={() => setCurrentPage(totalPages)}
-                disabled={currentPage === totalPages}
-                className="pagination-btn"
-              >
-                ⟫
-              </button>
+            <div className="planes-pagination-controls">
+              <div className="planes-per-page">
+                <span>Filas:</span>
+                <select value={itemsPerPage} onChange={(e) => {
+                  setItemsPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                }}>
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={15}>15</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                </select>
+              </div>
+              <div className="planes-pagination-buttons">
+                <button
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                  className="planes-pagination-btn"
+                  title="Primera página"
+                >
+                  ⟪
+                </button>
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="planes-pagination-btn"
+                  title="Página anterior"
+                >
+                  ‹
+                </button>
+                <span className="planes-pagination-current">
+                  {currentPage} / {totalPages || 1}
+                </span>
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages || totalPages === 0}
+                  className="planes-pagination-btn"
+                  title="Página siguiente"
+                >
+                  ›
+                </button>
+                <button
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages || totalPages === 0}
+                  className="planes-pagination-btn"
+                  title="Última página"
+                >
+                  ⟫
+                </button>
+              </div>
             </div>
           </div>
         </>

@@ -83,6 +83,16 @@ const Navbar: React.FC = () => {
               </NavLink>
             </li>
           )}
+          
+          {/* Retenciones: solo Admin */}
+          {user && user.role === 'administrador' && (
+            <li className="nav-item">
+              <NavLink to="/retenciones" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                <span className="icon">📋</span>
+                <span className="label">Retenciones</span>
+              </NavLink>
+            </li>
+          )}
         </ul>
       </nav>
 

@@ -482,7 +482,7 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
 
         {loading && (
           <div className="mf-loading-overlay" aria-hidden>
-            <LoadingSpinner message="Procesando cambios…" />
+            <LoadingSpinner />
           </div>
         )}
 

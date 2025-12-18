@@ -531,7 +531,7 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
             }}
           >
             {loading ? (
-              <LoadingSpinner inline size={18} message="Guardando…" />
+              <LoadingSpinner inline size={18} />
             ) : (
               initialData ? 'Actualizar' : 'Registrar'
             )}
@@ -729,7 +729,7 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
                 }}
               >
                 {loading ? (
-                  <LoadingSpinner inline size={18} message="Guardando…" />
+                  <LoadingSpinner inline size={18} />
                 ) : (
                   'Confirmar cambios'
                 )}

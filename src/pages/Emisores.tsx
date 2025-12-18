@@ -589,7 +589,7 @@ const Emisores: React.FC = () => {
               {loading ? (
                 <tr>
                   <td className="loading-row" colSpan={dynamicColumns.length + 3}>
-                    <LoadingSpinner message="Cargando emisores…" />
+                    <LoadingSpinner />
                   </td>
                 </tr>
               ) : paginatedData.length ? (

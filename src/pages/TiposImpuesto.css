@@ -1,0 +1,820 @@
+/* ===============================================
+   TIPOS DE IMPUESTO - ESTILOS MODERNOS
+   =============================================== */
+
+/* Container Principal */
+.tipos-impuesto-page {
+  padding: 24px;
+  max-width: 1600px;
+  margin: 0 auto;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Header */
+.tipos-impuesto-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.tipos-impuesto-header h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tipos-impuesto-header h1 .icon {
+  font-size: 32px;
+}
+
+.btn-nuevo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+}
+
+.btn-nuevo:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+}
+
+.btn-nuevo:active {
+  transform: translateY(0);
+}
+
+/* Stats Cards */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+  border: 1px solid #e2e8f0;
+}
+
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.stat-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+
+.stat-icon.iva { background: linear-gradient(135deg, #dbeafe, #bfdbfe); }
+.stat-icon.ice { background: linear-gradient(135deg, #fce7f3, #fbcfe8); }
+.stat-icon.irbpnr { background: linear-gradient(135deg, #d1fae5, #a7f3d0); }
+.stat-icon.total { background: linear-gradient(135deg, #e0e7ff, #c7d2fe); }
+
+.stat-info h3 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.stat-info p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* Filtros Colapsables */
+.filters-panel {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  margin-bottom: 24px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+
+.filters-toggle {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filters-toggle:hover {
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+}
+
+.filters-toggle-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.filters-toggle-left span:first-child {
+  font-size: 20px;
+}
+
+.filters-toggle-left span:last-child {
+  font-weight: 600;
+  color: #334155;
+  font-size: 15px;
+}
+
+.filters-toggle-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.active-filters-count {
+  background: #3b82f6;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.chevron-icon {
+  font-size: 18px;
+  transition: transform 0.3s ease;
+  color: #64748b;
+}
+
+.chevron-icon.open {
+  transform: rotate(180deg);
+}
+
+.filters-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease, padding 0.4s ease;
+  padding: 0 20px;
+}
+
+.filters-content.open {
+  max-height: 800px;
+  padding: 20px;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* Grid de Filtros */
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.filter-section {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.filter-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-section-title::before {
+  content: '';
+  width: 4px;
+  height: 16px;
+  background: #3b82f6;
+  border-radius: 2px;
+}
+
+/* Inputs de Filtros */
+.filter-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.filter-row:last-child {
+  margin-bottom: 0;
+}
+
+.filter-input-group {
+  flex: 1;
+  position: relative;
+}
+
+.filter-input-group label {
+  display: block;
+  font-size: 11px;
+  color: #64748b;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.filter-input-group input,
+.filter-input-group select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.filter-input-group input:focus,
+.filter-input-group select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Checkboxes de Tipo Impuesto */
+.tipo-impuesto-checkboxes {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.tipo-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.tipo-checkbox:hover {
+  border-color: #cbd5e1;
+}
+
+.tipo-checkbox.checked {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.tipo-checkbox input {
+  display: none;
+}
+
+.tipo-checkbox .checkmark {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #cbd5e1;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.tipo-checkbox.checked .checkmark {
+  background: #3b82f6;
+  border-color: #3b82f6;
+}
+
+.tipo-checkbox.checked .checkmark::after {
+  content: '✓';
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.tipo-checkbox .tipo-label {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.tipo-checkbox.iva .tipo-label { color: #1d4ed8; }
+.tipo-checkbox.ice .tipo-label { color: #be185d; }
+.tipo-checkbox.irbpnr .tipo-label { color: #059669; }
+
+/* Botones de Filtros */
+.filters-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.btn-apply {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-apply:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.btn-clear {
+  padding: 10px 24px;
+  background: white;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-clear:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+/* Toolbar */
+.table-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.results-info {
+  font-size: 14px;
+  color: #64748b;
+}
+
+.results-info strong {
+  color: #1e293b;
+}
+
+.per-page-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.per-page-control label {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.per-page-control select {
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  background: white;
+}
+
+/* Tabla Principal */
+.table-wrapper {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e2e8f0;
+}
+
+.impuestos-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.impuestos-table thead {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.impuestos-table th {
+  padding: 16px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.impuestos-table th.sortable {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.impuestos-table th.sortable:hover {
+  background: #e2e8f0;
+}
+
+.th-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sort-icon {
+  font-size: 14px;
+  color: #94a3b8;
+  transition: all 0.2s ease;
+}
+
+.sort-icon.active {
+  color: #3b82f6;
+}
+
+.impuestos-table tbody tr {
+  transition: all 0.2s ease;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.impuestos-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.impuestos-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.impuestos-table td {
+  padding: 16px;
+  font-size: 14px;
+  color: #334155;
+  vertical-align: middle;
+}
+
+/* Badges de Tipo Impuesto */
+.badge-tipo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge-tipo.iva {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  color: #1d4ed8;
+}
+
+.badge-tipo.ice {
+  background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
+  color: #be185d;
+}
+
+.badge-tipo.irbpnr {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #059669;
+}
+
+.badge-tipo-icon {
+  font-size: 14px;
+}
+
+/* Badge de Estado */
+.badge-estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge-estado.activo {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.badge-estado.desactivado {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.badge-estado-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.badge-estado.activo .badge-estado-dot {
+  background: #22c55e;
+  animation: pulse 2s infinite;
+}
+
+.badge-estado.desactivado .badge-estado-dot {
+  background: #ef4444;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Valor Tarifa */
+.valor-tarifa {
+  font-family: 'Monaco', 'Consolas', monospace;
+  font-weight: 600;
+  color: #0f172a;
+  background: #f8fafc;
+  padding: 4px 10px;
+  border-radius: 6px;
+  display: inline-block;
+}
+
+.valor-tarifa.porcentaje {
+  color: #7c3aed;
+}
+
+.valor-tarifa.importe {
+  color: #059669;
+}
+
+/* Fecha */
+.fecha-cell {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.fecha-cell .fecha {
+  font-weight: 500;
+  color: #334155;
+}
+
+.fecha-cell .hora {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+/* Acciones */
+.actions-cell {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-action {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: all 0.2s ease;
+}
+
+.btn-action.edit {
+  background: #eff6ff;
+  color: #3b82f6;
+}
+
+.btn-action.edit:hover {
+  background: #3b82f6;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.btn-action.delete {
+  background: #fef2f2;
+  color: #ef4444;
+}
+
+.btn-action.delete:hover {
+  background: #ef4444;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+/* Estado vacío */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+.empty-state-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.empty-state h3 {
+  font-size: 18px;
+  color: #334155;
+  margin: 0 0 8px;
+}
+
+.empty-state p {
+  color: #64748b;
+  margin: 0;
+}
+
+/* Paginación */
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.pagination-btn {
+  width: 40px;
+  height: 40px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: #64748b;
+  transition: all 0.2s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-btn.active {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: white;
+}
+
+.pagination-info {
+  padding: 0 16px;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.pagination-info strong {
+  color: #1e293b;
+}
+
+/* Loading */
+.loading-overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+.tipos-loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #e2e8f0;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: tipos-spin 1s linear infinite;
+}
+
+@keyframes tipos-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .tipos-impuesto-page {
+    padding: 16px;
+  }
+  
+  .filters-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .tipos-impuesto-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .tipos-impuesto-header h1 {
+    font-size: 22px;
+  }
+  
+  .btn-nuevo {
+    justify-content: center;
+  }
+  
+  .stats-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  
+  .table-wrapper {
+    overflow-x: auto;
+  }
+  
+  .impuestos-table {
+    min-width: 900px;
+  }
+  
+  .table-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .tipo-impuesto-checkboxes {
+    flex-direction: column;
+  }
+  
+  .filter-row {
+    flex-direction: column;
+  }
+  
+  .filters-actions {
+    flex-direction: column;
+  }
+  
+  .filters-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+}

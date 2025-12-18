@@ -14,6 +14,7 @@ import { useUser } from '../contexts/userContext';
 import ImageViewerModal from './ImageViewerModal';
 import './Emisores.css';
 import './UsuarioDeleteModalModern.css';
+import './EstablecimientosTab.css';
 import { getImageUrl } from '../helpers/imageUrl';
 import { User } from '../types/user';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -316,7 +317,7 @@ const EmisorInfo: React.FC = () => {
   if (loading) {
     return (
       <div className="emisores-page">
-        <LoadingSpinner fullHeight message="Cargando emisor…" />
+        <LoadingSpinner fullHeight />
       </div>
     );
   }
@@ -611,316 +612,298 @@ const EmisorInfo: React.FC = () => {
           )}
 
           {tab === 'establecimientos' && (
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, gap: 12 }}>
-                <h4 style={{ margin: 0, position: 'absolute', top: 16 }}>Establecimientos</h4>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', justifyContent: 'flex-end' }}>
-                  {/* Filter UI - same layout as Emisores */}
-                  <div style={{ 
-                    background: '#f8f9fa', 
-                    border: '1px solid #dee2e6', 
-                    borderRadius: 6, 
-                    padding: '0 12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    height: 44,
-                    flex: 1,
-                    maxWidth: 500
-                  }}>
-                    <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-                      {activeEstFilter === 'estado' ? (
-                        <select 
-                          value={estFilterValue} 
-                          onChange={(e) => setEstFilterValue(e.target.value)}
-                          style={{
-                            width: '100%',
-                            padding: '6px 8px',
-                            borderRadius: 4,
-                            border: 'none',
-                            fontSize: 14,
-                            fontFamily: 'inherit',
-                            background: 'transparent'
-                          }}
-                        >
-                          <option value="">Todos</option>
-                          <option value="abierto">Abierto</option>
-                          <option value="cerrado">Cerrado</option>
-                        </select>
-                      ) : (
-                        <input
-                          type="text"
-                          placeholder={activeEstFilter ? `Filtrar por ${estFilterLabels[activeEstFilter]}` : 'Haz clic en un encabezado para filtrar'}
-                          value={estFilterValue}
-                          onChange={(e) => setEstFilterValue(e.target.value)}
-                          style={{
-                            width: '100%',
-                            padding: '6px 8px',
-                            borderRadius: 4,
-                            border: 'none',
-                            fontSize: 14,
-                            background: 'transparent',
-                            outline: 'none'
-                          }}
-                        />
-                      )}
-                    </div>
-                    <span style={{ fontSize: 16, color: '#666', flexShrink: 0 }}>🔍</span>
-                    {activeEstFilter && estFilterValue && (
-                      <button
-                        onClick={() => setEstFilterValue('')}
-                        style={{
-                          background: 'transparent',
-                          border: 'none',
-                          borderRadius: 4,
-                          padding: '2px 6px',
-                          cursor: 'pointer',
-                          fontSize: 14,
-                          color: '#666',
-                          flexShrink: 0
-                        }}
-                      >
-                        ×
-                      </button>
-                    )}
+            <div className="est-tab-container">
+              {/* Stats Cards */}
+              <div className="est-stats-grid">
+                <div className="est-stat-card total">
+                  <div className="est-stat-icon total">🏢</div>
+                  <div className="est-stat-content">
+                    <div className="est-stat-value">{establecimientos.length}</div>
+                    <div className="est-stat-label">Total Establecimientos</div>
                   </div>
-                  <button 
-                    onClick={() => { setEditEst(null); setOpenNewEst(true); }} 
-                    disabled={isLimitedRole}
-                    style={{ 
-                      padding: '0 20px', 
-                      borderRadius: 6, 
-                      background: isLimitedRole ? '#ccc' : '#0d6efd', 
-                      color: '#fff', 
-                      border: 'none', 
-                      cursor: isLimitedRole ? 'not-allowed' : 'pointer',
-                      fontWeight: 700,
-                      fontSize: 14,
-                      height: 44,
-                      whiteSpace: 'nowrap',
-                      transition: 'all 0.3s ease',
-                      opacity: isLimitedRole ? 0.5 : 1
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isLimitedRole) {
-                        e.currentTarget.style.background = '#0b5fd7';
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(13, 110, 253, 0.3)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isLimitedRole) {
-                        e.currentTarget.style.background = '#0d6efd';
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = 'none';
-                      }
-                    }}
-                    title={isLimitedRole ? 'Los gerentes y cajeros no pueden crear establecimientos' : 'Crear nuevo establecimiento'}
-                  >
-                    Nuevo
-                  </button>
+                </div>
+                <div className="est-stat-card activos">
+                  <div className="est-stat-icon activos">✓</div>
+                  <div className="est-stat-content">
+                    <div className="est-stat-value">{establecimientos.filter(e => e.estado === 'ABIERTO').length}</div>
+                    <div className="est-stat-label">Activos</div>
+                  </div>
+                </div>
+                <div className="est-stat-card cerrados">
+                  <div className="est-stat-icon cerrados">⏸</div>
+                  <div className="est-stat-content">
+                    <div className="est-stat-value">{establecimientos.filter(e => e.estado !== 'ABIERTO').length}</div>
+                    <div className="est-stat-label">Cerrados</div>
+                  </div>
+                </div>
+                <div className="est-stat-card usuarios">
+                  <div className="est-stat-icon usuarios">👥</div>
+                  <div className="est-stat-content">
+                    <div className="est-stat-value">{establecimientos.reduce((acc, e) => acc + (e.usuarios?.length || 0), 0)}</div>
+                    <div className="est-stat-label">Usuarios Asociados</div>
+                  </div>
                 </div>
               </div>
-              {activeEstFilter && (
-                <small style={{ color: '#666', fontSize: 12, marginBottom: 12, display: 'block' }}>
-                  Buscando por {estFilterLabels[activeEstFilter]}
-                  {estFilterValue && (
-                    <button
-                      onClick={() => { setEstFilterValue(''); }}
-                      style={{ marginLeft: 8, background: 'transparent', border: 'none', color: '#1e40af', cursor: 'pointer', fontSize: 12 }}
-                    >
-                      Limpiar
-                    </button>
-                  )}
-                </small>
-              )}
 
-              <div className="tabla-wrapper estab-table">
-                <div className="tabla-scroll-container">
-                  <table className="tabla-emisores">
+              {/* Filtros colapsables */}
+              <div className="est-filters-section">
+                <div 
+                  className="est-filters-header" 
+                  onClick={() => setActiveEstFilter(activeEstFilter ? null : 'codigo')}
+                >
+                  <div className="est-filters-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46"></polygon>
+                    </svg>
+                    Filtros
+                    {estFilterValue && <span className="est-filters-badge">1 activo</span>}
+                  </div>
+                  <button className={`est-filters-toggle ${activeEstFilter ? 'open' : ''}`}>
+                    {activeEstFilter ? 'Ocultar' : 'Mostrar'}
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="6,9 12,15 18,9"></polyline>
+                    </svg>
+                  </button>
+                </div>
+                <div className={`est-filters-body ${activeEstFilter ? 'open' : ''}`}>
+                  <div className="est-filters-grid">
+                    <div className="est-filter-group">
+                      <label className="est-filter-label">Código</label>
+                      <input
+                        type="text"
+                        className="est-filter-input"
+                        placeholder="Buscar por código..."
+                        value={activeEstFilter === 'codigo' ? estFilterValue : ''}
+                        onChange={(e) => { setActiveEstFilter('codigo'); setEstFilterValue(e.target.value); }}
+                      />
+                    </div>
+                    <div className="est-filter-group">
+                      <label className="est-filter-label">Nombre</label>
+                      <input
+                        type="text"
+                        className="est-filter-input"
+                        placeholder="Buscar por nombre..."
+                        value={activeEstFilter === 'nombre' ? estFilterValue : ''}
+                        onChange={(e) => { setActiveEstFilter('nombre'); setEstFilterValue(e.target.value); }}
+                      />
+                    </div>
+                    <div className="est-filter-group">
+                      <label className="est-filter-label">Nombre Comercial</label>
+                      <input
+                        type="text"
+                        className="est-filter-input"
+                        placeholder="Buscar por nombre comercial..."
+                        value={activeEstFilter === 'nombre_comercial' ? estFilterValue : ''}
+                        onChange={(e) => { setActiveEstFilter('nombre_comercial'); setEstFilterValue(e.target.value); }}
+                      />
+                    </div>
+                    <div className="est-filter-group">
+                      <label className="est-filter-label">Dirección</label>
+                      <input
+                        type="text"
+                        className="est-filter-input"
+                        placeholder="Buscar por dirección..."
+                        value={activeEstFilter === 'direccion' ? estFilterValue : ''}
+                        onChange={(e) => { setActiveEstFilter('direccion'); setEstFilterValue(e.target.value); }}
+                      />
+                    </div>
+                    <div className="est-filter-group">
+                      <label className="est-filter-label">Estado</label>
+                      <select
+                        className="est-filter-select"
+                        value={activeEstFilter === 'estado' ? estFilterValue : ''}
+                        onChange={(e) => { setActiveEstFilter('estado'); setEstFilterValue(e.target.value); }}
+                      >
+                        <option value="">Todos los estados</option>
+                        <option value="abierto">Abierto</option>
+                        <option value="cerrado">Cerrado</option>
+                      </select>
+                    </div>
+                  </div>
+                  {estFilterValue && (
+                    <div className="est-filters-actions">
+                      <button 
+                        className="est-btn-clear-filters"
+                        onClick={() => { setEstFilterValue(''); setActiveEstFilter(null); }}
+                      >
+                        Limpiar filtros
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Header con botón nuevo */}
+              <div className="est-header-row">
+                <div className="est-header-title">
+                  Establecimientos
+                  <span className="est-count">{filteredEsts.length}</span>
+                </div>
+                <button 
+                  className="est-btn-nuevo"
+                  onClick={() => { setEditEst(null); setOpenNewEst(true); }} 
+                  disabled={isLimitedRole}
+                  title={isLimitedRole ? 'Los gerentes y cajeros no pueden crear establecimientos' : 'Crear nuevo establecimiento'}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                  Nuevo Establecimiento
+                </button>
+              </div>
+
+              {/* Tabla moderna */}
+              <div className="est-table-container">
+                <div className="est-table-wrapper">
+                  <table className="est-table">
                     <thead>
                       <tr>
                         <th 
                           className="sortable" 
-                          onClick={() => { 
-                            toggleSortEst('codigo');
-                            setActiveEstFilter('codigo');
-                            setEstFilterValue('');
-                          }} 
-                          style={{ minWidth: 120, cursor: 'pointer' }}
+                          onClick={() => toggleSortEst('codigo')}
                         >
-                          Código {sortByEst === 'codigo' ? (sortDirEst === 'asc' ? '▲' : '▼') : '▾'} {activeEstFilter === 'codigo' && <span style={{ color: '#ff8c00' }}>●</span>}
+                          Código 
+                          <span className="sort-icon">{sortByEst === 'codigo' ? (sortDirEst === 'asc' ? '▲' : '▼') : '▾'}</span>
                         </th>
                         <th 
                           className="sortable" 
-                          onClick={() => { 
-                            toggleSortEst('nombre');
-                            setActiveEstFilter('nombre');
-                            setEstFilterValue('');
-                          }} 
-                          style={{ minWidth: 150, cursor: 'pointer' }}
+                          onClick={() => toggleSortEst('nombre')}
                         >
-                          Nombre {sortByEst === 'nombre' ? (sortDirEst === 'asc' ? '▲' : '▼') : '▾'} {activeEstFilter === 'nombre' && <span style={{ color: '#ff8c00' }}>●</span>}
+                          Nombre 
+                          <span className="sort-icon">{sortByEst === 'nombre' ? (sortDirEst === 'asc' ? '▲' : '▼') : '▾'}</span>
                         </th>
                         <th 
                           className="sortable" 
-                          onClick={() => { 
-                            toggleSortEst('nombre_comercial');
-                            setActiveEstFilter('nombre_comercial');
-                            setEstFilterValue('');
-                          }} 
-                          style={{ minWidth: 200, cursor: 'pointer' }}
+                          onClick={() => toggleSortEst('nombre_comercial')}
                         >
-                          Nombre Comercial {sortByEst === 'nombre_comercial' ? (sortDirEst === 'asc' ? '▲' : '▼') : '▾'} {activeEstFilter === 'nombre_comercial' && <span style={{ color: '#ff8c00' }}>●</span>}
+                          N. Comercial 
+                          <span className="sort-icon">{sortByEst === 'nombre_comercial' ? (sortDirEst === 'asc' ? '▲' : '▼') : '▾'}</span>
                         </th>
+                        <th>Dirección</th>
+                        <th>Correo</th>
+                        <th>Teléfono</th>
+                        <th>Logo</th>
                         <th 
                           className="sortable" 
-                          onClick={() => { 
-                            toggleSortEst('direccion');
-                            setActiveEstFilter('direccion');
-                            setEstFilterValue('');
-                          }} 
-                          style={{ minWidth: 300, cursor: 'pointer' }}
+                          onClick={() => toggleSortEst('estado')}
                         >
-                          Dirección {sortByEst === 'direccion' ? (sortDirEst === 'asc' ? '▲' : '▼') : '▾'} {activeEstFilter === 'direccion' && <span style={{ color: '#ff8c00' }}>●</span>}
+                          Estado 
+                          <span className="sort-icon">{sortByEst === 'estado' ? (sortDirEst === 'asc' ? '▲' : '▼') : '▾'}</span>
                         </th>
-                        <th style={{ minWidth: 150 }}>Correo</th>
-                        <th style={{ minWidth: 140 }}>Teléfono</th>
-                        <th style={{ minWidth: 160 }}>Inicio Actividades</th>
-                        <th style={{ minWidth: 160 }}>Reinicio Actividades</th>
-                        <th style={{ minWidth: 160 }}>Cierre Establecimiento</th>
-                        <th style={{ minWidth: 120 }}>Logo</th>
-                        <th 
-                          className="sortable" 
-                          onClick={() => { 
-                            toggleSortEst('estado');
-                            setActiveEstFilter('estado');
-                            setEstFilterValue('');
-                          }} 
-                          style={{ minWidth: 120, cursor: 'pointer' }}
-                        >
-                          Estado {sortByEst === 'estado' ? (sortDirEst === 'asc' ? '▲' : '▼') : '▾'} {activeEstFilter === 'estado' && <span style={{ color: '#ff8c00' }}>●</span>}
-                        </th>
-                        <th style={{ minWidth: 300 }}>Usuarios Asociados</th>
-                        <th className="th-sticky sticky-right">Acciones</th>
+                        <th>Usuarios</th>
+                        <th>Acciones</th>
                       </tr>
                     </thead>
 
                     <tbody>
                       {paginatedEsts.length === 0 ? (
-                        <tr><td className="loading-row" colSpan={13}>No hay establecimientos registrados.</td></tr>
+                        <tr>
+                          <td colSpan={10}>
+                            <div className="est-empty-state">
+                              <div className="est-empty-icon">🏢</div>
+                              <div className="est-empty-title">No hay establecimientos</div>
+                              <div className="est-empty-text">
+                                {estFilterValue ? 'No se encontraron resultados con los filtros aplicados' : 'Aún no se han registrado establecimientos'}
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
                       ) : paginatedEsts.map((est) => (
                         <tr key={est.id}>
-                          <td style={{ textAlign: 'center' }}><Link className="link-ruc" to={`/emisores/${company?.id}/establecimientos/${est.id}`}>{est.codigo}</Link></td>
-                          <td style={{ textAlign: 'center' }}>{est.nombre}</td>
-                          <td style={{ textAlign: 'center' }}>{est.nombre_comercial || '-'}</td>
-                          <td style={{ textAlign: 'center' }}>{est.direccion || '-'}</td>
-                          <td style={{ textAlign: 'center', fontSize: 13, color: '#3b82f6' }}>{est.correo || '-'}</td>
-                          <td style={{ textAlign: 'center' }}>{est.telefono || '-'}</td>
-                          <td style={{ textAlign: 'center', fontSize: 13 }}>
-                            {est.fecha_inicio_actividades 
-                              ? new Date(est.fecha_inicio_actividades).toLocaleDateString('es-EC', { year: 'numeric', month: '2-digit', day: '2-digit' })
-                              : '-'}
+                          <td>
+                            <Link className="est-codigo-link" to={`/emisores/${company?.id}/establecimientos/${est.id}`}>
+                              {est.codigo}
+                            </Link>
                           </td>
-                          <td style={{ textAlign: 'center', fontSize: 13 }}>
-                            {est.fecha_reinicio_actividades 
-                              ? new Date(est.fecha_reinicio_actividades).toLocaleDateString('es-EC', { year: 'numeric', month: '2-digit', day: '2-digit' })
-                              : '-'}
+                          <td><span className="est-nombre">{est.nombre}</span></td>
+                          <td>{est.nombre_comercial || '-'}</td>
+                          <td>
+                            <span className="est-direccion" title={est.direccion}>
+                              {est.direccion || '-'}
+                            </span>
                           </td>
-                          <td style={{ textAlign: 'center', fontSize: 13 }}>
-                            {est.fecha_cierre_establecimiento 
-                              ? new Date(est.fecha_cierre_establecimiento).toLocaleDateString('es-EC', { year: 'numeric', month: '2-digit', day: '2-digit' })
-                              : '-'}
+                          <td>
+                            <span className="est-email">
+                              {est.correo ? (
+                                <>
+                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                    <polyline points="22,6 12,13 2,6"></polyline>
+                                  </svg>
+                                  {est.correo}
+                                </>
+                              ) : '-'}
+                            </span>
                           </td>
-                          <td style={{ textAlign: 'center' }}>
-                            {(est.logo_url || est.logo_path || est.logo) ? (
-                              <img 
-                                className="logo-cell" 
-                                src={getImageUrl(est.logo_url || est.logo_path || est.logo)} 
-                                alt="logo" 
-                                onClick={() => { setViewerImage(est.logo_url || est.logo_path || est.logo); setViewerOpen(true); }}
-                                style={{ cursor: 'pointer', transition: 'transform 0.2s' }}
-                                onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.1)')}
-                                onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-                                title="Haz clic para ampliar"
-                              />
-                            ) : (<span className="logo-placeholder">—</span>)}
+                          <td>{est.telefono || '-'}</td>
+                          <td>
+                            <div className="est-logo-cell">
+                              {(est.logo_url || est.logo_path || est.logo) ? (
+                                <img 
+                                  className="est-logo-img"
+                                  src={getImageUrl(est.logo_url || est.logo_path || est.logo)} 
+                                  alt="logo" 
+                                  onClick={() => { setViewerImage(est.logo_url || est.logo_path || est.logo); setViewerOpen(true); }}
+                                  title="Haz clic para ampliar"
+                                />
+                              ) : (
+                                <span className="est-logo-placeholder">—</span>
+                              )}
+                            </div>
                           </td>
-                          <td style={{ textAlign: 'center' }}>
-                            <div style={{ 
-                              background: est.estado === 'ABIERTO' 
-                                ? 'linear-gradient(135deg, #bbf7d0 0%, #86efac 100%)' 
-                                : 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)', 
-                              padding: '8px 14px', 
-                              borderRadius: 20, 
-                              color: est.estado === 'ABIERTO' ? '#059669' : '#6b7280', 
-                              fontWeight: 700,
-                              fontSize: '12px',
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.5px',
-                              boxShadow: est.estado === 'ABIERTO' 
-                                ? '0 2px 8px rgba(5, 150, 105, 0.2)' 
-                                : '0 2px 8px rgba(0, 0, 0, 0.05)',
-                              display: 'inline-block'
-                            }}>{est.estado === 'ABIERTO' ? 'Activo' : 'Cerrado'}</div>
+                          <td>
+                            <span className={`est-estado-badge ${est.estado === 'ABIERTO' ? 'activo' : 'cerrado'}`}>
+                              {est.estado === 'ABIERTO' ? 'Activo' : 'Cerrado'}
+                            </span>
                           </td>
-                          <td style={{ textAlign: 'left', fontSize: 13 }}>
+                          <td>
                             {est.usuarios && est.usuarios.length > 0 ? (
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                {est.usuarios.map((usr: any, idx: number) => (
-                                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                    <span style={{ fontWeight: 600, color: '#666' }}>
-                                      {usr.role?.toUpperCase() || 'SIN_ROL'}
+                              <div className="est-usuarios-list">
+                                {est.usuarios.slice(0, 3).map((usr: any, idx: number) => (
+                                  <div key={idx} className="est-usuario-item">
+                                    <span className={`est-usuario-role ${usr.role?.toLowerCase() || ''}`}>
+                                      {usr.role?.substring(0, 3).toUpperCase() || '?'}
                                     </span>
-                                    <span>–</span>
                                     <a 
                                       href="#" 
+                                      className="est-usuario-link"
                                       onClick={(e) => {
                                         e.preventDefault();
                                         handleOpenUserDetail(usr);
                                       }}
-                                      style={{ 
-                                        color: '#1e40af', 
-                                        textDecoration: 'none',
-                                        fontWeight: 500,
-                                        cursor: 'pointer',
-                                        transition: 'all 0.2s'
-                                      }}
-                                      onMouseEnter={(e) => {
-                                        e.currentTarget.style.textDecoration = 'underline';
-                                        e.currentTarget.style.color = '#1e3a8a';
-                                      }}
-                                      onMouseLeave={(e) => {
-                                        e.currentTarget.style.textDecoration = 'none';
-                                        e.currentTarget.style.color = '#1e40af';
-                                      }}
                                     >
                                       {usr.username || 'N/A'}
                                     </a>
-                                    <span>–</span>
-                                    <span style={{ color: '#333' }}>
-                                      {usr.nombres || ''} {usr.apellidos || ''}
-                                    </span>
                                   </div>
                                 ))}
+                                {est.usuarios.length > 3 && (
+                                  <span style={{ fontSize: 12, color: '#6b7280' }}>+{est.usuarios.length - 3} más</span>
+                                )}
                               </div>
                             ) : (
-                              <span>-</span>
+                              <span style={{ color: '#9ca3af' }}>Sin usuarios</span>
                             )}
                           </td>
-                          <td className="td-sticky sticky-right acciones">
-                            <button 
-                              title={canEditEst(est) ? "Editar" : "No tienes permisos para editar"}
-                              disabled={!canEditEst(est)}
-                              onClick={() => { setEditEst(est); }}
-                              style={{ opacity: canEditEst(est) ? 1 : 0.5, cursor: canEditEst(est) ? 'pointer' : 'not-allowed' }}
-                            >✏️</button>
-                            <button 
-                              title={canEditEst(est) ? "Eliminar" : "No tienes permisos para eliminar"}
-                              disabled={!canEditEst(est)}
-                              onClick={() => { setDeletingEstId(est.id); setDeleteEstOpen(true); }}
-                              style={{ opacity: canEditEst(est) ? 1 : 0.5, cursor: canEditEst(est) ? 'pointer' : 'not-allowed' }}
-                            >🗑️</button>
+                          <td>
+                            <div className="est-actions">
+                              <button 
+                                className="est-action-btn edit"
+                                title={canEditEst(est) ? "Editar" : "No tienes permisos para editar"}
+                                disabled={!canEditEst(est)}
+                                onClick={() => { setEditEst(est); }}
+                              >
+                                ✏️
+                              </button>
+                              <button 
+                                className="est-action-btn delete"
+                                title={canEditEst(est) ? "Eliminar" : "No tienes permisos para eliminar"}
+                                disabled={!canEditEst(est)}
+                                onClick={() => { setDeletingEstId(est.id); setDeleteEstOpen(true); }}
+                              >
+                                🗑️
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -928,26 +911,31 @@ const EmisorInfo: React.FC = () => {
                   </table>
                 </div>
 
-                {/* Pagination controls */}
-                <div className="pagination-controls">
-                  <div className="pagination-info">
+                {/* Paginación moderna */}
+                <div className="est-pagination">
+                  <div className="est-pagination-info">
                     <label>
                       Mostrar
-                      <select className="items-per-page-select" value={perPageEst} onChange={(e) => { setPerPageEst(Number(e.target.value)); setPageEst(1); }}>
+                      <select 
+                        className="est-per-page-select" 
+                        value={perPageEst} 
+                        onChange={(e) => { setPerPageEst(Number(e.target.value)); setPageEst(1); }}
+                      >
                         <option value={5}>5</option>
                         <option value={10}>10</option>
                         <option value={15}>15</option>
+                        <option value={25}>25</option>
                       </select>
                       por página
                     </label>
-                    <span className="page-range">{startIdx}–{endIdx} de {totalEst}</span>
+                    <span className="est-page-range">{startIdx}–{endIdx} de {totalEst}</span>
                   </div>
 
-                  <div className="pagination-buttons">
-                    <button className="page-btn" onClick={() => setPageEst(1)} disabled={pageEst <= 1}>{'⏮'}</button>
-                    <button className="page-btn" onClick={() => setPageEst((p) => Math.max(1, p - 1))} disabled={pageEst <= 1}>{'◀'}</button>
-                    <button className="page-btn" onClick={() => setPageEst((p) => Math.min(lastPageEst, p + 1))} disabled={pageEst >= lastPageEst}>{'▶'}</button>
-                    <button className="page-btn" onClick={() => setPageEst(lastPageEst)} disabled={pageEst >= lastPageEst}>{'⏭'}</button>
+                  <div className="est-pagination-buttons">
+                    <button className="est-page-btn" onClick={() => setPageEst(1)} disabled={pageEst <= 1}>⏮</button>
+                    <button className="est-page-btn" onClick={() => setPageEst((p) => Math.max(1, p - 1))} disabled={pageEst <= 1}>◀</button>
+                    <button className="est-page-btn" onClick={() => setPageEst((p) => Math.min(lastPageEst, p + 1))} disabled={pageEst >= lastPageEst}>▶</button>
+                    <button className="est-page-btn" onClick={() => setPageEst(lastPageEst)} disabled={pageEst >= lastPageEst}>⏭</button>
                   </div>
                 </div>
               </div>

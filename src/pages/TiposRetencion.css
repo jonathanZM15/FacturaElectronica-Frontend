@@ -1,0 +1,783 @@
+/* ===============================================
+   TIPOS DE RETENCIÓN - ESTILOS MODERNOS
+   =============================================== */
+
+/* Container Principal */
+.tipos-retencion-page {
+  padding: 24px;
+  max-width: 1600px;
+  margin: 0 auto;
+  animation: retencionFadeIn 0.3s ease;
+}
+
+@keyframes retencionFadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Header */
+.tipos-retencion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.tipos-retencion-header h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tipos-retencion-header h1 .icon {
+  font-size: 32px;
+}
+
+.retencion-btn-nuevo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+}
+
+.retencion-btn-nuevo:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+}
+
+.retencion-btn-nuevo:active {
+  transform: translateY(0);
+}
+
+/* Stats Cards */
+.retencion-stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.retencion-stat-card {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+  border: 1px solid #e2e8f0;
+}
+
+.retencion-stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.retencion-stat-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+
+.retencion-stat-icon.iva { background: linear-gradient(135deg, #dbeafe, #bfdbfe); }
+.retencion-stat-icon.renta { background: linear-gradient(135deg, #fef3c7, #fde68a); }
+.retencion-stat-icon.isd { background: linear-gradient(135deg, #e0e7ff, #c7d2fe); }
+.retencion-stat-icon.total { background: linear-gradient(135deg, #d1fae5, #a7f3d0); }
+
+.retencion-stat-info h3 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.retencion-stat-info p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* Filtros Colapsables */
+.retencion-filters-panel {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  margin-bottom: 24px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+
+.retencion-filters-toggle {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.retencion-filters-toggle:hover {
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+}
+
+.retencion-filters-toggle-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.retencion-filters-toggle-left span:first-child {
+  font-size: 20px;
+}
+
+.retencion-filters-toggle-left span:last-child {
+  font-weight: 600;
+  color: #334155;
+  font-size: 15px;
+}
+
+.retencion-filters-toggle-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.retencion-active-filters-count {
+  background: #10b981;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.retencion-chevron-icon {
+  font-size: 18px;
+  transition: transform 0.3s ease;
+  color: #64748b;
+}
+
+.retencion-chevron-icon.open {
+  transform: rotate(180deg);
+}
+
+.retencion-filters-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease, padding 0.4s ease;
+  padding: 0 20px;
+}
+
+.retencion-filters-content.open {
+  max-height: 800px;
+  padding: 20px;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* Grid de Filtros */
+.retencion-filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.retencion-filter-section {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+}
+
+.retencion-filter-section h4 {
+  margin: 0 0 12px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.retencion-filter-section h4 .icon {
+  font-size: 16px;
+}
+
+/* Checkboxes de Tipo */
+.retencion-tipo-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.retencion-tipo-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.retencion-tipo-checkbox:hover {
+  border-color: #10b981;
+}
+
+.retencion-tipo-checkbox.selected {
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  border-color: #10b981;
+  color: #059669;
+}
+
+.retencion-tipo-checkbox input {
+  display: none;
+}
+
+.retencion-checkbox-icon {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #cbd5e1;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  font-size: 12px;
+}
+
+.retencion-tipo-checkbox.selected .retencion-checkbox-icon {
+  background: #10b981;
+  border-color: #10b981;
+  color: white;
+}
+
+/* Fecha Range */
+.retencion-date-range {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.retencion-date-input-group {
+  flex: 1;
+}
+
+.retencion-date-input-group label {
+  display: block;
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.retencion-date-input-group input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.retencion-date-input-group input:focus {
+  outline: none;
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.retencion-date-separator {
+  color: #94a3b8;
+  font-weight: 500;
+  padding-top: 20px;
+}
+
+/* Search Inputs */
+.retencion-search-inputs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.retencion-search-input {
+  position: relative;
+}
+
+.retencion-search-input .icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  color: #94a3b8;
+}
+
+.retencion-search-input input {
+  width: 100%;
+  padding: 10px 12px 10px 40px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.retencion-search-input input:focus {
+  outline: none;
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+/* Filter Actions */
+.retencion-filter-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.retencion-btn-limpiar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: #f1f5f9;
+  color: #64748b;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.retencion-btn-limpiar:hover {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+/* Tabla Container */
+.retencion-table-container {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+
+.retencion-table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.retencion-table-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.retencion-table-title .icon {
+  font-size: 18px;
+}
+
+.retencion-table-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.retencion-per-page {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.retencion-per-page select {
+  padding: 6px 12px;
+  border: 2px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 13px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.retencion-per-page select:focus {
+  outline: none;
+  border-color: #10b981;
+}
+
+.retencion-results-count {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.retencion-results-count strong {
+  color: #1e293b;
+}
+
+/* Table Wrapper */
+.retencion-table-wrapper {
+  overflow-x: auto;
+}
+
+.retencion-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 900px;
+}
+
+.retencion-table th {
+  text-align: left;
+  padding: 14px 16px;
+  background: #f8fafc;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid #e2e8f0;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.retencion-table th:hover {
+  background: #f1f5f9;
+  color: #10b981;
+}
+
+.retencion-table th .sort-indicator {
+  margin-left: 6px;
+  font-size: 10px;
+  opacity: 0.5;
+}
+
+.retencion-table th.sorted .sort-indicator {
+  opacity: 1;
+  color: #10b981;
+}
+
+.retencion-table th:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: #f8fafc;
+}
+
+.retencion-table th:last-child {
+  position: sticky;
+  right: 0;
+  z-index: 2;
+  background: #f8fafc;
+  text-align: center;
+}
+
+.retencion-table td {
+  padding: 14px 16px;
+  font-size: 14px;
+  color: #334155;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.retencion-table td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: white;
+  font-weight: 600;
+}
+
+.retencion-table td:last-child {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  background: white;
+}
+
+.retencion-table tbody tr {
+  transition: background 0.2s ease;
+}
+
+.retencion-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.retencion-table tbody tr:hover td:first-child,
+.retencion-table tbody tr:hover td:last-child {
+  background: #f8fafc;
+}
+
+/* Tipo Badge */
+.retencion-tipo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.retencion-tipo-badge.iva {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  color: #1d4ed8;
+}
+
+.retencion-tipo-badge.renta {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #b45309;
+}
+
+.retencion-tipo-badge.isd {
+  background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+  color: #4f46e5;
+}
+
+/* Porcentaje */
+.retencion-porcentaje {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  color: #10b981;
+}
+
+.retencion-porcentaje .symbol {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+/* Fechas */
+.retencion-fecha {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.retencion-fecha .date {
+  display: block;
+  font-weight: 500;
+  color: #334155;
+}
+
+.retencion-fecha .time {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+/* Actions */
+.retencion-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.retencion-btn-action {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: all 0.2s ease;
+}
+
+.retencion-btn-action.edit {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #b45309;
+}
+
+.retencion-btn-action.edit:hover {
+  background: linear-gradient(135deg, #fde68a 0%, #fcd34d 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(180, 83, 9, 0.2);
+}
+
+.retencion-btn-action.delete {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #dc2626;
+}
+
+.retencion-btn-action.delete:hover {
+  background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+}
+
+/* Pagination */
+.retencion-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: 20px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.retencion-pagination-btn {
+  padding: 8px 14px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.retencion-pagination-btn:hover:not(:disabled) {
+  border-color: #10b981;
+  color: #10b981;
+}
+
+.retencion-pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.retencion-pagination-btn.active {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border-color: #10b981;
+  color: white;
+}
+
+.retencion-pagination-ellipsis {
+  padding: 8px;
+  color: #94a3b8;
+}
+
+/* Empty State */
+.retencion-empty-state {
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.retencion-empty-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.retencion-empty-state h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  color: #334155;
+}
+
+.retencion-empty-state p {
+  margin: 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+/* Loading */
+.retencion-loading {
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.retencion-loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #e2e8f0;
+  border-top-color: #10b981;
+  border-radius: 50%;
+  animation: retencionSpin 1s linear infinite;
+  margin: 0 auto 16px;
+}
+
+@keyframes retencionSpin {
+  to { transform: rotate(360deg); }
+}
+
+.retencion-loading p {
+  color: #64748b;
+  font-size: 14px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .tipos-retencion-page {
+    padding: 16px;
+  }
+  
+  .tipos-retencion-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .tipos-retencion-header h1 {
+    font-size: 24px;
+  }
+  
+  .retencion-btn-nuevo {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .retencion-stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .retencion-filters-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .retencion-table-header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  
+  .retencion-table-info {
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+  }
+}

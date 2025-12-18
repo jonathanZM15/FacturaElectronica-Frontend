@@ -142,7 +142,6 @@ const Login: React.FC = () => {
                 <LoadingSpinner
                   inline
                   size={20}
-                  message="Iniciando…"
                 />
               ) : (
                 'INICIAR SESIÓN'

@@ -936,7 +936,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                 }
               >
                 {resendingEmail ? (
-                  <LoadingSpinner inline size={18} message="Enviando…" />
+                  <LoadingSpinner inline size={18} />
                 ) : (
                   <>📧 Reenviar Correo</>
                 )}
@@ -949,7 +949,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
               className="btn-submit"
             >
               {loading ? (
-                <LoadingSpinner inline size={18} message="Guardando…" />
+                <LoadingSpinner inline size={18} />
               ) : (
                 editingId ? 'Actualizar' : 'Crear'
               )}

@@ -310,7 +310,7 @@ const PuntoEmisionDeleteModal: React.FC<PuntoEmisionDeleteModalProps> = ({
               }}
             >
               {loading ? (
-                <LoadingSpinner inline size={18} message="Eliminando…" />
+                <LoadingSpinner inline size={18} />
               ) : (
                 'Eliminar definitivamente'
               )}

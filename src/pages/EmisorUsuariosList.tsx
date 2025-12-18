@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { usuariosEmisorApi } from '../services/usuariosEmisorApi';
 import { useNotification } from '../contexts/NotificationContext';
 import { useUser } from '../contexts/userContext';
@@ -13,8 +13,7 @@ import {
   formatCreadorInfo,
   shouldShowCreador
 } from '../helpers/navigation';
-import './EmisorUsuarios.css';
-import './UsuarioDeleteModalModern.css';
+import './EmisorUsuariosListModern.css';
 
 interface EmisorUsuariosListProps {
   emiId: string | number;
@@ -448,265 +447,336 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
   }, [usuarios, user, distributorCreator]);
 
   const getSortIcon = (field: SortField) => {
-    if (sortField !== field) return '⇅';
-    return sortDirection === 'asc' ? '↑' : '↓';
+    if (sortField !== field) return <span className="eu-sort-icon">⇅</span>;
+    return <span className="eu-sort-icon active">{sortDirection === 'asc' ? '↑' : '↓'}</span>;
+  };
+
+  // Calcular estadísticas
+  const stats = useMemo(() => {
+    const activos = displayUsuarios.filter(u => u.estado === 'activo').length;
+    const nuevos = displayUsuarios.filter(u => u.estado === 'nuevo').length;
+    const pendientes = displayUsuarios.filter(u => u.estado === 'pendiente_verificacion').length;
+    const inactivos = displayUsuarios.filter(u => u.estado === 'suspendido' || u.estado === 'retirado').length;
+    const gerentes = displayUsuarios.filter(u => u.role === 'gerente').length;
+    const cajeros = displayUsuarios.filter(u => u.role === 'cajero').length;
+    return { total: displayUsuarios.length, activos, nuevos, pendientes, inactivos, gerentes, cajeros };
+  }, [displayUsuarios]);
+
+  // Contar filtros activos
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (filters.cedula) count++;
+    if (filters.nombres) count++;
+    if (filters.apellidos) count++;
+    if (filters.username) count++;
+    if (filters.email) count++;
+    if (filters.roles.length > 0) count++;
+    if (filters.estados.length > 0) count++;
+    if (filters.creator) count++;
+    if (filters.establishment) count++;
+    if (filters.dateFrom || filters.dateTo) count++;
+    if (filters.updateDateFrom || filters.updateDateTo) count++;
+    return count;
+  }, [filters]);
+
+  // Obtener iniciales del usuario
+  const getInitials = (u: User) => {
+    const n = u.nombres?.charAt(0) || '';
+    const a = u.apellidos?.charAt(0) || '';
+    return (n + a).toUpperCase() || '?';
   };
 
   return (
-    <div className="emisor-usuarios-container">
-      
-      <div className="usuarios-header">
-        <h3>Usuarios del emisor</h3>
-        <div className="header-actions">
-          <button 
-            onClick={() => setShowFilters(!showFilters)} 
-            className="btn-toggle-filters"
-            title={showFilters ? "Ocultar filtros" : "Mostrar filtros"}
-          >
-            🔍 {showFilters ? 'Ocultar' : 'Filtros'}
-          </button>
-          <button onClick={onOpenModal} className="btn-new-user">
-            Nuevo +
-          </button>
+    <div className="emisor-usuarios-modern">
+      {/* Header */}
+      <div className="eu-header">
+        <div className="eu-header-left">
+          <h2>👥 Usuarios del Emisor</h2>
+          <p>Gestiona los usuarios asociados a este emisor</p>
+        </div>
+        <button onClick={onOpenModal} className="btn-nuevo-usuario">
+          <span>➕</span>
+          Nuevo Usuario
+        </button>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="eu-stats-row">
+        <div className="eu-stat-card">
+          <div className="eu-stat-icon total">📊</div>
+          <div className="eu-stat-info">
+            <h3>{stats.total}</h3>
+            <p>Total Usuarios</p>
+          </div>
+        </div>
+        <div className="eu-stat-card">
+          <div className="eu-stat-icon activos">✅</div>
+          <div className="eu-stat-info">
+            <h3>{stats.activos}</h3>
+            <p>Activos</p>
+          </div>
+        </div>
+        <div className="eu-stat-card">
+          <div className="eu-stat-icon pendientes">⏳</div>
+          <div className="eu-stat-info">
+            <h3>{stats.pendientes + stats.nuevos}</h3>
+            <p>Pendientes</p>
+          </div>
+        </div>
+        <div className="eu-stat-card">
+          <div className="eu-stat-icon gerentes">👔</div>
+          <div className="eu-stat-info">
+            <h3>{stats.gerentes}</h3>
+            <p>Gerentes</p>
+          </div>
+        </div>
+        <div className="eu-stat-card">
+          <div className="eu-stat-icon cajeros">🧑‍💼</div>
+          <div className="eu-stat-info">
+            <h3>{stats.cajeros}</h3>
+            <p>Cajeros</p>
+          </div>
         </div>
       </div>
 
-      {/* Panel de filtros */}
-      {showFilters && (
-        <div className="filters-panel">
-          <div className="filters-grid">
-            <div className="filter-group">
+      {/* Panel de Filtros Colapsable */}
+      <div className="eu-filters-panel">
+        <button 
+          className="eu-filters-toggle"
+          onClick={() => setShowFilters(!showFilters)}
+        >
+          <div className="eu-filters-toggle-left">
+            <span>🔍</span>
+            Filtros de Búsqueda
+          </div>
+          <div className="eu-filters-toggle-right">
+            {activeFilterCount > 0 && (
+              <span className="eu-active-filters-badge">{activeFilterCount} activo{activeFilterCount > 1 ? 's' : ''}</span>
+            )}
+            <span className={`eu-chevron ${showFilters ? 'open' : ''}`}>▼</span>
+          </div>
+        </button>
+        
+        <div className={`eu-filters-content ${showFilters ? 'open' : ''}`}>
+          <div className="eu-filters-grid">
+            <div className="eu-filter-group">
               <label>Cédula</label>
               <input
                 type="text"
                 value={filters.cedula}
                 onChange={(e) => setFilters({...filters, cedula: e.target.value})}
-                placeholder="Buscar por cédula"
+                placeholder="Buscar por cédula..."
+                className="eu-filter-input"
               />
             </div>
 
-            <div className="filter-group">
+            <div className="eu-filter-group">
               <label>Nombres</label>
               <input
                 type="text"
                 value={filters.nombres}
                 onChange={(e) => setFilters({...filters, nombres: e.target.value})}
-                placeholder="Buscar por nombres"
+                placeholder="Buscar por nombres..."
+                className="eu-filter-input"
               />
             </div>
 
-            <div className="filter-group">
+            <div className="eu-filter-group">
               <label>Apellidos</label>
               <input
                 type="text"
                 value={filters.apellidos}
                 onChange={(e) => setFilters({...filters, apellidos: e.target.value})}
-                placeholder="Buscar por apellidos"
+                placeholder="Buscar por apellidos..."
+                className="eu-filter-input"
               />
             </div>
 
-            <div className="filter-group">
+            <div className="eu-filter-group">
               <label>Username</label>
               <input
                 type="text"
                 value={filters.username}
                 onChange={(e) => setFilters({...filters, username: e.target.value})}
-                placeholder="Buscar por username"
+                placeholder="Buscar por username..."
+                className="eu-filter-input"
               />
             </div>
 
-            <div className="filter-group">
+            <div className="eu-filter-group">
               <label>Email</label>
               <input
                 type="text"
                 value={filters.email}
                 onChange={(e) => setFilters({...filters, email: e.target.value})}
-                placeholder="Buscar por email"
+                placeholder="Buscar por email..."
+                className="eu-filter-input"
               />
             </div>
 
-            <div className="filter-group">
-              <label>Roles</label>
-              <div className="checkbox-group">
-                <label className="checkbox-label">
-                  <input 
-                    type="checkbox" 
-                    checked={filters.roles.includes('emisor')}
-                    onChange={() => toggleRoleFilter('emisor')}
-                  />
-                  Emisor
-                </label>
-                <label className="checkbox-label">
-                  <input 
-                    type="checkbox" 
-                    checked={filters.roles.includes('gerente')}
-                    onChange={() => toggleRoleFilter('gerente')}
-                  />
-                  Gerente
-                </label>
-                <label className="checkbox-label">
-                  <input 
-                    type="checkbox" 
-                    checked={filters.roles.includes('cajero')}
-                    onChange={() => toggleRoleFilter('cajero')}
-                  />
-                  Cajero
-                </label>
-              </div>
-            </div>
-
-            <div className="filter-group">
-              <label>Estados</label>
-              <div className="checkbox-group">
-                <label className="checkbox-label">
-                  <input 
-                    type="checkbox" 
-                    checked={filters.estados.includes('nuevo')}
-                    onChange={() => toggleEstadoFilter('nuevo')}
-                  />
-                  Nuevo
-                </label>
-                <label className="checkbox-label">
-                  <input 
-                    type="checkbox" 
-                    checked={filters.estados.includes('activo')}
-                    onChange={() => toggleEstadoFilter('activo')}
-                  />
-                  Activo
-                </label>
-                <label className="checkbox-label">
-                  <input 
-                    type="checkbox" 
-                    checked={filters.estados.includes('pendiente_verificacion')}
-                    onChange={() => toggleEstadoFilter('pendiente_verificacion')}
-                  />
-                  Pendiente
-                </label>
-                <label className="checkbox-label">
-                  <input 
-                    type="checkbox" 
-                    checked={filters.estados.includes('suspendido')}
-                    onChange={() => toggleEstadoFilter('suspendido')}
-                  />
-                  Suspendido
-                </label>
-                <label className="checkbox-label">
-                  <input 
-                    type="checkbox" 
-                    checked={filters.estados.includes('retirado')}
-                    onChange={() => toggleEstadoFilter('retirado')}
-                  />
-                  Retirado
-                </label>
-              </div>
-            </div>
-
-            <div className="filter-group">
+            <div className="eu-filter-group">
               <label>Establecimiento</label>
               <input
                 type="text"
                 value={filters.establishment}
                 onChange={(e) => setFilters({...filters, establishment: e.target.value})}
-                placeholder="Código o nombre"
+                placeholder="Código o nombre..."
+                className="eu-filter-input"
               />
             </div>
 
-            <div className="filter-group">
-              <label>Usuario creador</label>
-              <input
-                type="text"
-                value={filters.creator}
-                onChange={(e) => setFilters({...filters, creator: e.target.value})}
-                placeholder="Buscar por creador"
-              />
+            <div className="eu-filter-group">
+              <label>Roles</label>
+              <div className="eu-checkbox-group">
+                {['emisor', 'gerente', 'cajero'].map(role => (
+                  <label 
+                    key={role}
+                    className={`eu-checkbox-pill ${filters.roles.includes(role) ? 'active' : ''}`}
+                  >
+                    <input 
+                      type="checkbox" 
+                      checked={filters.roles.includes(role)}
+                      onChange={() => toggleRoleFilter(role)}
+                    />
+                    <span className="check-icon">{filters.roles.includes(role) ? '✓' : ''}</span>
+                    {role.charAt(0).toUpperCase() + role.slice(1)}
+                  </label>
+                ))}
+              </div>
             </div>
 
-            <div className="filter-group">
-              <label>Fecha creación desde</label>
-              <input
-                type="date"
-                value={filters.dateFrom}
-                onChange={(e) => setFilters({...filters, dateFrom: e.target.value})}
-              />
+            <div className="eu-filter-group">
+              <label>Estados</label>
+              <div className="eu-checkbox-group">
+                {[
+                  { key: 'nuevo', label: 'Nuevo' },
+                  { key: 'activo', label: 'Activo' },
+                  { key: 'pendiente_verificacion', label: 'Pendiente' },
+                  { key: 'suspendido', label: 'Suspendido' },
+                  { key: 'retirado', label: 'Retirado' }
+                ].map(estado => (
+                  <label 
+                    key={estado.key}
+                    className={`eu-checkbox-pill ${filters.estados.includes(estado.key) ? 'active' : ''}`}
+                  >
+                    <input 
+                      type="checkbox" 
+                      checked={filters.estados.includes(estado.key)}
+                      onChange={() => toggleEstadoFilter(estado.key)}
+                    />
+                    <span className="check-icon">{filters.estados.includes(estado.key) ? '✓' : ''}</span>
+                    {estado.label}
+                  </label>
+                ))}
+              </div>
             </div>
 
-            <div className="filter-group">
-              <label>Fecha creación hasta</label>
-              <input
-                type="date"
-                value={filters.dateTo}
-                onChange={(e) => setFilters({...filters, dateTo: e.target.value})}
-              />
+            <div className="eu-filter-group">
+              <label>Fecha Creación</label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input
+                  type="date"
+                  value={filters.dateFrom}
+                  onChange={(e) => setFilters({...filters, dateFrom: e.target.value})}
+                  className="eu-filter-input"
+                />
+                <input
+                  type="date"
+                  value={filters.dateTo}
+                  onChange={(e) => setFilters({...filters, dateTo: e.target.value})}
+                  className="eu-filter-input"
+                />
+              </div>
             </div>
 
-            <div className="filter-group">
-              <label>Actualización desde</label>
-              <input
-                type="date"
-                value={filters.updateDateFrom}
-                onChange={(e) => setFilters({...filters, updateDateFrom: e.target.value})}
-              />
-            </div>
-
-            <div className="filter-group">
-              <label>Actualización hasta</label>
-              <input
-                type="date"
-                value={filters.updateDateTo}
-                onChange={(e) => setFilters({...filters, updateDateTo: e.target.value})}
-              />
+            <div className="eu-filter-group">
+              <label>Fecha Actualización</label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input
+                  type="date"
+                  value={filters.updateDateFrom}
+                  onChange={(e) => setFilters({...filters, updateDateFrom: e.target.value})}
+                  className="eu-filter-input"
+                />
+                <input
+                  type="date"
+                  value={filters.updateDateTo}
+                  onChange={(e) => setFilters({...filters, updateDateTo: e.target.value})}
+                  className="eu-filter-input"
+                />
+              </div>
             </div>
           </div>
 
-          <div className="filters-actions">
-            <button onClick={clearFilters} className="btn-clear-filters">
+          <div className="eu-filters-actions">
+            <button onClick={clearFilters} className="eu-btn-clear" disabled={activeFilterCount === 0}>
               🗑️ Limpiar filtros
             </button>
           </div>
         </div>
-      )}
+      </div>
+
+      {/* Toolbar */}
+      <div className="eu-toolbar">
+        <div className="eu-results-info">
+          Mostrando <strong>{displayUsuarios.length}</strong> de <strong>{total}</strong> usuarios
+        </div>
+        <div className="eu-per-page">
+          <span>Filas:</span>
+          <select value={perPage} onChange={(e) => {
+            setPerPage(Number(e.target.value));
+            setPage(1);
+          }}>
+            <option value={5}>5</option>
+            <option value={10}>10</option>
+            <option value={15}>15</option>
+            <option value={25}>25</option>
+            <option value={50}>50</option>
+          </select>
+        </div>
+      </div>
 
       {loading ? (
-        <LoadingSpinner message="Cargando usuarios del emisor…" fullHeight />
+        <div className="eu-loading">
+          <LoadingSpinner />
+        </div>
       ) : displayUsuarios.length === 0 ? (
-        <div className="empty-state">
-          📭 No hay usuarios registrados para este emisor
+        <div className="eu-table-wrapper">
+          <div className="eu-empty-state">
+            <div className="eu-empty-icon">👥</div>
+            <h3>No hay usuarios registrados</h3>
+            <p>No se encontraron usuarios para este emisor con los filtros aplicados.</p>
+          </div>
         </div>
       ) : (
         <>
-          <div className="tabla-wrapper usuarios-tabla-wrapper">
-            <div className="tabla-scroll-container">
-              <table className="tabla-emisores">
+          <div className="eu-table-wrapper">
+            <div className="eu-table-scroll">
+              <table className="eu-table">
                 <thead>
                   <tr>
-                    <th className="th-sticky sticky-left-1 sortable" onClick={() => handleSort('cedula')}>
-                      Cédula {getSortIcon('cedula')}
+                    <th className="sortable" onClick={() => handleSort('cedula')}>
+                      <div className="eu-th-content">Cédula {getSortIcon('cedula')}</div>
                     </th>
                     <th className="sortable" onClick={() => handleSort('nombres')}>
-                      Nombres {getSortIcon('nombres')}
-                    </th>
-                    <th className="sortable" onClick={() => handleSort('username')}>
-                      Username {getSortIcon('username')}
+                      <div className="eu-th-content">Usuario {getSortIcon('nombres')}</div>
                     </th>
                     <th className="sortable" onClick={() => handleSort('email')}>
-                      Email {getSortIcon('email')}
+                      <div className="eu-th-content">Email {getSortIcon('email')}</div>
                     </th>
                     <th className="sortable" onClick={() => handleSort('estado')}>
-                      Estado {getSortIcon('estado')}
+                      <div className="eu-th-content">Estado {getSortIcon('estado')}</div>
                     </th>
                     <th className="sortable" onClick={() => handleSort('role')}>
-                      Rol {getSortIcon('role')}
+                      <div className="eu-th-content">Rol {getSortIcon('role')}</div>
                     </th>
                     <th>Establecimientos</th>
                     <th>Puntos de Emisión</th>
-                    <th>Usuario creador</th>
+                    <th>Creador</th>
                     <th className="sortable" onClick={() => handleSort('created_at')}>
-                      Creado {getSortIcon('created_at')}
+                      <div className="eu-th-content">Creado {getSortIcon('created_at')}</div>
                     </th>
-                    <th className="sortable" onClick={() => handleSort('updated_at')}>
-                      Actualizado {getSortIcon('updated_at')}
-                    </th>
-                    <th className="th-sticky sticky-right">Acciones</th>
+                    <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -714,21 +784,14 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
                     const isDistributorCreatorRow = !!u.isDistributorCreator;
                     const editEnabled = canEditUser(u);
                     const deleteEnabled = canDeleteUser(u);
-                    
-                    const roleClass = u.role === 'gerente' ? 'role-gerente' :
-                                     u.role === 'cajero' ? 'role-cajero' :
-                                     u.role === 'distribuidor' ? 'role-distribuidor' :
-                                     'role-emisor';
 
                     const establecimientos = u.establecimientos || [];
                     const puntosEmision = u.puntos_emision || [];
                     
-                    // Si no hay establecimientos pero sí puntos de emisión, 
-                    // inferir establecimientos únicos desde los puntos
+                    // Si no hay establecimientos pero sí puntos de emisión
                     let displayEstablecimientos = establecimientos;
                     if (establecimientos.length === 0 && puntosEmision.length > 0) {
                       const estIdsFromPuntos = Array.from(new Set(puntosEmision.map((p: any) => p.establecimiento_id).filter(Boolean)));
-                      // Crear objetos de establecimiento básicos desde los puntos
                       displayEstablecimientos = estIdsFromPuntos.map((estId: any) => {
                         const punto = puntosEmision.find((p: any) => p.establecimiento_id === estId);
                         return {
@@ -744,113 +807,137 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
                         key={`${u.id}-${isDistributorCreatorRow ? 'distribuidor' : 'usuario'}`}
                         className={isDistributorCreatorRow ? 'distributor-row' : ''}
                       >
-                        <td className="td-sticky sticky-left-1 cedula-cell">
+                        {/* Cédula */}
+                        <td>
                           {onViewDetail && u.cedula ? (
-                            <a 
-                              href="#" 
-                              onClick={(e) => {
-                                e.preventDefault();
-                                onViewDetail(u);
-                              }}
-                              style={{ color: '#6366f1', textDecoration: 'none', fontWeight: 500 }}
+                            <button 
+                              className="eu-cedula-link"
+                              onClick={() => onViewDetail(u)}
                             >
                               {u.cedula}
-                            </a>
+                            </button>
                           ) : (
-                            <span>{u.cedula || '—'}</span>
+                            <span style={{ color: '#64748b' }}>{u.cedula || '—'}</span>
                           )}
                         </td>
+                        
+                        {/* Usuario Info */}
                         <td>
-                          {u.nombres} {u.apellidos}
-                          {isDistributorCreatorRow && (
-                            <div className="distributor-badge">
-                              Distribuidor creador
+                          <div className="eu-user-cell">
+                            <div className={`eu-user-avatar ${u.role}`}>
+                              {getInitials(u)}
                             </div>
-                          )}
+                            <div className="eu-user-info">
+                              <span className="eu-user-name">
+                                {u.nombres} {u.apellidos}
+                              </span>
+                              <span className="eu-user-username">@{u.username}</span>
+                              {isDistributorCreatorRow && (
+                                <span className="eu-distributor-badge">Distribuidor creador</span>
+                              )}
+                            </div>
+                          </div>
                         </td>
-                        <td>{u.username}</td>
-                        <td>{u.email}</td>
+                        
+                        {/* Email */}
                         <td>
-                          <span className={`estado-badge estado-${u.estado?.toLowerCase() || 'activo'}`}>
-                            {u.estado || 'ACTIVO'}
+                          <span className="eu-email" title={u.email}>{u.email}</span>
+                        </td>
+                        
+                        {/* Estado */}
+                        <td>
+                          <span className={`eu-badge ${u.estado?.toLowerCase() || 'activo'}`}>
+                            <span className="eu-badge-dot"></span>
+                            {u.estado?.replace('_', ' ').toUpperCase() || 'ACTIVO'}
                           </span>
                         </td>
+                        
+                        {/* Rol */}
                         <td>
-                          <span className={`role-badge ${roleClass}`}>
-                            {isDistributorCreatorRow ? 'distribuidor' : u.role}
+                          <span className={`eu-role-badge ${isDistributorCreatorRow ? 'distribuidor' : u.role}`}>
+                            {isDistributorCreatorRow ? 'Distribuidor' : u.role}
                           </span>
                         </td>
+                        
+                        {/* Establecimientos */}
                         <td>
                           {displayEstablecimientos.length > 0 ? (
-                            <div className="list-items">
-                              {displayEstablecimientos.map((est: any, idx: number) => (
-                                <div key={idx} className="list-item-link">
-                                  <a href="#" onClick={(e) => {
-                                    e.preventDefault();
-                                    navigateToEstablecimiento(emiId, est.id);
-                                  }}>
-                                    {formatEstablecimientoInfo(est.codigo, est.nombre)}
-                                  </a>
-                                </div>
+                            <div className="eu-links-list">
+                              {displayEstablecimientos.slice(0, 3).map((est: any, idx: number) => (
+                                <button 
+                                  key={idx} 
+                                  className="eu-link-item"
+                                  onClick={() => navigateToEstablecimiento(emiId, est.id)}
+                                >
+                                  🏢 {est.codigo}
+                                </button>
                               ))}
+                              {displayEstablecimientos.length > 3 && (
+                                <span style={{ fontSize: '11px', color: '#64748b' }}>
+                                  +{displayEstablecimientos.length - 3} más
+                                </span>
+                              )}
                             </div>
-                          ) : '—'}
+                          ) : <span style={{ color: '#94a3b8' }}>—</span>}
                         </td>
+                        
+                        {/* Puntos de Emisión */}
                         <td>
                           {puntosEmision.length > 0 ? (
-                            <div className="list-items">
-                              {puntosEmision.map((punto, idx) => (
-                                <div key={idx} className="list-item-link">
-                                  <a href="#" onClick={(e) => {
-                                    e.preventDefault();
-                                    if (punto.establecimiento_id) {
-                                      navigateToPuntoEmision(emiId, punto.establecimiento_id, punto.id);
-                                    }
-                                  }}>
-                                    {formatPuntoEmisionInfo(punto.codigo, punto.nombre)}
-                                  </a>
-                                </div>
+                            <div className="eu-links-list">
+                              {puntosEmision.slice(0, 3).map((punto: any, idx: number) => (
+                                <button 
+                                  key={idx} 
+                                  className="eu-link-item"
+                                  onClick={() => punto.establecimiento_id && navigateToPuntoEmision(emiId, punto.establecimiento_id, punto.id)}
+                                >
+                                  📍 {punto.codigo}
+                                </button>
                               ))}
+                              {puntosEmision.length > 3 && (
+                                <span style={{ fontSize: '11px', color: '#64748b' }}>
+                                  +{puntosEmision.length - 3} más
+                                </span>
+                              )}
                             </div>
-                          ) : '—'}
+                          ) : <span style={{ color: '#94a3b8' }}>—</span>}
                         </td>
+                        
+                        {/* Creador */}
                         <td>
                           {shouldShowCreador(u.created_by_role) && u.created_by_username ? (
-                            <div className="creator-info">
-                              <a href="#" onClick={(e) => {
-                                e.preventDefault();
-                                if (u.created_by_id) {
-                                  // Buscar el usuario creador en la lista para mostrar su detalle
-                                  // Por ahora solo mostramos el log
-                                  console.log('Ver usuario creador:', u.created_by_id);
-                                }
-                              }}>
-                                {formatCreadorInfo(u.created_by_role, u.created_by_username, u.created_by_nombres, u.created_by_apellidos)}
-                              </a>
+                            <span className="eu-creator">
+                              {u.created_by_role?.charAt(0).toUpperCase()}{u.created_by_role?.slice(1)} • {u.created_by_username}
+                            </span>
+                          ) : <span style={{ color: '#94a3b8' }}>—</span>}
+                        </td>
+                        
+                        {/* Fecha Creación */}
+                        <td>
+                          {u.created_at ? (
+                            <div className="eu-fecha">
+                              <div className="eu-fecha-date">
+                                {new Date(u.created_at).toLocaleDateString('es-ES', {
+                                  day: '2-digit',
+                                  month: 'short',
+                                  year: 'numeric'
+                                })}
+                              </div>
+                              <div className="eu-fecha-time">
+                                {new Date(u.created_at).toLocaleTimeString('es-ES', {
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </div>
                             </div>
-                          ) : '—'}
+                          ) : <span style={{ color: '#94a3b8' }}>—</span>}
                         </td>
+                        
+                        {/* Acciones */}
                         <td>
-                          {u.created_at ? new Date(u.created_at).toLocaleDateString('es-ES', {
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          }) : '—'}
-                        </td>
-                        <td>
-                          {u.updated_at ? new Date(u.updated_at).toLocaleDateString('es-ES', {
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          }) : '—'}
-                        </td>
-                        <td className="td-sticky sticky-right">
-                          <div className="acciones">
+                          <div className="eu-actions">
                             <button
+                              className="eu-btn-action edit"
                               disabled={!editEnabled}
                               onClick={() => onEdit?.(u)}
                               title={editEnabled ? 'Editar' : 'No tienes permisos'}
@@ -858,9 +945,10 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
                               ✏️
                             </button>
                             <button
+                              className="eu-btn-action delete"
                               disabled={!deleteEnabled}
                               onClick={() => setDeleteConfirm(u)}
-                              title={deleteEnabled ? 'Eliminar' : 'No tienes permisos'}
+                              title={deleteEnabled ? 'Eliminar' : 'Solo estado Nuevo'}
                             >
                               🗑️
                             </button>
@@ -874,53 +962,44 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
             </div>
           </div>
 
-          {/* Pagination */}
-          <div className="pagination-container">
-            <div className="pagination-info-left">
-              Mostrando {displayUsuarios.length} de {total} usuarios
+          {/* Paginación */}
+          <div className="eu-pagination">
+            <div className="eu-pagination-info">
+              Página {page} de {lastPage} ({total} total)
             </div>
-            <div className="per-page-selector">
-              <span>Filas por página:</span>
-              <select value={perPage} onChange={(e) => {
-                setPerPage(Number(e.target.value));
-                setPage(1);
-              }}>
-                <option value={5}>5</option>
-                <option value={10}>10</option>
-                <option value={15}>15</option>
-                <option value={25}>25</option>
-                <option value={50}>50</option>
-              </select>
-            </div>
-            <div className="pagination-controls">
+            <div className="eu-pagination-controls">
               <button
                 onClick={() => setPage(1)}
                 disabled={page === 1}
-                className="pagination-btn"
+                className="eu-page-btn"
+                title="Primera página"
               >
                 ⟪
               </button>
               <button
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="pagination-btn"
+                className="eu-page-btn"
+                title="Anterior"
               >
                 ‹
               </button>
-              <span className="pagination-info">
-                Página {page} de {lastPage}
+              <span className="eu-page-info">
+                {page} / {lastPage}
               </span>
               <button
                 onClick={() => setPage(p => Math.min(lastPage, p + 1))}
                 disabled={page === lastPage}
-                className="pagination-btn"
+                className="eu-page-btn"
+                title="Siguiente"
               >
                 ›
               </button>
               <button
                 onClick={() => setPage(lastPage)}
                 disabled={page === lastPage}
-                className="pagination-btn"
+                className="eu-page-btn"
+                title="Última página"
               >
                 ⟫
               </button>
@@ -929,17 +1008,14 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
         </>
       )}
 
-      {/* Delete confirmation modal */}
+      {/* Modal Delete */}
       {deleteConfirm && (
-        <div className="delete-modal-overlay">
-          <div className="delete-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="delete-modal-header">
-              <h2>
-                <span className="icon">⚠️</span>
-                Eliminar usuario
-              </h2>
+        <div className="eu-delete-modal-overlay" onClick={() => !deleting && setDeleteConfirm(null)}>
+          <div className="eu-delete-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="eu-delete-modal-header">
+              <h3>⚠️ Eliminar Usuario</h3>
               <button 
-                className="delete-modal-close" 
+                className="eu-delete-modal-close" 
                 onClick={() => {
                   setDeleteConfirm(null);
                   setDeletePassword('');
@@ -949,44 +1025,37 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
               </button>
             </div>
 
-            <div className="delete-modal-body">
+            <div className="eu-delete-modal-body">
               {deleteConfirm.estado !== 'nuevo' ? (
-                <>
-                  <div style={{ 
-                    padding: '16px', 
-                    backgroundColor: '#fef3c7', 
-                    border: '1px solid #fcd34d', 
-                    borderRadius: '8px', 
-                    marginBottom: '16px'
-                  }}>
-                    <p style={{ margin: 0, color: '#92400e', fontWeight: 500 }}>
-                      ⚠️ No se puede eliminar este usuario
-                    </p>
-                    <p style={{ margin: '8px 0 0 0', color: '#92400e', fontSize: '14px' }}>
-                      Solo se pueden eliminar usuarios en estado "Nuevo". Este usuario está en estado "<strong>{deleteConfirm.estado}</strong>".
-                    </p>
-                    <p style={{ margin: '8px 0 0 0', color: '#92400e', fontSize: '14px' }}>
-                      Para cambiar su estado a "Retirado" o "Suspendido", utiliza la opción editar del usuario.
-                    </p>
-                  </div>
-                </>
+                <div className="eu-delete-warning">
+                  <p style={{ margin: 0, fontWeight: 600 }}>⚠️ No se puede eliminar este usuario</p>
+                  <p style={{ margin: '8px 0 0' }}>
+                    Solo se pueden eliminar usuarios en estado "Nuevo". Este usuario está en estado "<strong>{deleteConfirm.estado}</strong>".
+                  </p>
+                  <p style={{ margin: '8px 0 0' }}>
+                    Para cambiar su estado a "Retirado" o "Suspendido", utiliza la opción editar.
+                  </p>
+                </div>
               ) : (
                 <>
-                  <p className="delete-confirmation-text">
-                    ¿Está seguro de eliminar a <strong>{deleteConfirm.nombres} {deleteConfirm.apellidos}</strong>?
-                  </p>
+                  <div className="eu-delete-user-info">
+                    <div className={`eu-delete-avatar ${deleteConfirm.role}`}>
+                      {getInitials(deleteConfirm)}
+                    </div>
+                    <div className="eu-delete-details">
+                      <h4>{deleteConfirm.nombres} {deleteConfirm.apellidos}</h4>
+                      <p>@{deleteConfirm.username} • {deleteConfirm.email}</p>
+                    </div>
+                  </div>
 
-                  <div className="delete-form-group">
-                    <label htmlFor="delete-password" className="delete-form-label">
-                      Ingresa tu contraseña para confirmar *
-                    </label>
+                  <div className="eu-password-group">
+                    <label>Ingresa tu contraseña para confirmar *</label>
                     <input
-                      id="delete-password"
                       type="password"
                       value={deletePassword}
                       onChange={(e) => setDeletePassword(e.target.value)}
                       placeholder="••••••••"
-                      className="delete-form-input"
+                      className="eu-password-input"
                       autoFocus
                       onKeyPress={(e) => {
                         if (e.key === 'Enter' && deletePassword && !deleting) {
@@ -995,15 +1064,18 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
                       }}
                     />
                   </div>
+
+                  <div className="eu-delete-error" style={{ marginTop: '16px' }}>
+                    ⚡ Esta acción es irreversible.
+                  </div>
                 </>
               )}
             </div>
 
-            <div className="delete-modal-footer">
+            <div className="eu-delete-modal-footer">
               {deleteConfirm.estado !== 'nuevo' ? (
                 <button
-                  type="button"
-                  className="delete-btn delete-btn-cancel"
+                  className="eu-btn-cancel"
                   onClick={() => {
                     setDeleteConfirm(null);
                     setDeletePassword('');
@@ -1014,8 +1086,7 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
               ) : (
                 <>
                   <button
-                    type="button"
-                    className="delete-btn delete-btn-cancel"
+                    className="eu-btn-cancel"
                     onClick={() => {
                       setDeleteConfirm(null);
                       setDeletePassword('');
@@ -1025,8 +1096,7 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
                     Cancelar
                   </button>
                   <button
-                    type="button"
-                    className="delete-btn delete-btn-danger"
+                    className="eu-btn-delete"
                     onClick={() => handleDelete(deleteConfirm)}
                     disabled={deleting || !deletePassword}
                   >

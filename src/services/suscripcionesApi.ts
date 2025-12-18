@@ -228,6 +228,12 @@ export const suscripcionesApi = {
     });
   },
 
+  // Eliminar suscripción (HU8)
+  // Solo se permite si: estado_transaccion="Pendiente", estado_suscripcion="Pendiente"/"Programado", sin comprobantes emitidos
+  delete(emisorId: number, suscripcionId: number) {
+    return api.delete(`/api/emisores/${emisorId}/suscripciones/${suscripcionId}`);
+  },
+
   // Obtener campos editables para una suscripción
   getCamposEditables(emisorId: number, suscripcionId: number) {
     return api.get<{ message: string; data: CamposEditablesResponse }>(

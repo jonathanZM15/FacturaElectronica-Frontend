@@ -220,7 +220,7 @@ const SuscripcionEstadoModal: React.FC<Props> = ({ open, emisorId, suscripcion, 
             {activeTab === 'cambiar' && (
               <>
                 {loadingTransiciones ? (
-                  <LoadingSpinner message="Cargando transiciones..." />
+                  <LoadingSpinner />
                 ) : transicionesDisponibles.length === 0 ? (
                   <div style={{ 
                     textAlign: 'center', 
@@ -340,7 +340,7 @@ const SuscripcionEstadoModal: React.FC<Props> = ({ open, emisorId, suscripcion, 
             {activeTab === 'historial' && (
               <>
                 {loadingHistorial ? (
-                  <LoadingSpinner message="Cargando historial..." />
+                  <LoadingSpinner />
                 ) : historial.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '32px', color: '#6b7280' }}>
                     <span style={{ fontSize: '48px' }}>📭</span>

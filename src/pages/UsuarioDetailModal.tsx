@@ -77,7 +77,7 @@ const UsuarioDetailModal: React.FC<Props> = ({ open, onClose, user, loading = fa
           </div>
           <div className="modal-body-detail">
             <div className="detail-loading-state">
-              <LoadingSpinner message="Cargando información del usuario..." />
+              <LoadingSpinner />
             </div>
           </div>
         </div>
@@ -459,7 +459,7 @@ const UsuarioDetailModal: React.FC<Props> = ({ open, onClose, user, loading = fa
 
         {loading && (
           <div className="detail-loading-overlay">
-            <LoadingSpinner message="Actualizando datos..." size={48} />
+            <LoadingSpinner size={48} />
           </div>
         )}
       </div>

@@ -1,8 +1,7 @@
 import React from 'react';
 import { Plan, planesApi } from '../services/planesApi';
 import { useNotification } from '../contexts/NotificationContext';
-import LoadingSpinner from '../components/LoadingSpinner';
-import './UsuarioFormModalModern.css';
+import './PlanFormModal.css';
 
 interface Props {
   open: boolean;
@@ -288,348 +287,372 @@ const PlanFormModal: React.FC<Props> = ({ open, onClose, onSuccess, plan }) => {
 
   if (!open) return null;
 
+  // Formatear precio para preview
+  const formatPrecio = (precio: number) => {
+    return new Intl.NumberFormat('es-EC', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(precio);
+  };
+
   return (
-    <div className="usuario-modal-overlay">
-      <div className="usuario-modal-content usuario-modal-content-barra-izquierda">
-        <div className="usuario-modal-barra-izquierda"></div>
-        <div className="usuario-modal-main">
-          <div className="usuario-modal-header" style={{ position: 'relative' }}>
-            <h2>{plan ? '✏️ Editar Plan' : '📊 Crear Nuevo Plan'}</h2>
-            <button
-              type="button"
-              className="usuario-modal-close"
-              onClick={onClose}
-              disabled={loading}
-              style={{ position: 'absolute', top: 24, right: 24 }}
-            >
-              ✕
-            </button>
+    <div className="plan-modal-overlay">
+      <div className="plan-modal-container">
+        {/* Header */}
+        <div className="plan-modal-header">
+          <div className="plan-modal-header-content">
+            <div className="plan-modal-icon">
+              {plan ? '✏️' : '📋'}
+            </div>
+            <div className="plan-modal-title-group">
+              <h2 className="plan-modal-title">
+                {plan ? 'Editar Plan' : 'Crear Nuevo Plan'}
+              </h2>
+              <p className="plan-modal-subtitle">
+                {plan ? 'Modifica los detalles del plan existente' : 'Configura un nuevo plan de facturación'}
+              </p>
+            </div>
           </div>
-          {/* Barra horizontal decorativa dentro del recuadro blanco */}
-          <div className="usuario-barra-horizontal-interna"></div>
+          <button
+            type="button"
+            className="plan-modal-close"
+            onClick={onClose}
+            disabled={loading}
+          >
+            ✕
+          </button>
+        </div>
 
-          <form onSubmit={handleSubmit}>
-            <div className="usuario-modal-body">
-              <div className="usuario-form-grid">
-                
-                {/* Nombre del Plan - Ancho Completo */}
-                <div className="usuario-form-group full-width">
-                  <label htmlFor="plan-nombre" className="usuario-form-label">
-                    <span className="icon">📝</span>
-                    Nombre del Plan
-                    <span className="required">*</span>
-                  </label>
+        {/* Body */}
+        <form onSubmit={handleSubmit} className="plan-modal-form">
+          <div className="plan-modal-body">
+            <div className="plan-form-grid">
+              
+              {/* Nombre del Plan */}
+              <div className="plan-form-group full-width">
+                <label className="plan-form-label">
+                  <span className="icon">📝</span>
+                  Nombre del Plan
+                  <span className="required">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="nombre"
+                  value={formData.nombre}
+                  onChange={handleChange}
+                  placeholder="Ej: Plan Básico, Plan Profesional, Plan Enterprise"
+                  className={`plan-form-input ${errors.nombre ? 'error' : ''}`}
+                  disabled={loading}
+                  autoComplete="off"
+                />
+                {errors.nombre && (
+                  <span className="plan-error-text">
+                    <span className="icon">⚠️</span>
+                    {errors.nombre}
+                  </span>
+                )}
+              </div>
+
+              {/* Separador - Configuración de comprobantes */}
+              <div className="plan-section-divider">
+                <span className="plan-section-title">💼 Configuración del Plan</span>
+              </div>
+
+              {/* Cantidad de Comprobantes */}
+              <div className="plan-form-group">
+                <label className="plan-form-label">
+                  <span className="icon">📦</span>
+                  Cantidad de Comprobantes
+                  <span className="required">*</span>
+                </label>
+                <input
+                  type="number"
+                  name="cantidad_comprobantes"
+                  value={formData.cantidad_comprobantes}
+                  onChange={handleChange}
+                  min="1"
+                  step="1"
+                  className={`plan-form-input ${errors.cantidad_comprobantes ? 'error' : ''}`}
+                  disabled={loading}
+                  placeholder="Ej: 100"
+                />
+                {errors.cantidad_comprobantes && (
+                  <span className="plan-error-text">
+                    <span className="icon">⚠️</span>
+                    {errors.cantidad_comprobantes}
+                  </span>
+                )}
+              </div>
+
+              {/* Precio */}
+              <div className="plan-form-group">
+                <label className="plan-form-label">
+                  <span className="icon">💵</span>
+                  Precio (USD)
+                  <span className="required">*</span>
+                </label>
+                <input
+                  type="number"
+                  name="precio"
+                  value={formData.precio || ''}
+                  onChange={handleChange}
+                  min="0.01"
+                  step="0.01"
+                  className={`plan-form-input ${errors.precio ? 'error' : ''}`}
+                  disabled={loading}
+                  placeholder="Ej: 29.99"
+                />
+                {errors.precio && (
+                  <span className="plan-error-text">
+                    <span className="icon">⚠️</span>
+                    {errors.precio}
+                  </span>
+                )}
+              </div>
+
+              {/* Período */}
+              <div className="plan-form-group">
+                <label className="plan-form-label">
+                  <span className="icon">📅</span>
+                  Período de Facturación
+                  <span className="required">*</span>
+                </label>
+                <select
+                  name="periodo"
+                  value={formData.periodo}
+                  onChange={handleChange}
+                  className="plan-form-select"
+                  disabled={loading}
+                >
+                  {PERIODOS.map((p) => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Estado */}
+              <div className="plan-form-group">
+                <label className="plan-form-label">
+                  <span className="icon">✅</span>
+                  Estado del Plan
+                  <span className="required">*</span>
+                </label>
+                <select
+                  name="estado"
+                  value={formData.estado}
+                  onChange={handleChange}
+                  className="plan-form-select"
+                  disabled={loading}
+                >
+                  {ESTADOS.map((e) => (
+                    <option key={e} value={e}>{e === 'Activo' ? '✅ Activo' : '⏸️ Desactivado'}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Separador - Límites */}
+              <div className="plan-section-divider">
+                <span className="plan-section-title">📊 Límites Mínimos</span>
+              </div>
+
+              {/* Comprobantes Mínimos */}
+              <div className="plan-form-group">
+                <label className="plan-form-label">
+                  <span className="icon">📉</span>
+                  Comprobantes Mínimos
+                  <span className="required">*</span>
+                </label>
+                <input
+                  type="number"
+                  name="comprobantes_minimos"
+                  value={formData.comprobantes_minimos}
+                  onChange={handleChange}
+                  min="1"
+                  step="1"
+                  className={`plan-form-input ${errors.comprobantes_minimos ? 'error' : ''}`}
+                  disabled={loading}
+                  placeholder="Ej: 5"
+                />
+                {errors.comprobantes_minimos && (
+                  <span className="plan-error-text">
+                    <span className="icon">⚠️</span>
+                    {errors.comprobantes_minimos}
+                  </span>
+                )}
+              </div>
+
+              {/* Días Mínimos */}
+              <div className="plan-form-group">
+                <label className="plan-form-label">
+                  <span className="icon">⏱️</span>
+                  Días Mínimos
+                  <span className="required">*</span>
+                </label>
+                <input
+                  type="number"
+                  name="dias_minimos"
+                  value={formData.dias_minimos}
+                  onChange={handleChange}
+                  min="1"
+                  step="1"
+                  className={`plan-form-input ${errors.dias_minimos ? 'error' : ''}`}
+                  disabled={loading}
+                  placeholder="Ej: 30"
+                />
+                {errors.dias_minimos && (
+                  <span className="plan-error-text">
+                    <span className="icon">⚠️</span>
+                    {errors.dias_minimos}
+                  </span>
+                )}
+              </div>
+
+              {/* Separador - Personalización */}
+              <div className="plan-section-divider">
+                <span className="plan-section-title">🎨 Personalización Visual</span>
+              </div>
+
+              {/* Color de Fondo */}
+              <div className="plan-form-group">
+                <label className="plan-form-label">
+                  <span className="icon">🎨</span>
+                  Color de Fondo
+                  <span className="required">*</span>
+                </label>
+                <div className="plan-color-picker-group">
                   <input
-                    id="plan-nombre"
+                    type="color"
+                    name="color_fondo"
+                    value={formData.color_fondo}
+                    onChange={handleChange}
+                    className="plan-color-picker"
+                    disabled={loading}
+                  />
+                  <input
                     type="text"
-                    name="nombre"
-                    value={formData.nombre}
+                    value={formData.color_fondo.toUpperCase()}
                     onChange={handleChange}
-                    placeholder="Ej: Plan Básico, Plan Profesional"
-                    className={errors.nombre ? 'usuario-form-input error' : 'usuario-form-input'}
+                    name="color_fondo"
+                    className={`plan-form-input ${errors.color_fondo ? 'error' : ''}`}
+                    placeholder="#808080"
+                    maxLength={7}
                     disabled={loading}
-                    autoComplete="off"
                   />
-                  {errors.nombre && (
-                    <span className="usuario-error-text">
-                      <span className="icon">⚠️</span>
-                      {errors.nombre}
-                    </span>
-                  )}
                 </div>
+                {errors.color_fondo && (
+                  <span className="plan-error-text">
+                    <span className="icon">⚠️</span>
+                    {errors.color_fondo}
+                  </span>
+                )}
+              </div>
 
-                {/* Cantidad de Comprobantes - Columna 1 */}
-                <div className="usuario-form-group">
-                  <label htmlFor="plan-cantidad" className="usuario-form-label">
-                    <span className="icon">📄</span>
-                    Cantidad de Comprobantes
-                    <span className="required">*</span>
-                  </label>
+              {/* Color de Texto */}
+              <div className="plan-form-group">
+                <label className="plan-form-label">
+                  <span className="icon">✍️</span>
+                  Color de Texto
+                  <span className="required">*</span>
+                </label>
+                <div className="plan-color-picker-group">
                   <input
-                    id="plan-cantidad"
-                    type="number"
-                    name="cantidad_comprobantes"
-                    value={formData.cantidad_comprobantes}
+                    type="color"
+                    name="color_texto"
+                    value={formData.color_texto}
                     onChange={handleChange}
-                    min="1"
-                    step="1"
-                    className={errors.cantidad_comprobantes ? 'usuario-form-input error' : 'usuario-form-input'}
+                    className="plan-color-picker"
                     disabled={loading}
-                    placeholder="Ej: 100 (solo números positivos)"
                   />
-                  {errors.cantidad_comprobantes && (
-                    <span className="usuario-error-text">
-                      <span className="icon">⚠️</span>
-                      {errors.cantidad_comprobantes}
-                    </span>
-                  )}
-                </div>
-
-                {/* Precio - Columna 2 */}
-                <div className="usuario-form-group">
-                  <label htmlFor="plan-precio" className="usuario-form-label">
-                    <span className="icon">💰</span>
-                    Precio (USD)
-                    <span className="required">*</span>
-                  </label>
                   <input
-                    id="plan-precio"
-                    type="number"
-                    name="precio"
-                    value={formData.precio || ''}
+                    type="text"
+                    value={formData.color_texto.toUpperCase()}
                     onChange={handleChange}
-                    min="0.01"
-                    step="0.01"
-                    className={errors.precio ? 'usuario-form-input error' : 'usuario-form-input'}
+                    name="color_texto"
+                    className={`plan-form-input ${errors.color_texto ? 'error' : ''}`}
+                    placeholder="#000000"
+                    maxLength={7}
                     disabled={loading}
-                    placeholder="Ej: 25.99 (>0, máx 2 decimales)"
                   />
-                  {errors.precio && (
-                    <span className="usuario-error-text">
-                      <span className="icon">⚠️</span>
-                      {errors.precio}
-                    </span>
-                  )}
                 </div>
+                {errors.color_texto && (
+                  <span className="plan-error-text">
+                    <span className="icon">⚠️</span>
+                    {errors.color_texto}
+                  </span>
+                )}
+              </div>
 
-                {/* Período - Columna 1 */}
-                <div className="usuario-form-group">
-                  <label htmlFor="plan-periodo" className="usuario-form-label">
-                    <span className="icon">📅</span>
-                    Período
-                    <span className="required">*</span>
-                  </label>
-                  <select
-                    id="plan-periodo"
-                    name="periodo"
-                    value={formData.periodo}
-                    onChange={handleChange}
-                    className="usuario-form-select"
-                    disabled={loading}
-                  >
-                    {PERIODOS.map((p) => (
-                      <option key={p} value={p}>{p}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Estado - Columna 2 */}
-                <div className="usuario-form-group">
-                  <label htmlFor="plan-estado" className="usuario-form-label">
-                    <span className="icon">✅</span>
-                    Estado
-                    <span className="required">*</span>
-                  </label>
-                  <select
-                    id="plan-estado"
-                    name="estado"
-                    value={formData.estado}
-                    onChange={handleChange}
-                    className="usuario-form-select"
-                    disabled={loading}
-                  >
-                    {ESTADOS.map((e) => (
-                      <option key={e} value={e}>{e}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Comprobantes Mínimos - Columna 1 */}
-                <div className="usuario-form-group">
-                  <label htmlFor="plan-comp-min" className="usuario-form-label">
-                    <span className="icon">📋</span>
-                    Comprobantes Mínimos
-                    <span className="required">*</span>
-                  </label>
-                  <input
-                    id="plan-comp-min"
-                    type="number"
-                    name="comprobantes_minimos"
-                    value={formData.comprobantes_minimos}
-                    onChange={handleChange}
-                    min="1"
-                    step="1"
-                    className={errors.comprobantes_minimos ? 'usuario-form-input error' : 'usuario-form-input'}
-                    disabled={loading}
-                    placeholder="Ej: 5 (solo números positivos)"
-                  />
-                  {errors.comprobantes_minimos && (
-                    <span className="usuario-error-text">
-                      <span className="icon">⚠️</span>
-                      {errors.comprobantes_minimos}
-                    </span>
-                  )}
-                </div>
-
-                {/* Días Mínimos - Columna 2 */}
-                <div className="usuario-form-group">
-                  <label htmlFor="plan-dias-min" className="usuario-form-label">
-                    <span className="icon">⏰</span>
-                    Días Mínimos
-                    <span className="required">*</span>
-                  </label>
-                  <input
-                    id="plan-dias-min"
-                    type="number"
-                    name="dias_minimos"
-                    value={formData.dias_minimos}
-                    onChange={handleChange}
-                    min="1"
-                    step="1"
-                    className={errors.dias_minimos ? 'usuario-form-input error' : 'usuario-form-input'}
-                    disabled={loading}
-                    placeholder="Ej: 5 (solo números positivos)"
-                  />
-                  {errors.dias_minimos && (
-                    <span className="usuario-error-text">
-                      <span className="icon">⚠️</span>
-                      {errors.dias_minimos}
-                    </span>
-                  )}
-                </div>
-
-                {/* Color de Fondo - Columna 1 */}
-                <div className="usuario-form-group">
-                  <label htmlFor="plan-color-fondo" className="usuario-form-label">
-                    <span className="icon">🎨</span>
-                    Color de Fondo
-                    <span className="required">*</span>
-                  </label>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <input
-                      type="color"
-                      id="plan-color-fondo"
-                      name="color_fondo"
-                      value={formData.color_fondo}
-                      onChange={handleChange}
-                      style={{ 
-                        width: '50px', 
-                        height: '40px', 
-                        cursor: 'pointer', 
-                        borderRadius: '4px', 
-                        border: 'none',
-                        padding: 0
-                      }}
-                      disabled={loading}
-                      title="Selector visual de color"
-                    />
-                    <input
-                      type="text"
-                      value={formData.color_fondo.toUpperCase()}
-                      onChange={handleChange}
-                      name="color_fondo"
-                      className={errors.color_fondo ? 'usuario-form-input error' : 'usuario-form-input'}
-                      placeholder="#000000"
-                      maxLength={7}
-                      style={{ flex: 1 }}
-                      disabled={loading}
-                      title="Formato: #RRGGBB (ej: #808080)"
-                    />
-                  </div>
-                  {errors.color_fondo && (
-                    <span className="usuario-error-text">
-                      <span className="icon">⚠️</span>
-                      {errors.color_fondo}
-                    </span>
-                  )}
-                </div>
-
-                {/* Color de Texto - Columna 2 */}
-                <div className="usuario-form-group">
-                  <label htmlFor="plan-color-texto" className="usuario-form-label">
-                    <span className="icon">🎨</span>
-                    Color de Texto
-                    <span className="required">*</span>
-                  </label>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <input
-                      type="color"
-                      id="plan-color-texto"
-                      name="color_texto"
-                      value={formData.color_texto}
-                      onChange={handleChange}
-                      style={{ 
-                        width: '50px', 
-                        height: '40px', 
-                        cursor: 'pointer', 
-                        borderRadius: '4px', 
-                        border: 'none',
-                        padding: 0
-                      }}
-                      disabled={loading}
-                      title="Selector visual de color"
-                    />
-                    <input
-                      type="text"
-                      value={formData.color_texto.toUpperCase()}
-                      onChange={handleChange}
-                      name="color_texto"
-                      className={errors.color_texto ? 'usuario-form-input error' : 'usuario-form-input'}
-                      placeholder="#000000"
-                      maxLength={7}
-                      style={{ flex: 1 }}
-                      disabled={loading}
-                      title="Formato: #RRGGBB (ej: #000000)"
-                    />
-                  </div>
-                  {errors.color_texto && (
-                    <span className="usuario-error-text">
-                      <span className="icon">⚠️</span>
-                      {errors.color_texto}
-                    </span>
-                  )}
-                </div>
-
-                {/* Observación - Ancho Completo */}
-                <div className="usuario-form-group full-width">
-                  <label htmlFor="plan-observacion" className="usuario-form-label">
-                    <span className="icon">📝</span>
-                    Observación (Opcional)
-                  </label>
-                  <textarea
-                    id="plan-observacion"
-                    name="observacion"
-                    value={formData.observacion}
-                    onChange={handleChange}
-                    rows={3}
-                    placeholder="Añade notas o detalles adicionales sobre este plan"
-                    className="usuario-form-input"
-                    disabled={loading}
-                    style={{ fontFamily: 'inherit', resize: 'vertical' }}
-                  />
+              {/* Preview del Plan */}
+              <div className="plan-preview-section">
+                <label className="plan-preview-label">
+                  <span className="icon">👁️</span>
+                  Vista Previa del Plan
+                </label>
+                <div 
+                  className="plan-preview-card"
+                  style={{ 
+                    backgroundColor: formData.color_fondo, 
+                    color: formData.color_texto 
+                  }}
+                >
+                  <span className="plan-preview-name">
+                    {formData.nombre || 'Nombre del Plan'}
+                  </span>
+                  <span className="plan-preview-price">
+                    {formatPrecio(formData.precio || 0)} / {formData.periodo}
+                  </span>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '24px', borderTop: '1px solid #eee', paddingTop: '20px' }}>
-                <button
-                  type="button"
-                  className="usuario-btn usuario-btn-secondary"
-                  onClick={onClose}
+              {/* Observación */}
+              <div className="plan-form-group full-width">
+                <label className="plan-form-label">
+                  <span className="icon">💬</span>
+                  Observaciones (Opcional)
+                </label>
+                <textarea
+                  name="observacion"
+                  value={formData.observacion}
+                  onChange={handleChange}
+                  rows={3}
+                  placeholder="Añade notas o detalles adicionales sobre este plan..."
+                  className="plan-form-textarea"
                   disabled={loading}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="usuario-btn usuario-btn-primary"
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <>
-                      <span style={{ marginRight: '8px' }}>⏳</span>
-                      {plan ? 'Actualizando...' : 'Creando...'}
-                    </>
-                  ) : (
-                    <>
-                      <span style={{ marginRight: '8px' }}>{plan ? '✏️' : '✅'}</span>
-                      {plan ? 'Actualizar Plan' : 'Crear Plan'}
-                    </>
-                  )}
-                </button>
+                />
               </div>
             </div>
-          </form>
-        </div>
+          </div>
+
+          {/* Footer */}
+          <div className="plan-modal-footer">
+            <button
+              type="button"
+              className="plan-btn plan-btn-secondary"
+              onClick={onClose}
+              disabled={loading}
+            >
+              <span>✕</span>
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="plan-btn plan-btn-primary"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <span>⏳</span>
+                  {plan ? 'Actualizando...' : 'Creando...'}
+                </>
+              ) : (
+                <>
+                  <span>{plan ? '💾' : '✅'}</span>
+                  {plan ? 'Guardar Cambios' : 'Crear Plan'}
+                </>
+              )}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

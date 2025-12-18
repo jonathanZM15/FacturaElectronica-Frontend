@@ -462,7 +462,7 @@ const SuscripcionFormModal: React.FC<Props> = ({ open, emisorId, suscripcion, on
           )}
 
           {loadingPlanes || loadingCampos ? (
-            <LoadingSpinner message={loadingCampos ? "Cargando permisos..." : "Cargando planes..."} />
+            <LoadingSpinner />
           ) : (
             <form onSubmit={handleSubmit}>
               <div className="usuario-modal-body">

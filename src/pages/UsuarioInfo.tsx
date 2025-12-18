@@ -68,7 +68,7 @@ const UsuarioInfo: React.FC = () => {
   if (loading) {
     return (
       <div className="page-container">
-        <LoadingSpinner fullHeight message="Cargando usuario…" />
+        <LoadingSpinner fullHeight />
       </div>
     );
   }
