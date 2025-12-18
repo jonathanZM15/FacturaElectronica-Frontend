@@ -83,17 +83,6 @@
   border-radius: 20px 20px 0 0;
 }
 
-.emisores-header::after {
-  content: '🏢';
-  position: absolute;
-  right: 30px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 48px;
-  opacity: 0.08;
-  pointer-events: none;
-}
-
 .emisores-header > h2 {
   margin: 0;
   font-size: 36px;
