@@ -323,102 +323,122 @@ const EmisorInfo: React.FC = () => {
   }
 
   return (
-    <div style={{ padding: 18 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-          <h2 style={{ margin: 0 }}>{company?.ruc ?? '—'} <small style={{ marginLeft: 12, fontWeight: 700 }}>{company?.razon_social ?? ''}</small></h2>
+    <div className="emisor-info-page">
+      {/* ========== HEADER PREMIUM ========== */}
+      <div className="emisor-info-header">
+        <div className="emisor-info-header-bg"></div>
+        <div className="emisor-info-header-content">
+          {/* Left side - Company info */}
+          <div className="emisor-info-identity">
+            <div className="emisor-info-avatar">
+              {company?.logo_url ? (
+                <img 
+                  src={getImageUrl(company.logo_url)} 
+                  alt="Logo" 
+                  className="emisor-info-logo"
+                  onClick={() => { setViewerImage(company.logo_url); setViewerOpen(true); }}
+                />
+              ) : (
+                <span className="emisor-info-avatar-text">
+                  {company?.razon_social?.charAt(0) || '?'}
+                </span>
+              )}
+              <div className={`emisor-info-status-dot ${company?.estado === 'ACTIVO' ? 'active' : 'inactive'}`}></div>
+            </div>
+            <div className="emisor-info-details">
+              <div className="emisor-info-ruc">
+                <span className="ruc-label">RUC</span>
+                <span className="ruc-number">{company?.ruc ?? '—'}</span>
+              </div>
+              <h1 className="emisor-info-name">{company?.razon_social ?? ''}</h1>
+              <div className="emisor-info-badges">
+                <span className={`mini-badge ${company?.ambiente === 'PRODUCCION' ? 'prod' : 'test'}`}>
+                  {company?.ambiente === 'PRODUCCION' ? '🚀 Producción' : '🧪 Pruebas'}
+                </span>
+                <span className={`mini-badge ${company?.estado === 'ACTIVO' ? 'active' : 'inactive'}`}>
+                  {company?.estado === 'ACTIVO' ? '✓ Activo' : '✕ Inactivo'}
+                </span>
+              </div>
+            </div>
+          </div>
 
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8 }}>
+          {/* Right side - Actions */}
+          <div className="emisor-info-actions">
             {tab === 'emisor' && (
               isLimitedRole ? (
-                <button
-                  className="actions-btn"
-                  disabled
-                  title="Tu rol no permite realizar acciones sobre el emisor"
-                  style={{
-                    background: '#cbd5f5',
-                    color: '#6b7280',
-                    padding: '8px 14px',
-                    borderRadius: 8,
-                    border: 'none',
-                    cursor: 'not-allowed',
-                    fontWeight: 700,
-                    opacity: 0.7
-                  }}
-                >
-                  Acciones ▾
+                <button className="emisor-actions-btn disabled" disabled title="Tu rol no permite realizar acciones">
+                  <span>⚡</span> Acciones
                 </button>
               ) : (
-                <>
+                <div className="emisor-actions-dropdown">
                   <button
-                    className="actions-btn"
+                    className="emisor-actions-btn"
                     onClick={() => setActionsOpen((s) => !s)}
                     aria-expanded={actionsOpen}
-                    aria-haspopup="menu"
-                    style={{ background: '#1e40af', color: '#fff', padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 700 }}
                   >
-                    Acciones ▾
+                    <span>⚡</span> Acciones <span className="dropdown-arrow">{actionsOpen ? '▲' : '▼'}</span>
                   </button>
-
                   {actionsOpen && (
-                    <div role="menu" style={{ position: 'absolute', right: 0, top: '110%', background: '#fff', border: '1px solid #ddd', boxShadow: '0 6px 18px rgba(0,0,0,.08)', borderRadius: 6, zIndex: 50 }}>
-                      <button role="menuitem" onClick={() => { setOpenEdit(true); setActionsOpen(false); }} className="menu-item">✏️ Editar</button>
-                      <button role="menuitem" onClick={() => { setActionsOpen(false); setDeleteWithHistory(false); setConfirmOpen(true); }} className="menu-item">🗑️ Eliminar</button>
-                      {/* If inactive >= 1 year, show delete with history option */}
+                    <div className="emisor-actions-menu">
+                      <button onClick={() => { setOpenEdit(true); setActionsOpen(false); }}>
+                        <span className="menu-icon">✏️</span> Editar emisor
+                      </button>
+                      <button onClick={() => { setActionsOpen(false); setDeleteWithHistory(false); setConfirmOpen(true); }} className="danger">
+                        <span className="menu-icon">🗑️</span> Eliminar
+                      </button>
                       {company && company.estado === 'INACTIVO' && company.updated_at && new Date(company.updated_at) <= new Date(Date.now() - 365*24*60*60*1000) && (
-                        <button role="menuitem" onClick={() => { setActionsOpen(false); setDeleteWithHistory(true); setConfirmOpen(true); }} className="menu-item">🗄️ Eliminar (con historial)</button>
+                        <button onClick={() => { setActionsOpen(false); setDeleteWithHistory(true); setConfirmOpen(true); }} className="danger">
+                          <span className="menu-icon">🗄️</span> Eliminar (historial)
+                        </button>
                       )}
-                      <style>{`
-                        .menu-item{ display:block; width:100%; padding:8px 14px; background:transparent; border:none; text-align:left; cursor:pointer; color:#222 }
-                        .menu-item:hover{ background:#e6f0ff; color:#1e40af }
-                      `}</style>
                     </div>
                   )}
-                </>
+                </div>
               )
             )}
-
-            {/* Single right X to close info, bold and red, hover lifts */}
             <button
-              aria-label="Cerrar información"
+              className="emisor-close-btn"
               onClick={() => navigate('/emisores')}
-              className="close-x"
-              title="Cerrar"
-              style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 18, fontWeight: 800, color: '#c62828' }}
+              title="Volver a emisores"
             >
               ✕
             </button>
-            <style>{`
-              .close-x{ transition: transform .12s ease, box-shadow .12s ease }
-              .close-x:hover{ transform: translateY(-3px); box-shadow: 0 6px 18px rgba(0,0,0,0.12) }
-            `}</style>
           </div>
         </div>
+
+        {/* Tabs Navigation */}
+        <nav className="emisor-info-tabs">
+          {(['emisor','establecimientos','usuarios','suscripciones'] as const).map((t) => {
+            const icons = {
+              emisor: '🏢',
+              establecimientos: '🏪',
+              usuarios: '👥',
+              suscripciones: '💳'
+            };
+            const labels = {
+              emisor: 'Emisor',
+              establecimientos: 'Establecimientos',
+              usuarios: 'Usuarios',
+              suscripciones: 'Suscripciones'
+            };
+            return (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`emisor-tab ${tab === t ? 'active' : ''}`}
+              >
+                <span className="tab-icon">{icons[t]}</span>
+                <span className="tab-label">{labels[t]}</span>
+                {tab === t && <span className="tab-indicator"></span>}
+              </button>
+            );
+          })}
+        </nav>
       </div>
 
-      <div style={{ marginTop: 12 }}>
-          <nav style={{ display: 'flex', gap: 12 }}>
-          {(['emisor','establecimientos','usuarios','suscripciones'] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              style={{
-                padding: '8px 12px',
-                borderRadius: 20,
-                border: tab === t ? '2px solid #f97316' : '1px solid #ddd',
-                background: tab === t ? '#f97316' : '#fff',
-                fontWeight: tab === t ? 800 : 600,
-                color: tab === t ? '#ffffff' : '#1f2937',
-                cursor: 'pointer'
-              }}
-            >
-              {t === 'emisor' ? 'Emisor' : t === 'establecimientos' ? 'Establecimientos' : t === 'usuarios' ? 'Usuarios' : 'Suscripciones'}
-            </button>
-          ))}
-        </nav>
-
-        <div style={{ marginTop: 18 }}>
-          {tab === 'emisor' && (
+      {/* Content Area */}
+      <div className="emisor-info-content">
+        {tab === 'emisor' && (
             <>
               {/* Cards Grid - Modern Design */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
@@ -963,7 +983,6 @@ const EmisorInfo: React.FC = () => {
             <SuscripcionesList emisorId={company.id} />
           )}
         </div>
-      </div>
 
       {/* Edit modal */}
       <EmisorFormModal
