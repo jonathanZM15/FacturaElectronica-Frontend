@@ -25,7 +25,9 @@ const initial: Emisor = {
   regimen_tributario: 'GENERAL',
   obligado_contabilidad: 'NO',
   contribuyente_especial: 'NO',
+  numero_resolucion_contribuyente_especial: '',
   agente_retencion: 'NO',
+  numero_resolucion_agente_retencion: '',
   tipo_persona: 'NATURAL',
   codigo_artesano: '',
   correo_remitente: '',
@@ -439,7 +441,7 @@ const EmisorFormModal: React.FC<Props> = (props) => {
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontWeight: 600, fontSize: 13, color: '#475569' }}>Estado</div>
                   <div style={{ fontSize: 12, marginTop: 2, color: v.estado === 'ACTIVO' ? '#059669' : '#64748b' }}>
-                    {v.estado === 'ACTIVO' ? 'Activo' : 'Inactivo'}
+                    {v.estado === 'ACTIVO' ? 'Activo' : 'Desactivado'}
                   </div>
                 </div>
                 <label className="switch">
@@ -561,6 +563,54 @@ const EmisorFormModal: React.FC<Props> = (props) => {
                   </label>
                 </div>
               </div>
+
+              {/* Número de Resolución - Contribuyente Especial (mostrar si es SI) */}
+              {v.contribuyente_especial === 'SI' && (
+                <div style={{display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px'}}>
+                  <label style={{display: 'flex', flexDirection: 'column', gap: '4px'}}>
+                    <span style={{fontWeight: 600, fontSize: '14px', color: '#374151'}}>Número de Resolución – Contribuyente Especial</span>
+                    <span style={{fontSize: '12px', color: '#6b7280'}}>Opcional</span>
+                    <input 
+                      type="text"
+                      value={v.numero_resolucion_contribuyente_especial || ''} 
+                      onChange={e => onChange('numero_resolucion_contribuyente_especial', e.target.value)}
+                      onBlur={() => setTouchedFields(prev => new Set(prev).add('numero_resolucion_contribuyente_especial'))}
+                      placeholder="Ej: RES-01-2024"
+                      style={{
+                        padding: '10px 12px',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        backgroundColor: '#fff'
+                      }}
+                    />
+                  </label>
+                </div>
+              )}
+
+              {/* Número de Resolución - Agente de Retención (mostrar si es SI) */}
+              {v.agente_retencion === 'SI' && (
+                <div style={{display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px'}}>
+                  <label style={{display: 'flex', flexDirection: 'column', gap: '4px'}}>
+                    <span style={{fontWeight: 600, fontSize: '14px', color: '#374151'}}>Número de Resolución – Agente de Retención</span>
+                    <span style={{fontSize: '12px', color: '#6b7280'}}>Opcional</span>
+                    <input 
+                      type="text"
+                      value={v.numero_resolucion_agente_retencion || ''} 
+                      onChange={e => onChange('numero_resolucion_agente_retencion', e.target.value)}
+                      onBlur={() => setTouchedFields(prev => new Set(prev).add('numero_resolucion_agente_retencion'))}
+                      placeholder="Ej: RES-02-2024"
+                      style={{
+                        padding: '10px 12px',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        backgroundColor: '#fff'
+                      }}
+                    />
+                  </label>
+                </div>
+              )}
             </div>
             <div>
               {(fieldErrors.obligado_contabilidad || fieldErrors.contribuyente_especial || fieldErrors.agente_retencion) && (

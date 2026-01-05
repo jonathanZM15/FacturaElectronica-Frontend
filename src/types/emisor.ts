@@ -8,7 +8,9 @@ export interface Emisor {
   regimen_tributario?: 'GENERAL' | 'RIMPE_POPULAR' | 'RIMPE_EMPRENDEDOR' | 'MICRO_EMPRESA';
   obligado_contabilidad?: 'SI' | 'NO';
   contribuyente_especial?: 'SI' | 'NO';
+  numero_resolucion_contribuyente_especial?: string;
   agente_retencion?: 'SI' | 'NO';
+  numero_resolucion_agente_retencion?: string;
   tipo_persona?: 'NATURAL' | 'JURIDICA';
   codigo_artesano?: string;
 
