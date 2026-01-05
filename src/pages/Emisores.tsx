@@ -72,7 +72,6 @@ const dynamicColumns: Array<{
 
   { key: 'nombre_comercial', label: 'Nombre comercial', width: 200 },
   { key: 'direccion_matriz', label: 'Dirección Matriz', width: 240 },
-  { key: 'correo_remitente', label: 'Correo Remitente', width: 250 },
   {
     key: 'logo',
     label: 'Logo',
@@ -141,7 +140,7 @@ const Emisores: React.FC = () => {
   const { user, loading: userLoading } = useUser();
   const [loading, setLoading] = React.useState(false);
   // Dynamic filtering
-  type FilterField = 'ruc'|'razon_social'|'estado'|'tipo_plan'|'cantidad_creados_gt'|'cantidad_restantes_lt'|'nombre_comercial'|'direccion_matriz'|'correo_remitente'|'regimen_tributario'|'tipo_persona'|'ambiente'|'tipo_emision'|'registrador';
+  type FilterField = 'ruc'|'razon_social'|'estado'|'tipo_plan'|'cantidad_creados_gt'|'cantidad_restantes_lt'|'nombre_comercial'|'direccion_matriz'|'regimen_tributario'|'tipo_persona'|'ambiente'|'tipo_emision'|'registrador';
   const [activeFilter, setActiveFilter] = React.useState<FilterField | null>(null);
   const [filterValue, setFilterValue] = React.useState<string>('');
   const [estado, setEstado] = React.useState('ACTIVO');
@@ -157,7 +156,7 @@ const Emisores: React.FC = () => {
     cantidad_restantes_lt: 'Cantidad de Comprobantes Restantes (<)',
     nombre_comercial: 'Nombre Comercial',
     direccion_matriz: 'Dirección Matriz',
-    correo_remitente: 'Correo Remitente',
+
     regimen_tributario: 'Régimen Tributario',
     tipo_persona: 'Tipo de Persona',
     ambiente: 'Ambiente',
@@ -777,7 +776,7 @@ const Emisores: React.FC = () => {
                 >
                   <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                     RUC 
-                    <span style={{ opacity: sortBy === 'ruc' ? 1 : 0.5 }}>{sortBy === 'ruc' ? (sortOrder === 'asc' ? '↑' : '↓') : '↕'}</span>
+                    <span style={{ opacity: sortBy === 'ruc' ? 1 : 0.5, fontSize: '26px' }}>{sortBy === 'ruc' ? (sortOrder === 'asc' ? '↑' : '↓') : '↕'}</span>
                     {activeFilter === 'ruc' && <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#fbbf24', boxShadow: '0 0 8px #fbbf24' }}></span>}
                   </span>
                 </th>
@@ -792,14 +791,14 @@ const Emisores: React.FC = () => {
                 >
                   <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                     Razón Social 
-                    <span style={{ opacity: sortBy === 'razon_social' ? 1 : 0.5 }}>{sortBy === 'razon_social' ? (sortOrder === 'asc' ? '↑' : '↓') : '↕'}</span>
+                    <span style={{ opacity: sortBy === 'razon_social' ? 1 : 0.5, fontSize: '26px' }}>{sortBy === 'razon_social' ? (sortOrder === 'asc' ? '↑' : '↓') : '↕'}</span>
                     {activeFilter === 'razon_social' && <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#fbbf24', boxShadow: '0 0 8px #fbbf24' }}></span>}
                   </span>
                 </th>
 
                 {/* Columnas dinámicas */}
                 {dynamicColumns.map((c) => {
-                  const isFilterable = ['estado','tipo_plan','cantidad_creados','cantidad_restantes','nombre_comercial','direccion_matriz','correo_remitente','regimen_tributario','tipo_persona','ambiente','tipo_emision','created_by_name'].includes(String(c.key));
+                  const isFilterable = ['estado','tipo_plan','cantidad_creados','cantidad_restantes','nombre_comercial','direccion_matriz','regimen_tributario','tipo_persona','ambiente','tipo_emision','created_by_name'].includes(String(c.key));
                   const keyToFilter: Record<string, FilterField> = {
                     estado: 'estado',
                     tipo_plan: 'tipo_plan',
@@ -807,7 +806,7 @@ const Emisores: React.FC = () => {
                     cantidad_restantes: 'cantidad_restantes_lt',
                     nombre_comercial: 'nombre_comercial',
                     direccion_matriz: 'direccion_matriz',
-                    correo_remitente: 'correo_remitente',
+
                     regimen_tributario: 'regimen_tributario',
                     tipo_persona: 'tipo_persona',
                     ambiente: 'ambiente',
@@ -824,7 +823,6 @@ const Emisores: React.FC = () => {
                         width: c.width ?? 200,
                         cursor: c.key !== 'logo' ? 'pointer' : 'default'
                       }}
-                      title={c.label}
                       onClick={() => {
                           if (c.key !== 'logo') handleSort(c.key as any);
                           if (isFilterable && filterField) {
@@ -835,7 +833,7 @@ const Emisores: React.FC = () => {
                     >
                       <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                         {c.label} 
-                        {c.key !== 'logo' && <span style={{ opacity: sortBy === c.key ? 1 : 0.5 }}>{sortBy === c.key ? (sortOrder === 'asc' ? '↑' : '↓') : '↕'}</span>}
+                        {c.key !== 'logo' && <span style={{ opacity: sortBy === c.key ? 1 : 0.5, fontSize: '26px' }}>{sortBy === c.key ? (sortOrder === 'asc' ? '↑' : '↓') : '↕'}</span>}
                         {activeFilter === filterField && <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#fbbf24', boxShadow: '0 0 8px #fbbf24' }}></span>}
                       </span>
                     </th>
