@@ -63,7 +63,7 @@ const ConfirmDialog: React.FC<Props> = ({
           border:2px solid #ccc; font-weight:700; cursor:pointer;
         }
         .mf-btn-confirm{
-          padding:10px 18px; border-radius:8px; background:#ff4d4f; color:#fff;
+          padding:10px 18px; border-radius:8px; background:#2563eb; color:#fff;
           border:none; font-weight:700; cursor:pointer;
         }
         .mf-btn-cancel:focus, .mf-btn-confirm:focus{ outline:3px solid rgba(12,45,231,.35); outline-offset:2px; }

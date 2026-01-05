@@ -966,12 +966,36 @@ const Emisores: React.FC = () => {
                       <button 
                         title={canEditEmit(row) ? "Eliminar" : "No tienes permisos para eliminar"}
                         disabled={!canEditEmit(row)}
-                        onClick={() => {
-                          setDeletingId(row.id || null);
-                          setDeletingName(row.razon_social || null);
-                          setDeletePassword('');
-                          setDeleteError(null);
-                          setDeleteOpen(true); // open confirmation first
+                        onClick={async () => {
+                          // Validate if the emisor can be deleted before opening the modal
+                          try {
+                            const res = await emisoresApi.validateDelete(row.id!);
+                            const { can_delete, blockers } = res.data;
+                            
+                            if (!can_delete) {
+                              // Show error message with blockers
+                              const blockersList = blockers.join('\n• ');
+                              show({
+                                title: 'No se puede eliminar',
+                                message: `Este emisor no puede ser eliminado por las siguientes razones:\n• ${blockersList}`,
+                                type: 'error'
+                              });
+                              return;
+                            }
+                            
+                            // If validation passes, open delete modal
+                            setDeletingId(row.id || null);
+                            setDeletingName(row.razon_social || null);
+                            setDeletePassword('');
+                            setDeleteError(null);
+                            setDeleteOpen(true);
+                          } catch (err: any) {
+                            show({
+                              title: 'Error',
+                              message: 'No se pudo verificar si el emisor puede ser eliminado',
+                              type: 'error'
+                            });
+                          }
                         }}
                         style={{ opacity: canEditEmit(row) ? 1 : 0.5, cursor: canEditEmit(row) ? 'pointer' : 'not-allowed' }}
                       >🗑️</button>

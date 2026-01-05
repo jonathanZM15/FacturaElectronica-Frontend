@@ -70,6 +70,9 @@ export const emisoresApi = {
     // axios allows a request body on DELETE via the `data` option
     return api.delete(`/api/emisores/${id}`, { data: { password } });
   },
+  validateDelete(id: number | string) {
+    return api.get(`/api/emisores/${id}/validate-delete`);
+  },
   prepareDeletion(id: number | string) {
     return api.post(`/api/emisores/${id}/prepare-deletion`);
   },
