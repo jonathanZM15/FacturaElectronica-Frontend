@@ -57,8 +57,10 @@ const EmisorFormModal: React.FC<Props> = (props) => {
   React.useEffect(() => {
     if (open) {
       setV(initialData ?? initial);
-      // Don't reset logoFile here - let user's selection persist
-      // setLogoFile(null);  // <-- REMOVED: Let the selected file persist until submission
+      // Reset logoFile when creating a new emisor, but keep it when editing
+      if (!editingId) {
+        setLogoFile(null);
+      }
       setExistingLogoUrl((initialData as any)?.logo_url || null);
       setEmailError(null);
       setLogoError(null);
@@ -68,7 +70,7 @@ const EmisorFormModal: React.FC<Props> = (props) => {
       setCheckingRuc(false);
         setTouchedFields(new Set());
     }
-  }, [open, initialData, rucEditable]);
+  }, [open, initialData, rucEditable, editingId]);
 
   // Enhanced onChange: set value and clear field-specific errors live
   const onChange = (k: keyof Emisor, value: any) => {
@@ -230,8 +232,9 @@ const EmisorFormModal: React.FC<Props> = (props) => {
     if (v.correo_remitente && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.correo_remitente)) return false;
     if (!v.ambiente || !v.tipo_emision) return false;
     if (rucError || rucDuplicateError || checkingRuc) return false;
-    // Logo is now optional - will use default if not provided
+    // Logo is now optional - will use default if not provided, but validate if selected
     if (logoFile && !/\.jpe?g$|\.png$/i.test(logoFile.name)) return false;
+    if (logoError) return false; // Disable button if there's any logo error (including orientation)
     return true;
   };
 
@@ -850,8 +853,30 @@ const EmisorFormModal: React.FC<Props> = (props) => {
                     }}>
                       {logoFile.name}
                     </div>
-                    <div style={{fontSize: '12px', color: '#7c3aed', fontWeight: 600}}>
-                      Click para cambiar
+                    <div style={{display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '8px'}}>
+                      <div style={{fontSize: '12px', color: '#7c3aed', fontWeight: 600}}>
+                        Click para cambiar
+                      </div>
+                      <button 
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setLogoFile(null);
+                          setLogoError(null);
+                        }}
+                        style={{
+                          fontSize: '12px',
+                          color: '#dc2626',
+                          fontWeight: 600,
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          padding: 0,
+                          textDecoration: 'underline'
+                        }}
+                      >
+                        o Eliminar
+                      </button>
                     </div>
                   </>
                 )}
