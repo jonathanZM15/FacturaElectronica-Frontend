@@ -448,7 +448,7 @@ const EmisorFormModal: React.FC<Props> = (props) => {
                   </div>
                 </div>
                 <label className="switch">
-                  <input type="checkbox" checked={v.estado === 'ACTIVO'} onChange={e => onChange('estado', e.target.checked ? 'ACTIVO' : 'INACTIVO')} />
+                  <input type="checkbox" checked={v.estado === 'ACTIVO'} onChange={e => onChange('estado', e.target.checked ? 'ACTIVO' : 'DESACTIVADO')} />
                   <span className="slider" />
                 </label>
               </div>

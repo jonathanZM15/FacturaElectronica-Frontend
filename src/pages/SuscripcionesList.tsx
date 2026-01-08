@@ -643,6 +643,18 @@ const SuscripcionesList: React.FC<Props> = ({ emisorId }) => {
       ) : (
         <>
           <div className="susc-table-wrapper">
+            {suscripciones.length === 0 && (
+              <div className="susc-empty-overlay">
+                <div className="susc-empty-content">
+                  <div className="susc-empty-icon">📋</div>
+                  <h3>{hasActiveFilters ? 'Sin resultados' : 'Sin suscripciones'}</h3>
+                  <p>{hasActiveFilters 
+                    ? 'No se encontraron suscripciones con los filtros aplicados.'
+                    : 'No hay suscripciones registradas para este emisor.'
+                  }</p>
+                </div>
+              </div>
+            )}
             <div className="susc-table-scroll">
               <table className="susc-table">
                 <thead>
@@ -700,17 +712,8 @@ const SuscripcionesList: React.FC<Props> = ({ emisorId }) => {
                 </thead>
                 <tbody>
                   {suscripciones.length === 0 ? (
-                    <tr>
-                      <td colSpan={19}>
-                        <div className="susc-empty-state">
-                          <div className="susc-empty-icon">📋</div>
-                          <h3>{hasActiveFilters ? 'Sin resultados' : 'Sin suscripciones'}</h3>
-                          <p>{hasActiveFilters 
-                            ? 'No se encontraron suscripciones con los filtros aplicados.'
-                            : 'No hay suscripciones registradas para este emisor.'
-                          }</p>
-                        </div>
-                      </td>
+                    <tr style={{ display: 'none' }}>
+                      <td colSpan={19}></td>
                     </tr>
                   ) : (
                     suscripciones.map((suscripcion) => {

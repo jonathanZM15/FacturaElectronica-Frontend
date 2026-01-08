@@ -583,6 +583,26 @@
   animation: slideUpFade 0.5s ease-out 0.2s both;
 }
 
+/* Empty State Overlay */
+.tabla-empty-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.98);
+  z-index: 20;
+  border-radius: 20px;
+}
+
+.tabla-empty-content {
+  text-align: center;
+  padding: 60px 20px;
+}
+
 @keyframes slideUpFade {
   from {
     opacity: 0;

@@ -79,7 +79,7 @@ const PuntoEmisionInfo: React.FC = () => {
               <h1 className="punto-header-name">{punto?.nombre ?? 'Punto de Emisión'}</h1>
               <div className={`punto-header-status ${punto?.estado === 'ACTIVO' ? 'active' : 'inactive'}`}>
                 <span className="punto-header-status-dot"></span>
-                {punto?.estado === 'ACTIVO' ? 'Activo' : punto?.estado ?? 'Inactivo'}
+                {punto?.estado === 'ACTIVO' ? 'Activo' : punto?.estado ?? 'Desactivado'}
               </div>
             </div>
           </div>

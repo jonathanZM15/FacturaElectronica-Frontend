@@ -111,7 +111,7 @@ const UsuarioDetailModal: React.FC<Props> = ({ open, onClose, user, loading = fa
     const normalized = (estado || '').toUpperCase();
     const data: Record<string, { color: string; label: string }> = {
       'ACTIVO': { color: '#16a34a', label: 'Activo' },
-      'INACTIVO': { color: '#dc2626', label: 'Inactivo' },
+      'INACTIVO': { color: '#dc2626', label: 'Desactivado' },
       'PENDIENTE': { color: '#f59e0b', label: 'Pendiente' }
     };
     return data[normalized] || { color: '#6b7280', label: estado || 'Sin estado' };

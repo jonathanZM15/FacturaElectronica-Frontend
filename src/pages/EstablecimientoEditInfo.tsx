@@ -384,7 +384,7 @@ const EstablecimientoEditInfo: React.FC = () => {
                   >
                     <option value="">Todos</option>
                     <option value="activo">Activo</option>
-                    <option value="inactivo">Inactivo</option>
+                    <option value="inactivo">Desactivado</option>
                   </select>
                 ) : (
                   <input

@@ -668,7 +668,7 @@ const Emisores: React.FC = () => {
                 <select value={filterValue} onChange={(e) => setFilterValue(e.target.value)}>
                   <option value="">Todos</option>
                   <option value="ACTIVO">ACTIVO</option>
-                  <option value="INACTIVO">INACTIVO</option>
+                  <option value="DESACTIVADO">DESACTIVADO</option>
                 </select>
               ) : activeFilter === 'tipo_plan' ? (
                 <select value={filterValue} onChange={(e) => setFilterValue(e.target.value)}>
@@ -760,6 +760,23 @@ const Emisores: React.FC = () => {
       {error && <div className="alert-error"><span style={{ marginRight: '8px' }}>⚠️</span> {error}</div>}
 
       <div className="tabla-wrapper">
+        {paginatedData.length === 0 && !loading && (
+          <div className="tabla-empty-overlay">
+            <div className="tabla-empty-content">
+              <span style={{ fontSize: '64px', marginBottom: '16px', display: 'block' }}>🏢</span>
+              <span style={{ fontSize: '18px', color: '#6b7280', fontWeight: 500, display: 'block', marginBottom: '8px' }}>
+                {activeFilter && filterValue 
+                  ? 'No se encontraron emisores con ese filtro' 
+                  : 'No hay emisores registrados'}
+              </span>
+              <span style={{ fontSize: '14px', color: '#9ca3af', display: 'block' }}>
+                {activeFilter && filterValue 
+                  ? 'Intenta con otro término de búsqueda' 
+                  : 'Haz clic en "✨ Nuevo" para agregar uno'}
+              </span>
+            </div>
+          </div>
+        )}
         <div className="tabla-scroll-container" ref={scrollContainerRef}>
           <table className="tabla-emisores">
             <thead>
@@ -998,7 +1015,7 @@ const Emisores: React.FC = () => {
                         style={{ opacity: canEditEmit(row) ? 1 : 0.5, cursor: canEditEmit(row) ? 'pointer' : 'not-allowed' }}
                       >🗑️</button>
                       {/** Show 'prepare deletion' for emisores inactive >=1 year */}
-                      {((row.estado === 'INACTIVO') && ((row.updated_at && new Date(row.updated_at) <= new Date(Date.now() - 365*24*60*60*1000)) || (row.fecha_actualizacion && new Date(row.fecha_actualizacion) <= new Date(Date.now() - 365*24*60*60*1000)))) && (
+                      {((row.estado === 'DESACTIVADO') && ((row.updated_at && new Date(row.updated_at) <= new Date(Date.now() - 365*24*60*60*1000)) || (row.fecha_actualizacion && new Date(row.fecha_actualizacion) <= new Date(Date.now() - 365*24*60*60*1000)))) && (
                         <button 
                           title={canEditEmit(row) ? "Eliminar (con historial)" : "No tienes permisos"}
                           disabled={!canEditEmit(row)}
@@ -1022,22 +1039,8 @@ const Emisores: React.FC = () => {
                   </tr>
                 ))
               ) : (
-                <tr>
-                  <td colSpan={dynamicColumns.length + 3} style={{ textAlign: 'center', padding: '60px 20px' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
-                      <span style={{ fontSize: '64px', opacity: 0.5 }}>🏢</span>
-                      <span style={{ fontSize: '18px', color: '#6b7280', fontWeight: 500 }}>
-                        {activeFilter && filterValue 
-                          ? 'No se encontraron emisores con ese filtro' 
-                          : 'No hay emisores registrados'}
-                      </span>
-                      <span style={{ fontSize: '14px', color: '#9ca3af' }}>
-                        {activeFilter && filterValue 
-                          ? 'Intenta con otro término de búsqueda' 
-                          : 'Haz clic en "✨ Nuevo" para agregar uno'}
-                      </span>
-                    </div>
-                  </td>
+                <tr style={{ display: 'none' }}>
+                  <td colSpan={dynamicColumns.length + 3}></td>
                 </tr>
               )}
             </tbody>

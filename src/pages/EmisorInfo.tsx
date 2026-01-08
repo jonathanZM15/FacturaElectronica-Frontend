@@ -356,7 +356,7 @@ const EmisorInfo: React.FC = () => {
                   {company?.ambiente === 'PRODUCCION' ? '🚀 Producción' : '🧪 Pruebas'}
                 </span>
                 <span className={`mini-badge ${company?.estado === 'ACTIVO' ? 'active' : 'inactive'}`}>
-                  {company?.estado === 'ACTIVO' ? '✓ Activo' : '✕ Inactivo'}
+                  {company?.estado === 'ACTIVO' ? '✓ Activo' : '✕ Desactivado'}
                 </span>
               </div>
             </div>
@@ -386,7 +386,7 @@ const EmisorInfo: React.FC = () => {
                       <button onClick={() => { setActionsOpen(false); setDeleteWithHistory(false); setConfirmOpen(true); }} className="danger">
                         <span className="menu-icon">🗑️</span> Eliminar
                       </button>
-                      {company && company.estado === 'INACTIVO' && company.updated_at && new Date(company.updated_at) <= new Date(Date.now() - 365*24*60*60*1000) && (
+                      {company && company.estado === 'DESACTIVADO' && company.updated_at && new Date(company.updated_at) <= new Date(Date.now() - 365*24*60*60*1000) && (
                         <button onClick={() => { setActionsOpen(false); setDeleteWithHistory(true); setConfirmOpen(true); }} className="danger">
                           <span className="menu-icon">🗄️</span> Eliminar (historial)
                         </button>
@@ -776,6 +776,17 @@ const EmisorInfo: React.FC = () => {
               {/* Tabla moderna */}
               <div className="est-table-container">
                 <div className="est-table-wrapper">
+                  {paginatedEsts.length === 0 && (
+                    <div className="est-empty-overlay">
+                      <div className="est-empty-overlay-content">
+                        <div className="est-empty-icon">🏢</div>
+                        <div className="est-empty-title">No hay establecimientos</div>
+                        <div className="est-empty-text">
+                          {estFilterValue ? 'No se encontraron resultados con los filtros aplicados' : 'Aún no se han registrado establecimientos'}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   <table className="est-table">
                     <thead>
                       <tr>
@@ -818,16 +829,8 @@ const EmisorInfo: React.FC = () => {
 
                     <tbody>
                       {paginatedEsts.length === 0 ? (
-                        <tr>
-                          <td colSpan={10}>
-                            <div className="est-empty-state">
-                              <div className="est-empty-icon">🏢</div>
-                              <div className="est-empty-title">No hay establecimientos</div>
-                              <div className="est-empty-text">
-                                {estFilterValue ? 'No se encontraron resultados con los filtros aplicados' : 'Aún no se han registrado establecimientos'}
-                              </div>
-                            </div>
-                          </td>
+                        <tr style={{ display: 'none' }}>
+                          <td colSpan={10}></td>
                         </tr>
                       ) : paginatedEsts.map((est) => (
                         <tr key={est.id}>

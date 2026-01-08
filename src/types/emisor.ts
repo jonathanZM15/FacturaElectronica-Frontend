@@ -15,7 +15,7 @@ export interface Emisor {
   codigo_artesano?: string;
 
   correo_remitente?: string;
-  estado: 'ACTIVO' | 'INACTIVO';
+  estado: 'ACTIVO' | 'DESACTIVADO';
   ambiente: 'PRODUCCION' | 'PRUEBAS';
   tipo_emision: 'NORMAL' | 'INDISPONIBILIDAD';
 
