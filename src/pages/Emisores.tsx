@@ -20,12 +20,12 @@ function truncateWords(text: string, maxWords: number = 10): string {
   return words.slice(0, maxWords).join(' ') + '...';
 }
 
-const dynamicColumns: Array<{
+const createDynamicColumns = (formatPlanDateIso: (value?: string | null) => string) : Array<{
   key: keyof Emisor | 'logo';
   label: string;
   width?: number;
   render?: (row: Emisor) => React.ReactNode;
-}> = [
+}> => [
   { 
     key: 'estado', 
     label: 'Estado',
@@ -64,9 +64,59 @@ const dynamicColumns: Array<{
       );
     }
   },
-  { key: 'tipo_plan', label: 'Tipo de plan' },
-  { key: 'fecha_inicio_plan', label: 'Fecha inicio de plan' },
-  { key: 'fecha_fin_plan', label: 'Fecha final del plan' },
+  { 
+    key: 'tipo_plan', 
+    label: 'Plan de suscripción vigente',
+    render: (row: any) => {
+      const vigentes = row.suscripciones_vigentes || row.suscripcionesVigentes;
+      // Intentar obtener la suscripción vigente desde la relación
+      if (vigentes && Array.isArray(vigentes) && vigentes.length > 0) {
+        const susc = vigentes[0];
+        const plan = susc.plan;
+        if (plan) {
+          const nombre = plan.nombre || '-';
+          const periodo = plan.periodo || '-';
+          const comprobantes = plan.cantidad_comprobantes || '-';
+          const precio = plan.precio ? `$${Number(plan.precio).toFixed(2)}` : '-';
+          return `${nombre} - ${periodo} - ${comprobantes} C - ${precio}`;
+        }
+      }
+      // Fallback a tipo_plan si existe
+      if (row.tipo_plan) {
+        const planData = typeof row.tipo_plan === 'object' ? (row.tipo_plan as any) : { nombre: row.tipo_plan };
+        const nombre = (planData?.nombre || row.tipo_plan) as string;
+        const periodo = (planData?.periodo || '-') as string;
+        const comprobantes = (planData?.cantidad_comprobantes || '-') as string | number;
+        const precio = planData?.precio ? `$${Number(planData.precio).toFixed(2)}` : '-';
+        return `${nombre} - ${periodo} - ${comprobantes} C - ${precio}`;
+      }
+      return '-';
+    }
+  },
+  { 
+    key: 'fecha_inicio_plan', 
+    label: 'Fecha Inicio de la suscripción vigente',
+    render: (row: any) => {
+      const vigentes = row.suscripciones_vigentes || row.suscripcionesVigentes;
+      // Intentar obtener fecha de la suscripción vigente
+      if (vigentes && Array.isArray(vigentes) && vigentes.length > 0) {
+        return formatPlanDateIso(vigentes[0].fecha_inicio) || formatPlanDateIso(row.fecha_inicio_plan);
+      }
+      return formatPlanDateIso(row.fecha_inicio_plan);
+    }
+  },
+  { 
+    key: 'fecha_fin_plan', 
+    label: 'Fecha Final de la suscripción vigente',
+    render: (row: any) => {
+      const vigentes = row.suscripciones_vigentes || row.suscripcionesVigentes;
+      // Intentar obtener fecha de la suscripción vigente
+      if (vigentes && Array.isArray(vigentes) && vigentes.length > 0) {
+        return formatPlanDateIso(vigentes[0].fecha_fin) || formatPlanDateIso(row.fecha_fin_plan);
+      }
+      return formatPlanDateIso(row.fecha_fin_plan);
+    }
+  },
   { key: 'cantidad_creados', label: 'Cantidad de comprobantes creados', width: 240 },
   { key: 'cantidad_restantes', label: 'Cantidad de comprobantes restantes', width: 240 },
 
@@ -208,6 +258,28 @@ const Emisores: React.FC = () => {
     if (!y || !m || !d) return iso;
     return `${d}/${m}/${y}`;
   }, []);
+
+  const formatPlanDateIso = React.useCallback((value?: string | null) => {
+    if (!value) return '-';
+    const date = new Date(value);
+    if (!Number.isNaN(date.getTime())) {
+      return date.toISOString().slice(0, 10);
+    }
+    // Try to normalize values like dd/mm/yyyy
+    const parts = value.split(/[\/\-]/); // split by / or -
+    if (parts.length === 3) {
+      let [a, b, c] = parts;
+      if (a.length === 4) {
+        return `${a}-${b.padStart(2, '0')}-${c.padStart(2, '0')}`;
+      }
+      if (c.length === 4) {
+        return `${c}-${b.padStart(2, '0')}-${a.padStart(2, '0')}`;
+      }
+    }
+    return value;
+  }, []);
+
+  const dynamicColumns = React.useMemo(() => createDynamicColumns(formatPlanDateIso), [formatPlanDateIso]);
 
   // Verificar si el usuario tiene permisos para editar/eliminar un emisor
   const canEditEmit = React.useCallback((emit: Emisor) => {
