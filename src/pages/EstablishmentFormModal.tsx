@@ -127,6 +127,7 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
     const e: Record<string,string> = {};
     if (!v.codigo || !v.codigo.trim()) e.codigo = 'Código es obligatorio';
     else if (v.codigo.length !== 3) e.codigo = 'Código debe tener 3 dígitos';
+    else if (v.codigo === '000') e.codigo = 'El código no puede ser "000"';
     if (!v.nombre || !v.nombre.trim()) e.nombre = 'Nombre es obligatorio';
     if (!v.direccion || !v.direccion.trim()) e.direccion = 'Dirección es obligatoria';
     if (!v.estado) e.estado = 'Estado es obligatorio';
@@ -141,7 +142,7 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
   };
 
   const isFormValid = () => {
-    if (!v.codigo || !v.codigo.trim() || v.codigo.length !== 3) return false;
+    if (!v.codigo || !v.codigo.trim() || v.codigo.length !== 3 || v.codigo === '000') return false;
     if (!v.nombre || !v.nombre.trim()) return false;
     if (!v.direccion || !v.direccion.trim()) return false;
     if (!v.estado) return false;
@@ -288,9 +289,10 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
                   <div style={{ fontSize: 12, marginTop: 2, color: v.estado === 'ABIERTO' ? '#059669' : '#64748b' }}>
                     {v.estado === 'ABIERTO' ? 'Abierto' : 'Cerrado'}
                   </div>
+                  {touched.has('estado') && fieldErrors.estado && <span className="err" style={{fontSize: 11, marginTop: 2}}>{fieldErrors.estado}</span>}
                 </div>
                 <label className="switch">
-                  <input type="checkbox" checked={v.estado === 'ABIERTO'} onChange={(e)=>onChange('estado', e.target.checked ? 'ABIERTO' : 'CERRADO')} />
+                  <input type="checkbox" checked={v.estado === 'ABIERTO'} onChange={(e)=>onChange('estado', e.target.checked ? 'ABIERTO' : 'CERRADO')} onBlur={()=>markTouched('estado')} />
                   <span className="slider" />
                 </label>
               </div>
@@ -298,7 +300,9 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
 
             {editingEst && !localCodigoEditable && <small style={{color:'#64748b', marginLeft: '192px', display: 'block', marginTop: -8}}>El código no puede ser modificado porque existen comprobantes autorizados.</small>}
             {checkingCode && <small style={{marginLeft: '192px', display: 'block', marginTop: -8}}>Verificando código…</small>}
-            {touched.has('codigo') && fieldErrors.codigo && <span className="err" style={{marginLeft: '192px', display: 'block', marginTop: -8}}>{fieldErrors.codigo}</span>}
+            {v.codigo === '000' && touched.has('codigo') && <span className="err" style={{marginLeft: '192px', display: 'block', marginTop: -8}}>El código no puede ser "000"</span>}
+            {codeDuplicateError && <span className="err" style={{marginLeft: '192px', display: 'block', marginTop: -8}}>{codeDuplicateError}</span>}
+            {touched.has('codigo') && fieldErrors.codigo && !codeDuplicateError && <span className="err" style={{marginLeft: '192px', display: 'block', marginTop: -8}}>{fieldErrors.codigo}</span>}
 
             <label className="horizontal">
               <span>Nombre <span style={{color:'#dc2626'}}>*</span></span>
@@ -307,8 +311,9 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
             {touched.has('nombre') && fieldErrors.nombre && <span className="err" style={{marginLeft: '192px'}}>{fieldErrors.nombre}</span>}
 
             <label className="horizontal">Nombre Comercial
-              <input value={v.nombre_comercial || ''} onChange={e=>onChange('nombre_comercial', e.target.value)} />
+              <input value={v.nombre_comercial || ''} onBlur={()=>markTouched('nombre_comercial')} onChange={e=>onChange('nombre_comercial', e.target.value)} />
             </label>
+            {touched.has('nombre_comercial') && fieldErrors.nombre_comercial && <span className="err" style={{marginLeft: '192px'}}>{fieldErrors.nombre_comercial}</span>}
             <small style={{marginLeft: '192px', display: 'block', marginTop: 2, color: '#64748b'}}>Se mostrará en los comprobantes</small>
 
             <label className="horizontal">
@@ -354,6 +359,8 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
                 <option value="custom">📁 Logo personalizado</option>
               </select>
             </label>
+            <small style={{marginLeft: '192px', display: 'block', marginTop: 2, color: '#64748b'}}>Se mostrará en los comprobantes</small>
+            {fieldErrors.logo && <span className="err" style={{marginLeft: '192px', display: 'block', marginTop: -8}}>{fieldErrors.logo}</span>}
 
               {/* Área de carga de archivo (solo visible cuando logoOption === 'custom') */}
               {logoOption === 'custom' && (
