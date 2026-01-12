@@ -32,6 +32,7 @@ const createDynamicColumns = (formatPlanDateIso: (value?: string | null) => stri
     width: 140,
     render: (row) => {
       const isActivo = row.estado === 'ACTIVO';
+      const displayEstado = isActivo ? 'Activo' : 'Desactivado';
       return (
         <span style={{
           display: 'inline-flex',
@@ -49,7 +50,6 @@ const createDynamicColumns = (formatPlanDateIso: (value?: string | null) => stri
           boxShadow: isActivo 
             ? '0 4px 15px rgba(16, 185, 129, 0.4)' 
             : '0 4px 15px rgba(156, 163, 175, 0.4)',
-          textTransform: 'uppercase',
           animation: isActivo ? 'pulseGlow 2s ease-in-out infinite' : 'none'
         }}>
           <span style={{ 
@@ -59,7 +59,7 @@ const createDynamicColumns = (formatPlanDateIso: (value?: string | null) => stri
             background: '#fff',
             boxShadow: '0 0 8px rgba(255,255,255,0.8)'
           }}></span>
-          {row.estado}
+          {displayEstado}
         </span>
       );
     }
@@ -146,9 +146,36 @@ const createDynamicColumns = (formatPlanDateIso: (value?: string | null) => stri
   },
   { key: 'regimen_tributario', label: 'Régimen Tributario', width: 200 },
 
-  { key: 'obligado_contabilidad', label: 'Obligado a llevar contabilidad', width: 200 },
-  { key: 'contribuyente_especial', label: 'Contribuyente Especial', width: 200 },
-  { key: 'agente_retencion', label: 'Agente de retención', width: 170 },
+  { 
+    key: 'obligado_contabilidad', 
+    label: 'Obligado a llevar contabilidad', 
+    width: 200,
+    render: (row) => row.obligado_contabilidad === 'SI' ? 'Sí' : 'No'
+  },
+  { 
+    key: 'contribuyente_especial', 
+    label: 'Contribuyente Especial', 
+    width: 250,
+    render: (row: any) => {
+      if (row.contribuyente_especial === 'SI') {
+        const resolucion = row.numero_resolucion_contribuyente_especial || '';
+        return resolucion ? `Sí - Res. ${resolucion}` : 'Sí';
+      }
+      return 'No';
+    }
+  },
+  { 
+    key: 'agente_retencion', 
+    label: 'Agente de Retención', 
+    width: 250,
+    render: (row: any) => {
+      if (row.agente_retencion === 'SI') {
+        const resolucion = row.numero_resolucion_agente_retencion || '';
+        return resolucion ? `Sí - Res. ${resolucion}` : 'Sí';
+      }
+      return 'No';
+    }
+  },
   { key: 'codigo_artesano', label: 'Código Artesano', width: 180 },
   { key: 'tipo_persona', label: 'Tipo de persona', width: 160 },
   { key: 'ambiente', label: 'Ambiente', width: 150 },
@@ -156,32 +183,67 @@ const createDynamicColumns = (formatPlanDateIso: (value?: string | null) => stri
 
   { 
     key: 'created_at', 
-    label: 'Fecha de creación', 
-    width: 130,
+    label: 'Fecha y hora de Creación', 
+    width: 180,
     render: (row) => {
       if (!row.created_at) return '-';
       const date = new Date(row.created_at);
-      return date.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      return date.toLocaleString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
     }
   },
   { 
     key: 'updated_at', 
-    label: 'Fecha de actualización', 
-    width: 150,
+    label: 'Fecha y hora de Actualización', 
+    width: 200,
     render: (row) => {
       if (!row.updated_at) return '-';
       const date = new Date(row.updated_at);
-      return date.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      return date.toLocaleString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
     }
   },
   { 
     key: 'created_by_name', 
-    label: 'Nombre del registrador', 
-    width: 230,
-    render: (row) => row.created_by_name || '-'
+    label: 'Nombre del Registrador', 
+    width: 350,
+    render: (row: any) => {
+      // Formato: ROL – USERNAME – NOMBRES – APELLIDOS
+      const creator = row.creator;
+      if (creator) {
+        const rol = (creator.role || 'USUARIO').toUpperCase();
+        const username = creator.username || creator.name || '-';
+        const nombres = creator.nombres || '';
+        const apellidos = creator.apellidos || '';
+        const fullName = `${nombres} ${apellidos}`.trim() || username;
+        return (
+          <span>
+            {rol} – <a href={`/usuarios/${creator.id}`} style={{ color: '#6366f1', textDecoration: 'none', fontWeight: 600 }}>{username}</a> – {fullName}
+          </span>
+        );
+      }
+      // Fallback si no hay relación creator
+      return row.created_by_name || '-';
+    }
   },
-  { key: 'ultimo_login', label: 'Fecha de último inicio de sesión', width: 240 },
-  { key: 'ultimo_comprobante', label: 'Fecha de ultimo comprobante creado', width: 260 },
+  { 
+    key: 'ultimo_login', 
+    label: 'Fecha y hora de Último Inicio de Sesión', 
+    width: 280,
+    render: (row) => {
+      if (!row.ultimo_login) return '-';
+      const date = new Date(row.ultimo_login);
+      return date.toLocaleString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+  },
+  { 
+    key: 'ultimo_comprobante', 
+    label: 'Fecha y hora de Último Comprobante Creado', 
+    width: 300,
+    render: (row) => {
+      if (!row.ultimo_comprobante) return '-';
+      const date = new Date(row.ultimo_comprobante);
+      return date.toLocaleString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+  },
 ];
 
 const Emisores: React.FC = () => {
@@ -190,7 +252,7 @@ const Emisores: React.FC = () => {
   const { user, loading: userLoading } = useUser();
   const [loading, setLoading] = React.useState(false);
   // Dynamic filtering
-  type FilterField = 'ruc'|'razon_social'|'estado'|'tipo_plan'|'cantidad_creados_gt'|'cantidad_restantes_lt'|'nombre_comercial'|'direccion_matriz'|'regimen_tributario'|'tipo_persona'|'ambiente'|'tipo_emision'|'registrador';
+  type FilterField = 'ruc'|'razon_social'|'estado'|'tipo_plan'|'cantidad_creados_gt'|'cantidad_restantes_lt'|'nombre_comercial'|'direccion_matriz'|'regimen_tributario'|'obligado_contabilidad'|'contribuyente_especial'|'agente_retencion'|'codigo_artesano'|'tipo_persona'|'ambiente'|'tipo_emision'|'registrador';
   const [activeFilter, setActiveFilter] = React.useState<FilterField | null>(null);
   const [filterValue, setFilterValue] = React.useState<string>('');
   const [estado, setEstado] = React.useState('ACTIVO');
@@ -201,17 +263,20 @@ const Emisores: React.FC = () => {
     ruc: 'RUC',
     razon_social: 'Razón Social',
     estado: 'Estado',
-    tipo_plan: 'Tipo de Plan',
-    cantidad_creados_gt: 'Cantidad de Comprobantes Creados (>)',
-    cantidad_restantes_lt: 'Cantidad de Comprobantes Restantes (<)',
+    tipo_plan: 'Plan de suscripción vigente',
+    cantidad_creados_gt: 'Cantidad de Comprobantes Creados',
+    cantidad_restantes_lt: 'Cantidad de Comprobantes Restantes',
     nombre_comercial: 'Nombre Comercial',
     direccion_matriz: 'Dirección Matriz',
-
     regimen_tributario: 'Régimen Tributario',
+    obligado_contabilidad: 'Obligado a llevar contabilidad',
+    contribuyente_especial: 'Contribuyente Especial',
+    agente_retencion: 'Agente de Retención',
+    codigo_artesano: 'Código Artesano',
     tipo_persona: 'Tipo de Persona',
     ambiente: 'Ambiente',
     tipo_emision: 'Tipo de Emisión',
-    registrador: 'Nombre del registrador',
+    registrador: 'Nombre del Registrador',
   };
   const [desde, setDesde] = React.useState<string>('');
   const [hasta, setHasta] = React.useState<string>('');
@@ -238,12 +303,12 @@ const Emisores: React.FC = () => {
 
   // Pagination states
   const [currentPage, setCurrentPage] = React.useState(1);
-  const [itemsPerPage, setItemsPerPage] = React.useState(5);
+  const [itemsPerPage, setItemsPerPage] = React.useState(10);
   const [totalItems, setTotalItems] = React.useState(0);
 
-  // Sorting states
-  const [sortBy, setSortBy] = React.useState<keyof Emisor | 'logo' | null>(null);
-  const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('asc');
+  // Sorting states - Por defecto: fecha de creación descendente
+  const [sortBy, setSortBy] = React.useState<keyof Emisor | 'logo' | null>('created_at');
+  const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('desc');
 
   // Image viewer states
   const [viewerOpen, setViewerOpen] = React.useState(false);
@@ -739,46 +804,53 @@ const Emisores: React.FC = () => {
               {activeFilter === 'estado' ? (
                 <select value={filterValue} onChange={(e) => setFilterValue(e.target.value)}>
                   <option value="">Todos</option>
-                  <option value="ACTIVO">ACTIVO</option>
-                  <option value="DESACTIVADO">DESACTIVADO</option>
+                  <option value="ACTIVO">Activo</option>
+                  <option value="DESACTIVADO">Desactivado</option>
                 </select>
               ) : activeFilter === 'tipo_plan' ? (
-                <select value={filterValue} onChange={(e) => setFilterValue(e.target.value)}>
+                <select value={filterValue} onChange={(e) => setFilterValue(e.target.value)} multiple style={{ height: 'auto', minHeight: '40px' }}>
                   <option value="">Todos</option>
                   <option value="BASICO">Básico</option>
                   <option value="ESTANDAR">Estándar</option>
+                  <option value="PROFESIONAL">Profesional</option>
                   <option value="PREMIUM">Premium</option>
                 </select>
               ) : activeFilter === 'regimen_tributario' ? (
                 <select value={filterValue} onChange={(e) => setFilterValue(e.target.value)}>
                   <option value="">Todos</option>
-                  <option value="GENERAL">GENERAL</option>
-                  <option value="RIMPE_POPULAR">RIMPE_POPULAR</option>
-                  <option value="RIMPE_EMPRENDEDOR">RIMPE_EMPRENDEDOR</option>
-                  <option value="MICRO_EMPRESA">MICRO_EMPRESA</option>
+                  <option value="GENERAL">General</option>
+                  <option value="RIMPE_POPULAR">RIMPE Negocio Popular</option>
+                  <option value="RIMPE_EMPRENDEDOR">RIMPE Emprendedor</option>
+                  <option value="MICRO_EMPRESA">Microempresa</option>
+                </select>
+              ) : activeFilter === 'obligado_contabilidad' ? (
+                <select value={filterValue} onChange={(e) => setFilterValue(e.target.value)}>
+                  <option value="">Todos</option>
+                  <option value="SI">Sí</option>
+                  <option value="NO">No</option>
                 </select>
               ) : activeFilter === 'tipo_persona' ? (
                 <select value={filterValue} onChange={(e) => setFilterValue(e.target.value)}>
                   <option value="">Todos</option>
-                  <option value="NATURAL">NATURAL</option>
-                  <option value="JURIDICA">JURIDICA</option>
+                  <option value="NATURAL">Natural</option>
+                  <option value="JURIDICA">Jurídica</option>
                 </select>
               ) : activeFilter === 'ambiente' ? (
                 <select value={filterValue} onChange={(e) => setFilterValue(e.target.value)}>
                   <option value="">Todos</option>
-                  <option value="PRODUCCION">PRODUCCION</option>
-                  <option value="PRUEBAS">PRUEBAS</option>
+                  <option value="PRODUCCION">Producción</option>
+                  <option value="PRUEBAS">Pruebas</option>
                 </select>
               ) : activeFilter === 'tipo_emision' ? (
                 <select value={filterValue} onChange={(e) => setFilterValue(e.target.value)}>
                   <option value="">Todos</option>
-                  <option value="NORMAL">NORMAL</option>
-                  <option value="INDISPONIBILIDAD">INDISPONIBILIDAD</option>
+                  <option value="NORMAL">Normal</option>
+                  <option value="INDISPONIBILIDAD">Indisponibilidad del SRI</option>
                 </select>
               ) : activeFilter === 'cantidad_creados_gt' || activeFilter === 'cantidad_restantes_lt' ? (
                 <input
                   type="number"
-                  placeholder={activeFilter === 'cantidad_creados_gt' ? 'Mayor que…' : 'Menor que…'}
+                  placeholder={activeFilter === 'cantidad_creados_gt' ? 'Ingrese cantidad…' : 'Ingrese cantidad…'}
                   value={filterValue}
                   onChange={(e) => setFilterValue(e.target.value)}
                 />
@@ -813,6 +885,43 @@ const Emisores: React.FC = () => {
             </small>
           </div>
 
+          {/* Botón para limpiar todos los filtros */}
+          {(activeFilter || filterValue || desde || hasta) && (
+            <button
+              type="button"
+              className="btn-limpiar-filtros"
+              onClick={() => {
+                setActiveFilter(null);
+                setFilterValue('');
+                setDesde('');
+                setHasta('');
+                setEstado('');
+                setQ('');
+                setSortBy('created_at');
+                setSortOrder('desc');
+                setCurrentPage(1);
+              }}
+              style={{
+                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '12px',
+                padding: '12px 20px',
+                fontWeight: 700,
+                fontSize: '14px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: '0 4px 15px rgba(239, 68, 68, 0.3)',
+                transition: 'all 0.3s ease'
+              }}
+              title="Limpiar todos los filtros"
+            >
+              <span>🗑️</span> Limpiar filtros
+            </button>
+          )}
+
           <button 
             className="btn-nuevo" 
             onClick={() => setOpenNew(true)}
@@ -837,13 +946,13 @@ const Emisores: React.FC = () => {
             <div className="tabla-empty-content">
               <span style={{ fontSize: '64px', marginBottom: '16px', display: 'block' }}>🏢</span>
               <span style={{ fontSize: '18px', color: '#6b7280', fontWeight: 500, display: 'block', marginBottom: '8px' }}>
-                {activeFilter && filterValue 
-                  ? 'No se encontraron emisores con ese filtro' 
+                {(activeFilter && filterValue) || desde || hasta
+                  ? 'No se encontraron emisores con los filtros aplicados.' 
                   : 'No hay emisores registrados'}
               </span>
               <span style={{ fontSize: '14px', color: '#9ca3af', display: 'block' }}>
-                {activeFilter && filterValue 
-                  ? 'Intenta con otro término de búsqueda' 
+                {(activeFilter && filterValue) || desde || hasta
+                  ? 'Intenta con otros criterios de búsqueda o limpia los filtros' 
                   : 'Haz clic en "✨ Nuevo" para agregar uno'}
               </span>
             </div>
@@ -887,7 +996,7 @@ const Emisores: React.FC = () => {
 
                 {/* Columnas dinámicas */}
                 {dynamicColumns.map((c) => {
-                  const isFilterable = ['estado','tipo_plan','cantidad_creados','cantidad_restantes','nombre_comercial','direccion_matriz','regimen_tributario','tipo_persona','ambiente','tipo_emision','created_by_name'].includes(String(c.key));
+                  const isFilterable = ['estado','tipo_plan','cantidad_creados','cantidad_restantes','nombre_comercial','direccion_matriz','regimen_tributario','obligado_contabilidad','contribuyente_especial','agente_retencion','codigo_artesano','tipo_persona','ambiente','tipo_emision','created_by_name'].includes(String(c.key));
                   const keyToFilter: Record<string, FilterField> = {
                     estado: 'estado',
                     tipo_plan: 'tipo_plan',
@@ -895,8 +1004,11 @@ const Emisores: React.FC = () => {
                     cantidad_restantes: 'cantidad_restantes_lt',
                     nombre_comercial: 'nombre_comercial',
                     direccion_matriz: 'direccion_matriz',
-
                     regimen_tributario: 'regimen_tributario',
+                    obligado_contabilidad: 'obligado_contabilidad',
+                    contribuyente_especial: 'contribuyente_especial',
+                    agente_retencion: 'agente_retencion',
+                    codigo_artesano: 'codigo_artesano',
                     tipo_persona: 'tipo_persona',
                     ambiente: 'ambiente',
                     tipo_emision: 'tipo_emision',
@@ -1131,6 +1243,8 @@ const Emisores: React.FC = () => {
               <option value={5}>5</option>
               <option value={10}>10</option>
               <option value={15}>15</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
             </select>
             <span className="page-range">
               {totalItems === 0 ? '0-0' : `${(currentPage - 1) * itemsPerPage + 1}-${Math.min(currentPage * itemsPerPage, totalItems)}`} de {totalItems}

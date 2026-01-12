@@ -40,4 +40,13 @@ export interface Emisor {
   updated_by_name?: string;
   ruc_editable?: boolean;
   created_by_username?: string;
+  // Relación con el creador para mostrar formato ROL – USERNAME – NOMBRES – APELLIDOS
+  creator?: {
+    id: number;
+    role?: string;
+    username?: string;
+    name?: string;
+    nombres?: string;
+    apellidos?: string;
+  };
 }
