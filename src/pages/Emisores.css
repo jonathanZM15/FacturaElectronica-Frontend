@@ -2223,6 +2223,7 @@ thead th[title]:hover::after {
 
 .emisor-actions-dropdown {
   position: relative;
+  z-index: 9999;
 }
 
 .emisor-actions-btn {
@@ -2277,8 +2278,9 @@ thead th[title]:hover::after {
   box-shadow: 
     0 20px 60px rgba(0, 0, 0, 0.2),
     0 8px 25px rgba(0, 0, 0, 0.1);
-  z-index: 100;
+  z-index: 9999;
   animation: menuSlideIn 0.2s ease-out;
+  pointer-events: auto !important;
 }
 
 @keyframes menuSlideIn {
@@ -2304,8 +2306,15 @@ thead th[title]:hover::after {
   font-size: 14px;
   font-weight: 600;
   color: #374151;
-  cursor: pointer;
+  cursor: pointer !important;
   transition: all 0.2s ease;
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 10000;
+}
+
+.emisor-actions-menu button.danger {
+  color: #dc2626;
 }
 
 .emisor-actions-menu button:hover {
@@ -2349,7 +2358,7 @@ thead th[title]:hover::after {
 /* Tabs Navigation */
 .emisor-info-tabs {
   position: relative;
-  z-index: 2;
+  z-index: 1;
   display: flex;
   gap: 4px;
   padding: 0 24px 20px;

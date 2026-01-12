@@ -45,6 +45,7 @@ export interface Emisor {
     id: number;
     role?: string;
     username?: string;
+    email?: string;
     name?: string;
     nombres?: string;
     apellidos?: string;

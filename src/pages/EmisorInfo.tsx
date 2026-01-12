@@ -379,18 +379,34 @@ const EmisorInfo: React.FC = () => {
                     <span>⚡</span> Acciones <span className="dropdown-arrow">{actionsOpen ? '▲' : '▼'}</span>
                   </button>
                   {actionsOpen && (
-                    <div className="emisor-actions-menu">
-                      <button onClick={() => { setOpenEdit(true); setActionsOpen(false); }}>
-                        <span className="menu-icon">✏️</span> Editar emisor
-                      </button>
-                      <button onClick={() => { setActionsOpen(false); setDeleteWithHistory(false); setConfirmOpen(true); }} className="danger">
-                        <span className="menu-icon">🗑️</span> Eliminar
-                      </button>
-                      {company && company.estado === 'DESACTIVADO' && company.updated_at && new Date(company.updated_at) <= new Date(Date.now() - 365*24*60*60*1000) && (
-                        <button onClick={() => { setActionsOpen(false); setDeleteWithHistory(true); setConfirmOpen(true); }} className="danger">
-                          <span className="menu-icon">🗄️</span> Eliminar (historial)
-                        </button>
-                      )}
+                    <div style={{ 
+                      pointerEvents: 'auto', 
+                      zIndex: 99999, 
+                      position: 'absolute', 
+                      top: 'calc(100% + 8px)', 
+                      right: 0, 
+                      background: 'white', 
+                      borderRadius: 16, 
+                      padding: 8, 
+                      minWidth: 200, 
+                      boxShadow: '0 20px 60px rgba(0,0,0,0.2)' 
+                    }}>
+                      <div 
+                        role="button"
+                        tabIndex={0}
+                        style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '12px 16px', background: 'transparent', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 600, color: '#374151', cursor: 'pointer' }} 
+                        onClick={() => { setOpenEdit(true); setActionsOpen(false); }}
+                      >
+                        ✏️ Editar emisor
+                      </div>
+                      <div 
+                        role="button"
+                        tabIndex={0}
+                        style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '12px 16px', background: 'transparent', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 600, color: '#dc2626', cursor: 'pointer' }} 
+                        onClick={() => { setActionsOpen(false); setDelError(null); setPwd(''); setDeleteWithHistory(false); setConfirmOpen(true); }}
+                      >
+                        🗑️ Eliminar emisor
+                      </div>
                     </div>
                   )}
                 </div>
@@ -456,9 +472,27 @@ const EmisorInfo: React.FC = () => {
                     <div className="info-row"><span className="info-label">Nombre comercial:</span><span className="info-value">{company?.nombre_comercial ?? '-'}</span></div>
                     <div className="info-row"><span className="info-label">Dirección matriz:</span><span className="info-value">{company?.direccion_matriz ?? '-'}</span></div>
                     <div className="info-row"><span className="info-label">Régimen tributario:</span><span className="info-value badge badge-purple">{company?.regimen_tributario?.replace('_', ' ') ?? '-'}</span></div>
-                    <div className="info-row"><span className="info-label">Obligado contabilidad:</span><span className={`info-value badge ${company?.obligado_contabilidad === 'SI' ? 'badge-green' : 'badge-gray'}`}>{company?.obligado_contabilidad ?? '-'}</span></div>
-                    <div className="info-row"><span className="info-label">Contribuyente especial:</span><span className={`info-value badge ${company?.contribuyente_especial === 'SI' ? 'badge-blue' : 'badge-gray'}`}>{company?.contribuyente_especial ?? '-'}</span></div>
-                    <div className="info-row"><span className="info-label">Agente retención:</span><span className={`info-value badge ${company?.agente_retencion === 'SI' ? 'badge-orange' : 'badge-gray'}`}>{company?.agente_retencion ?? '-'}</span></div>
+                    <div className="info-row"><span className="info-label">Obligado contabilidad:</span><span className={`info-value badge ${company?.obligado_contabilidad === 'SI' ? 'badge-green' : 'badge-gray'}`}>{company?.obligado_contabilidad === 'SI' ? 'Sí' : 'No'}</span></div>
+                    <div className="info-row">
+                      <span className="info-label">Contribuyente especial:</span>
+                      <span className={`info-value badge ${company?.contribuyente_especial === 'SI' ? 'badge-blue' : 'badge-gray'}`}>
+                        {company?.contribuyente_especial === 'SI' 
+                          ? (company?.numero_resolucion_contribuyente_especial 
+                              ? `Sí - Res. ${company.numero_resolucion_contribuyente_especial}` 
+                              : 'Sí')
+                          : 'No'}
+                      </span>
+                    </div>
+                    <div className="info-row">
+                      <span className="info-label">Agente retención:</span>
+                      <span className={`info-value badge ${company?.agente_retencion === 'SI' ? 'badge-orange' : 'badge-gray'}`}>
+                        {company?.agente_retencion === 'SI' 
+                          ? (company?.numero_resolucion_agente_retencion 
+                              ? `Sí - Res. ${company.numero_resolucion_agente_retencion}` 
+                              : 'Sí')
+                          : 'No'}
+                      </span>
+                    </div>
                     <div className="info-row"><span className="info-label">Tipo de persona:</span><span className="info-value">{company?.tipo_persona ?? '-'}</span></div>
                     <div className="info-row"><span className="info-label">Código artesano:</span><span className="info-value">{company?.codigo_artesano ?? '-'}</span></div>
                     <div className="info-row"><span className="info-label">Correo remitente:</span><span className="info-value" style={{ fontSize: 13, color: '#3b82f6' }}>{company?.correo_remitente ?? '-'}</span></div>
@@ -516,7 +550,27 @@ const EmisorInfo: React.FC = () => {
                     <div className="info-row"><span className="info-label">Fecha de actualización:</span><span className="info-value">{company?.updated_at ?? '-'}</span></div>
                     <div className="info-row"><span className="info-label">Fecha de último comprobante:</span><span className="info-value">{company?.ultimo_comprobante ?? '-'}</span></div>
                     <div className="info-row"><span className="info-label">Fecha último inicio de sesión:</span><span className="info-value">{company?.ultimo_login ?? '-'}</span></div>
-                    <div className="info-row"><span className="info-label">Registrador:</span><span className="info-value">{company?.created_by_username ?? company?.registrador ?? '-'}</span></div>
+                    <div className="info-row">
+                      <span className="info-label">Registrador:</span>
+                      <span className="info-value">
+                        {company?.creator ? (
+                          <>
+                            {(company.creator.role || 'USUARIO').toUpperCase()} – {' '}
+                            <Link to={`/usuarios/${company.creator.id}`} style={{ color: '#6366f1', textDecoration: 'none', fontWeight: 600 }}>
+                              {company.creator.username || company.creator.email?.split('@')[0] || '-'}
+                            </Link>
+                            {' '} – {company.creator.nombres && company.creator.apellidos 
+                              ? `${company.creator.nombres} ${company.creator.apellidos}`
+                              : company.creator.name || '-'}
+                          </>
+                        ) : company?.created_by_name ? (
+                          // Fallback: mostrar created_by_name si no hay relación creator
+                          company.created_by_name
+                        ) : (
+                          '-'
+                        )}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
