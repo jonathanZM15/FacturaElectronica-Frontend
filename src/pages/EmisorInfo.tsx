@@ -232,21 +232,27 @@ const EmisorInfo: React.FC = () => {
 
   // Sorting and pagination state for establecimientos
   type EstCol = 'codigo'|'nombre'|'nombre_comercial'|'direccion'|'estado';
-  type EstFilterField = 'codigo'|'nombre'|'nombre_comercial'|'direccion'|'estado';
   const [sortByEst, setSortByEst] = React.useState<EstCol>('codigo');
   const [sortDirEst, setSortDirEst] = React.useState<'asc'|'desc'>('asc');
   const [pageEst, setPageEst] = React.useState(1);
   const [perPageEst, setPerPageEst] = React.useState(10);
-  const [activeEstFilter, setActiveEstFilter] = React.useState<EstFilterField | null>(null);
-  const [estFilterValue, setEstFilterValue] = React.useState<string>('');
-
-  const estFilterLabels: Record<EstFilterField, string> = {
-    codigo: 'Código',
-    nombre: 'Nombre',
-    nombre_comercial: 'Nombre Comercial',
-    direccion: 'Dirección',
-    estado: 'Estado'
-  };
+  const [estFiltersOpen, setEstFiltersOpen] = React.useState(false);
+  const [estFilters, setEstFilters] = React.useState({
+    codigo: '',
+    estado: '',
+    nombre: '',
+    nombre_comercial: '',
+    direccion: '',
+    correo: '',
+    telefono: '',
+    gerente: '',
+    fecha_inicio_desde: '',
+    fecha_inicio_hasta: '',
+    fecha_reinicio_desde: '',
+    fecha_reinicio_hasta: '',
+    fecha_cierre_desde: '',
+    fecha_cierre_hasta: ''
+  });
 
   const toggleSortEst = (col: EstCol) => {
     setPageEst(1);
@@ -259,17 +265,57 @@ const EmisorInfo: React.FC = () => {
   };
 
   const filteredEsts = React.useMemo(() => {
-    if (!activeEstFilter || !estFilterValue) return establecimientos;
-    
-    const filterVal = estFilterValue.toLowerCase();
-    return establecimientos.filter(est => {
-      if (activeEstFilter === 'estado') {
-        return (est.estado || '').toLowerCase() === filterVal;
+    const normalize = (val: any) => String(val ?? '').toLowerCase().trim();
+    const includesText = (fieldValue: any, filterValue: string) => {
+      if (!filterValue) return true;
+      return normalize(fieldValue).includes(normalize(filterValue));
+    };
+    const inDateRange = (dateValue: any, fromValue: string, toValue: string) => {
+      if (!fromValue && !toValue) return true;
+      if (!dateValue) return false;
+      const date = new Date(dateValue);
+      if (Number.isNaN(date.getTime())) return false;
+      if (fromValue) {
+        const from = new Date(fromValue);
+        from.setHours(0, 0, 0, 0);
+        if (date < from) return false;
       }
-      const fieldValue = (est[activeEstFilter] || '').toString().toLowerCase();
-      return fieldValue.includes(filterVal);
+      if (toValue) {
+        const to = new Date(toValue);
+        to.setHours(23, 59, 59, 999);
+        if (date > to) return false;
+      }
+      return true;
+    };
+
+    return establecimientos.filter(est => {
+      if (!includesText(est.codigo, estFilters.codigo)) return false;
+      if (estFilters.estado && normalize(est.estado) !== normalize(estFilters.estado)) return false;
+      if (!includesText(est.nombre, estFilters.nombre)) return false;
+      if (!includesText(est.nombre_comercial, estFilters.nombre_comercial)) return false;
+      if (!includesText(est.direccion, estFilters.direccion)) return false;
+      if (!includesText(est.correo, estFilters.correo)) return false;
+      if (!includesText(est.telefono, estFilters.telefono)) return false;
+
+      if (estFilters.gerente) {
+        const gerenteFilter = normalize(estFilters.gerente);
+        const usuarios = Array.isArray(est.usuarios) ? est.usuarios : [];
+        const gerenteMatch = usuarios.some((usr: any) => {
+          if ((usr?.role || '').toLowerCase() !== 'gerente') return false;
+          const fullName = `${usr?.nombres ?? ''} ${usr?.apellidos ?? ''}`.trim();
+          return [usr?.username, usr?.email, usr?.nombres, usr?.apellidos, fullName]
+            .some(val => normalize(val).includes(gerenteFilter));
+        });
+        if (!gerenteMatch) return false;
+      }
+
+      if (!inDateRange(est.fecha_inicio_actividades, estFilters.fecha_inicio_desde, estFilters.fecha_inicio_hasta)) return false;
+      if (!inDateRange(est.fecha_reinicio_actividades, estFilters.fecha_reinicio_desde, estFilters.fecha_reinicio_hasta)) return false;
+      if (!inDateRange(est.fecha_cierre_establecimiento, estFilters.fecha_cierre_desde, estFilters.fecha_cierre_hasta)) return false;
+
+      return true;
     });
-  }, [establecimientos, activeEstFilter, estFilterValue]);
+  }, [establecimientos, estFilters]);
 
   const sortedEsts = React.useMemo(() => {
     const data = [...filteredEsts];
@@ -291,6 +337,9 @@ const EmisorInfo: React.FC = () => {
   }, [sortedEsts, pageEst, perPageEst]);
 
   const totalEst = filteredEsts.length;
+  const activeEstFiltersCount = React.useMemo(() => {
+    return Object.values(estFilters).filter((val) => String(val ?? '').trim().length > 0).length;
+  }, [estFilters]);
   const startIdx = totalEst === 0 ? 0 : (pageEst - 1) * perPageEst + 1;
   const endIdx = Math.min(pageEst * perPageEst, totalEst);
   const lastPageEst = Math.max(1, Math.ceil(Math.max(1, totalEst) / perPageEst));
@@ -723,32 +772,37 @@ const EmisorInfo: React.FC = () => {
               <div className="est-filters-section">
                 <div 
                   className="est-filters-header" 
-                  onClick={() => setActiveEstFilter(activeEstFilter ? null : 'codigo')}
+                  onClick={() => setEstFiltersOpen((open) => !open)}
                 >
                   <div className="est-filters-title">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46"></polygon>
                     </svg>
                     Filtros
-                    {estFilterValue && <span className="est-filters-badge">1 activo</span>}
+                    {activeEstFiltersCount > 0 && <span className="est-filters-badge">{activeEstFiltersCount} activo{activeEstFiltersCount > 1 ? 's' : ''}</span>}
                   </div>
-                  <button className={`est-filters-toggle ${activeEstFilter ? 'open' : ''}`}>
-                    {activeEstFilter ? 'Ocultar' : 'Mostrar'}
+                  <button className={`est-filters-toggle ${estFiltersOpen ? 'open' : ''}`}>
+                    {estFiltersOpen ? 'Ocultar' : 'Mostrar'}
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <polyline points="6,9 12,15 18,9"></polyline>
                     </svg>
                   </button>
                 </div>
-                <div className={`est-filters-body ${activeEstFilter ? 'open' : ''}`}>
+                <div className={`est-filters-body ${estFiltersOpen ? 'open' : ''}`}>
                   <div className="est-filters-grid">
                     <div className="est-filter-group">
                       <label className="est-filter-label">Código</label>
                       <input
                         type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
                         className="est-filter-input"
                         placeholder="Buscar por código..."
-                        value={activeEstFilter === 'codigo' ? estFilterValue : ''}
-                        onChange={(e) => { setActiveEstFilter('codigo'); setEstFilterValue(e.target.value); }}
+                        value={estFilters.codigo}
+                        onChange={(e) => {
+                          const onlyDigits = e.target.value.replace(/[^0-9]/g, '');
+                          setEstFilters((prev) => ({ ...prev, codigo: onlyDigits }));
+                        }}
                       />
                     </div>
                     <div className="est-filter-group">
@@ -757,8 +811,8 @@ const EmisorInfo: React.FC = () => {
                         type="text"
                         className="est-filter-input"
                         placeholder="Buscar por nombre..."
-                        value={activeEstFilter === 'nombre' ? estFilterValue : ''}
-                        onChange={(e) => { setActiveEstFilter('nombre'); setEstFilterValue(e.target.value); }}
+                        value={estFilters.nombre}
+                        onChange={(e) => setEstFilters((prev) => ({ ...prev, nombre: e.target.value }))}
                       />
                     </div>
                     <div className="est-filter-group">
@@ -767,8 +821,8 @@ const EmisorInfo: React.FC = () => {
                         type="text"
                         className="est-filter-input"
                         placeholder="Buscar por nombre comercial..."
-                        value={activeEstFilter === 'nombre_comercial' ? estFilterValue : ''}
-                        onChange={(e) => { setActiveEstFilter('nombre_comercial'); setEstFilterValue(e.target.value); }}
+                        value={estFilters.nombre_comercial}
+                        onChange={(e) => setEstFilters((prev) => ({ ...prev, nombre_comercial: e.target.value }))}
                       />
                     </div>
                     <div className="est-filter-group">
@@ -777,28 +831,131 @@ const EmisorInfo: React.FC = () => {
                         type="text"
                         className="est-filter-input"
                         placeholder="Buscar por dirección..."
-                        value={activeEstFilter === 'direccion' ? estFilterValue : ''}
-                        onChange={(e) => { setActiveEstFilter('direccion'); setEstFilterValue(e.target.value); }}
+                        value={estFilters.direccion}
+                        onChange={(e) => setEstFilters((prev) => ({ ...prev, direccion: e.target.value }))}
                       />
                     </div>
                     <div className="est-filter-group">
                       <label className="est-filter-label">Estado</label>
                       <select
                         className="est-filter-select"
-                        value={activeEstFilter === 'estado' ? estFilterValue : ''}
-                        onChange={(e) => { setActiveEstFilter('estado'); setEstFilterValue(e.target.value); }}
+                        value={estFilters.estado}
+                        onChange={(e) => setEstFilters((prev) => ({ ...prev, estado: e.target.value }))}
                       >
                         <option value="">Todos los estados</option>
                         <option value="abierto">Abierto</option>
                         <option value="cerrado">Cerrado</option>
                       </select>
                     </div>
+                    <div className="est-filter-group">
+                      <label className="est-filter-label">Correo</label>
+                      <input
+                        type="text"
+                        className="est-filter-input"
+                        placeholder="Buscar por correo..."
+                        value={estFilters.correo}
+                        onChange={(e) => setEstFilters((prev) => ({ ...prev, correo: e.target.value }))}
+                      />
+                    </div>
+                    <div className="est-filter-group">
+                      <label className="est-filter-label">Número de teléfono</label>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        className="est-filter-input"
+                        placeholder="Buscar por teléfono..."
+                        value={estFilters.telefono}
+                        onChange={(e) => {
+                          const onlyDigits = e.target.value.replace(/[^0-9]/g, '');
+                          setEstFilters((prev) => ({ ...prev, telefono: onlyDigits }));
+                        }}
+                      />
+                    </div>
+                    <div className="est-filter-group">
+                      <label className="est-filter-label">Usuario gerente asociado</label>
+                      <input
+                        type="text"
+                        className="est-filter-input"
+                        placeholder="Buscar gerente..."
+                        value={estFilters.gerente}
+                        onChange={(e) => setEstFilters((prev) => ({ ...prev, gerente: e.target.value }))}
+                      />
+                    </div>
+                    <div className="est-filter-group">
+                      <label className="est-filter-label">Fecha inicio de actividades</label>
+                      <div className="est-filter-range">
+                        <input
+                          type="date"
+                          className="est-filter-input"
+                          value={estFilters.fecha_inicio_desde}
+                          onChange={(e) => setEstFilters((prev) => ({ ...prev, fecha_inicio_desde: e.target.value }))}
+                        />
+                        <input
+                          type="date"
+                          className="est-filter-input"
+                          value={estFilters.fecha_inicio_hasta}
+                          onChange={(e) => setEstFilters((prev) => ({ ...prev, fecha_inicio_hasta: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+                    <div className="est-filter-group">
+                      <label className="est-filter-label">Fecha reinicio de actividades</label>
+                      <div className="est-filter-range">
+                        <input
+                          type="date"
+                          className="est-filter-input"
+                          value={estFilters.fecha_reinicio_desde}
+                          onChange={(e) => setEstFilters((prev) => ({ ...prev, fecha_reinicio_desde: e.target.value }))}
+                        />
+                        <input
+                          type="date"
+                          className="est-filter-input"
+                          value={estFilters.fecha_reinicio_hasta}
+                          onChange={(e) => setEstFilters((prev) => ({ ...prev, fecha_reinicio_hasta: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+                    <div className="est-filter-group wide">
+                      <label className="est-filter-label long">Fecha cierre de establecimiento</label>
+                      <div className="est-filter-range">
+                        <input
+                          type="date"
+                          className="est-filter-input"
+                          value={estFilters.fecha_cierre_desde}
+                          onChange={(e) => setEstFilters((prev) => ({ ...prev, fecha_cierre_desde: e.target.value }))}
+                        />
+                        <input
+                          type="date"
+                          className="est-filter-input"
+                          value={estFilters.fecha_cierre_hasta}
+                          onChange={(e) => setEstFilters((prev) => ({ ...prev, fecha_cierre_hasta: e.target.value }))}
+                        />
+                      </div>
+                    </div>
                   </div>
-                  {estFilterValue && (
+                  {activeEstFiltersCount > 0 && (
                     <div className="est-filters-actions">
                       <button 
                         className="est-btn-clear-filters"
-                        onClick={() => { setEstFilterValue(''); setActiveEstFilter(null); }}
+                        onClick={() => {
+                          setEstFilters({
+                            codigo: '',
+                            estado: '',
+                            nombre: '',
+                            nombre_comercial: '',
+                            direccion: '',
+                            correo: '',
+                            telefono: '',
+                            gerente: '',
+                            fecha_inicio_desde: '',
+                            fecha_inicio_hasta: '',
+                            fecha_reinicio_desde: '',
+                            fecha_reinicio_hasta: '',
+                            fecha_cierre_desde: '',
+                            fecha_cierre_hasta: ''
+                          });
+                        }}
                       >
                         Limpiar filtros
                       </button>
@@ -836,7 +993,7 @@ const EmisorInfo: React.FC = () => {
                         <div className="est-empty-icon">🏢</div>
                         <div className="est-empty-title">No hay establecimientos</div>
                         <div className="est-empty-text">
-                          {estFilterValue ? 'No se encontraron resultados con los filtros aplicados' : 'Aún no se han registrado establecimientos'}
+                          {activeEstFiltersCount > 0 ? 'No se encontraron resultados con los filtros aplicados' : 'Aún no se han registrado establecimientos'}
                         </div>
                       </div>
                     </div>

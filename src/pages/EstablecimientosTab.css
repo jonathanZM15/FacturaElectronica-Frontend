@@ -213,6 +213,7 @@
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 16px;
   margin-top: 16px;
+  align-items: start;
 }
 
 .est-filter-group {
@@ -221,12 +222,22 @@
   gap: 6px;
 }
 
+.est-filter-group.wide {
+  grid-column: span 2;
+}
+
 .est-filter-label {
   font-size: 12px;
   font-weight: 600;
   color: #6b7280;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+.est-filter-label.long {
+  white-space: nowrap;
+  font-size: 11px;
+  letter-spacing: 0.3px;
 }
 
 .est-filter-input,
@@ -239,6 +250,18 @@
   transition: all 0.2s ease;
   width: 100%;
   box-sizing: border-box;
+}
+
+.est-filter-range {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.est-filter-range .est-filter-input {
+  flex: 1 1 140px;
+  min-width: 140px;
 }
 
 .est-filter-input:focus,
