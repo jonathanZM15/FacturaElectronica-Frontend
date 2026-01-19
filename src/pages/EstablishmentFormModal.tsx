@@ -48,9 +48,17 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
       setLogoFile(null);
       setLogoOption('none');
       setFieldErrors({});
+      setTouched(new Set());
       setCodeDuplicateError(null);
     }
   }, [open, editingEst, codigoEditable]);
+
+  const getCorreoError = (correoValue: string | undefined | null): string | undefined => {
+    const value = (correoValue ?? '').trim();
+    if (!value) return undefined; // opcional
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'El formato del correo es inválido';
+    return undefined;
+  };
 
   const onChange = (k: keyof Establecimiento, value: any) => {
     // Special handling for codigo: only numbers, max 3 digits
@@ -61,13 +69,34 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
     if (k === 'telefono') {
       value = value.replace(/[^0-9]/g, '').slice(0, 10);
     }
+
+    // Para campos con validación de formato, marcar como tocado al primer cambio
+    if (k === 'correo') {
+      setTouched(prev => {
+        if (prev.has('correo')) return prev;
+        const next = new Set(prev);
+        next.add('correo');
+        return next;
+      });
+    }
+
     setV(prev => ({ ...prev, [k]: value }));
     const ks = k as string;
-    setFieldErrors(prev => { 
-      if (!prev || !(ks in prev)) return prev;
-      const copy = { ...prev }; 
-      delete copy[ks]; 
-      return copy; 
+
+    // Mantener errores del campo en sincronía (especialmente útil si el botón está deshabilitado)
+    setFieldErrors(prev => {
+      const next = { ...(prev || {}) };
+      // Por defecto, al escribir se limpia el error del campo
+      if (ks in next) delete next[ks];
+
+      // Validación inmediata en campos con formato
+      if (k === 'correo') {
+        const correoErr = getCorreoError(value);
+        if (correoErr) next.correo = correoErr;
+        else if ('correo' in next) delete next.correo;
+      }
+
+      return next;
     });
     if (k === 'codigo') setCodeDuplicateError(null);
   };
@@ -84,6 +113,29 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
     setTouched(prev => {
       const n = new Set(prev);
       n.add(k as string);
+      return n;
+    });
+  };
+
+  const touchAll = () => {
+    setTouched(prev => {
+      const n = new Set(prev);
+      (
+        [
+          'codigo',
+          'estado',
+          'nombre',
+          'nombre_comercial',
+          'direccion',
+          'correo',
+          'telefono',
+          'actividades_economicas',
+          'fecha_inicio_actividades',
+          'fecha_reinicio_actividades',
+          'fecha_cierre_establecimiento',
+          'logo'
+        ] as const
+      ).forEach(k => n.add(k));
       return n;
     });
   };
@@ -131,7 +183,8 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
     if (!v.nombre || !v.nombre.trim()) e.nombre = 'Nombre es obligatorio';
     if (!v.direccion || !v.direccion.trim()) e.direccion = 'Dirección es obligatoria';
     if (!v.estado) e.estado = 'Estado es obligatorio';
-    if (v.correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.correo)) e.correo = 'Correo inválido';
+    const correoErr = getCorreoError(v.correo);
+    if (correoErr) e.correo = correoErr;
     if (v.telefono && !/^\d+$/.test(v.telefono)) e.telefono = 'Teléfono debe contener solo números';
     if (v.telefono && v.telefono.length > 10) e.telefono = 'Teléfono máximo 10 dígitos';
     if (codeDuplicateError) e.codigo = codeDuplicateError;
@@ -146,7 +199,7 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
     if (!v.nombre || !v.nombre.trim()) return false;
     if (!v.direccion || !v.direccion.trim()) return false;
     if (!v.estado) return false;
-    if (v.correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.correo)) return false;
+    if (getCorreoError(v.correo)) return false;
     if (v.telefono && (!/^\d+$/.test(v.telefono) || v.telefono.length > 10)) return false;
     if (codeDuplicateError || checkingCode) return false;
     // Si eligió logo personalizado, debe haber archivo
@@ -245,6 +298,9 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
   };
 
   const submit = () => {
+    // Si el usuario no salió del input, el error no se mostrará sin marcar campos como tocados.
+    // Además, cuando el botón esté deshabilitado por formato inválido, esto permite que el error se muestre tras intentar enviar.
+    touchAll();
     if (!validate()) return;
     if (editingEst) {
       // Pedir confirmación al editar
@@ -324,9 +380,25 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
             <small style={{marginLeft: '192px', display: 'block', marginTop: 2, color: '#64748b'}}>Se mostrará en los comprobantes</small>
 
             <label className="horizontal">Correo
-              <input value={v.correo || ''} onBlur={()=>markTouched('correo')} onChange={e=>onChange('correo', e.target.value)} className={touched.has('correo') && fieldErrors.correo ? 'error-input' : ''} />
+              <input
+                value={v.correo || ''}
+                onBlur={() => {
+                  markTouched('correo');
+                  const correoErr = getCorreoError(v.correo);
+                  setFieldErrors(prev => {
+                    const next = { ...(prev || {}) };
+                    if (correoErr) next.correo = correoErr;
+                    else if ('correo' in next) delete next.correo;
+                    return next;
+                  });
+                }}
+                onChange={e=>onChange('correo', e.target.value)}
+                className={((v.correo ?? '').trim().length > 0 && !!getCorreoError(v.correo)) || (!!fieldErrors.correo && touched.has('correo')) ? 'error-input' : ''}
+              />
             </label>
-            {touched.has('correo') && fieldErrors.correo && <span className="err" style={{marginLeft: '192px'}}>{fieldErrors.correo}</span>}
+            {((v.correo ?? '').trim().length > 0 && getCorreoError(v.correo)) && (
+              <span className="err" style={{marginLeft: '192px'}}>{getCorreoError(v.correo)}</span>
+            )}
             <small style={{marginLeft: '192px', display: 'block', marginTop: 2, color: '#64748b'}}>Se mostrará en los comprobantes</small>
 
             <label className="horizontal">Número de teléfono
