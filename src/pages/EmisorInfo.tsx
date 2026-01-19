@@ -853,6 +853,13 @@ const EmisorInfo: React.FC = () => {
                         </th>
                         <th 
                           className="sortable" 
+                          onClick={() => toggleSortEst('estado')}
+                        >
+                          Estado 
+                          <span className="sort-icon">{sortByEst === 'estado' ? (sortDirEst === 'asc' ? '▲' : '▼') : '▾'}</span>
+                        </th>
+                        <th 
+                          className="sortable" 
                           onClick={() => toggleSortEst('nombre')}
                         >
                           Nombre 
@@ -865,18 +872,14 @@ const EmisorInfo: React.FC = () => {
                           N. Comercial 
                           <span className="sort-icon">{sortByEst === 'nombre_comercial' ? (sortDirEst === 'asc' ? '▲' : '▼') : '▾'}</span>
                         </th>
+                        <th>Logo</th>
                         <th>Dirección</th>
                         <th>Correo</th>
                         <th>Teléfono</th>
-                        <th>Logo</th>
-                        <th 
-                          className="sortable" 
-                          onClick={() => toggleSortEst('estado')}
-                        >
-                          Estado 
-                          <span className="sort-icon">{sortByEst === 'estado' ? (sortDirEst === 'asc' ? '▲' : '▼') : '▾'}</span>
-                        </th>
-                        <th>Usuarios</th>
+                        <th>Inicio de Actividades</th>
+                        <th>Reinicio de Actividades</th>
+                        <th>Cierre del Establecimiento</th>
+                        <th>Usuarios Gerentes Asociados</th>
                         <th>Acciones</th>
                       </tr>
                     </thead>
@@ -884,36 +887,27 @@ const EmisorInfo: React.FC = () => {
                     <tbody>
                       {paginatedEsts.length === 0 ? (
                         <tr style={{ display: 'none' }}>
-                          <td colSpan={10}></td>
+                          <td colSpan={13}></td>
                         </tr>
                       ) : paginatedEsts.map((est) => (
                         <tr key={est.id}>
+                          {/* Código */}
                           <td>
                             <Link className="est-codigo-link" to={`/emisores/${company?.id}/establecimientos/${est.id}`}>
                               {est.codigo}
                             </Link>
                           </td>
+                          {/* Estado */}
+                          <td>
+                            <span className={`est-estado-badge ${est.estado === 'ABIERTO' ? 'activo' : 'cerrado'}`}>
+                              {est.estado === 'ABIERTO' ? 'ABIERTO' : 'CERRADO'}
+                            </span>
+                          </td>
+                          {/* Nombre */}
                           <td><span className="est-nombre">{est.nombre}</span></td>
+                          {/* Nombre Comercial */}
                           <td>{est.nombre_comercial || '-'}</td>
-                          <td>
-                            <span className="est-direccion" title={est.direccion}>
-                              {est.direccion || '-'}
-                            </span>
-                          </td>
-                          <td>
-                            <span className="est-email">
-                              {est.correo ? (
-                                <>
-                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-                                    <polyline points="22,6 12,13 2,6"></polyline>
-                                  </svg>
-                                  {est.correo}
-                                </>
-                              ) : '-'}
-                            </span>
-                          </td>
-                          <td>{est.telefono || '-'}</td>
+                          {/* Logo */}
                           <td>
                             <div className="est-logo-cell">
                               {(est.logo_url || est.logo_path || est.logo) ? (
@@ -929,11 +923,59 @@ const EmisorInfo: React.FC = () => {
                               )}
                             </div>
                           </td>
+                          {/* Dirección */}
                           <td>
-                            <span className={`est-estado-badge ${est.estado === 'ABIERTO' ? 'activo' : 'cerrado'}`}>
-                              {est.estado === 'ABIERTO' ? 'Activo' : 'Cerrado'}
+                            <span className="est-direccion" title={est.direccion}>
+                              {est.direccion || '-'}
                             </span>
                           </td>
+                          {/* Correo */}
+                          <td>
+                            <span className="est-email">
+                              {est.correo ? (
+                                <>
+                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                    <polyline points="22,6 12,13 2,6"></polyline>
+                                  </svg>
+                                  {est.correo}
+                                </>
+                              ) : '-'}
+                            </span>
+                          </td>
+                          {/* Teléfono */}
+                          <td>{est.telefono || '-'}</td>
+                          {/* Fecha de Inicio de Actividades */}
+                          <td>
+                            {est.fecha_inicio_actividades ? (
+                              new Date(est.fecha_inicio_actividades).toLocaleDateString('es-EC', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric'
+                              })
+                            ) : '-'}
+                          </td>
+                          {/* Fecha de Reinicio de Actividades */}
+                          <td>
+                            {est.fecha_reinicio_actividades ? (
+                              new Date(est.fecha_reinicio_actividades).toLocaleDateString('es-EC', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric'
+                              })
+                            ) : '-'}
+                          </td>
+                          {/* Fecha de Cierre de Establecimiento */}
+                          <td>
+                            {est.fecha_cierre_establecimiento ? (
+                              new Date(est.fecha_cierre_establecimiento).toLocaleDateString('es-EC', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric'
+                              })
+                            ) : '-'}
+                          </td>
+                          {/* Usuarios Gerentes Asociados */}
                           <td>
                             {est.usuarios && est.usuarios.length > 0 ? (
                               <div className="est-usuarios-list">
@@ -962,6 +1004,7 @@ const EmisorInfo: React.FC = () => {
                               <span style={{ color: '#9ca3af' }}>Sin usuarios</span>
                             )}
                           </td>
+                          {/* Acciones */}
                           <td>
                             <div className="est-actions">
                               <button 
@@ -1373,6 +1416,8 @@ const EmisorInfo: React.FC = () => {
                   placeholder="••••••••"
                   className={deleteEstError ? 'delete-form-input error' : 'delete-form-input'}
                   autoFocus
+                  autoComplete="new-password"
+                  spellCheck="false"
                   onKeyPress={(e) => {
                     if (e.key === 'Enter' && deleteEstPassword && !deleteEstLoading) {
                       (async () => {

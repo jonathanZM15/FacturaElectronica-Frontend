@@ -190,7 +190,7 @@ const EstablecimientoInfo: React.FC = () => {
 
       <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '1fr 320px', gap: 18 }}>
         <div style={{ border: '1px solid #e6e6e6', padding: 16, borderRadius: 8 }}>
-          <h4 style={{ marginTop: 0 }}>Emisor</h4>
+          <h4 style={{ marginTop: 0 }}>Emisor asociado</h4>
           <p>
             <strong>RUC:</strong>{' '}
             {company?.id ? (
@@ -198,17 +198,30 @@ const EstablecimientoInfo: React.FC = () => {
             ) : company?.ruc ?? '-'}
           </p>
           <p><strong>Razón Social:</strong> {company?.razon_social ?? '-'}</p>
-          <p><strong>Estado:</strong> {company?.estado ? <span style={{ background: company.estado === 'ABIERTO' ? '#bbf7d0' : '#f3f4f6', padding: '6px 8px', borderRadius: 6, color: company.estado === 'ABIERTO' ? '#059669' : '#374151', fontWeight: 700 }}>{company.estado === 'ABIERTO' ? 'Activo' : company.estado}</span> : '-'}</p>
+          <p><strong>Estado:</strong> {company?.estado ? <span style={{ background: company.estado === 'ABIERTO' ? '#bbf7d0' : '#f3f4f6', padding: '6px 8px', borderRadius: 6, color: company.estado === 'ABIERTO' ? '#059669' : '#374151', fontWeight: 700 }}>{company.estado === 'ABIERTO' ? 'ABIERTO' : company.estado}</span> : <span style={{ background: '#bbf7d0', padding: '6px 8px', borderRadius: 6, color: '#059669', fontWeight: 700 }}>ABIERTO</span>}</p>
         </div>
 
         <div style={{ border: '1px solid #e6e6e6', padding: 16, borderRadius: 8 }}>
           <h4 style={{ marginTop: 0 }}>Logo</h4>
-          {est?.logo_url ? (
-            <img src={getImageUrl(est.logo_url)} alt="logo" title="Haz clic para ampliar" onClick={() => { 
-              console.log('Logo clicked, URL:', est.logo_url); 
-              setViewerImage(est.logo_url); 
-              setViewerOpen(true); 
-            }} style={{ width: '100%', height: 180, objectFit: 'contain', cursor: 'pointer', transition: 'transform 0.2s ease', transform: 'scale(1)' }} onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')} onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')} />
+          {est?.logo_url || est?.logo_path || est?.logo ? (
+            <img 
+              src={getImageUrl(est.logo_url || est.logo_path || est.logo)} 
+              alt="logo" 
+              title="Haz clic para ampliar" 
+              onClick={() => { 
+                const logoUrl = est.logo_url || est.logo_path || est.logo;
+                console.log('Logo clicked, URL:', logoUrl); 
+                if (logoUrl) {
+                  const imageUrl = getImageUrl(logoUrl);
+                  console.log('getImageUrl result:', imageUrl);
+                  setViewerImage(imageUrl || null); 
+                  setViewerOpen(true); 
+                }
+              }} 
+              style={{ width: '100%', height: 180, objectFit: 'contain', cursor: 'pointer', transition: 'transform 0.2s ease', transform: 'scale(1)' }} 
+              onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')} 
+              onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')} 
+            />
           ) : <div style={{ width: '100%', height: 180, background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>No hay logo</div>}
         </div>
 

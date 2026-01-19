@@ -31,7 +31,7 @@
   justify-content: space-between;
   align-items: center;
   position: relative;
-  overflow: hidden;
+  /* overflow removed to allow dropdown menu to be visible */
 }
 
 .estd-header::before {
@@ -161,8 +161,8 @@
   border: none;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
   border-radius: 16px;
-  z-index: 50;
-  overflow: hidden;
+  z-index: 1000;
+  overflow: visible;
   min-width: 260px;
 }
 

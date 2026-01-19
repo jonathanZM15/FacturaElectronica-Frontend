@@ -2,11 +2,14 @@ import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { establecimientosApi } from '../services/establecimientosApi';
 import { emisoresApi } from '../services/emisoresApi';
+import { usuariosApi } from '../services/usuariosApi';
 import EstablishmentFormModal from './EstablishmentFormModal';
 import { useNotification } from '../contexts/NotificationContext';
 import { useUser } from '../contexts/userContext';
 import PuntoEmisionFormModal from './PuntoEmisionFormModal';
 import PuntoEmisionDeleteModal from './PuntoEmisionDeleteModal';
+import ImageViewerModal from './ImageViewerModal';
+import UsuarioDetailModal from './UsuarioDetailModal';
 import { PuntoEmision } from '../types/puntoEmision';
 import { getImageUrl } from '../helpers/imageUrl';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -27,6 +30,10 @@ const EstablecimientoEditInfo: React.FC = () => {
   const [actionsOpen, setActionsOpen] = React.useState(false);
   const [codigoEditable, setCodigoEditable] = React.useState(true);
   
+  // Image viewer states
+  const [viewerOpen, setViewerOpen] = React.useState(false);
+  const [viewerImage, setViewerImage] = React.useState<string | null>(null);
+  
   // Delete modal states
   const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [deletePasswordOpen, setDeletePasswordOpen] = React.useState(false);
@@ -43,6 +50,11 @@ const EstablecimientoEditInfo: React.FC = () => {
   const [puntoDeletePassword, setPuntoDeletePassword] = React.useState('');
   const [puntoDeleteError, setPuntoDeleteError] = React.useState<string | null>(null);
   const [puntoDeleteLoading, setPuntoDeleteLoading] = React.useState(false);
+
+  // Usuario detail modal states
+  const [userDetailOpen, setUserDetailOpen] = React.useState(false);
+  const [selectedUserDetail, setSelectedUserDetail] = React.useState<any | null>(null);
+  const [userDetailLoading, setUserDetailLoading] = React.useState(false);
   const [puntoToDelete, setPuntoToDelete] = React.useState<PuntoEmision | null>(null);
 
   // Filtrado de puntos de emisión
@@ -140,6 +152,22 @@ const EstablecimientoEditInfo: React.FC = () => {
     if (isLimitedRole) return;
     setActionsOpen(false);
     setDeleteOpen(true);
+  };
+
+  // Función para abrir el modal de detalle de usuario
+  const handleOpenUserDetail = async (userId: number) => {
+    setUserDetailLoading(true);
+    setUserDetailOpen(true);
+    try {
+      const response = await usuariosApi.get(userId);
+      const userData = response.data?.data ?? response.data;
+      setSelectedUserDetail(userData);
+    } catch (e: any) {
+      show({ title: 'Error', message: 'No se pudo cargar la información del usuario', type: 'error' });
+      setUserDetailOpen(false);
+    } finally {
+      setUserDetailLoading(false);
+    }
   };
 
   return (
@@ -267,6 +295,15 @@ const EstablecimientoEditInfo: React.FC = () => {
                 src={getImageUrl(est.logo_url)} 
                 alt="logo" 
                 className="estd-logo-img"
+                style={{ cursor: 'pointer' }}
+                title="Haz clic para ampliar"
+                onClick={() => {
+                  const imageUrl = getImageUrl(est.logo_url);
+                  if (imageUrl) {
+                    setViewerImage(imageUrl);
+                    setViewerOpen(true);
+                  }
+                }}
               />
             </div>
           ) : (
@@ -334,6 +371,22 @@ const EstablecimientoEditInfo: React.FC = () => {
               <div className="estd-emisor-label">🏢 Razón Social</div>
               <div className="estd-emisor-value">{company?.razon_social ?? '-'}</div>
             </div>
+
+            <div className="estd-emisor-item">
+              <div className="estd-emisor-label">📊 Estado</div>
+              <div className="estd-emisor-value">
+                <span style={{ 
+                  background: company?.estado === 'ABIERTO' ? '#bbf7d0' : '#fee2e2', 
+                  padding: '4px 12px', 
+                  borderRadius: 6, 
+                  color: company?.estado === 'ABIERTO' ? '#059669' : '#dc2626', 
+                  fontWeight: 700,
+                  fontSize: '13px'
+                }}>
+                  {company?.estado === 'ABIERTO' ? 'ABIERTO' : (company?.estado || 'ABIERTO')}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -357,13 +410,139 @@ const EstablecimientoEditInfo: React.FC = () => {
 
             <div className="estd-activity-item">
               <span className="estd-activity-label">👤 Creado por:</span>
-              <span className="estd-activity-value">{est?.created_by_name ?? '-'}</span>
+              <span className="estd-activity-value">
+                {est?.created_by_info ? (
+                  <>
+                    <span style={{ fontWeight: 600 }}>{est.created_by_info.role}</span>
+                    {' - '}
+                    <a 
+                      href="#" 
+                      onClick={(e) => { 
+                        e.preventDefault(); 
+                        if (est.created_by_info?.id) {
+                          handleOpenUserDetail(est.created_by_info.id);
+                        }
+                      }}
+                      style={{ color: '#1b4ab4', fontWeight: 600, textDecoration: 'underline', cursor: 'pointer' }}
+                    >
+                      {est.created_by_info.username}
+                    </a>
+                    {' - '}
+                    <span>{est.created_by_info.nombres} {est.created_by_info.apellidos}</span>
+                  </>
+                ) : (est?.created_by_name ? est.created_by_name : <span style={{ color: '#999', fontStyle: 'italic' }}>Sin información</span>)}
+              </span>
             </div>
 
             <div className="estd-activity-item">
               <span className="estd-activity-label">✏️ Actualizado por:</span>
-              <span className="estd-activity-value">{est?.updated_by_name ?? '-'}</span>
+              <span className="estd-activity-value">
+                {est?.updated_by_info ? (
+                  <>
+                    <span style={{ fontWeight: 600 }}>{est.updated_by_info.role}</span>
+                    {' - '}
+                    <a 
+                      href="#" 
+                      onClick={(e) => { 
+                        e.preventDefault(); 
+                        if (est.updated_by_info?.id) {
+                          handleOpenUserDetail(est.updated_by_info.id);
+                        }
+                      }}
+                      style={{ color: '#1b4ab4', fontWeight: 600, textDecoration: 'underline', cursor: 'pointer' }}
+                    >
+                      {est.updated_by_info.username}
+                    </a>
+                    {' - '}
+                    <span>{est.updated_by_info.nombres} {est.updated_by_info.apellidos}</span>
+                  </>
+                ) : (est?.updated_by_name ? est.updated_by_name : <span style={{ color: '#999', fontStyle: 'italic' }}>Sin información</span>)}
+              </span>
             </div>
+          </div>
+        </div>
+
+        {/* Card: Gerentes del establecimiento */}
+        <div className="estd-card full-width">
+          <div className="estd-card-header">
+            <div className="estd-card-icon blue">👥</div>
+            <h4>Gerentes del establecimiento</h4>
+          </div>
+
+          <div className="estd-card-body">
+            {(() => {
+              // Filtrar solo usuarios con rol gerente
+              const gerentes = (est?.usuarios || []).filter((u: any) => {
+                const role = typeof u.role === 'string' ? u.role.toLowerCase() : (u.role?.value || u.role || '').toString().toLowerCase();
+                return role === 'gerente';
+              });
+
+              if (gerentes.length === 0) {
+                return (
+                  <div style={{ color: '#999', fontStyle: 'italic', textAlign: 'center', padding: '16px' }}>
+                    No hay gerentes asignados a este establecimiento
+                  </div>
+                );
+              }
+
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {gerentes.map((gerente: any, index: number) => {
+                    const roleDisplay = typeof gerente.role === 'string' 
+                      ? gerente.role.toUpperCase() 
+                      : (gerente.role?.value || gerente.role || '').toString().toUpperCase();
+                    
+                    return (
+                      <div 
+                        key={gerente.id || index} 
+                        style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          padding: '12px 16px',
+                          backgroundColor: '#f8fafc',
+                          borderRadius: '8px',
+                          border: '1px solid #e2e8f0'
+                        }}
+                      >
+                        <span style={{ 
+                          fontWeight: 600, 
+                          color: '#10b981',
+                          backgroundColor: '#d1fae5',
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          fontSize: '12px',
+                          marginRight: '12px'
+                        }}>
+                          {roleDisplay}
+                        </span>
+                        <span style={{ color: '#64748b', margin: '0 8px' }}>–</span>
+                        <a 
+                          href="#" 
+                          onClick={(e) => { 
+                            e.preventDefault(); 
+                            if (gerente.id) {
+                              handleOpenUserDetail(gerente.id);
+                            }
+                          }}
+                          style={{ 
+                            color: '#1b4ab4', 
+                            fontWeight: 600, 
+                            textDecoration: 'underline', 
+                            cursor: 'pointer' 
+                          }}
+                        >
+                          {gerente.username || '-'}
+                        </a>
+                        <span style={{ color: '#64748b', margin: '0 8px' }}>–</span>
+                        <span style={{ color: '#334155' }}>
+                          {gerente.nombres || ''} {gerente.apellidos || ''}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
         </div>
       </div>
@@ -881,6 +1060,25 @@ const EstablecimientoEditInfo: React.FC = () => {
           }}
         />
       )}
+
+      {/* Image Viewer Modal */}
+      <ImageViewerModal 
+        open={viewerOpen} 
+        imageUrl={viewerImage} 
+        onClose={() => setViewerOpen(false)} 
+      />
+
+      {/* Usuario Detail Modal */}
+      <UsuarioDetailModal
+        open={userDetailOpen}
+        user={selectedUserDetail}
+        loading={userDetailLoading}
+        onClose={() => {
+          setUserDetailOpen(false);
+          setSelectedUserDetail(null);
+          setUserDetailLoading(false);
+        }}
+      />
       </div>
     </div>
   );

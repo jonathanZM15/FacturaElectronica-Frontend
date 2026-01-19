@@ -436,31 +436,40 @@
 .est-table tbody td:nth-child(1) { width: 80px; min-width: 80px; } /* Código - pequeño */
 
 .est-table thead th:nth-child(2),
-.est-table tbody td:nth-child(2) { width: 180px; min-width: 150px; } /* Nombre - grande */
+.est-table tbody td:nth-child(2) { width: 100px; min-width: 90px; } /* Estado */
 
 .est-table thead th:nth-child(3),
-.est-table tbody td:nth-child(3) { width: 160px; min-width: 140px; } /* N. Comercial - grande */
+.est-table tbody td:nth-child(3) { width: 180px; min-width: 150px; } /* Nombre - grande */
 
 .est-table thead th:nth-child(4),
-.est-table tbody td:nth-child(4) { width: 200px; min-width: 160px; } /* Dirección - más grande */
+.est-table tbody td:nth-child(4) { width: 160px; min-width: 140px; } /* N. Comercial - grande */
 
 .est-table thead th:nth-child(5),
-.est-table tbody td:nth-child(5) { width: 220px; min-width: 180px; } /* Correo - grande */
+.est-table tbody td:nth-child(5) { width: 70px; min-width: 70px; } /* Logo - pequeño */
 
 .est-table thead th:nth-child(6),
-.est-table tbody td:nth-child(6) { width: 120px; min-width: 100px; } /* Teléfono */
+.est-table tbody td:nth-child(6) { width: 200px; min-width: 160px; } /* Dirección - más grande */
 
 .est-table thead th:nth-child(7),
-.est-table tbody td:nth-child(7) { width: 70px; min-width: 70px; } /* Logo - pequeño */
+.est-table tbody td:nth-child(7) { width: 220px; min-width: 180px; } /* Correo - grande */
 
 .est-table thead th:nth-child(8),
-.est-table tbody td:nth-child(8) { width: 100px; min-width: 90px; } /* Estado */
+.est-table tbody td:nth-child(8) { width: 120px; min-width: 100px; } /* Teléfono */
 
 .est-table thead th:nth-child(9),
-.est-table tbody td:nth-child(9) { width: 120px; min-width: 100px; } /* Usuarios */
+.est-table tbody td:nth-child(9) { width: 150px; min-width: 130px; } /* Fecha Inicio Actividades */
 
 .est-table thead th:nth-child(10),
-.est-table tbody td:nth-child(10) { width: 100px; min-width: 100px; } /* Acciones - pequeño */
+.est-table tbody td:nth-child(10) { width: 150px; min-width: 130px; } /* Fecha Reinicio Actividades */
+
+.est-table thead th:nth-child(11),
+.est-table tbody td:nth-child(11) { width: 150px; min-width: 130px; } /* Fecha Cierre */
+
+.est-table thead th:nth-child(12),
+.est-table tbody td:nth-child(12) { width: 200px; min-width: 170px; } /* Usuarios Gerentes Asociados */
+
+.est-table thead th:nth-child(13),
+.est-table tbody td:nth-child(13) { width: 100px; min-width: 100px; } /* Acciones - pequeño */
 
 .est-table thead th.sortable {
   cursor: pointer;
