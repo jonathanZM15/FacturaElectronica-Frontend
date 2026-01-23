@@ -73,7 +73,7 @@ const EstablecimientoInfo: React.FC = () => {
   const puntoFilterLabels: Record<PuntoFilterField, string> = {
     codigo: 'Código',
     nombre: 'Nombre',
-    estado: 'Estado'
+    estado: 'Estado de operatividad'
   };
 
   // Date range filter for puntos
@@ -494,7 +494,7 @@ const EstablecimientoInfo: React.FC = () => {
                   Estado {activePuntoFilter === 'estado' && <span style={{ color: '#ff8c00' }}>●</span>}
                 </th>
                 <th>Secuencial Facturas</th>
-                <th>Secuencial Liquidaciones</th>
+                <th>Secuencial Liquidación Compra</th>
                 <th>Secuencial Notas Crédito</th>
                 <th>Secuencial Notas Débito</th>
                 <th>Secuencial Guías</th>

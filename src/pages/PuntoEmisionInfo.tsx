@@ -180,7 +180,7 @@ const PuntoEmisionInfo: React.FC = () => {
               <span className="punto-info-value">{punto?.nombre ?? '-'}</span>
             </div>
             <div className="punto-info-item">
-              <span className="punto-info-label">Estado</span>
+              <span className="punto-info-label">Estado de operatividad</span>
               <div className={`punto-status-badge ${punto?.estado === 'ACTIVO' ? 'active' : 'inactive'}`}>
                 <span className="punto-status-dot"></span>
                 {punto?.estado ?? '-'}

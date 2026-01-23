@@ -24,6 +24,7 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
   existingPuntos = []
 }) => {
   const { show } = useNotification();
+  const MAX_SECUENCIAL = 999_999_999;
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<PuntoEmision>({
     codigo: '',
@@ -114,8 +115,8 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
       }
     } else if (/secuencial/.test(name)) {
       // Solo números para campos secuenciales
-      if (/^\d*$/.test(value)) {
-        setFormData(prev => ({ ...prev, [name]: value ? parseInt(value) : 0 }));
+      if (/^\d*$/.test(value) && value.length <= 9) {
+        setFormData(prev => ({ ...prev, [name]: value ? parseInt(value, 10) : 0 }));
       }
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
@@ -140,6 +141,16 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
       // Aplicar padding de ceros: 1 -> 001
       const paddedCodigo = formData.codigo.padStart(3, '0');
       setFormData(prev => ({ ...prev, codigo: paddedCodigo }));
+
+      if (paddedCodigo === '000') {
+        setErrors(prev => ({ ...prev, codigo: 'No se permite registrar el código 000' }));
+      } else if (errors.codigo === 'No se permite registrar el código 000') {
+        setErrors(prev => {
+          const copy = { ...prev };
+          delete copy.codigo;
+          return copy;
+        });
+      }
     }
   };
 
@@ -165,6 +176,8 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
       newErrors.codigo = 'Código es obligatorio';
     } else if (!/^\d{3}$/.test(formData.codigo)) {
       newErrors.codigo = 'Código debe tener exactamente 3 dígitos';
+    } else if (formData.codigo === '000') {
+      newErrors.codigo = 'No se permite registrar el código 000';
     }
 
     // Validar nombre
@@ -179,44 +192,44 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
     // Validar secuenciales
     if (formData.secuencial_factura < 1) {
       newErrors.secuencial_factura = 'Debe ser mayor a 0';
-    } else if (formData.secuencial_factura > 999999) {
-      newErrors.secuencial_factura = 'No puede exceder 999999';
+    } else if (formData.secuencial_factura > MAX_SECUENCIAL) {
+      newErrors.secuencial_factura = `No puede exceder ${MAX_SECUENCIAL}`;
     }
     
     if (formData.secuencial_liquidacion_compra < 1) {
       newErrors.secuencial_liquidacion_compra = 'Debe ser mayor a 0';
-    } else if (formData.secuencial_liquidacion_compra > 999999) {
-      newErrors.secuencial_liquidacion_compra = 'No puede exceder 999999';
+    } else if (formData.secuencial_liquidacion_compra > MAX_SECUENCIAL) {
+      newErrors.secuencial_liquidacion_compra = `No puede exceder ${MAX_SECUENCIAL}`;
     }
     
     if (formData.secuencial_nota_credito < 1) {
       newErrors.secuencial_nota_credito = 'Debe ser mayor a 0';
-    } else if (formData.secuencial_nota_credito > 999999) {
-      newErrors.secuencial_nota_credito = 'No puede exceder 999999';
+    } else if (formData.secuencial_nota_credito > MAX_SECUENCIAL) {
+      newErrors.secuencial_nota_credito = `No puede exceder ${MAX_SECUENCIAL}`;
     }
     
     if (formData.secuencial_nota_debito < 1) {
       newErrors.secuencial_nota_debito = 'Debe ser mayor a 0';
-    } else if (formData.secuencial_nota_debito > 999999) {
-      newErrors.secuencial_nota_debito = 'No puede exceder 999999';
+    } else if (formData.secuencial_nota_debito > MAX_SECUENCIAL) {
+      newErrors.secuencial_nota_debito = `No puede exceder ${MAX_SECUENCIAL}`;
     }
     
     if (formData.secuencial_guia_remision < 1) {
       newErrors.secuencial_guia_remision = 'Debe ser mayor a 0';
-    } else if (formData.secuencial_guia_remision > 999999) {
-      newErrors.secuencial_guia_remision = 'No puede exceder 999999';
+    } else if (formData.secuencial_guia_remision > MAX_SECUENCIAL) {
+      newErrors.secuencial_guia_remision = `No puede exceder ${MAX_SECUENCIAL}`;
     }
     
     if (formData.secuencial_retencion < 1) {
       newErrors.secuencial_retencion = 'Debe ser mayor a 0';
-    } else if (formData.secuencial_retencion > 999999) {
-      newErrors.secuencial_retencion = 'No puede exceder 999999';
+    } else if (formData.secuencial_retencion > MAX_SECUENCIAL) {
+      newErrors.secuencial_retencion = `No puede exceder ${MAX_SECUENCIAL}`;
     }
     
     if (formData.secuencial_proforma < 1) {
       newErrors.secuencial_proforma = 'Debe ser mayor a 0';
-    } else if (formData.secuencial_proforma > 999999) {
-      newErrors.secuencial_proforma = 'No puede exceder 999999';
+    } else if (formData.secuencial_proforma > MAX_SECUENCIAL) {
+      newErrors.secuencial_proforma = `No puede exceder ${MAX_SECUENCIAL}`;
     }
 
     // Validar código único
@@ -240,22 +253,23 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
       !checkingCode &&
       !codeDuplicateError &&
       formData.codigo.trim().length === 3 &&
+      formData.codigo !== '000' &&
       formData.nombre.trim().length >= 2 &&
       formData.nombre.trim().length <= 100 &&
       formData.secuencial_factura >= 1 &&
-      formData.secuencial_factura <= 999999 &&
+      formData.secuencial_factura <= MAX_SECUENCIAL &&
       formData.secuencial_liquidacion_compra >= 1 &&
-      formData.secuencial_liquidacion_compra <= 999999 &&
+      formData.secuencial_liquidacion_compra <= MAX_SECUENCIAL &&
       formData.secuencial_nota_credito >= 1 &&
-      formData.secuencial_nota_credito <= 999999 &&
+      formData.secuencial_nota_credito <= MAX_SECUENCIAL &&
       formData.secuencial_nota_debito >= 1 &&
-      formData.secuencial_nota_debito <= 999999 &&
+      formData.secuencial_nota_debito <= MAX_SECUENCIAL &&
       formData.secuencial_guia_remision >= 1 &&
-      formData.secuencial_guia_remision <= 999999 &&
+      formData.secuencial_guia_remision <= MAX_SECUENCIAL &&
       formData.secuencial_retencion >= 1 &&
-      formData.secuencial_retencion <= 999999 &&
+      formData.secuencial_retencion <= MAX_SECUENCIAL &&
       formData.secuencial_proforma >= 1 &&
-      formData.secuencial_proforma <= 999999
+      formData.secuencial_proforma <= MAX_SECUENCIAL
     );
   };
 
@@ -345,6 +359,15 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
                     placeholder="Ej: 001"
                   />
                 </label>
+                <div style={{
+                  marginLeft: '208px',
+                  marginTop: 6,
+                  fontSize: 12,
+                  color: '#64748b',
+                  lineHeight: 1.4
+                }}>
+                  Para evitar la duplicidad de secuencias de comprobantes, verifique que este número de punto de emisión no haya sido utilizado previamente, ni en un sistema de facturación electrónica anterior ni en comprobantes físicos.
+                </div>
                 {checkingCode && (
                   <span className="err" style={{marginLeft: '208px', display: 'block', marginTop: 4, color: '#7c3aed', fontWeight: 500}}>
                     Verificando código...
@@ -359,7 +382,7 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontWeight: 600, fontSize: 13, color: '#475569' }}>Estado <span style={{color:'#dc2626'}}>*</span></div>
+                  <div style={{ fontWeight: 600, fontSize: 13, color: '#475569' }}>Estado de operatividad <span style={{color:'#dc2626'}}>*</span></div>
                   <div style={{ fontSize: 12, marginTop: 2, color: formData.estado === 'ACTIVO' ? '#059669' : '#64748b' }}>
                     {formData.estado === 'ACTIVO' ? 'Activo' : 'Desactivado'}
                   </div>
@@ -401,6 +424,8 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
                 type="text"
                 name="secuencial_factura"
                 value={formData.secuencial_factura}
+                inputMode="numeric"
+                maxLength={9}
                 onBlur={() => markTouched('secuencial_factura')}
                 onChange={onChange}
                 readOnly={!!initialData}
@@ -417,6 +442,8 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
                 type="text"
                 name="secuencial_liquidacion_compra"
                 value={formData.secuencial_liquidacion_compra}
+                inputMode="numeric"
+                maxLength={9}
                 onBlur={() => markTouched('secuencial_liquidacion_compra')}
                 onChange={onChange}
                 readOnly={!!initialData}
@@ -433,6 +460,8 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
                 type="text"
                 name="secuencial_nota_credito"
                 value={formData.secuencial_nota_credito}
+                inputMode="numeric"
+                maxLength={9}
                 onBlur={() => markTouched('secuencial_nota_credito')}
                 onChange={onChange}
                 readOnly={!!initialData}
@@ -449,6 +478,8 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
                 type="text"
                 name="secuencial_nota_debito"
                 value={formData.secuencial_nota_debito}
+                inputMode="numeric"
+                maxLength={9}
                 onBlur={() => markTouched('secuencial_nota_debito')}
                 onChange={onChange}
                 readOnly={!!initialData}
@@ -465,6 +496,8 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
                 type="text"
                 name="secuencial_guia_remision"
                 value={formData.secuencial_guia_remision}
+                inputMode="numeric"
+                maxLength={9}
                 onBlur={() => markTouched('secuencial_guia_remision')}
                 onChange={onChange}
                 readOnly={!!initialData}
@@ -481,6 +514,8 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
                 type="text"
                 name="secuencial_retencion"
                 value={formData.secuencial_retencion}
+                inputMode="numeric"
+                maxLength={9}
                 onBlur={() => markTouched('secuencial_retencion')}
                 onChange={onChange}
                 readOnly={!!initialData}
@@ -497,6 +532,8 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
                 type="text"
                 name="secuencial_proforma"
                 value={formData.secuencial_proforma}
+                inputMode="numeric"
+                maxLength={9}
                 onBlur={() => markTouched('secuencial_proforma')}
                 onChange={onChange}
                 readOnly={!!initialData}

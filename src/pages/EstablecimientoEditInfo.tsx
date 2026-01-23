@@ -64,7 +64,7 @@ const EstablecimientoEditInfo: React.FC = () => {
   const puntoFilterLabels: Record<PuntoFilterField, string> = {
     codigo: 'Código',
     nombre: 'Nombre',
-    estado: 'Estado'
+    estado: 'Estado de operatividad'
   };
 
   // Date range filter for puntos
@@ -147,6 +147,11 @@ const EstablecimientoEditInfo: React.FC = () => {
       </div>
     );
   }
+
+  const isCompanyActive = (estado?: string) => {
+    const normalized = (estado ?? '').toString().trim().toUpperCase();
+    return normalized === 'ABIERTO' || normalized === 'ACTIVO';
+  };
 
   const openDeleteModal = () => {
     if (isLimitedRole) return;
@@ -376,14 +381,14 @@ const EstablecimientoEditInfo: React.FC = () => {
               <div className="estd-emisor-label">📊 Estado</div>
               <div className="estd-emisor-value">
                 <span style={{ 
-                  background: company?.estado === 'ABIERTO' ? '#bbf7d0' : '#fee2e2', 
+                  background: isCompanyActive(company?.estado) ? '#e0f2fe' : '#fee2e2', 
                   padding: '4px 12px', 
                   borderRadius: 6, 
-                  color: company?.estado === 'ABIERTO' ? '#059669' : '#dc2626', 
+                  color: isCompanyActive(company?.estado) ? '#0ea5e9' : '#dc2626', 
                   fontWeight: 700,
                   fontSize: '13px'
                 }}>
-                  {company?.estado === 'ABIERTO' ? 'ABIERTO' : (company?.estado || 'ABIERTO')}
+                  {company?.estado || 'ABIERTO'}
                 </span>
               </div>
             </div>
@@ -683,12 +688,11 @@ const EstablecimientoEditInfo: React.FC = () => {
                   <th className="estd-th sticky-nombre">NOMBRE</th>
                   <th className="estd-th sticky-estado">ESTADO</th>
                   <th className="estd-th">SECUENCIAL FACTURAS</th>
-                  <th className="estd-th">SECUENCIAL LIQUIDACIONES</th>
+                  <th className="estd-th">SECUENCIAL LIQ. COMPRA</th>
                   <th className="estd-th">SECUENCIAL NOTAS CRÉDITO</th>
                   <th className="estd-th">SECUENCIAL NOTAS DÉBITO</th>
                   <th className="estd-th">SECUENCIAL GUÍA REM.</th>
                   <th className="estd-th">SECUENCIAL RETENCIÓN</th>
-                  <th className="estd-th">SECUENCIAL L. PORTE</th>
                   <th className="estd-th">SECUENCIAL PROFORMA</th>
                   <th className="estd-th">F. CREACIÓN</th>
                   <th className="estd-th">F. ACTUALIZACIÓN</th>
@@ -722,7 +726,7 @@ const EstablecimientoEditInfo: React.FC = () => {
                   if (puntos.length === 0) {
                     return (
                       <tr>
-                        <td colSpan={14} className="estd-empty-cell">
+                        <td colSpan={13} className="estd-empty-cell">
                           {activePuntoFilter || puntoDesde || puntoHasta 
                             ? 'No se encontraron puntos de emisión que coincidan con los filtros'
                             : 'No hay puntos de emisión registrados'}
@@ -760,7 +764,6 @@ const EstablecimientoEditInfo: React.FC = () => {
                       <td className="estd-td">{punto.secuencial_nota_debito ?? '-'}</td>
                       <td className="estd-td">{punto.secuencial_guia_remision ?? '-'}</td>
                       <td className="estd-td">{punto.secuencial_retencion ?? '-'}</td>
-                      <td className="estd-td">{punto.secuencial_liquidacion_compra ?? '-'}</td>
                       <td className="estd-td">{punto.secuencial_proforma ?? '-'}</td>
                       <td className="estd-td">{formatDate(punto.created_at)}</td>
                       <td className="estd-td">{formatDate(punto.updated_at)}</td>
