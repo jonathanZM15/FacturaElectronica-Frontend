@@ -26,6 +26,7 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
   const { show } = useNotification();
   const MAX_SECUENCIAL = 999_999_999;
   const [loading, setLoading] = useState(false);
+  const [loadingPunto, setLoadingPunto] = useState(false);
   const [formData, setFormData] = useState<PuntoEmision>({
     codigo: '',
     estado: 'ACTIVO',
@@ -48,10 +49,7 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      if (initialData) {
-        setFormData(initialData);
-        setOriginalData(initialData);
-      } else {
+      const resetNew = () => {
         setFormData({
           codigo: '',
           estado: 'ACTIVO',
@@ -65,13 +63,37 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
           secuencial_proforma: 1,
         });
         setOriginalData(null);
+      };
+
+      if (initialData?.id && companyId && establecimientoId) {
+        setLoadingPunto(true);
+        puntosEmisionApi
+          .show(companyId, establecimientoId, initialData.id)
+          .then((res) => {
+            const punto = res.data?.data ?? res.data;
+            setFormData(punto);
+            setOriginalData(punto);
+          })
+          .catch(() => {
+            // fallback: usar el objeto recibido si falla la consulta
+            setFormData(initialData);
+            setOriginalData(initialData);
+          })
+          .finally(() => setLoadingPunto(false));
+      } else if (initialData) {
+        setFormData(initialData);
+        setOriginalData(initialData);
+      } else {
+        resetNew();
       }
       setErrors({});
       setTouched(new Set());
       setCodeDuplicateError(null);
       setConfirmDialog(false);
     }
-  }, [isOpen, initialData]);
+  }, [isOpen, initialData, companyId, establecimientoId]);
+
+  const isProdLocked = !!(initialData && formData?.bloqueo_edicion_produccion);
 
   // Validación en tiempo real del código - verificar si es único
   useEffect(() => {
@@ -133,6 +155,7 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
   };
 
   const onCodigoBlur = () => {
+    if (isProdLocked) return;
     const newTouched = new Set(touched);
     newTouched.add('codigo');
     setTouched(newTouched);
@@ -342,6 +365,30 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
         </div>
 
         <div className="mf-body scrollable">
+          {loadingPunto && (
+            <div style={{ padding: '24px 0' }}>
+              <LoadingSpinner message="Cargando punto de emisión…" />
+            </div>
+          )}
+
+          {!loadingPunto && isProdLocked && (
+            <div
+              style={{
+                background: '#eff6ff',
+                border: '1px solid #bfdbfe',
+                color: '#1e3a8a',
+                padding: '12px 14px',
+                borderRadius: 10,
+                marginBottom: 14,
+                lineHeight: 1.35,
+              }}
+            >
+              Este punto de emisión ya registra comprobantes en producción, por lo que no es posible modificar el código ni los secuenciales.
+              <br />
+              Los campos administrativos, como el nombre, y el estado de operatividad sí pueden modificarse.
+            </div>
+          )}
+
           <section>
             {/* Top row: Código y Estado */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 24, marginBottom: 16 }}>
@@ -357,6 +404,7 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
                     onFocus={() => markTouched('codigo')}
                     name="codigo"
                     placeholder="Ej: 001"
+                    disabled={isProdLocked}
                   />
                 </label>
                 <div style={{
@@ -428,10 +476,10 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
                 maxLength={9}
                 onBlur={() => markTouched('secuencial_factura')}
                 onChange={onChange}
-                readOnly={!!initialData}
+                disabled={isProdLocked}
                 className={touched.has('secuencial_factura') && errors.secuencial_factura ? 'error-input' : ''}
                 placeholder="1"
-                style={initialData ? {backgroundColor: '#f3f4f6', cursor: 'not-allowed'} : {}}
+                style={isProdLocked ? {backgroundColor: '#f3f4f6', cursor: 'not-allowed'} : {}}
               />
             </label>
             {touched.has('secuencial_factura') && errors.secuencial_factura && <span className="err" style={{marginLeft: '192px'}}>{errors.secuencial_factura}</span>}
@@ -446,10 +494,10 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
                 maxLength={9}
                 onBlur={() => markTouched('secuencial_liquidacion_compra')}
                 onChange={onChange}
-                readOnly={!!initialData}
+                disabled={isProdLocked}
                 className={touched.has('secuencial_liquidacion_compra') && errors.secuencial_liquidacion_compra ? 'error-input' : ''}
                 placeholder="1"
-                style={initialData ? {backgroundColor: '#f3f4f6', cursor: 'not-allowed'} : {}}
+                style={isProdLocked ? {backgroundColor: '#f3f4f6', cursor: 'not-allowed'} : {}}
               />
             </label>
             {touched.has('secuencial_liquidacion_compra') && errors.secuencial_liquidacion_compra && <span className="err" style={{marginLeft: '192px'}}>{errors.secuencial_liquidacion_compra}</span>}
@@ -464,10 +512,10 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
                 maxLength={9}
                 onBlur={() => markTouched('secuencial_nota_credito')}
                 onChange={onChange}
-                readOnly={!!initialData}
+                disabled={isProdLocked}
                 className={touched.has('secuencial_nota_credito') && errors.secuencial_nota_credito ? 'error-input' : ''}
                 placeholder="1"
-                style={initialData ? {backgroundColor: '#f3f4f6', cursor: 'not-allowed'} : {}}
+                style={isProdLocked ? {backgroundColor: '#f3f4f6', cursor: 'not-allowed'} : {}}
               />
             </label>
             {touched.has('secuencial_nota_credito') && errors.secuencial_nota_credito && <span className="err" style={{marginLeft: '192px'}}>{errors.secuencial_nota_credito}</span>}
@@ -482,10 +530,10 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
                 maxLength={9}
                 onBlur={() => markTouched('secuencial_nota_debito')}
                 onChange={onChange}
-                readOnly={!!initialData}
+                disabled={isProdLocked}
                 className={touched.has('secuencial_nota_debito') && errors.secuencial_nota_debito ? 'error-input' : ''}
                 placeholder="1"
-                style={initialData ? {backgroundColor: '#f3f4f6', cursor: 'not-allowed'} : {}}
+                style={isProdLocked ? {backgroundColor: '#f3f4f6', cursor: 'not-allowed'} : {}}
               />
             </label>
             {touched.has('secuencial_nota_debito') && errors.secuencial_nota_debito && <span className="err" style={{marginLeft: '192px'}}>{errors.secuencial_nota_debito}</span>}
@@ -500,10 +548,10 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
                 maxLength={9}
                 onBlur={() => markTouched('secuencial_guia_remision')}
                 onChange={onChange}
-                readOnly={!!initialData}
+                disabled={isProdLocked}
                 className={touched.has('secuencial_guia_remision') && errors.secuencial_guia_remision ? 'error-input' : ''}
                 placeholder="1"
-                style={initialData ? {backgroundColor: '#f3f4f6', cursor: 'not-allowed'} : {}}
+                style={isProdLocked ? {backgroundColor: '#f3f4f6', cursor: 'not-allowed'} : {}}
               />
             </label>
             {touched.has('secuencial_guia_remision') && errors.secuencial_guia_remision && <span className="err" style={{marginLeft: '192px'}}>{errors.secuencial_guia_remision}</span>}
@@ -518,10 +566,10 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
                 maxLength={9}
                 onBlur={() => markTouched('secuencial_retencion')}
                 onChange={onChange}
-                readOnly={!!initialData}
+                disabled={isProdLocked}
                 className={touched.has('secuencial_retencion') && errors.secuencial_retencion ? 'error-input' : ''}
                 placeholder="1"
-                style={initialData ? {backgroundColor: '#f3f4f6', cursor: 'not-allowed'} : {}}
+                style={isProdLocked ? {backgroundColor: '#f3f4f6', cursor: 'not-allowed'} : {}}
               />
             </label>
             {touched.has('secuencial_retencion') && errors.secuencial_retencion && <span className="err" style={{marginLeft: '192px'}}>{errors.secuencial_retencion}</span>}
@@ -536,10 +584,10 @@ const PuntoEmisionFormModal: React.FC<PuntoEmisionFormModalProps> = ({
                 maxLength={9}
                 onBlur={() => markTouched('secuencial_proforma')}
                 onChange={onChange}
-                readOnly={!!initialData}
+                disabled={isProdLocked}
                 className={touched.has('secuencial_proforma') && errors.secuencial_proforma ? 'error-input' : ''}
                 placeholder="1"
-                style={initialData ? {backgroundColor: '#f3f4f6', cursor: 'not-allowed'} : {}}
+                style={isProdLocked ? {backgroundColor: '#f3f4f6', cursor: 'not-allowed'} : {}}
               />
             </label>
             {touched.has('secuencial_proforma') && errors.secuencial_proforma && <span className="err" style={{marginLeft: '192px'}}>{errors.secuencial_proforma}</span>}

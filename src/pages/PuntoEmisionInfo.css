@@ -46,6 +46,78 @@
   padding: 28px 32px;
 }
 
+.punto-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.punto-actions {
+  position: relative;
+}
+
+.punto-actions-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 14px;
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(8px);
+  white-space: nowrap;
+}
+
+.punto-actions-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 8px 25px rgba(88, 28, 135, 0.3);
+}
+
+.punto-actions-menu {
+  position: fixed;
+  width: 220px;
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.18),
+    0 8px 20px rgba(0, 0, 0, 0.08);
+  z-index: 2000;
+}
+
+.punto-actions-item {
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 650;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.punto-actions-item:hover {
+  background: #f8fafc;
+}
+
+.punto-actions-item.danger {
+  color: #b91c1c;
+}
+
+.punto-actions-item.danger:hover {
+  background: #fef2f2;
+}
+
 .punto-header-left {
   display: flex;
   align-items: center;
@@ -196,6 +268,8 @@
   border: 1px solid rgba(0, 0, 0, 0.05);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
+  text-decoration: none;
+  color: inherit;
 }
 
 .punto-breadcrumb-card:hover {
@@ -257,7 +331,7 @@
 
 .punto-card-row {
   display: grid;
-  grid-template-columns: 100px 1fr;
+  grid-template-columns: 140px 1fr;
   align-items: center;
   gap: 12px;
 }
@@ -269,6 +343,7 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   text-align: right;
+  white-space: nowrap;
 }
 
 .punto-card-value {
@@ -276,6 +351,38 @@
   font-weight: 600;
   color: #1e293b;
   text-align: left;
+  min-width: 0;
+}
+
+.punto-one-line {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.punto-breadcrumb-card.establecimiento {
+  position: relative;
+}
+
+.punto-est-logo-corner {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 92px;
+  height: 46px;
+  object-fit: contain;
+  border-radius: 10px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  padding: 6px;
+  backdrop-filter: blur(6px);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.punto-est-logo-corner:hover {
+  transform: scale(1.04);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.10);
 }
 
 .punto-card-value.link {
@@ -310,6 +417,7 @@
   background: linear-gradient(135deg, #fee2e2, #fecaca);
   color: #dc2626;
 }
+
 
 /* ========== CONTENIDO PRINCIPAL ========== */
 .punto-main-content {
@@ -365,15 +473,29 @@
 /* Grid de información */
 .punto-info-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 24px;
   margin-bottom: 32px;
+}
+
+@media (min-width: 900px) {
+  .punto-info-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
 }
 
 .punto-info-item {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.punto-info-item-center {
+  align-items: center;
+}
+
+.punto-info-item-center .punto-info-label {
+  text-align: center;
 }
 
 .punto-info-label {
@@ -435,6 +557,54 @@
 
 .punto-status-badge.inactive .punto-status-dot {
   background: #ef4444;
+}
+
+.punto-availability-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 30px;
+  font-size: 13px;
+  font-weight: 700;
+  width: fit-content;
+}
+
+.punto-availability-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+.punto-availability-badge.libre {
+  background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+  color: #15803d;
+  box-shadow: 0 4px 15px rgba(34, 197, 94, 0.2);
+}
+
+.punto-availability-badge.libre .punto-availability-dot {
+  background: #22c55e;
+}
+
+.punto-availability-badge.ocupado {
+  background: linear-gradient(135deg, #ffedd5, #fed7aa);
+  color: #9a3412;
+  box-shadow: 0 4px 15px rgba(249, 115, 22, 0.18);
+}
+
+.punto-availability-badge.ocupado .punto-availability-dot {
+  background: #f97316;
+}
+
+.punto-availability-badge.unknown {
+  background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+  color: #334155;
+  box-shadow: 0 4px 15px rgba(148, 163, 184, 0.25);
+}
+
+.punto-availability-badge.unknown .punto-availability-dot {
+  background: #64748b;
 }
 
 .punto-user-link {

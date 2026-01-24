@@ -12,6 +12,7 @@ import { PuntoEmision } from '../types/puntoEmision';
 import { getImageUrl } from '../helpers/imageUrl';
 import LoadingSpinner from '../components/LoadingSpinner';
 import './UsuarioDeleteModalModern.css';
+import './EstablecimientosTab.css';
 
 const EstablecimientoInfo: React.FC = () => {
   const { id, estId } = useParams();
@@ -65,28 +66,291 @@ const EstablecimientoInfo: React.FC = () => {
   // Emisor con puntos asignados específicos también se considera limitado para el filtro
   const isLimitedRole = role === 'gerente' || role === 'cajero' || (role === 'emisor' && userPuntosIds.length > 0);
 
-  // Filtrado de puntos de emisión
-  type PuntoCol = 'codigo'|'nombre'|'estado';
-  type PuntoFilterField = 'codigo'|'nombre'|'estado';
-  const [activePuntoFilter, setActivePuntoFilter] = React.useState<PuntoFilterField | null>(null);
-  const [puntoFilterValue, setPuntoFilterValue] = React.useState<string>('');
-  const puntoFilterLabels: Record<PuntoFilterField, string> = {
-    codigo: 'Código',
-    nombre: 'Nombre',
-    estado: 'Estado de operatividad'
+  // Filtros combinables para puntos de emisión (igual a establecimientos)
+  type SeqOp = 'gte' | 'lte' | 'eq';
+  type SeqFilter = { op: SeqOp; value: string };
+  type PuntoFilters = {
+    codigo: string;
+    nombre: string;
+    estado_operatividad: '' | 'ACTIVO' | 'DESACTIVADO';
+    estado_disponibilidad: '' | 'LIBRE' | 'OCUPADO';
+    usuario: string;
+    secuencial_factura: SeqFilter;
+    secuencial_liquidacion_compra: SeqFilter;
+    secuencial_nota_credito: SeqFilter;
+    secuencial_nota_debito: SeqFilter;
+    secuencial_guia_remision: SeqFilter;
+    secuencial_retencion: SeqFilter;
+    secuencial_proforma: SeqFilter;
+    fecha_creacion_desde: string;
+    fecha_creacion_hasta: string;
+    fecha_actualizacion_desde: string;
+    fecha_actualizacion_hasta: string;
   };
 
-  // Date range filter for puntos
-  const [puntoDesde, setPuntoDesde] = React.useState<string>('');
-  const [puntoHasta, setPuntoHasta] = React.useState<string>('');
-  const [puntosDateOpen, setPuntosDateOpen] = React.useState(false);
-  const puntosDateRef = React.useRef<HTMLDivElement | null>(null);
-  const puntoDesdeInputRef = React.useRef<HTMLInputElement | null>(null);
+  const DEFAULT_SEQ_FILTER: SeqFilter = { op: 'eq', value: '' };
+  const DEFAULT_PUNTO_FILTERS: PuntoFilters = {
+    codigo: '',
+    nombre: '',
+    estado_operatividad: '',
+    estado_disponibilidad: '',
+    usuario: '',
+    secuencial_factura: { ...DEFAULT_SEQ_FILTER },
+    secuencial_liquidacion_compra: { ...DEFAULT_SEQ_FILTER },
+    secuencial_nota_credito: { ...DEFAULT_SEQ_FILTER },
+    secuencial_nota_debito: { ...DEFAULT_SEQ_FILTER },
+    secuencial_guia_remision: { ...DEFAULT_SEQ_FILTER },
+    secuencial_retencion: { ...DEFAULT_SEQ_FILTER },
+    secuencial_proforma: { ...DEFAULT_SEQ_FILTER },
+    fecha_creacion_desde: '',
+    fecha_creacion_hasta: '',
+    fecha_actualizacion_desde: '',
+    fecha_actualizacion_hasta: ''
+  };
 
-  const formatDate = (dateStr: string) => {
-    if (!dateStr) return '';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const [puntoFiltersOpen, setPuntoFiltersOpen] = React.useState(false);
+  const [puntoFilters, setPuntoFilters] = React.useState<PuntoFilters>(DEFAULT_PUNTO_FILTERS);
+
+  const normalizeText = (v: any) => String(v ?? '').toLowerCase().trim();
+  const parseIntSafe = (v: any) => {
+    const n = Number.parseInt(String(v ?? ''), 10);
+    return Number.isFinite(n) ? n : null;
+  };
+  const dateStart = (ymd: string) => new Date(`${ymd}T00:00:00`);
+  const dateEnd = (ymd: string) => new Date(`${ymd}T23:59:59.999`);
+
+  const matchesSeqFilter = (rawValue: any, filter: SeqFilter) => {
+    if (!filter.value) return true;
+    const val = parseIntSafe(rawValue);
+    const cmp = parseIntSafe(filter.value);
+    if (val === null || cmp === null) return false;
+    if (filter.op === 'eq') return val === cmp;
+    if (filter.op === 'gte') return val >= cmp;
+    return val <= cmp;
+  };
+
+  const activePuntoFiltersCount = React.useMemo(() => {
+    const seqCount = [
+      puntoFilters.secuencial_factura,
+      puntoFilters.secuencial_liquidacion_compra,
+      puntoFilters.secuencial_nota_credito,
+      puntoFilters.secuencial_nota_debito,
+      puntoFilters.secuencial_guia_remision,
+      puntoFilters.secuencial_retencion,
+      puntoFilters.secuencial_proforma
+    ].filter((f) => !!f.value).length;
+
+    const basicCount = [
+      puntoFilters.codigo,
+      puntoFilters.nombre,
+      puntoFilters.estado_operatividad,
+      puntoFilters.estado_disponibilidad,
+      puntoFilters.usuario,
+      puntoFilters.fecha_creacion_desde,
+      puntoFilters.fecha_creacion_hasta,
+      puntoFilters.fecha_actualizacion_desde,
+      puntoFilters.fecha_actualizacion_hasta
+    ].filter((v) => !!String(v ?? '').trim()).length;
+
+    return basicCount + seqCount;
+  }, [puntoFilters]);
+
+  const filteredPuntos = React.useMemo(() => {
+    const puntos = Array.isArray(est?.puntos_emision) ? est.puntos_emision : [];
+    const codigoNeedle = puntoFilters.codigo;
+    const nombreNeedle = normalizeText(puntoFilters.nombre);
+    const usuarioNeedle = normalizeText(puntoFilters.usuario);
+
+    return puntos.filter((p: any) => {
+      if (codigoNeedle) {
+        const codigoVal = String(p?.codigo ?? '');
+        if (!codigoVal.includes(codigoNeedle)) return false;
+      }
+
+      if (nombreNeedle) {
+        const nombreVal = normalizeText(p?.nombre);
+        if (!nombreVal.includes(nombreNeedle)) return false;
+      }
+
+      if (puntoFilters.estado_operatividad) {
+        if (String(p?.estado ?? '').toUpperCase() !== puntoFilters.estado_operatividad) return false;
+      }
+
+      if (puntoFilters.estado_disponibilidad) {
+        if (String(p?.estado_disponibilidad ?? '').toUpperCase() !== puntoFilters.estado_disponibilidad) return false;
+      }
+
+      if (usuarioNeedle) {
+        const userBlob = [
+          p?.user?.role?.value ?? p?.user?.role,
+          p?.user?.username,
+          p?.user?.nombres,
+          p?.user?.apellidos
+        ].map(normalizeText).join(' ');
+        if (!userBlob.includes(usuarioNeedle)) return false;
+      }
+
+      // Secuenciales
+      if (!matchesSeqFilter(p?.secuencial_factura ?? p?.secuencial, puntoFilters.secuencial_factura)) return false;
+      if (!matchesSeqFilter(p?.secuencial_liquidacion_compra, puntoFilters.secuencial_liquidacion_compra)) return false;
+      if (!matchesSeqFilter(p?.secuencial_nota_credito, puntoFilters.secuencial_nota_credito)) return false;
+      if (!matchesSeqFilter(p?.secuencial_nota_debito, puntoFilters.secuencial_nota_debito)) return false;
+      if (!matchesSeqFilter(p?.secuencial_guia_remision, puntoFilters.secuencial_guia_remision)) return false;
+      if (!matchesSeqFilter(p?.secuencial_retencion, puntoFilters.secuencial_retencion)) return false;
+      if (!matchesSeqFilter(p?.secuencial_proforma, puntoFilters.secuencial_proforma)) return false;
+
+      // Fechas (rango inclusivo)
+      if (puntoFilters.fecha_creacion_desde || puntoFilters.fecha_creacion_hasta) {
+        const created = p?.created_at ? new Date(p.created_at) : null;
+        if (!created) return false;
+        if (puntoFilters.fecha_creacion_desde && created < dateStart(puntoFilters.fecha_creacion_desde)) return false;
+        if (puntoFilters.fecha_creacion_hasta && created > dateEnd(puntoFilters.fecha_creacion_hasta)) return false;
+      }
+
+      if (puntoFilters.fecha_actualizacion_desde || puntoFilters.fecha_actualizacion_hasta) {
+        const updated = p?.updated_at ? new Date(p.updated_at) : null;
+        if (!updated) return false;
+        if (puntoFilters.fecha_actualizacion_desde && updated < dateStart(puntoFilters.fecha_actualizacion_desde)) return false;
+        if (puntoFilters.fecha_actualizacion_hasta && updated > dateEnd(puntoFilters.fecha_actualizacion_hasta)) return false;
+      }
+
+      return true;
+    });
+  }, [est?.puntos_emision, puntoFilters]);
+
+  // Ordenamiento y paginación sobre resultados filtrados
+  type PuntoCol =
+    | 'codigo'
+    | 'nombre'
+    | 'estado_operatividad'
+    | 'estado_disponibilidad'
+    | 'usuario'
+    | 'secuencial_factura'
+    | 'secuencial_liquidacion_compra'
+    | 'secuencial_nota_credito'
+    | 'secuencial_nota_debito'
+    | 'secuencial_guia_remision'
+    | 'secuencial_retencion'
+    | 'secuencial_proforma'
+    | 'created_at'
+    | 'updated_at';
+
+  const [sortByPunto, setSortByPunto] = React.useState<PuntoCol>('codigo');
+  const [sortDirPunto, setSortDirPunto] = React.useState<'asc' | 'desc'>('asc');
+  const [pagePunto, setPagePunto] = React.useState(1);
+  const [perPagePunto, setPerPagePunto] = React.useState(10);
+
+  const toggleSortPunto = (col: PuntoCol) => {
+    setPagePunto(1);
+    if (sortByPunto === col) {
+      setSortDirPunto((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortByPunto(col);
+      setSortDirPunto('asc');
+    }
+  };
+
+  React.useEffect(() => {
+    // Al aplicar filtros: orden por defecto fecha creación DESC
+    if (activePuntoFiltersCount > 0) {
+      setSortByPunto('created_at');
+      setSortDirPunto('desc');
+    } else {
+      // Vista inicial: código ASC
+      setSortByPunto('codigo');
+      setSortDirPunto('asc');
+    }
+    setPagePunto(1);
+  }, [activePuntoFiltersCount, puntoFilters]);
+
+  const getPuntoSortValue = (p: any, col: PuntoCol) => {
+    const userLabel = (() => {
+      if (!p?.user) return '';
+      const roleValue = (p.user?.role?.value ?? p.user?.role ?? '').toString().toUpperCase();
+      const username = (p.user?.username ?? '').toString().toUpperCase();
+      const nombres = (p.user?.nombres ?? '').toString().toUpperCase();
+      const apellidos = (p.user?.apellidos ?? '').toString().toUpperCase();
+      return `${roleValue} – ${username} – ${nombres} – ${apellidos}`.trim();
+    })();
+
+    switch (col) {
+      case 'codigo':
+        return p?.codigo ?? '';
+      case 'nombre':
+        return p?.nombre ?? '';
+      case 'estado_operatividad':
+        return p?.estado ?? '';
+      case 'estado_disponibilidad':
+        return p?.estado_disponibilidad ?? '';
+      case 'usuario':
+        return userLabel;
+      case 'secuencial_factura':
+        return p?.secuencial_factura ?? p?.secuencial ?? '';
+      case 'secuencial_liquidacion_compra':
+        return p?.secuencial_liquidacion_compra ?? '';
+      case 'secuencial_nota_credito':
+        return p?.secuencial_nota_credito ?? '';
+      case 'secuencial_nota_debito':
+        return p?.secuencial_nota_debito ?? '';
+      case 'secuencial_guia_remision':
+        return p?.secuencial_guia_remision ?? '';
+      case 'secuencial_retencion':
+        return p?.secuencial_retencion ?? '';
+      case 'secuencial_proforma':
+        return p?.secuencial_proforma ?? '';
+      case 'created_at':
+        return p?.created_at ? new Date(p.created_at).getTime() : null;
+      case 'updated_at':
+        return p?.updated_at ? new Date(p.updated_at).getTime() : null;
+      default:
+        return '';
+    }
+  };
+
+  const sortedPuntos = React.useMemo(() => {
+    const data = [...filteredPuntos];
+    const dir = sortDirPunto === 'asc' ? 1 : -1;
+
+    data.sort((a: any, b: any) => {
+      const va = getPuntoSortValue(a, sortByPunto);
+      const vb = getPuntoSortValue(b, sortByPunto);
+
+      if (va === null && vb === null) return 0;
+      if (va === null) return 1;
+      if (vb === null) return -1;
+
+      if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * dir;
+
+      // Try numeric comparison when both are numeric-ish
+      const na = Number(va);
+      const nb = Number(vb);
+      if (!Number.isNaN(na) && !Number.isNaN(nb)) return (na - nb) * dir;
+
+      return String(va).localeCompare(String(vb), 'es', { numeric: true, sensitivity: 'base' }) * dir;
+    });
+
+    return data;
+  }, [filteredPuntos, sortByPunto, sortDirPunto]);
+
+  const paginatedPuntos = React.useMemo(() => {
+    const start = (pagePunto - 1) * perPagePunto;
+    return sortedPuntos.slice(start, start + perPagePunto);
+  }, [sortedPuntos, pagePunto, perPagePunto]);
+
+  const totalPuntos = sortedPuntos.length;
+  const startIdxPunto = totalPuntos === 0 ? 0 : (pagePunto - 1) * perPagePunto + 1;
+  const endIdxPunto = Math.min(pagePunto * perPagePunto, totalPuntos);
+  const lastPagePunto = Math.max(1, Math.ceil(Math.max(1, totalPuntos) / perPagePunto));
+  React.useEffect(() => {
+    if (pagePunto > lastPagePunto) setPagePunto(lastPagePunto);
+  }, [lastPagePunto, pagePunto]);
+
+  const resetPuntoTable = () => {
+    setPuntoFilters(DEFAULT_PUNTO_FILTERS);
+    setSortByPunto('codigo');
+    setSortDirPunto('asc');
+    setPagePunto(1);
+    setPerPagePunto(10);
   };
 
   React.useEffect(() => {
@@ -238,168 +502,7 @@ const EstablecimientoInfo: React.FC = () => {
       <div style={{ marginTop: 18, borderRadius: 12, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.05)', background: '#fff' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid #e5e7eb', gap: 12, flexWrap: 'wrap' }}>
           <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1f2937' }}>Lista de puntos de emisión</h4>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 300, justifyContent: 'flex-end' }}>
-            {/* Filter UI - Text filter */}
-            <div style={{ 
-              background: '#f8f9fa', 
-              border: '1px solid #dee2e6', 
-              borderRadius: 6, 
-              padding: '0 12px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              height: 44,
-              flex: 1,
-              maxWidth: 400
-            }}>
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-                {activePuntoFilter === 'estado' ? (
-                  <select 
-                    value={puntoFilterValue} 
-                    onChange={(e) => setPuntoFilterValue(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '6px 8px',
-                      borderRadius: 4,
-                      border: 'none',
-                      fontSize: 14,
-                      fontFamily: 'inherit',
-                      background: 'transparent'
-                    }}
-                  >
-                    <option value="">Todos</option>
-                    <option value="activo">Activo</option>
-                    <option value="inactivo">Desactivado</option>
-                  </select>
-                ) : (
-                  <input
-                    type="text"
-                    placeholder={activePuntoFilter ? `Filtrar por ${puntoFilterLabels[activePuntoFilter]}` : 'Haz clic en un encabezado para filtrar'}
-                    value={puntoFilterValue}
-                    onChange={(e) => setPuntoFilterValue(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '6px 8px',
-                      borderRadius: 4,
-                      border: 'none',
-                      fontSize: 14,
-                      background: 'transparent',
-                      outline: 'none'
-                    }}
-                  />
-                )}
-              </div>
-              <span style={{ fontSize: 16, color: '#666', flexShrink: 0 }}>🔍</span>
-              {activePuntoFilter && puntoFilterValue && (
-                <button
-                  onClick={() => setPuntoFilterValue('')}
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    borderRadius: 4,
-                    padding: '2px 6px',
-                    cursor: 'pointer',
-                    fontSize: 14,
-                    color: '#666',
-                    flexShrink: 0
-                  }}
-                >
-                  ×
-                </button>
-              )}
-            </div>
-
-            {/* Date range filter */}
-            <div className="date-range" ref={puntosDateRef} style={{ position: 'relative' }}>
-              <button 
-                className="date-range-display"
-                onClick={() => setPuntosDateOpen((v) => !v)}
-                style={{
-                  padding: '8px 12px',
-                  background: '#fff',
-                  border: '1px solid #dee2e6',
-                  borderRadius: 6,
-                  cursor: 'pointer',
-                  fontSize: 13,
-                  fontWeight: 500,
-                  color: '#666',
-                  display: 'flex',
-                  gap: 6,
-                  alignItems: 'center',
-                  whiteSpace: 'nowrap',
-                  height: 44
-                }}
-              >
-                <span>{puntoDesde ? formatDate(puntoDesde) : 'Fecha Inicial'}</span>
-                <span>→</span>
-                <span>{puntoHasta ? formatDate(puntoHasta) : 'Fecha Final'}</span>
-              </button>
-              {puntosDateOpen && (
-                <div 
-                  className="date-range-popover"
-                  style={{
-                    position: 'absolute',
-                    top: '100%',
-                    left: 0,
-                    marginTop: 4,
-                    background: '#fff',
-                    border: '1px solid #dee2e6',
-                    borderRadius: 8,
-                    padding: 12,
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                    zIndex: 100,
-                    minWidth: 280
-                  }}
-                >
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    <label style={{ fontSize: 12, fontWeight: 500, color: '#666', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      Desde
-                      <input 
-                        ref={puntoDesdeInputRef}
-                        type="date" 
-                        value={puntoDesde} 
-                        onChange={(e) => setPuntoDesde(e.target.value)}
-                        style={{ padding: '6px 8px', border: '1px solid #dee2e6', borderRadius: 4, fontSize: 13 }}
-                      />
-                    </label>
-                    <label style={{ fontSize: 12, fontWeight: 500, color: '#666', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      Hasta
-                      <input 
-                        type="date" 
-                        value={puntoHasta} 
-                        onChange={(e) => setPuntoHasta(e.target.value)}
-                        style={{ padding: '6px 8px', border: '1px solid #dee2e6', borderRadius: 4, fontSize: 13 }}
-                      />
-                    </label>
-                  </div>
-                  <div style={{ display: 'flex', gap: 8, marginTop: 12, justifyContent: 'flex-end' }}>
-                    <button 
-                      onClick={() => { setPuntoDesde(''); setPuntoHasta(''); setPuntosDateOpen(false); }}
-                      style={{ padding: '6px 12px', background: '#f0f0f0', border: '1px solid #dee2e6', borderRadius: 4, cursor: 'pointer', fontSize: 12, fontWeight: 500, color: '#666' }}
-                    >
-                      Limpiar
-                    </button>
-                    <button 
-                      onClick={() => setPuntosDateOpen(false)}
-                      style={{ padding: '6px 12px', background: '#0d6efd', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 12, fontWeight: 500, color: '#fff' }}
-                    >
-                      Aplicar
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Clear date filter button */}
-            {(puntoDesde || puntoHasta) && (
-              <button 
-                onClick={() => { setPuntoDesde(''); setPuntoHasta(''); }}
-                style={{ padding: '4px 8px', background: '#fff', border: '1px solid #dee2e6', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 500, color: '#dc2626', display: 'flex', alignItems: 'center', height: 44 }}
-              >
-                ✕
-              </button>
-            )}
-
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 220, justifyContent: 'flex-end' }}>
             <button 
               onClick={() => { if (isLimitedRole) return; setSelectedPunto(null); setPuntoFormOpen(true); }}
               disabled={isLimitedRole}
@@ -445,104 +548,276 @@ const EstablecimientoInfo: React.FC = () => {
             </button>
           </div>
         </div>
-        {activePuntoFilter && (
-          <div style={{ padding: '8px 20px', background: '#f8f9fa', borderBottom: '1px solid #e5e7eb', fontSize: 12, color: '#666' }}>
-            Buscando por {puntoFilterLabels[activePuntoFilter]}
-            {puntoFilterValue && (
-              <button
-                onClick={() => { setPuntoFilterValue(''); }}
-                style={{ marginLeft: 8, background: 'transparent', border: 'none', color: '#1e40af', cursor: 'pointer', fontSize: 12 }}
-              >
-                Limpiar
-              </button>
-            )}
-          </div>
-        )}
 
-        <div style={{ overflowX: 'auto', overflowY: 'visible' }}>
+        <div className="est-filters-section" style={{ margin: '12px 20px 0 20px' }}>
+          <div
+            className="est-filters-header"
+            onClick={() => setPuntoFiltersOpen((open) => !open)}
+          >
+            <div className="est-filters-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46"></polygon>
+              </svg>
+              Filtros
+              {activePuntoFiltersCount > 0 && (
+                <span className="est-filters-badge">
+                  {activePuntoFiltersCount} activo{activePuntoFiltersCount > 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
+            <button className={`est-filters-toggle ${puntoFiltersOpen ? 'open' : ''}`}>
+              {puntoFiltersOpen ? 'Ocultar' : 'Mostrar'}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="6,9 12,15 18,9"></polyline>
+              </svg>
+            </button>
+          </div>
+
+          <div className={`est-filters-body ${puntoFiltersOpen ? 'open' : ''}`}>
+            <div className="est-filters-grid">
+              <div className="est-filter-group">
+                <label className="est-filter-label">Código</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  className="est-filter-input"
+                  placeholder="Buscar por código..."
+                  value={puntoFilters.codigo}
+                  onChange={(e) => {
+                    const onlyDigits = e.target.value.replace(/[^0-9]/g, '');
+                    setPuntoFilters((prev) => ({ ...prev, codigo: onlyDigits }));
+                  }}
+                />
+              </div>
+
+              <div className="est-filter-group">
+                <label className="est-filter-label">Nombre</label>
+                <input
+                  type="text"
+                  className="est-filter-input"
+                  placeholder="Buscar por nombre..."
+                  value={puntoFilters.nombre}
+                  onChange={(e) => setPuntoFilters((prev) => ({ ...prev, nombre: e.target.value }))}
+                />
+              </div>
+
+              <div className="est-filter-group">
+                <label className="est-filter-label">Estado de operatividad</label>
+                <select
+                  className="est-filter-select"
+                  value={puntoFilters.estado_operatividad}
+                  onChange={(e) => setPuntoFilters((prev) => ({ ...prev, estado_operatividad: e.target.value as PuntoFilters['estado_operatividad'] }))}
+                >
+                  <option value="">Todos</option>
+                  <option value="ACTIVO">Activo</option>
+                  <option value="DESACTIVADO">Desactivado</option>
+                </select>
+              </div>
+
+              <div className="est-filter-group">
+                <label className="est-filter-label">Estado de disponibilidad</label>
+                <select
+                  className="est-filter-select"
+                  value={puntoFilters.estado_disponibilidad}
+                  onChange={(e) => setPuntoFilters((prev) => ({ ...prev, estado_disponibilidad: e.target.value as PuntoFilters['estado_disponibilidad'] }))}
+                >
+                  <option value="">Todos</option>
+                  <option value="LIBRE">Libre</option>
+                  <option value="OCUPADO">Ocupado</option>
+                </select>
+              </div>
+
+              <div className="est-filter-group">
+                <label className="est-filter-label">Usuario asociado</label>
+                <input
+                  type="text"
+                  className="est-filter-input"
+                  placeholder="Buscar usuario..."
+                  value={puntoFilters.usuario}
+                  onChange={(e) => setPuntoFilters((prev) => ({ ...prev, usuario: e.target.value }))}
+                />
+              </div>
+
+              {(
+                [
+                  { key: 'secuencial_factura', label: 'Secuencial de facturas' },
+                  { key: 'secuencial_liquidacion_compra', label: 'Secuencial de liquidaciones de compra' },
+                  { key: 'secuencial_nota_credito', label: 'Secuencial de notas de crédito' },
+                  { key: 'secuencial_nota_debito', label: 'Secuencial de notas de débito' },
+                  { key: 'secuencial_guia_remision', label: 'Secuencial de guías de remisión' },
+                  { key: 'secuencial_retencion', label: 'Secuencial de retenciones' },
+                  { key: 'secuencial_proforma', label: 'Secuencial de proformas' }
+                ] as Array<{ key: keyof PuntoFilters; label: string }>
+              ).map(({ key, label }) => {
+                const seq = puntoFilters[key] as unknown as { op: 'gte' | 'lte' | 'eq'; value: string };
+                return (
+                  <div key={String(key)} className="est-filter-group wide">
+                    <label className="est-filter-label long">{label}</label>
+                    <div className="est-filter-range">
+                      <select
+                        className="est-filter-select"
+                        value={seq.op}
+                        onChange={(e) => {
+                          const op = e.target.value as 'gte' | 'lte' | 'eq';
+                          setPuntoFilters((prev) => ({
+                            ...prev,
+                            [key]: { ...(prev[key] as unknown as any), op }
+                          } as PuntoFilters));
+                        }}
+                      >
+                        <option value="gte">Mayor o igual que</option>
+                        <option value="lte">Menor o igual que</option>
+                        <option value="eq">Igual que</option>
+                      </select>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        className="est-filter-input"
+                        placeholder="Número"
+                        value={seq.value}
+                        onChange={(e) => {
+                          const onlyDigits = e.target.value.replace(/[^0-9]/g, '');
+                          setPuntoFilters((prev) => ({
+                            ...prev,
+                            [key]: { ...(prev[key] as unknown as any), value: onlyDigits }
+                          } as PuntoFilters));
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+
+              <div className="est-filter-group wide">
+                <label className="est-filter-label">Fecha de creación</label>
+                <div className="est-filter-range">
+                  <input
+                    type="date"
+                    className="est-filter-input"
+                    value={puntoFilters.fecha_creacion_desde}
+                    onChange={(e) => setPuntoFilters((prev) => ({ ...prev, fecha_creacion_desde: e.target.value }))}
+                  />
+                  <input
+                    type="date"
+                    className="est-filter-input"
+                    value={puntoFilters.fecha_creacion_hasta}
+                    onChange={(e) => setPuntoFilters((prev) => ({ ...prev, fecha_creacion_hasta: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              <div className="est-filter-group wide">
+                <label className="est-filter-label">Fecha de última actualización</label>
+                <div className="est-filter-range">
+                  <input
+                    type="date"
+                    className="est-filter-input"
+                    value={puntoFilters.fecha_actualizacion_desde}
+                    onChange={(e) => setPuntoFilters((prev) => ({ ...prev, fecha_actualizacion_desde: e.target.value }))}
+                  />
+                  <input
+                    type="date"
+                    className="est-filter-input"
+                    value={puntoFilters.fecha_actualizacion_hasta}
+                    onChange={(e) => setPuntoFilters((prev) => ({ ...prev, fecha_actualizacion_hasta: e.target.value }))}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="est-filters-actions">
+              <button
+                className="est-btn-clear-filters"
+                onClick={resetPuntoTable}
+                type="button"
+              >
+                Limpiar filtros
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div
+          style={{
+            overflowX: activePuntoFiltersCount > 0 && totalPuntos === 0 ? 'hidden' : 'auto',
+            overflowY: 'visible',
+            position: 'relative'
+          }}
+        >
+          {activePuntoFiltersCount > 0 && totalPuntos === 0 && (
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '24px',
+                textAlign: 'center',
+                color: '#6b7280',
+                fontSize: 14,
+                fontStyle: 'italic',
+                pointerEvents: 'none',
+                background: 'linear-gradient(135deg, rgba(249, 250, 251, 0.85) 0%, rgba(255, 255, 255, 0.9) 100%)'
+              }}
+            >
+              No se encontraron puntos de emisión con los filtros aplicados.
+            </div>
+          )}
           <table className="puntos-table-modern" style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, minWidth: '100%' }}>
             <thead>
               <tr>
-                <th 
-                  className="th-sticky sticky-left-0" 
-                  onClick={() => {
-                    setActivePuntoFilter('codigo');
-                    setPuntoFilterValue('');
-                  }}
-                  style={{ cursor: 'pointer' }}
-                >
-                  Código {activePuntoFilter === 'codigo' && <span style={{ color: '#ff8c00' }}>●</span>}
+                <th className="th-sticky sticky-left-0" style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('codigo')}>
+                  Código {sortByPunto === 'codigo' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
                 </th>
-                <th 
-                  className="th-sticky sticky-left-1" 
-                  onClick={() => {
-                    setActivePuntoFilter('nombre');
-                    setPuntoFilterValue('');
-                  }}
-                  style={{ cursor: 'pointer' }}
-                >
-                  Nombre {activePuntoFilter === 'nombre' && <span style={{ color: '#ff8c00' }}>●</span>}
+                <th className="th-sticky sticky-left-1" style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('nombre')}>
+                  Nombre {sortByPunto === 'nombre' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
                 </th>
-                <th 
-                  className="th-sticky sticky-left-2" 
-                  onClick={() => {
-                    setActivePuntoFilter('estado');
-                    setPuntoFilterValue('');
-                  }}
-                  style={{ cursor: 'pointer' }}
-                >
-                  Estado {activePuntoFilter === 'estado' && <span style={{ color: '#ff8c00' }}>●</span>}
+                <th className="th-sticky sticky-left-2" style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('estado_operatividad')}>
+                  Estado de operatividad {sortByPunto === 'estado_operatividad' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
                 </th>
-                <th>Secuencial Facturas</th>
-                <th>Secuencial Liquidación Compra</th>
-                <th>Secuencial Notas Crédito</th>
-                <th>Secuencial Notas Débito</th>
-                <th>Secuencial Guías</th>
-                <th>Secuencial Retenciones</th>
-                <th>Secuencial Proformas</th>
-                <th>Fecha de creación</th>
-                <th>Fecha de actualización</th>
+                <th style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('estado_disponibilidad')}>
+                  Estado de disponibilidad {sortByPunto === 'estado_disponibilidad' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
+                </th>
+                <th style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('usuario')}>
+                  Usuario asociado {sortByPunto === 'usuario' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
+                </th>
+                <th style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('secuencial_factura')}>
+                  Secuencial Facturas {sortByPunto === 'secuencial_factura' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
+                </th>
+                <th style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('secuencial_liquidacion_compra')}>
+                  Secuencial Liquidaciones de compra {sortByPunto === 'secuencial_liquidacion_compra' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
+                </th>
+                <th style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('secuencial_nota_credito')}>
+                  Secuencial Notas Crédito {sortByPunto === 'secuencial_nota_credito' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
+                </th>
+                <th style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('secuencial_nota_debito')}>
+                  Secuencial Notas Débito {sortByPunto === 'secuencial_nota_debito' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
+                </th>
+                <th style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('secuencial_guia_remision')}>
+                  Secuencial Guías de remisión {sortByPunto === 'secuencial_guia_remision' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
+                </th>
+                <th style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('secuencial_retencion')}>
+                  Secuencial Retenciones {sortByPunto === 'secuencial_retencion' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
+                </th>
+                <th style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('secuencial_proforma')}>
+                  Secuencial Proformas {sortByPunto === 'secuencial_proforma' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
+                </th>
+                <th style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('created_at')}>
+                  Fecha de creación {sortByPunto === 'created_at' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
+                </th>
+                <th style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('updated_at')}>
+                  Fecha de actualización {sortByPunto === 'updated_at' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
+                </th>
                 <th className="th-sticky sticky-right">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {Array.isArray(est?.puntos_emision) && est.puntos_emision.length > 0 ? (
-                est.puntos_emision.filter((p: any) => {
-                  // NOTE: Filter by puntos_emision_ids is already applied in useEffect
-                  // This filter only handles text search and date range
-                  
-                  // Filter by text search
-                  if (activePuntoFilter && puntoFilterValue) {
-                    if (activePuntoFilter === 'estado') {
-                      if ((p.estado || '').toLowerCase() !== puntoFilterValue.toLowerCase()) return false;
-                    } else {
-                      const fieldValue = (p[activePuntoFilter] || '').toString().toLowerCase();
-                      if (!fieldValue.includes(puntoFilterValue.toLowerCase())) return false;
-                    }
-                  }
-                  
-                  // Filter by date range
-                  if (puntoDesde || puntoHasta) {
-                    const createdDate = p.created_at ? new Date(p.created_at) : null;
-                    if (createdDate) {
-                      const createdTime = createdDate.getTime();
-                      if (puntoDesde) {
-                        const desdeDate = new Date(puntoDesde);
-                        desdeDate.setHours(0, 0, 0, 0);
-                        if (createdTime < desdeDate.getTime()) return false;
-                      }
-                      if (puntoHasta) {
-                        const hastaDate = new Date(puntoHasta);
-                        hastaDate.setHours(23, 59, 59, 999);
-                        if (createdTime > hastaDate.getTime()) return false;
-                      }
-                    } else {
-                      return false;
-                    }
-                  }
-                  
-                  return true;
-                }).map((p:any) => (
+                paginatedPuntos.length > 0 ? (
+                  paginatedPuntos.map((p: any) => (
                   <tr key={p.id}>
                     <td className="td-sticky sticky-left-0" style={{ fontWeight: 600 }}>
                       <a href={`/emisores/${id}/establecimientos/${estId}/puntos/${p.id}`} onClick={(e) => { e.preventDefault(); navigate(`/emisores/${id}/establecimientos/${estId}/puntos/${p.id}`); }} style={{ color: '#1b4ab4', textDecoration: 'underline', cursor: 'pointer' }}>{p.codigo}</a>
@@ -557,8 +832,33 @@ const EstablecimientoInfo: React.FC = () => {
                         color: '#fff',
                         background: p.estado === 'ACTIVO' ? '#22c55e' : '#9ca3af'
                       }}>
-                        {p.estado}
+                        {p.estado === 'ACTIVO' ? 'Activo' : 'Desactivado'}
                       </span>
+                    </td>
+                    <td style={{ textAlign: 'center', fontWeight: 600 }}>
+                      {p.estado_disponibilidad === 'OCUPADO' ? 'Ocupado' : 'Libre'}
+                    </td>
+                    <td style={{ fontWeight: 600 }}>
+                      {p?.user?.id ? (
+                        <a
+                          href={`/usuarios/${p.user.id}`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            navigate(`/usuarios/${p.user.id}`);
+                          }}
+                          style={{ color: '#1b4ab4', textDecoration: 'underline', cursor: 'pointer' }}
+                        >
+                          {(() => {
+                            const roleValue = (p.user?.role?.value ?? p.user?.role ?? '').toString().toUpperCase();
+                            const username = (p.user?.username ?? '').toString().toUpperCase();
+                            const nombres = (p.user?.nombres ?? '').toString().toUpperCase();
+                            const apellidos = (p.user?.apellidos ?? '').toString().toUpperCase();
+                            return `${roleValue} – ${username} – ${nombres} – ${apellidos}`;
+                          })()}
+                        </a>
+                      ) : (
+                        <span style={{ color: '#94a3b8' }}>Sin asignar</span>
+                      )}
                     </td>
                     <td style={{ textAlign: 'center', fontWeight: 600, color: '#1b4ab4' }}>{p.secuencial_factura ?? p.secuencial ?? '-'}</td>
                     <td style={{ textAlign: 'center', fontWeight: 600, color: '#1b4ab4' }}>{p.secuencial_liquidacion_compra ?? '-'}</td>
@@ -640,14 +940,57 @@ const EstablecimientoInfo: React.FC = () => {
                       </div>
                     </td>
                   </tr>
-                ))
+                  ))
+                ) : (
+                  <tr>
+                    <td style={{ textAlign: 'center', padding: '16px 8px' }} colSpan={15}>
+                      {activePuntoFiltersCount > 0
+                        ? '\u00A0'
+                        : 'No hay puntos de emisión registrados'}
+                    </td>
+                  </tr>
+                )
               ) : (
                 <tr>
-                  <td style={{ textAlign: 'center', padding: '16px 8px' }} colSpan={13}>No hay puntos de emisión registrados</td>
+                  <td style={{ textAlign: 'center', padding: '16px 8px' }} colSpan={15}>No hay puntos de emisión registrados</td>
                 </tr>
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Paginación moderna (estilo establecimientos) */}
+        <div className="est-pagination" style={{ margin: '12px 20px 16px 20px' }}>
+          <div className="est-pagination-info">
+            <label>
+              Mostrar
+              <select
+                className="est-per-page-select"
+                value={perPagePunto}
+                onChange={(e) => {
+                  setPerPagePunto(Number(e.target.value));
+                  setPagePunto(1);
+                }}
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={15}>15</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+              </select>
+              por página
+            </label>
+            <span className="est-page-range">
+              {startIdxPunto}–{endIdxPunto} de {totalPuntos} (en esta página: {paginatedPuntos.length})
+            </span>
+          </div>
+
+          <div className="est-pagination-buttons">
+            <button className="est-page-btn" onClick={() => setPagePunto(1)} disabled={pagePunto <= 1}>⏮</button>
+            <button className="est-page-btn" onClick={() => setPagePunto((p) => Math.max(1, p - 1))} disabled={pagePunto <= 1}>◀</button>
+            <button className="est-page-btn" onClick={() => setPagePunto((p) => Math.min(lastPagePunto, p + 1))} disabled={pagePunto >= lastPagePunto}>▶</button>
+            <button className="est-page-btn" onClick={() => setPagePunto(lastPagePunto)} disabled={pagePunto >= lastPagePunto}>⏭</button>
+          </div>
         </div>
 
         <style>{`

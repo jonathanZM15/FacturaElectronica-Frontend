@@ -1,10 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { createPortal } from 'react-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { puntosEmisionApi } from '../services/puntosEmisionApi';
 import { establecimientosApi } from '../services/establecimientosApi';
 import { emisoresApi } from '../services/emisoresApi';
 import { useNotification } from '../contexts/NotificationContext';
 import LoadingSpinner from '../components/LoadingSpinner';
+import ImageViewerModal from './ImageViewerModal';
+import PuntoEmisionFormModal from './PuntoEmisionFormModal';
+import PuntoEmisionDeleteModal from './PuntoEmisionDeleteModal';
+import { getImageUrl } from '../helpers/imageUrl';
 import './PuntoEmisionInfo.css';
 
 const PuntoEmisionInfo: React.FC = () => {
@@ -16,6 +21,14 @@ const PuntoEmisionInfo: React.FC = () => {
   const [punto, setPunto] = useState<any | null>(null);
   const [establecimiento, setEstablecimiento] = useState<any | null>(null);
   const [emisor, setEmisor] = useState<any | null>(null);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerImage, setViewerImage] = useState<string | null>(null);
+  const [actionsOpen, setActionsOpen] = useState(false);
+  const [actionsMenuPos, setActionsMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+
+  const actionsButtonRef = React.useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -44,6 +57,44 @@ const PuntoEmisionInfo: React.FC = () => {
     loadData();
   }, [id, estId, puntoId, show]);
 
+  useEffect(() => {
+    if (!actionsOpen) return;
+    const onDocClick = () => setActionsOpen(false);
+    document.addEventListener('click', onDocClick);
+    return () => document.removeEventListener('click', onDocClick);
+  }, [actionsOpen]);
+
+  useEffect(() => {
+    if (!actionsOpen) {
+      setActionsMenuPos(null);
+      return;
+    }
+
+    const updatePos = () => {
+      const btn = actionsButtonRef.current;
+      if (!btn) return;
+      const rect = btn.getBoundingClientRect();
+      const menuWidth = 220;
+      const padding = 12;
+
+      const idealLeft = rect.right - menuWidth;
+      const left = Math.min(
+        window.innerWidth - menuWidth - padding,
+        Math.max(padding, idealLeft)
+      );
+      const top = rect.bottom + 10;
+      setActionsMenuPos({ top, left });
+    };
+
+    updatePos();
+    window.addEventListener('resize', updatePos);
+    window.addEventListener('scroll', updatePos, true);
+    return () => {
+      window.removeEventListener('resize', updatePos);
+      window.removeEventListener('scroll', updatePos, true);
+    };
+  }, [actionsOpen]);
+
   if (loading) {
     return (
       <div className="punto-info-page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
@@ -63,8 +114,34 @@ const PuntoEmisionInfo: React.FC = () => {
     });
   };
 
+  const establecimientoLogoRaw = establecimiento?.logo_url || establecimiento?.logo_path || establecimiento?.logo;
+  const establecimientoLogoUrl = getImageUrl(establecimientoLogoRaw);
+
+  const operatividadText = () => {
+    const estado = String(punto?.estado ?? '').toUpperCase();
+    if (estado === 'ACTIVO') return 'Operativo (Activo)';
+    if (estado === 'DESACTIVADO') return 'No operativo (Desactivado)';
+    return punto?.estado ?? '-';
+  };
+
+  const disponibilidadText = () => {
+    const disponibilidad = String(punto?.estado_disponibilidad ?? '').toUpperCase();
+    if (disponibilidad === 'OCUPADO') return 'Ocupado';
+    if (disponibilidad === 'LIBRE') return 'Libre';
+    return punto?.estado_disponibilidad ?? '-';
+  };
+
+  const disponibilidadClass = () => {
+    const disponibilidad = String(punto?.estado_disponibilidad ?? '').toUpperCase();
+    if (disponibilidad === 'OCUPADO') return 'ocupado';
+    if (disponibilidad === 'LIBRE') return 'libre';
+    return 'unknown';
+  };
+
   return (
     <div className="punto-info-page">
+      <ImageViewerModal open={viewerOpen} imageUrl={viewerImage} onClose={() => setViewerOpen(false)} />
+
       {/* ========== HEADER PREMIUM ========== */}
       <div className="punto-info-header">
         <div className="punto-header-bg"></div>
@@ -79,25 +156,74 @@ const PuntoEmisionInfo: React.FC = () => {
               <h1 className="punto-header-name">{punto?.nombre ?? 'Punto de Emisión'}</h1>
               <div className={`punto-header-status ${punto?.estado === 'ACTIVO' ? 'active' : 'inactive'}`}>
                 <span className="punto-header-status-dot"></span>
-                {punto?.estado === 'ACTIVO' ? 'Activo' : punto?.estado ?? 'Desactivado'}
+                Operatividad: {punto?.estado === 'ACTIVO' ? 'Activo' : 'Desactivado'}
               </div>
             </div>
           </div>
-          <button
-            className="punto-back-btn"
-            onClick={() => navigate(`/emisores/${id}/establecimientos/${estId}`)}
-          >
-            ← Volver al Establecimiento
-          </button>
+          <div className="punto-header-right">
+            <div className="punto-actions" onClick={(e) => e.stopPropagation()}>
+              <button
+                type="button"
+                className="punto-actions-btn"
+                ref={actionsButtonRef}
+                onClick={() => setActionsOpen((prev) => !prev)}
+                aria-haspopup="menu"
+                aria-expanded={actionsOpen}
+              >
+                ⋮ Acciones
+              </button>
+            </div>
+
+            {actionsOpen && actionsMenuPos &&
+              createPortal(
+                <div
+                  className="punto-actions-menu punto-actions-menu-portal"
+                  role="menu"
+                  style={{ top: actionsMenuPos.top, left: actionsMenuPos.left }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button
+                    type="button"
+                    className="punto-actions-item"
+                    role="menuitem"
+                    onClick={() => {
+                      setActionsOpen(false);
+                      setEditOpen(true);
+                    }}
+                  >
+                    ✏️ Editar
+                  </button>
+                  <button
+                    type="button"
+                    className="punto-actions-item danger"
+                    role="menuitem"
+                    onClick={() => {
+                      setActionsOpen(false);
+                      setDeleteOpen(true);
+                    }}
+                  >
+                    🗑️ Eliminar
+                  </button>
+                </div>,
+                document.body
+              )}
+
+            <button
+              className="punto-back-btn"
+              onClick={() => navigate(`/emisores/${id}/establecimientos/${estId}`)}
+            >
+              ← Volver al Establecimiento
+            </button>
+          </div>
         </div>
       </div>
 
       {/* ========== BREADCRUMB CARDS ========== */}
       <div className="punto-breadcrumb-section">
         {/* Card Emisor */}
-        <div 
+        <Link
           className="punto-breadcrumb-card emisor"
-          onClick={() => navigate(`/emisores/${emisor?.id}`)}
+          to={`/emisores/${id}`}
         >
           <div className="punto-card-header">
             <div className="punto-card-icon">🏢</div>
@@ -119,13 +245,28 @@ const PuntoEmisionInfo: React.FC = () => {
               </span>
             </div>
           </div>
-        </div>
+        </Link>
 
         {/* Card Establecimiento */}
-        <div 
+        <Link
           className="punto-breadcrumb-card establecimiento"
-          onClick={() => navigate(`/emisores/${id}/establecimientos/${estId}`)}
+          to={`/emisores/${id}/establecimientos/${estId}`}
         >
+          {establecimientoLogoUrl && (
+            <img
+              src={establecimientoLogoUrl}
+              alt="Logo establecimiento"
+              title="Haz clic para ampliar"
+              className="punto-est-logo-corner"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setViewerImage(establecimientoLogoUrl);
+                setViewerOpen(true);
+              }}
+            />
+          )}
+
           <div className="punto-card-header">
             <div className="punto-card-icon">🏪</div>
             <span className="punto-card-title">Establecimiento</span>
@@ -140,6 +281,10 @@ const PuntoEmisionInfo: React.FC = () => {
               <span className="punto-card-value">{establecimiento?.nombre ?? '-'}</span>
             </div>
             <div className="punto-card-row">
+              <span className="punto-card-label">Nombre comercial</span>
+              <span className="punto-card-value punto-one-line">{establecimiento?.nombre_comercial ?? '-'}</span>
+            </div>
+            <div className="punto-card-row">
               <span className="punto-card-label">Dirección</span>
               <span className="punto-card-value">{establecimiento?.direccion ?? '-'}</span>
             </div>
@@ -148,18 +293,68 @@ const PuntoEmisionInfo: React.FC = () => {
               <span className="punto-card-value" style={{ fontSize: '13px' }}>{establecimiento?.correo ?? '-'}</span>
             </div>
             <div className="punto-card-row">
+              <span className="punto-card-label">Teléfono</span>
+              <span className="punto-card-value">{establecimiento?.telefono ?? '-'}</span>
+            </div>
+            <div className="punto-card-row">
               <span className="punto-card-label">Estado</span>
               <span className={`punto-card-status ${establecimiento?.estado === 'ACTIVO' ? 'active' : 'inactive'}`}>
                 {establecimiento?.estado === 'ACTIVO' ? '✓ Activo' : establecimiento?.estado ?? '-'}
               </span>
             </div>
           </div>
-        </div>
+        </Link>
       </div>
 
       {/* ========== CONTENIDO PRINCIPAL ========== */}
       <div className="punto-main-content">
         <div className="punto-detail-card">
+          <PuntoEmisionFormModal
+            isOpen={editOpen}
+            onClose={() => setEditOpen(false)}
+            onSave={async (puntoEmision) => {
+              if (!id || !estId || !puntoId) return;
+              try {
+                await puntosEmisionApi.update(parseInt(id, 10), parseInt(estId, 10), parseInt(puntoId, 10), puntoEmision);
+                show({ title: 'Éxito', message: 'Punto de emisión actualizado correctamente', type: 'success' });
+                setEditOpen(false);
+
+                const [pRes, eRes, cRes] = await Promise.all([
+                  puntosEmisionApi.show(id, estId, puntoId),
+                  establecimientosApi.show(id, estId),
+                  emisoresApi.get(id)
+                ]);
+                setPunto(pRes.data?.data ?? pRes.data);
+                setEstablecimiento(eRes.data?.data ?? eRes.data);
+                setEmisor(cRes.data?.data ?? cRes.data);
+              } catch (error: any) {
+                show({
+                  title: 'Error',
+                  message: error?.response?.data?.message || 'No se pudo actualizar el punto de emisión',
+                  type: 'error'
+                });
+              }
+            }}
+            initialData={punto}
+            companyId={id ? parseInt(id, 10) : undefined}
+            establecimientoId={estId ? parseInt(estId, 10) : undefined}
+            existingPuntos={establecimiento?.puntos_emision || []}
+          />
+
+          <PuntoEmisionDeleteModal
+            isOpen={deleteOpen}
+            onClose={() => setDeleteOpen(false)}
+            onSuccess={() => {
+              setDeleteOpen(false);
+              if (id && estId) navigate(`/emisores/${id}/establecimientos/${estId}`);
+            }}
+            punto={punto}
+            companyId={id ? parseInt(id, 10) : undefined}
+            establecimientoId={estId ? parseInt(estId, 10) : undefined}
+            onError={(message) => show({ title: 'Error', message, type: 'error' })}
+            onSuccess_notification={(message) => show({ title: 'Éxito', message, type: 'success' })}
+          />
+
           {/* Header */}
           <div className="punto-detail-header">
             <div className="punto-detail-icon">📍</div>
@@ -179,11 +374,19 @@ const PuntoEmisionInfo: React.FC = () => {
               <span className="punto-info-label">Nombre</span>
               <span className="punto-info-value">{punto?.nombre ?? '-'}</span>
             </div>
-            <div className="punto-info-item">
+            <div className="punto-info-item punto-info-item-center">
               <span className="punto-info-label">Estado de operatividad</span>
               <div className={`punto-status-badge ${punto?.estado === 'ACTIVO' ? 'active' : 'inactive'}`}>
                 <span className="punto-status-dot"></span>
-                {punto?.estado ?? '-'}
+                {operatividadText()}
+              </div>
+            </div>
+
+            <div className="punto-info-item punto-info-item-center">
+              <span className="punto-info-label">Estado de disponibilidad</span>
+              <div className={`punto-availability-badge ${disponibilidadClass()}`}>
+                <span className="punto-availability-dot"></span>
+                {disponibilidadText()}
               </div>
             </div>
             <div className="punto-info-item">
