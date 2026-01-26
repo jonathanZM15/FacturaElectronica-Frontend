@@ -13,8 +13,8 @@ interface EmisorUsuarioFormModalProps {
   emiId: string | number;
   editingId?: string | number | null;
   initialData?: User | null;
-  establecimientos: Array<{ id: number; nombre: string; codigo: string }>;
-  puntosEmision: Array<{ id: number; nombre: string; establecimiento_id: number }>;
+  establecimientos: Array<{ id: number; nombre: string; codigo: string; estado?: string | null }>;
+  puntosEmision: Array<{ id: number; nombre: string; establecimiento_id: number; codigo?: string | null; estado?: string | null; estado_disponibilidad?: string | null }>;
   onCreated?: (usuario: User) => void;
   onUpdated?: (usuario: User) => void;
 }
@@ -49,6 +49,74 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
   const [estado, setEstado] = React.useState<string>('nuevo');
   const isEditing = React.useMemo(() => Boolean(editingId), [editingId]);
 
+  const getEstadoEstablecimiento = React.useCallback((est: { estado?: string | null }) => {
+    // Si el backend no envía estado, asumimos ABIERTO para no dejar la UI vacía.
+    return (est.estado ?? 'ABIERTO').toString().trim().toUpperCase();
+  }, []);
+
+  const compareCodigoDesc = React.useCallback((aCodigoRaw?: string | null, bCodigoRaw?: string | null) => {
+    const aCodigo = (aCodigoRaw ?? '').toString();
+    const bCodigo = (bCodigoRaw ?? '').toString();
+    return bCodigo.localeCompare(aCodigo, undefined, { numeric: true, sensitivity: 'base' });
+  }, []);
+
+  const normalizeUpper = React.useCallback((value?: string | null) => {
+    return (value ?? '').toString().trim().toUpperCase();
+  }, []);
+
+  const getPuntoOperatividad = React.useCallback((punto: any) => {
+    // Distintos endpoints pueden devolver nombres distintos.
+    return normalizeUpper(punto?.estado ?? punto?.estado_operatividad ?? punto?.estadoOperatividad);
+  }, [normalizeUpper]);
+
+  const getPuntoDisponibilidad = React.useCallback((punto: any) => {
+    // Si viene vacío/undefined, el resto de la UI lo trata como "Libre".
+    const raw = punto?.estado_disponibilidad ?? punto?.estadoDisponibilidad ?? punto?.disponibilidad;
+    const normalized = normalizeUpper(raw);
+    return normalized || 'LIBRE';
+  }, [normalizeUpper]);
+
+  const isPuntoActivoYLibre = React.useCallback((punto: any) => {
+    return getPuntoOperatividad(punto) === 'ACTIVO' && getPuntoDisponibilidad(punto) === 'LIBRE';
+  }, [getPuntoOperatividad, getPuntoDisponibilidad]);
+
+  const availableEstablecimientos = React.useMemo(() => {
+    // Requisito: al registrar y en edición, solo mostrar establecimientos ABIERTO.
+    return establecimientos
+      .filter((e) => getEstadoEstablecimiento(e) === 'ABIERTO')
+      .slice()
+      .sort((a, b) => compareCodigoDesc(a.codigo, b.codigo));
+  }, [establecimientos, getEstadoEstablecimiento, compareCodigoDesc]);
+
+  const availableEstablecimientosIds = React.useMemo(() => {
+    return availableEstablecimientos.map((e) => e.id);
+  }, [availableEstablecimientos]);
+
+  React.useEffect(() => {
+    if (!open) return;
+
+    const allowed = new Set(availableEstablecimientosIds);
+
+    setSelectedEstablecimientos((prev) => {
+      const next = prev.filter((id) => allowed.has(id));
+      if (next.length === prev.length) return prev;
+      return next;
+    });
+
+    setSelectedPuntosPorEstablecimiento((prev) => {
+      let changed = false;
+      const next: Record<number, number | null> = { ...prev };
+      for (const key of Object.keys(next)) {
+        const estId = Number(key);
+        if (!allowed.has(estId)) {
+          delete next[estId];
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [open, availableEstablecimientosIds]);
+
   // Obtener roles permitidos según el rol del usuario actual
   const getRolesPermitidos = React.useMemo(() => {
     if (!currentUser) return [];
@@ -67,10 +135,11 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
 
   const activeEstablecimientos = React.useMemo(() => {
     if (role === 'emisor') {
-      return establecimientos.map(est => est.id);
+      return availableEstablecimientos.map(est => est.id);
     }
-    return selectedEstablecimientos;
-  }, [role, establecimientos, selectedEstablecimientos]);
+    const allowed = new Set(availableEstablecimientosIds);
+    return selectedEstablecimientos.filter((id) => allowed.has(id));
+  }, [role, availableEstablecimientos, availableEstablecimientosIds, selectedEstablecimientos]);
 
   React.useEffect(() => {
     setSelectedPuntosPorEstablecimiento((prev) => {
@@ -79,9 +148,14 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
 
       activeEstablecimientos.forEach((estId) => {
         const prevValue = Object.prototype.hasOwnProperty.call(prev, estId) ? prev[estId] : null;
-        const isValid = prevValue && puntosEmision.some(
-          (p) => p.id === prevValue && Number(p.establecimiento_id) === Number(estId)
-        ) ? prevValue : null;
+        const isValid = prevValue && puntosEmision.some((p) => {
+          if (p.id !== prevValue) return false;
+          if (Number(p.establecimiento_id) !== Number(estId)) return false;
+          // Solo permitir puntos activos y libres
+          return isPuntoActivoYLibre(p);
+        })
+          ? prevValue
+          : null;
         next[estId] = isValid;
         if (!changed && isValid !== prevValue) {
           changed = true;
@@ -105,7 +179,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
 
       return changed ? next : prev;
     });
-  }, [activeEstablecimientos, puntosEmision]);
+  }, [activeEstablecimientos, puntosEmision, isPuntoActivoYLibre]);
 
   const handlePuntoSelection = React.useCallback((estId: number, value: string) => {
     setSelectedPuntosPorEstablecimiento((prev) => ({
@@ -115,8 +189,12 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
   }, []);
 
   const getPuntosForEstablecimiento = React.useCallback((estId: number) => {
-    return puntosEmision.filter((p) => Number(p.establecimiento_id) === Number(estId));
-  }, [puntosEmision]);
+    return puntosEmision
+      .filter((p) => Number(p.establecimiento_id) === Number(estId))
+      .filter((p) => isPuntoActivoYLibre(p))
+      .slice()
+      .sort((a, b) => compareCodigoDesc(a.codigo, b.codigo));
+  }, [puntosEmision, isPuntoActivoYLibre, compareCodigoDesc]);
 
   React.useEffect(() => {
     if (open && initialData) {
@@ -176,6 +254,45 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
+  const canSubmit = React.useMemo(() => {
+    if (loading || resendingEmail || checkingEmail || checkingUsername) return false;
+
+    const cedulaV = validateCedulaEcuatoriana(cedula.trim());
+    const nombresV = validateNombre(nombres.trim(), 'nombres');
+    const apellidosV = validateNombre(apellidos.trim(), 'apellidos');
+    const emailV = validateEmail(email.trim());
+    const usernameV = validateUsername(username.trim());
+
+    const establecimientosOk =
+      role === 'gerente' || role === 'cajero' ? selectedEstablecimientos.length > 0 : true;
+
+    const hasAnyInlineErrors = Object.values(errors).some((e) => e && e.length > 0);
+
+    return (
+      cedulaV.valid &&
+      nombresV.valid &&
+      apellidosV.valid &&
+      emailV.valid &&
+      usernameV.valid &&
+      Boolean(role) &&
+      establecimientosOk &&
+      !hasAnyInlineErrors
+    );
+  }, [
+    apellidos,
+    cedula,
+    checkingEmail,
+    checkingUsername,
+    email,
+    errors,
+    loading,
+    nombres,
+    resendingEmail,
+    role,
+    selectedEstablecimientos.length,
+    username
+  ]);
 
   const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -566,7 +683,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                 </div>
               </div>
               
-              {establecimientos.length === 0 ? (
+              {availableEstablecimientos.length === 0 ? (
                 <div style={{ 
                   background: '#ffffff',
                   border: '1px solid #e2e8f0',
@@ -585,7 +702,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                   }}>
                     <span style={{ fontSize: 24 }}>⚠️</span>
                     <p style={{ fontSize: 14, color: '#92400e', margin: 0, fontWeight: 600 }}>
-                      No hay establecimientos disponibles para asignar. Debe crear establecimientos primero.
+                      No hay establecimientos en estado <strong>ABIERTO</strong> disponibles para asignar.
                     </p>
                   </div>
                 </div>
@@ -600,7 +717,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                   overflowY: 'auto'
                 }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {establecimientos.map((est, index) => (
+                    {availableEstablecimientos.map((est, index) => (
                       <label 
                         key={est.id} 
                         style={{ 
@@ -717,6 +834,25 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                   </span>
                 </div>
               )}
+
+              {/* Mensaje cuando no se ha seleccionado ningún establecimiento */}
+              {(role === 'gerente' || role === 'cajero') && selectedEstablecimientos.length === 0 && (
+                <div style={{
+                  marginTop: 10,
+                  padding: '12px 14px',
+                  background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                  border: '1px solid #fbbf24',
+                  borderRadius: 8,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10
+                }}>
+                  <span style={{ fontSize: 18 }}>⚠️</span>
+                  <span style={{ fontSize: 13, color: '#92400e', fontWeight: 700 }}>
+                    No se ha seleccionado ningún establecimiento.
+                  </span>
+                </div>
+              )}
             </div>
           )}
 
@@ -733,7 +869,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
           )}
 
           {/* Puntos de Emisión - uno por establecimiento */}
-          {activeEstablecimientos.length > 0 && (
+          {activeEstablecimientos.length > 0 ? (
             <div style={{ marginBottom: 20 }}>
               <div style={{ 
                 background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
@@ -779,7 +915,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                 gap: 14
               }}>
                 {activeEstablecimientos.map((estId, index) => {
-                  const estInfo = establecimientos.find((est) => est.id === estId);
+                  const estInfo = availableEstablecimientos.find((est) => est.id === estId);
                   const puntosDisponibles = getPuntosForEstablecimiento(estId);
                   const selectedPuntoId = selectedPuntosPorEstablecimiento[estId];
 
@@ -860,7 +996,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                           }}>
                             <span style={{ fontSize: 20 }}>⚠️</span>
                             <p style={{ fontSize: 13, color: '#92400e', margin: 0, fontWeight: 600 }}>
-                              No hay puntos de emisión disponibles para este establecimiento
+                              No hay puntos de emisión disponibles (Activo y Libre) para este establecimiento
                             </p>
                           </div>
                         ) : (
@@ -897,7 +1033,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                               <option value="">🔘 Sin punto asignado</option>
                               {puntosDisponibles.map((punto) => (
                                 <option key={punto.id} value={String(punto.id)}>
-                                  ✓ {punto.nombre}
+                                  {punto.codigo ? `${punto.codigo} – ${punto.nombre}` : punto.nombre}
                                 </option>
                               ))}
                             </select>
@@ -909,6 +1045,26 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                 })}
               </div>
             </div>
+          ) : (
+            // Placeholder cuando aún no hay establecimientos seleccionados
+            (role === 'gerente' || role === 'cajero') && (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{
+                  padding: '14px 16px',
+                  background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                  border: '1px solid #fbbf24',
+                  borderRadius: 10,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10
+                }}>
+                  <span style={{ fontSize: 18 }}>ℹ️</span>
+                  <span style={{ fontSize: 13, color: '#92400e', fontWeight: 700 }}>
+                    Selecciona al menos un establecimiento para poder asignar puntos de emisión.
+                  </span>
+                </div>
+              </div>
+            )
           )}
 
           {/* Botones de acción */}
@@ -945,7 +1101,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
 
             <button
               type="submit"
-              disabled={loading || resendingEmail || Object.values(errors).some(e => e && e.length > 0)}
+              disabled={!canSubmit}
               className="btn-submit"
             >
               {loading ? (

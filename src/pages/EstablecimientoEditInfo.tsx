@@ -491,7 +491,7 @@ const EstablecimientoEditInfo: React.FC = () => {
 
           <button 
             className="estd-back-btn"
-            onClick={() => navigate(`/emisores/${id}?tab=establecimientos`)}
+            onClick={() => navigate(`/emisores/${id}/establecimientos`)}
           >
             ← Volver
           </button>

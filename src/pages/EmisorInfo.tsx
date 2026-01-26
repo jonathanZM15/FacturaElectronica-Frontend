@@ -28,9 +28,36 @@ const EmisorInfo: React.FC = () => {
   const { show } = useNotification();
   const { user } = useUser();
   const role = user?.role?.toLowerCase?.() ?? '';
+  type TabKey = 'emisor' | 'establecimientos' | 'usuarios' | 'suscripciones';
   const [loading, setLoading] = React.useState(false);
   const [company, setCompany] = React.useState<any | null>(null);
-  const [tab, setTab] = React.useState<'emisor'|'establecimientos'|'usuarios'|'suscripciones'>('emisor');
+
+  const tab = React.useMemo<TabKey>(() => {
+    if (!id) return 'emisor';
+    const base = `/emisores/${id}`;
+    const path = location.pathname;
+    if (path.startsWith(`${base}/establecimientos`)) return 'establecimientos';
+    if (path.startsWith(`${base}/usuarios`)) return 'usuarios';
+    if (path.startsWith(`${base}/suscripciones`)) return 'suscripciones';
+    return 'emisor';
+  }, [id, location.pathname]);
+
+  const navigateToTab = React.useCallback(
+    (targetTab: TabKey) => {
+      if (!id) return;
+      if (targetTab === 'emisor') {
+        navigate(`/emisores/${id}`);
+        return;
+      }
+      navigate(`/emisores/${id}/${targetTab}`);
+    },
+    [id, navigate]
+  );
+
+  const handleClose = React.useCallback(() => {
+    // Requisito: el botón ✕ siempre debe volver al listado de emisores.
+    navigate('/emisores');
+  }, [navigate]);
   const [openEdit, setOpenEdit] = React.useState(false);
   const [openNewEst, setOpenNewEst] = React.useState(false);
   const [editEst, setEditEst] = React.useState<any | null>(null);
@@ -81,14 +108,29 @@ const EmisorInfo: React.FC = () => {
     }
   }, [id, company, show]);
 
-  // Detectar si viene de un establecimiento para mostrar la pestaña de establecimientos
+  // Compatibilidad: soportar el antiguo formato ?tab=... y redirigir a rutas
   React.useEffect(() => {
+    if (!id) return;
     const params = new URLSearchParams(location.search);
     const tabFromUrl = params.get('tab');
-    if (tabFromUrl === 'establecimientos') {
-      setTab('establecimientos');
-    }
-  }, [location.search]);
+    if (!tabFromUrl) return;
+
+    const normalized = tabFromUrl.toLowerCase();
+    const allowed: Record<string, TabKey> = {
+      emisor: 'emisor',
+      establecimientos: 'establecimientos',
+      usuarios: 'usuarios',
+      suscripciones: 'suscripciones'
+    };
+
+    const nextTab = allowed[normalized];
+    if (!nextTab) return;
+
+    params.delete('tab');
+    const remaining = params.toString();
+    const pathname = nextTab === 'emisor' ? `/emisores/${id}` : `/emisores/${id}/${nextTab}`;
+    navigate({ pathname, search: remaining ? `?${remaining}` : '' }, { replace: true });
+  }, [id, location.search, navigate]);
 
   // Delete flow states (emisor)
   const [confirmOpen, setConfirmOpen] = React.useState(false);
@@ -463,7 +505,7 @@ const EmisorInfo: React.FC = () => {
             )}
             <button
               className="emisor-close-btn"
-              onClick={() => navigate('/emisores')}
+              onClick={handleClose}
               title="Volver a emisores"
             >
               ✕
@@ -489,7 +531,7 @@ const EmisorInfo: React.FC = () => {
             return (
               <button
                 key={t}
-                onClick={() => setTab(t)}
+                onClick={() => navigateToTab(t)}
                 className={`emisor-tab ${tab === t ? 'active' : ''}`}
               >
                 <span className="tab-icon">{icons[t]}</span>

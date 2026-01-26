@@ -275,15 +275,14 @@ body, html {
   margin-bottom: 24px;
   display: flex;
   flex-direction: column;
-  max-height: calc(100vh - 380px);
-  min-height: 500px;
+  max-height: none;
+  min-height: 0;
   border: 1px solid rgba(102, 126, 234, 0.1);
 }
 
 .usuarios-table-wrapper {
   overflow-x: auto;
-  overflow-y: auto;
-  flex: 1;
+  overflow-y: hidden;
   position: relative;
   z-index: auto;
 }

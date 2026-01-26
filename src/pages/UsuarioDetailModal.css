@@ -57,7 +57,7 @@
   position: relative;
   color: white;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 24px;
 }
 
@@ -81,6 +81,7 @@
 
 .header-info {
   flex: 1;
+  min-width: 0;
 }
 
 .user-name-large {
@@ -89,6 +90,7 @@
   font-weight: 700;
   color: white;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow-wrap: anywhere;
 }
 
 .user-username {
@@ -144,12 +146,15 @@
 
 /* Action Menu */
 .action-menu {
-  position: absolute;
-  top: 20px;
-  right: 80px;
+  position: static;
   display: flex;
   gap: 12px;
   z-index: 9;
+  margin-left: auto;
+  margin-right: 64px;
+  align-self: flex-start;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .action-button {
@@ -565,8 +570,10 @@
 
   .action-menu {
     position: static;
-    margin-top: 16px;
+    margin: 16px 0 0 0;
+    margin-right: 0;
     justify-content: center;
+    align-self: center;
   }
 
   .user-avatar-large {

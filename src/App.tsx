@@ -59,6 +59,9 @@ function App() {
                 {/* Ruta inicial autenticada */}
                 <Route path="/emisores" element={<Emisores />} />
                 <Route path="/emisores/:id" element={<EmisorInfo />} />
+                <Route path="/emisores/:id/establecimientos" element={<EmisorInfo />} />
+                <Route path="/emisores/:id/usuarios" element={<EmisorInfo />} />
+                <Route path="/emisores/:id/suscripciones" element={<EmisorInfo />} />
                 <Route path="/emisores/:id/establecimientos/:estId" element={<EstablecimientoEditInfo />} />
                 <Route path="/emisores/:id/establecimientos/:estId/puntos/:puntoId" element={<PuntoEmisionInfo />} />
                 
