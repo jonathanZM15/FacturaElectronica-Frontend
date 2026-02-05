@@ -28,18 +28,18 @@ export const usuariosApi = {
   },
 
   // Verificar si el username ya existe
-  checkUsername(username: string) {
-    return api.get('/api/usuarios/check/username', { params: { username } });
+  checkUsername(username: string, excludeId?: number | string) {
+    return api.get('/api/usuarios/check/username', { params: { username, exclude_id: excludeId } });
   },
 
   // Verificar si la cédula ya existe
-  checkCedula(cedula: string) {
-    return api.get('/api/usuarios/check/cedula', { params: { cedula } });
+  checkCedula(cedula: string, excludeId?: number | string) {
+    return api.get('/api/usuarios/check/cedula', { params: { cedula, exclude_id: excludeId } });
   },
 
   // Verificar si el email ya existe
-  checkEmail(email: string) {
-    return api.get('/api/usuarios/check/email', { params: { email } });
+  checkEmail(email: string, excludeId?: number | string) {
+    return api.get('/api/usuarios/check/email', { params: { email, exclude_id: excludeId } });
   },
 
   // Reenviar correo de verificación (con cambio de estado opcional)

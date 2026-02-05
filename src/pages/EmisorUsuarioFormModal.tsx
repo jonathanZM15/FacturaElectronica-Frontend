@@ -43,11 +43,15 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
   const [selectedPuntosPorEstablecimiento, setSelectedPuntosPorEstablecimiento] = React.useState<Record<number, number | null>>({});
   const [loading, setLoading] = React.useState(false);
   const [errors, setErrors] = React.useState<Record<string, string>>({});
+  const [checkingCedula, setCheckingCedula] = React.useState(false);
   const [checkingEmail, setCheckingEmail] = React.useState(false);
   const [checkingUsername, setCheckingUsername] = React.useState(false);
   const [resendingEmail, setResendingEmail] = React.useState(false);
   const [estado, setEstado] = React.useState<string>('nuevo');
   const isEditing = React.useMemo(() => Boolean(editingId), [editingId]);
+
+  const cedulaCheckTimeoutRef = React.useRef<number | null>(null);
+  const cedulaCheckSeqRef = React.useRef(0);
 
   const getEstadoEstablecimiento = React.useCallback((est: { estado?: string | null }) => {
     // Si el backend no envía estado, asumimos ABIERTO para no dejar la UI vacía.
@@ -243,7 +247,28 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
 
     // Validar restricciones de asociación por rol
     if (role === 'emisor') {
-      // Emisor: establecimientos opcionales
+      // Emisor: se asocia automáticamente a todos los establecimientos disponibles,
+      // y debe escoger un punto de emisión para cada establecimiento.
+      if (availableEstablecimientosIds.length === 0) {
+        newErrors.establecimientos = 'No hay establecimientos disponibles (ABIERTO) para asignar al Emisor.';
+      }
+      const estsSinSeleccion: string[] = [];
+
+      for (const estId of availableEstablecimientosIds) {
+        const estInfo = availableEstablecimientos.find((e) => e.id === estId);
+        const label = estInfo ? `${estInfo.codigo} - ${estInfo.nombre}` : `Establecimiento #${estId}`;
+        const puntosDisponibles = getPuntosForEstablecimiento(estId);
+        // Si no hay puntos disponibles, NO es obligatorio escoger.
+        if (puntosDisponibles.length === 0) continue;
+        const selected = selectedPuntosPorEstablecimiento[estId];
+        if (!selected) {
+          estsSinSeleccion.push(label);
+        }
+      }
+
+      if (estsSinSeleccion.length > 0) {
+        newErrors.puntos_emision_ids = `Debes seleccionar un punto de emisión para: ${estsSinSeleccion.join(', ')}`;
+      }
     } else if (role === 'gerente' || role === 'cajero') {
       // Gerente y Cajero: establecimientos obligatorios
       if (selectedEstablecimientos.length === 0) {
@@ -255,8 +280,72 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
+  const puntosEmisionStatus = React.useMemo(() => {
+    const isRoleConAsociacion = role === 'emisor' || role === 'gerente' || role === 'cajero';
+    if (!isRoleConAsociacion) return { ok: true, error: '' };
+
+    // Para gerente/cajero, no validar puntos hasta que haya establecimientos elegidos
+    if ((role === 'gerente' || role === 'cajero') && activeEstablecimientos.length === 0) {
+      return { ok: true, error: '' };
+    }
+
+    // Para emisor, debe haber establecimientos disponibles
+    if (role === 'emisor' && availableEstablecimientosIds.length === 0) {
+      return {
+        ok: false,
+        error: 'No hay establecimientos disponibles (ABIERTO) para asignar al Emisor.'
+      };
+    }
+
+    const estIdsToCheck = role === 'emisor' ? availableEstablecimientosIds : activeEstablecimientos;
+    const estsSinSeleccion: string[] = [];
+
+    for (const estId of estIdsToCheck) {
+      const estInfo = availableEstablecimientos.find((e) => e.id === estId);
+      const label = estInfo ? `${estInfo.codigo} - ${estInfo.nombre}` : `Establecimiento #${estId}`;
+      const puntosDisponibles = getPuntosForEstablecimiento(estId);
+      // Si no hay puntos disponibles, NO es obligatorio escoger.
+      if (puntosDisponibles.length === 0) continue;
+      const selected = selectedPuntosPorEstablecimiento[estId];
+      if (!selected) {
+        estsSinSeleccion.push(label);
+      }
+    }
+    if (estsSinSeleccion.length > 0) {
+      return {
+        ok: false,
+        error: `Debes seleccionar un punto de emisión para: ${estsSinSeleccion.join(', ')}`
+      };
+    }
+
+    return { ok: true, error: '' };
+  }, [
+    role,
+    activeEstablecimientos,
+    availableEstablecimientos,
+    availableEstablecimientosIds,
+    getPuntosForEstablecimiento,
+    selectedPuntosPorEstablecimiento
+  ]);
+
+  React.useEffect(() => {
+    if (!open) return;
+    setErrors((prev) => {
+      const current = prev.puntos_emision_ids || '';
+      const nextMsg = puntosEmisionStatus.error || '';
+      if (current === nextMsg) return prev;
+      const next = { ...prev };
+      if (nextMsg) {
+        next.puntos_emision_ids = nextMsg;
+      } else {
+        delete next.puntos_emision_ids;
+      }
+      return next;
+    });
+  }, [open, puntosEmisionStatus.error]);
+
   const canSubmit = React.useMemo(() => {
-    if (loading || resendingEmail || checkingEmail || checkingUsername) return false;
+    if (loading || resendingEmail || checkingCedula || checkingEmail || checkingUsername) return false;
 
     const cedulaV = validateCedulaEcuatoriana(cedula.trim());
     const nombresV = validateNombre(nombres.trim(), 'nombres');
@@ -265,7 +354,11 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
     const usernameV = validateUsername(username.trim());
 
     const establecimientosOk =
-      role === 'gerente' || role === 'cajero' ? selectedEstablecimientos.length > 0 : true;
+      role === 'emisor'
+        ? availableEstablecimientosIds.length > 0
+        : role === 'gerente' || role === 'cajero'
+          ? selectedEstablecimientos.length > 0
+          : true;
 
     const hasAnyInlineErrors = Object.values(errors).some((e) => e && e.length > 0);
 
@@ -277,11 +370,13 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
       usernameV.valid &&
       Boolean(role) &&
       establecimientosOk &&
+      puntosEmisionStatus.ok &&
       !hasAnyInlineErrors
     );
   }, [
     apellidos,
     cedula,
+    checkingCedula,
     checkingEmail,
     checkingUsername,
     email,
@@ -291,6 +386,8 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
     resendingEmail,
     role,
     selectedEstablecimientos.length,
+    availableEstablecimientosIds.length,
+    puntosEmisionStatus.ok,
     username
   ]);
 
@@ -305,17 +402,18 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
 
     // Verificar disponibilidad si es válido y tiene al menos 4 caracteres
     if (value.length >= 4 && !error && (!isEditing || value !== initialData?.username)) {
-      const timer = setTimeout(async () => {
+      setTimeout(async () => {
         setCheckingUsername(true);
         try {
-          await usuariosEmisorApi.checkUsername(value);
-          setErrors((prev) => ({ ...prev, username: '❌ Este nombre de usuario ya está registrado. Por favor elige otro.' }));
-        } catch (err: any) {
-          if (err?.response?.status === 404) {
-            setErrors((prev) => ({ ...prev, username: '' }));
+          const res = await usuariosEmisorApi.checkUsername(value, editingId || undefined);
+          const available = res?.data?.available ?? !res?.data?.exists;
+          if (!available) {
+            setErrors((prev) => ({ ...prev, username: '❌ Este nombre de usuario ya está registrado. Por favor elige otro.' }));
           } else {
-            show({ title: 'Error', message: 'No se pudo verificar el nombre de usuario', type: 'error' });
+            setErrors((prev) => ({ ...prev, username: '' }));
           }
+        } catch (err: any) {
+          show({ title: 'Error', message: 'No se pudo verificar el nombre de usuario', type: 'error' });
         } finally {
           setCheckingUsername(false);
         }
@@ -334,17 +432,18 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
 
     // Verificar disponibilidad si es válido y no está editando
     if (validation.valid && (!isEditing || value !== initialData?.email)) {
-      const timer = setTimeout(async () => {
+      setTimeout(async () => {
         setCheckingEmail(true);
         try {
-          await usuariosEmisorApi.checkEmail(value);
-          setErrors((prev) => ({ ...prev, email: '❌ Este correo electrónico ya está registrado en el sistema. Por favor usa otro.' }));
-        } catch (err: any) {
-          if (err?.response?.status === 404) {
-            setErrors((prev) => ({ ...prev, email: '' }));
+          const res = await usuariosEmisorApi.checkEmail(value, editingId || undefined);
+          const available = res?.data?.available ?? !res?.data?.exists;
+          if (!available) {
+            setErrors((prev) => ({ ...prev, email: '❌ Este correo electrónico ya está registrado en el sistema. Por favor usa otro.' }));
           } else {
-            show({ title: 'Error', message: 'No se pudo verificar el correo', type: 'error' });
+            setErrors((prev) => ({ ...prev, email: '' }));
           }
+        } catch (err: any) {
+          show({ title: 'Error', message: 'No se pudo verificar el correo', type: 'error' });
         } finally {
           setCheckingEmail(false);
         }
@@ -360,6 +459,43 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
     const validation = validateCedulaEcuatoriana(value);
     const error = validation.valid ? '' : (validation.error || '');
     setErrors((prev) => ({ ...prev, cedula: error }));
+
+    if (cedulaCheckTimeoutRef.current) {
+      clearTimeout(cedulaCheckTimeoutRef.current);
+      cedulaCheckTimeoutRef.current = null;
+    }
+
+    // Solo verificar disponibilidad si la cédula es válida y completa
+    if (!validation.valid || value.length !== 10) {
+      return;
+    }
+
+    // En edición, si no cambió, no verificar
+    if (isEditing && value === (initialData?.cedula || '')) {
+      return;
+    }
+
+    const seq = ++cedulaCheckSeqRef.current;
+    cedulaCheckTimeoutRef.current = window.setTimeout(async () => {
+      setCheckingCedula(true);
+      try {
+        const res = await usuariosEmisorApi.checkCedula(value, editingId || undefined);
+        if (seq !== cedulaCheckSeqRef.current) return;
+
+        const available = res?.data?.available ?? !res?.data?.exists;
+        setErrors((prev) => ({
+          ...prev,
+          cedula: available ? '' : '❌ Esta cédula ya está registrada en el sistema.'
+        }));
+      } catch (err: any) {
+        if (seq !== cedulaCheckSeqRef.current) return;
+        show({ title: 'Error', message: 'No se pudo verificar la cédula', type: 'error' });
+      } finally {
+        if (seq === cedulaCheckSeqRef.current) {
+          setCheckingCedula(false);
+        }
+      }
+    }, 450);
   };
 
   const handleNombresChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -450,8 +586,8 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
 
       // Aplicar reglas de asociación según el rol
       if (role === 'emisor') {
-        // Emisor: no es obligatorio, se asocia automáticamente a todos, pero se permiten puntos por establecimiento
-        payload.establecimientos_ids = [];
+        // Emisor: se asocia automáticamente a todos los establecimientos disponibles
+        payload.establecimientos_ids = availableEstablecimientosIds;
         payload.puntos_emision_ids = puntosAsignados;
       } else if (role === 'gerente' || role === 'cajero') {
         // Gerente y Cajero: establecimientos obligatorios
@@ -914,6 +1050,19 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                 flexDirection: 'column', 
                 gap: 14
               }}>
+                {errors.puntos_emision_ids && (
+                  <div style={{
+                    padding: '12px 14px',
+                    background: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)',
+                    border: '1px solid #ef4444',
+                    borderRadius: 10,
+                    color: '#991b1b',
+                    fontSize: 13,
+                    fontWeight: 700
+                  }}>
+                    {errors.puntos_emision_ids}
+                  </div>
+                )}
                 {activeEstablecimientos.map((estId, index) => {
                   const estInfo = availableEstablecimientos.find((est) => est.id === estId);
                   const puntosDisponibles = getPuntosForEstablecimiento(estId);

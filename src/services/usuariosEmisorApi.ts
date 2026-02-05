@@ -41,16 +41,23 @@ export const usuariosEmisorApi = {
   },
 
   // Verificar disponibilidad de email
-  checkEmail: async (email: string) => {
+  checkEmail: async (email: string, excludeId?: number | string) => {
     return api.get(`/usuarios/check/email`, {
-      params: { email }
+      params: { email, exclude_id: excludeId }
+    });
+  },
+
+  // Verificar disponibilidad de cédula
+  checkCedula: async (cedula: string, excludeId?: number | string) => {
+    return api.get(`/usuarios/check/cedula`, {
+      params: { cedula, exclude_id: excludeId }
     });
   },
 
   // Verificar disponibilidad de username
-  checkUsername: async (username: string) => {
+  checkUsername: async (username: string, excludeId?: number | string) => {
     return api.get(`/usuarios/check/username`, {
-      params: { username }
+      params: { username, exclude_id: excludeId }
     });
   },
 

@@ -144,19 +144,21 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
     // Verificar disponibilidad si tiene 10 dígitos y es válida
     if (value.length === 10 && !error && !isEditing) {
       setCheckingCedula(true);
-      const timer = setTimeout(async () => {
+      setTimeout(async () => {
         try {
-          await usuariosApi.checkCedula(value);
-          setErrors(prev => ({ ...prev, cedula: '❌ Esta cédula ya está registrada en el sistema' }));
-        } catch (err: any) {
-          // Si da error 404, significa que no existe, es válida
-          if (err?.response?.status === 404) {
+          const res = await usuariosApi.checkCedula(value);
+          const available = res?.data?.available ?? !res?.data?.exists;
+          if (!available) {
+            setErrors(prev => ({ ...prev, cedula: '❌ Esta cédula ya está registrada en el sistema' }));
+          } else {
             setErrors(prev => {
               const newErrors = { ...prev };
               delete newErrors.cedula;
               return newErrors;
             });
           }
+        } catch (err: any) {
+          // Si hay error de red/servidor, no bloquear el formulario con un falso positivo
         } finally {
           setCheckingCedula(false);
         }
@@ -203,19 +205,21 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
     // Verificar disponibilidad si es válido y tiene al menos 4 caracteres
     if (value.length >= 4 && !error && !isEditing) {
       setCheckingUsername(true);
-      const timer = setTimeout(async () => {
+      setTimeout(async () => {
         try {
-          await usuariosApi.checkUsername(value);
-          setErrors(prev => ({ ...prev, username: '❌ Este nombre de usuario ya está registrado. Por favor elige otro.' }));
-        } catch (err: any) {
-          // Si da error 404, significa que no existe, es válido
-          if (err?.response?.status === 404) {
+          const res = await usuariosApi.checkUsername(value);
+          const available = res?.data?.available ?? !res?.data?.exists;
+          if (!available) {
+            setErrors(prev => ({ ...prev, username: '❌ Este nombre de usuario ya está registrado. Por favor elige otro.' }));
+          } else {
             setErrors(prev => {
               const newErrors = { ...prev };
               delete newErrors.username;
               return newErrors;
             });
           }
+        } catch (err: any) {
+          // Error de red/servidor: no marcar como ocupado
         } finally {
           setCheckingUsername(false);
         }
@@ -236,19 +240,21 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
     // Verificar disponibilidad si es válido y no está editando
     if (validation.valid && !isEditing) {
       setCheckingEmail(true);
-      const timer = setTimeout(async () => {
+      setTimeout(async () => {
         try {
-          await usuariosApi.checkEmail(value);
-          setErrors(prev => ({ ...prev, email: '❌ Este correo electrónico ya está registrado en el sistema. Por favor usa otro.' }));
-        } catch (err: any) {
-          // Si da error 404, significa que no existe, es válido
-          if (err?.response?.status === 404) {
+          const res = await usuariosApi.checkEmail(value);
+          const available = res?.data?.available ?? !res?.data?.exists;
+          if (!available) {
+            setErrors(prev => ({ ...prev, email: '❌ Este correo electrónico ya está registrado en el sistema. Por favor usa otro.' }));
+          } else {
             setErrors(prev => {
               const newErrors = { ...prev };
               delete newErrors.email;
               return newErrors;
             });
           }
+        } catch (err: any) {
+          // Error de red/servidor: no marcar como ocupado
         } finally {
           setCheckingEmail(false);
         }
