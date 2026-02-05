@@ -1,46 +1,130 @@
-# Getting Started with Create React App
+﻿# 🧾 Factura Electrónica - Frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Interfaz de usuario moderna para el sistema de facturación electrónica **Máximo Facturas**, desarrollada con React 19 y TypeScript.
 
-## Available Scripts
+## 📋 Descripción
 
-In the project directory, you can run:
+Aplicación web SPA (Single Page Application) que proporciona una interfaz intuitiva y responsiva para:
 
-### `npm start`
+- 🔐 Inicio de sesión y gestión de sesiones
+- 👥 Administración de usuarios con diferentes roles
+- 🏢 Gestión de emisores y puntos de emisión
+- 📄 Emisión y consulta de facturas electrónicas
+- 💰 Gestión de retenciones
+- 📧 Verificación de email y cambio de contraseña
+- 📊 Dashboard con estadísticas
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+## 🛠️ Tecnologías
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+- **React** ^19.2.0
+- **TypeScript** ^4.9.5
+- **React Router DOM** ^6.30.1 (Navegación)
+- **Axios** ^1.12.2 (Cliente HTTP)
+- **CSS3** con diseño moderno (Glass morphism, animaciones)
 
-### `npm test`
+## 📦 Requisitos Previos
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- Node.js >= 16.x
+- NPM >= 8.x
 
-### `npm run build`
+## 🚀 Instalación
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+1. **Clonar el repositorio**
+   ```bash
+   git clone https://github.com/jonathanZM15/FacturaElectronica-Frontend.git
+   cd FacturaElectronica-Frontend
+   ```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+2. **Instalar dependencias**
+   ```bash
+   npm install
+   ```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+3. **Configurar la URL del API**
+   
+   Crear archivo `.env` en la raíz del proyecto:
+   ```env
+   REACT_APP_API_URL=http://localhost:8000/api
+   ```
 
-### `npm run eject`
+4. **Iniciar en modo desarrollo**
+   ```bash
+   npm start
+   ```
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+La aplicación estará disponible en `http://localhost:3000`
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## 📁 Estructura del Proyecto
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+```
+src/
+├── components/       # Componentes reutilizables
+│   ├── Navbar/
+│   ├── Sidebar/
+│   └── ...
+├── pages/            # Páginas/Vistas principales
+│   ├── Login.tsx
+│   ├── Dashboard.tsx
+│   ├── Usuarios.tsx
+│   ├── Facturas.tsx
+│   ├── Retenciones.tsx
+│   ├── VerifyEmail.tsx
+│   └── ...
+├── services/         # Servicios de API
+│   └── api.ts
+├── context/          # Context API (Estado global)
+├── hooks/            # Custom Hooks
+├── types/            # Definiciones TypeScript
+├── App.tsx           # Componente principal
+└── index.tsx         # Punto de entrada
+```
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+## 🎨 Características de UI/UX
 
-## Learn More
+- ✨ Diseño moderno con efecto Glass morphism
+- 📱 Totalmente responsivo (Mobile-first)
+- 🌙 Interfaz limpia y profesional
+- ⚡ Animaciones sutiles y transiciones suaves
+- 🔔 Sistema de notificaciones toast
+- 👁️ Toggle para mostrar/ocultar contraseñas
+- ✅ Validación de formularios en tiempo real
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## 📜 Scripts Disponibles
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+| Comando | Descripción |
+|---------|-------------|
+| `npm start` | Inicia el servidor de desarrollo |
+| `npm run build` | Genera build de producción |
+| `npm test` | Ejecuta los tests |
+| `npm run eject` | Expone la configuración de CRA |
+
+## 🔧 Build para Producción
+
+```bash
+npm run build
+```
+
+Los archivos optimizados se generarán en la carpeta `build/`.
+
+## 🔗 Conexión con Backend
+
+Este frontend se conecta con el API REST de Laravel:
+- **Repositorio Backend**: [FacturaElectronica-Backend](https://github.com/jonathanZM15/FacturaElectronica-Backend)
+
+Asegúrate de que el backend esté corriendo antes de usar el frontend.
+
+## 🔐 Flujo de Autenticación
+
+1. Usuario ingresa credenciales en Login
+2. Backend valida y retorna token (Sanctum)
+3. Token se almacena en localStorage
+4. Todas las peticiones incluyen el token
+5. Rutas protegidas según rol de usuario
+
+## 📄 Licencia
+
+Este proyecto está bajo la Licencia MIT.
+
+## 👥 Autores
+
+Desarrollado para **Máximo Facturas**
