@@ -30,7 +30,32 @@ const Login: React.FC = () => {
     try {
       await login(c.username, c.password);
     } catch (err: any) {
-      show({ title: 'Credenciales Incorrectas', message: 'Verifique por favor su usuario o contraseña. Reintente iniciar sesión', type: 'error' });
+      const statusCode = err?.response?.status;
+      const serverMessage = err?.response?.data?.message;
+      
+      // Si el servidor envió un mensaje específico (cuenta bloqueada, estado inactivo, etc.)
+      if (statusCode === 403 && serverMessage) {
+        // Cuenta bloqueada o estado no activo
+        show({ 
+          title: '⚠️ Acceso Denegado', 
+          message: serverMessage, 
+          type: 'warning' 
+        }, 8000);
+      } else if (serverMessage) {
+        // Otro mensaje del servidor
+        show({ 
+          title: 'Credenciales Incorrectas', 
+          message: serverMessage, 
+          type: 'error' 
+        });
+      } else {
+        // Mensaje genérico
+        show({ 
+          title: 'Credenciales Incorrectas', 
+          message: 'Verifique por favor su usuario o contraseña. Reintente iniciar sesión', 
+          type: 'error' 
+        });
+      }
     } finally {
       setLoading(false);
     }

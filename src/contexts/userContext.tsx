@@ -66,6 +66,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(u);
         navigate('/emisores'); // ← ir directo a Emisores
       }
+    } catch (error) {
+      // Propagar el error para que el componente Login lo maneje
+      throw error;
     } finally {
       setLoading(false);
     }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import logo from '../assets/maximofactura.png';
 import whatsappIcon from '../assets/icon-whatsapp.jpeg';
@@ -18,11 +18,21 @@ const VerifyEmail: React.FC = () => {
   
   const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState(false);
+  const [alreadyUsed, setAlreadyUsed] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { show } = useNotification();
+  
+  // Ref para evitar llamadas duplicadas (React Strict Mode ejecuta useEffect dos veces)
+  const verificationAttempted = useRef(false);
 
   useEffect(() => {
     const verifyEmail = async () => {
+      // Evitar llamadas duplicadas
+      if (verificationAttempted.current) {
+        return;
+      }
+      verificationAttempted.current = true;
+
       if (!token) {
         setErrorMessage('Token de verificación no válido. Por favor, revisa el enlace que recibiste por correo.');
         setLoading(false);
@@ -46,13 +56,22 @@ const VerifyEmail: React.FC = () => {
           }, 5000);
         }
       } catch (error: any) {
-        const message = error?.response?.data?.message || 'Error al verificar el email. El token puede haber expirado o ya fue usado.';
-        setErrorMessage(message);
-        show({ 
-          title: '❌ Error', 
-          message, 
-          type: 'error' 
-        }, 6000);
+        const statusCode = error?.response?.status;
+        const errorCode = error?.response?.data?.code;
+        const message = error?.response?.data?.message || 'Error al verificar el email.';
+        
+        // Si el token ya fue usado (409 Conflict)
+        if (statusCode === 409 || errorCode === 'TOKEN_ALREADY_USED') {
+          setAlreadyUsed(true);
+          // No mostrar notificación de error, solo la pantalla informativa
+        } else {
+          setErrorMessage(message);
+          show({ 
+            title: '❌ Error', 
+            message, 
+            type: 'error' 
+          }, 6000);
+        }
       } finally {
         setLoading(false);
       }
@@ -119,7 +138,54 @@ const VerifyEmail: React.FC = () => {
           </div>
         )}
 
-        {!loading && !success && errorMessage && (
+        {!loading && alreadyUsed && (
+          <div style={{ textAlign: 'center', padding: '40px 0' }}>
+            <div style={{ 
+              fontSize: '64px', 
+              marginBottom: '24px'
+            }}>
+              ⚠️
+            </div>
+            <h2 style={{ 
+              color: '#fd7e14', 
+              marginBottom: '16px', 
+              fontSize: '28px',
+              fontWeight: 700
+            }}>
+              Enlace Ya Utilizado
+            </h2>
+            <div className="update-password-requirements" style={{ 
+              backgroundColor: '#fff3cd',
+              border: '1px solid #ffc107',
+              borderRadius: '8px',
+              padding: '20px',
+              maxWidth: '500px',
+              margin: '0 auto 24px'
+            }}>
+              <p style={{ marginBottom: '12px', fontSize: '16px', color: '#856404' }}>
+                <strong>Este enlace de verificación ya fue utilizado anteriormente</strong>
+              </p>
+              <p style={{ marginBottom: '8px', color: '#856404' }}>
+                ✅ Tu cuenta ya fue verificada exitosamente
+              </p>
+              <p style={{ marginBottom: '8px', color: '#856404' }}>
+                🔐 Si aún no has establecido tu contraseña, revisa tu correo
+              </p>
+              <p style={{ marginBottom: '8px', color: '#856404' }}>
+                📧 Cada enlace de verificación solo puede usarse una vez
+              </p>
+            </div>
+            <button 
+              onClick={() => navigate('/login')}
+              className="update-button"
+              style={{ marginTop: '24px' }}
+            >
+              Ir al Login
+            </button>
+          </div>
+        )}
+
+        {!loading && !success && !alreadyUsed && errorMessage && (
           <div style={{ textAlign: 'center', padding: '40px 0' }}>
             <div style={{ 
               fontSize: '64px', 
