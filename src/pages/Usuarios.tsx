@@ -16,10 +16,7 @@ import {
   navigateToEstablecimiento,
   navigateToPuntoEmision,
   formatEmisorInfo,
-  formatEstablecimientoInfo,
-  formatPuntoEmisionInfo,
-  formatCreadorInfo,
-  shouldShowCreador
+  formatEstablecimientoInfo
 } from '../helpers/navigation';
 
 interface ListResponse {
@@ -34,7 +31,7 @@ interface ListResponse {
   };
 }
 
-type SortField = 'cedula' | 'nombres' | 'username' | 'email' | 'estado' | 'role' | 'created_at' | 'updated_at';
+type SortField = 'cedula' | 'nombres' | 'apellidos' | 'username' | 'email' | 'estado' | 'role' | 'created_at' | 'updated_at';
 type SortDirection = 'asc' | 'desc';
 
 interface Filters {
@@ -60,6 +57,10 @@ const Usuarios: React.FC = () => {
   const [searchQuery, setSearchQuery] = React.useState('');
   const { show } = useNotification();
   const { user: currentUser } = useUser();
+  const [emisorInfoById, setEmisorInfoById] = React.useState<Record<string, { ruc?: string; razon_social?: string }>>({});
+  const [creatorInfoById, setCreatorInfoById] = React.useState<
+    Record<string, { role?: string; username?: string; nombres?: string; apellidos?: string }>
+  >({});
   const [openNew, setOpenNew] = React.useState(false);
   const [openEdit, setOpenEdit] = React.useState(false);
   const [editingUser, setEditingUser] = React.useState<User | null>(null);
@@ -130,6 +131,118 @@ const Usuarios: React.FC = () => {
   const users = usuariosResponse?.data ?? [];
   const totalItems = usuariosResponse?.meta?.total ?? 0;
 
+  React.useEffect(() => {
+    let cancelled = false;
+
+    const loadMissingEmisores = async () => {
+      const emisorIdsToFetch = Array.from(
+        new Set(
+          (users || [])
+            .filter((u) => !!u.emisor_id && !u.emisor_ruc && !u.emisor_razon_social)
+            .map((u) => String(u.emisor_id))
+        )
+      ).filter((id) => !emisorInfoById[id]);
+
+      if (emisorIdsToFetch.length === 0) return;
+
+      try {
+        const results = await Promise.all(
+          emisorIdsToFetch.map(async (id) => {
+            try {
+              const res = await emisoresApi.get(id);
+              const emisorData = res.data?.data;
+              return [id, { ruc: emisorData?.ruc, razon_social: emisorData?.razon_social }] as const;
+            } catch {
+              return [id, { ruc: undefined, razon_social: undefined }] as const;
+            }
+          })
+        );
+
+        if (cancelled) return;
+
+        setEmisorInfoById((prev) => {
+          const next = { ...prev };
+          for (const [id, info] of results) {
+            next[id] = info;
+          }
+          return next;
+        });
+      } catch (e) {
+        // Silencioso: es un enriquecimiento visual del listado
+      }
+    };
+
+    loadMissingEmisores();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [users, emisorInfoById]);
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    const loadMissingCreators = async () => {
+      const creatorIdsToFetch = Array.from(
+        new Set(
+          (users || [])
+            .filter((u) => {
+              if (!u.created_by_id) return false;
+              const hasAllInline =
+                !!u.created_by_role &&
+                !!u.created_by_username &&
+                !!u.created_by_nombres &&
+                !!u.created_by_apellidos;
+              return !hasAllInline;
+            })
+            .map((u) => String(u.created_by_id))
+        )
+      ).filter((id) => !creatorInfoById[id]);
+
+      if (creatorIdsToFetch.length === 0) return;
+
+      try {
+        const results = await Promise.all(
+          creatorIdsToFetch.map(async (id) => {
+            try {
+              const res = await usuariosApi.get(id);
+              const creator = res.data?.data;
+              return [
+                id,
+                {
+                  role: creator?.role,
+                  username: creator?.username,
+                  nombres: creator?.nombres,
+                  apellidos: creator?.apellidos,
+                },
+              ] as const;
+            } catch {
+              return [id, { role: undefined, username: undefined, nombres: undefined, apellidos: undefined }] as const;
+            }
+          })
+        );
+
+        if (cancelled) return;
+
+        setCreatorInfoById((prev) => {
+          const next = { ...prev };
+          for (const [id, info] of results) {
+            next[id] = info;
+          }
+          return next;
+        });
+      } catch {
+        // Silencioso: es un enriquecimiento visual del listado
+      }
+    };
+
+    loadMissingCreators();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [users, creatorInfoById]);
+
   // Aplicar filtros locales
   const applyFilters = (data: User[]): User[] => {
     return data.filter((u) => {
@@ -155,7 +268,12 @@ const Usuarios: React.FC = () => {
         return false;
       }
       if (filters.creator) {
-        const creatorText = `${u.created_by_role || ''} ${u.created_by_username || ''} ${u.created_by_nombres || ''} ${u.created_by_apellidos || ''}`.toLowerCase();
+        const cachedCreator = u.created_by_id ? creatorInfoById[String(u.created_by_id)] : undefined;
+        const creatorText = `${
+          u.created_by_role || cachedCreator?.role || ''
+        } ${u.created_by_username || cachedCreator?.username || ''} ${
+          u.created_by_nombres || cachedCreator?.nombres || ''
+        } ${u.created_by_apellidos || cachedCreator?.apellidos || ''}`.toLowerCase();
         if (!creatorText.includes(filters.creator.toLowerCase())) {
           return false;
         }
@@ -169,7 +287,8 @@ const Usuarios: React.FC = () => {
         if (!hasMatch) return false;
       }
       if (filters.emisor) {
-        const emisorText = `${u.emisor_ruc || ''} ${u.emisor_razon_social || ''}`.toLowerCase();
+        const cached = u.emisor_id ? emisorInfoById[String(u.emisor_id)] : undefined;
+        const emisorText = `${u.emisor_ruc || cached?.ruc || ''} ${u.emisor_razon_social || cached?.razon_social || ''}`.toLowerCase();
         if (!emisorText.includes(filters.emisor.toLowerCase())) {
           return false;
         }
@@ -214,6 +333,10 @@ const Usuarios: React.FC = () => {
         case 'nombres':
           aVal = `${a.nombres || ''} ${a.apellidos || ''}`;
           bVal = `${b.nombres || ''} ${b.apellidos || ''}`;
+          break;
+        case 'apellidos':
+          aVal = a.apellidos || '';
+          bVal = b.apellidos || '';
           break;
         case 'username':
           aVal = a.username || '';
@@ -470,6 +593,15 @@ const Usuarios: React.FC = () => {
 
   const totalPages = Math.ceil(totalItems / itemsPerPage);
 
+  const formatDateTime = React.useCallback((dateString?: string) => {
+    if (!dateString) return '-';
+    const d = new Date(dateString);
+    if (Number.isNaN(d.getTime())) return '-';
+    const date = d.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const time = d.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
+    return `${date} ${time}`;
+  }, []);
+
   // Columnas principales para la tabla (simplificadas)
   const columns: Array<{
     key: keyof User;
@@ -482,31 +614,37 @@ const Usuarios: React.FC = () => {
       label: 'Cédula', 
       width: 150,
       render: (row) => (
-        <span 
-          className="cedula-link"
-          onClick={() => handleOpenDetail(row)}
-        >
-          <span className="cedula-numero">{row.cedula || 'Sin cédula'}</span>
-        </span>
+        <span className="cedula-numero">{row.cedula || 'Sin cédula'}</span>
       )
     },
     { 
       key: 'nombres', 
-      label: 'Nombres y Apellidos', 
-      width: 220,
-      render: (row) => (
-        <span className="nombre-cell">
-          {`${row.nombres || ''} ${row.apellidos || ''}`.trim() || '-'}
-        </span>
-      )
+      label: 'Nombres', 
+      width: 180,
+      render: (row) => <span className="nombre-cell">{row.nombres || '-'}</span>
+    },
+    { 
+      key: 'apellidos', 
+      label: 'Apellidos', 
+      width: 180,
+      render: (row) => <span className="apellido-cell">{row.apellidos || '-'}</span>
     },
     { 
       key: 'username', 
       label: 'Usuario', 
       width: 140,
-      render: (row) => (
-        <span className="username-cell">{row.username || '-'}</span>
-      )
+      render: (row) =>
+        row.id ? (
+          <button
+            type="button"
+            className="username-link"
+            onClick={() => handleOpenDetail(row)}
+          >
+            {row.username || '-'}
+          </button>
+        ) : (
+          <span className="username-cell">{row.username || '-'}</span>
+        )
     },
     { 
       key: 'email', 
@@ -515,6 +653,169 @@ const Usuarios: React.FC = () => {
       render: (row) => (
         <span className="email-cell">{row.email}</span>
       )
+    },
+    {
+      key: 'emisor_ruc',
+      label: 'Emisor',
+      width: 300,
+      render: (row) => {
+        const cached = row.emisor_id ? emisorInfoById[String(row.emisor_id)] : undefined;
+        const text = formatEmisorInfo(row.emisor_ruc || cached?.ruc, row.emisor_razon_social || cached?.razon_social);
+        if (text === '—' || text === '-') return '-';
+
+        return (
+          <div className="emisor-info">
+            {row.emisor_id ? (
+              <a
+                href={`/emisores/${row.emisor_id}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigateToEmisor(row.emisor_id as any);
+                }}
+              >
+                {text}
+              </a>
+            ) : (
+              <span>{text}</span>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      key: 'establecimientos',
+      label: 'Establecimientos',
+      width: 280,
+      render: (row) => {
+        const establecimientos = row.establecimientos || [];
+        if (establecimientos.length === 0) return '-';
+
+        return (
+          <div className="list-items">
+            {establecimientos.map((est) => {
+              const label = formatEstablecimientoInfo(est.codigo, est.nombre);
+              const canLink = !!row.emisor_id && !!est.id;
+              return (
+                <div className="list-item-link" key={String(est.id ?? est.codigo)}>
+                  {canLink ? (
+                    <a
+                      href={`/emisores/${row.emisor_id}/establecimientos/${est.id}`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        navigateToEstablecimiento(row.emisor_id as any, est.id as any);
+                      }}
+                    >
+                      {label}
+                    </a>
+                  ) : (
+                    <span>{label}</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        );
+      },
+    },
+    {
+      key: 'puntos_emision',
+      label: 'Puntos de emisión',
+      width: 340,
+      render: (row) => {
+        const puntos = row.puntos_emision || [];
+        if (puntos.length === 0) return '-';
+
+        const establecimientos = row.establecimientos || [];
+
+        return (
+          <div className="list-items">
+            {puntos.map((p) => {
+              const estCodigo =
+                p.establecimiento_codigo ||
+                establecimientos.find((e) => String(e.id) === String(p.establecimiento_id))?.codigo ||
+                '—';
+
+              const label = `${estCodigo} – ${p.codigo || '—'} – ${p.nombre || '—'}`;
+              const canLink = !!row.emisor_id && !!p.establecimiento_id && !!p.id;
+
+              return (
+                <div className="list-item-link" key={String(p.id ?? `${p.establecimiento_id}-${p.codigo}`)}>
+                  {canLink ? (
+                    <a
+                      href={`/emisores/${row.emisor_id}/establecimientos/${p.establecimiento_id}/puntos/${p.id}`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        navigateToPuntoEmision(row.emisor_id as any, p.establecimiento_id as any, p.id as any);
+                      }}
+                    >
+                      {label}
+                    </a>
+                  ) : (
+                    <span>{label}</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        );
+      },
+    },
+    {
+      key: 'created_by_username',
+      label: 'Usuario creador',
+      width: 360,
+      render: (row) => {
+        const cachedCreator = row.created_by_id ? creatorInfoById[String(row.created_by_id)] : undefined;
+
+        if (
+          !row.created_by_role &&
+          !row.created_by_username &&
+          !row.created_by_nombres &&
+          !row.created_by_apellidos &&
+          !cachedCreator?.role &&
+          !cachedCreator?.username &&
+          !cachedCreator?.nombres &&
+          !cachedCreator?.apellidos
+        ) {
+          return '-';
+        }
+
+        const role = (row.created_by_role || cachedCreator?.role || '—').toUpperCase();
+        const username = (row.created_by_username || cachedCreator?.username || '—').toUpperCase();
+        const nombres = (row.created_by_nombres || cachedCreator?.nombres || '—').toUpperCase();
+        const apellidos = (row.created_by_apellidos || cachedCreator?.apellidos || '—').toUpperCase();
+
+        return (
+          <span className="creator-cell">
+            <span>{role}</span>
+            <span> – </span>
+            {row.created_by_id ? (
+              <button
+                type="button"
+                className="creator-link"
+                onClick={() => handleOpenDetail(null, row.created_by_id)}
+              >
+                {username}
+              </button>
+            ) : (
+              <span>{username}</span>
+            )}
+            <span>{` – ${nombres} – ${apellidos}`}</span>
+          </span>
+        );
+      },
+    },
+    {
+      key: 'created_at',
+      label: 'Fecha de creación',
+      width: 180,
+      render: (row) => <span className="datetime-cell">{formatDateTime(row.created_at)}</span>,
+    },
+    {
+      key: 'updated_at',
+      label: 'Última actualización',
+      width: 200,
+      render: (row) => <span className="datetime-cell">{formatDateTime(row.updated_at)}</span>,
     },
     { 
       key: 'role', 
@@ -577,35 +878,6 @@ const Usuarios: React.FC = () => {
             <div className="tooltip-content">
               {description}
             </div>
-          </div>
-        );
-      }
-    },
-  ];
-
-  // Columnas adicionales (visibles opcionalmente o en el detalle)
-  const additionalColumns: Array<{
-    key: keyof User;
-    label: string;
-    width?: number;
-    render?: (row: User) => React.ReactNode;
-  }> = [
-    { 
-      key: 'emisor_ruc' as keyof User, 
-      label: 'Emisor', 
-      width: 300,
-      render: (row) => {
-        if (!row.emisor_ruc && !row.emisor_razon_social) return '-';
-        return (
-          <div className="emisor-info">
-            <a href="#" onClick={(e) => {
-              e.preventDefault();
-              if (row.emisor_id) {
-                navigateToEmisor(row.emisor_id);
-              }
-            }}>
-              {formatEmisorInfo(row.emisor_ruc, row.emisor_razon_social)}
-            </a>
           </div>
         );
       }

@@ -479,6 +479,13 @@ body, html {
   font-size: 14px;
 }
 
+/* Apellidos del usuario */
+.apellido-cell {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 14px;
+}
+
 /* Username */
 .username-cell {
   font-family: 'Courier New', monospace;
@@ -488,6 +495,34 @@ body, html {
   padding: 4px 10px;
   border-radius: 6px;
   display: inline-block;
+}
+
+/* Username como enlace a Información de Usuario */
+.username-link {
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  color: #667eea;
+  background: linear-gradient(90deg, transparent 0%, rgba(102, 126, 234, 0.05) 100%);
+  padding: 6px 12px;
+  border-radius: 6px;
+  display: inline-block;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  appearance: none;
+}
+
+.username-link:hover {
+  background: linear-gradient(90deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  color: #764ba2;
+}
+
+.username-link:focus {
+  outline: 2px solid rgba(102, 126, 234, 0.55);
+  outline-offset: 2px;
 }
 
 /* Badges de rol y estado modernos */
@@ -921,11 +956,21 @@ body, html {
   font-weight: 500;
   font-size: 13px;
   transition: color 0.2s ease;
+  background: transparent;
+  border: none;
+  padding: 0;
+  appearance: none;
 }
 
 .creator-link:hover {
   color: #7c3aed;
   text-decoration: underline;
+}
+
+.datetime-cell {
+  font-size: 12px;
+  color: #64748b;
+  white-space: nowrap;
 }
 
 /* ============================================
