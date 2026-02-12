@@ -89,14 +89,36 @@ const Usuarios: React.FC = () => {
     updateDateTo: ''
   });
 
+  React.useEffect(() => {
+    setCurrentPage((p) => (p === 1 ? p : 1));
+    setSortField('created_at');
+    setSortDirection('desc');
+  }, [filters]);
+
   const usuariosListParams = React.useMemo(() => ({
     page: currentPage,
     per_page: itemsPerPage,
     search: searchQuery,
-  }), [currentPage, itemsPerPage, searchQuery]);
+    sort_by: sortField,
+    sort_dir: sortDirection,
+    cedula: filters.cedula || undefined,
+    nombres: filters.nombres || undefined,
+    apellidos: filters.apellidos || undefined,
+    username: filters.username || undefined,
+    email: filters.email || undefined,
+    roles: filters.roles.length > 0 ? filters.roles : undefined,
+    estados: filters.estados.length > 0 ? filters.estados : undefined,
+    creator: filters.creator || undefined,
+    establecimiento: filters.establishment || undefined,
+    emisor: filters.emisor || undefined,
+    created_from: filters.dateFrom || undefined,
+    created_to: filters.dateTo || undefined,
+    updated_from: filters.updateDateFrom || undefined,
+    updated_to: filters.updateDateTo || undefined,
+  }), [currentPage, itemsPerPage, searchQuery, filters, sortField, sortDirection]);
 
   const usuariosCacheKey = React.useMemo(
-    () => `usuarios:list:${usuariosListParams.page}:${usuariosListParams.per_page}:${usuariosListParams.search || ''}`,
+    () => `usuarios:list:${JSON.stringify(usuariosListParams)}`,
     [usuariosListParams]
   );
 
@@ -167,7 +189,7 @@ const Usuarios: React.FC = () => {
           }
           return next;
         });
-      } catch (e) {
+      } catch {
         // Silencioso: es un enriquecimiento visual del listado
       }
     };
@@ -243,135 +265,7 @@ const Usuarios: React.FC = () => {
     };
   }, [users, creatorInfoById]);
 
-  // Aplicar filtros locales
-  const applyFilters = (data: User[]): User[] => {
-    return data.filter((u) => {
-      if (filters.cedula && !u.cedula?.toLowerCase().includes(filters.cedula.toLowerCase())) {
-        return false;
-      }
-      if (filters.nombres && !u.nombres?.toLowerCase().includes(filters.nombres.toLowerCase())) {
-        return false;
-      }
-      if (filters.apellidos && !u.apellidos?.toLowerCase().includes(filters.apellidos.toLowerCase())) {
-        return false;
-      }
-      if (filters.username && !u.username?.toLowerCase().includes(filters.username.toLowerCase())) {
-        return false;
-      }
-      if (filters.email && !u.email?.toLowerCase().includes(filters.email.toLowerCase())) {
-        return false;
-      }
-      if (filters.roles.length > 0 && !filters.roles.includes(u.role)) {
-        return false;
-      }
-      if (filters.estados.length > 0 && !filters.estados.includes(u.estado || 'activo')) {
-        return false;
-      }
-      if (filters.creator) {
-        const cachedCreator = u.created_by_id ? creatorInfoById[String(u.created_by_id)] : undefined;
-        const creatorText = `${
-          u.created_by_role || cachedCreator?.role || ''
-        } ${u.created_by_username || cachedCreator?.username || ''} ${
-          u.created_by_nombres || cachedCreator?.nombres || ''
-        } ${u.created_by_apellidos || cachedCreator?.apellidos || ''}`.toLowerCase();
-        if (!creatorText.includes(filters.creator.toLowerCase())) {
-          return false;
-        }
-      }
-      if (filters.establishment) {
-        const establishments = u.establecimientos || [];
-        const hasMatch = establishments.some(est => 
-          est.codigo.toLowerCase().includes(filters.establishment.toLowerCase()) ||
-          est.nombre.toLowerCase().includes(filters.establishment.toLowerCase())
-        );
-        if (!hasMatch) return false;
-      }
-      if (filters.emisor) {
-        const cached = u.emisor_id ? emisorInfoById[String(u.emisor_id)] : undefined;
-        const emisorText = `${u.emisor_ruc || cached?.ruc || ''} ${u.emisor_razon_social || cached?.razon_social || ''}`.toLowerCase();
-        if (!emisorText.includes(filters.emisor.toLowerCase())) {
-          return false;
-        }
-      }
-      if (filters.dateFrom && u.created_at) {
-        const createdDate = new Date(u.created_at);
-        const fromDate = new Date(filters.dateFrom);
-        if (createdDate < fromDate) return false;
-      }
-      if (filters.dateTo && u.created_at) {
-        const createdDate = new Date(u.created_at);
-        const toDate = new Date(filters.dateTo);
-        toDate.setHours(23, 59, 59, 999);
-        if (createdDate > toDate) return false;
-      }
-      if (filters.updateDateFrom && u.updated_at) {
-        const updatedDate = new Date(u.updated_at);
-        const fromDate = new Date(filters.updateDateFrom);
-        if (updatedDate < fromDate) return false;
-      }
-      if (filters.updateDateTo && u.updated_at) {
-        const updatedDate = new Date(u.updated_at);
-        const toDate = new Date(filters.updateDateTo);
-        toDate.setHours(23, 59, 59, 999);
-        if (updatedDate > toDate) return false;
-      }
-      return true;
-    });
-  };
-
   // Aplicar ordenamiento
-  const applySorting = (data: User[]): User[] => {
-    return [...data].sort((a, b) => {
-      let aVal: any;
-      let bVal: any;
-      
-      switch (sortField) {
-        case 'cedula':
-          aVal = a.cedula || '';
-          bVal = b.cedula || '';
-          break;
-        case 'nombres':
-          aVal = `${a.nombres || ''} ${a.apellidos || ''}`;
-          bVal = `${b.nombres || ''} ${b.apellidos || ''}`;
-          break;
-        case 'apellidos':
-          aVal = a.apellidos || '';
-          bVal = b.apellidos || '';
-          break;
-        case 'username':
-          aVal = a.username || '';
-          bVal = b.username || '';
-          break;
-        case 'email':
-          aVal = a.email || '';
-          bVal = b.email || '';
-          break;
-        case 'estado':
-          aVal = a.estado || 'activo';
-          bVal = b.estado || 'activo';
-          break;
-        case 'role':
-          aVal = a.role || '';
-          bVal = b.role || '';
-          break;
-        case 'created_at':
-          aVal = new Date(a.created_at || 0).getTime();
-          bVal = new Date(b.created_at || 0).getTime();
-          break;
-        case 'updated_at':
-          aVal = new Date(a.updated_at || 0).getTime();
-          bVal = new Date(b.updated_at || 0).getTime();
-          break;
-        default:
-          return 0;
-      }
-      
-      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
-      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
-      return 0;
-    });
-  };
-
   const handleSort = (field: SortField) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -471,12 +365,7 @@ const Usuarios: React.FC = () => {
   };
 
   // Aplicar filtros y ordenamiento a los usuarios cargados
-  const filteredAndSortedUsers = React.useMemo(() => {
-    let result = users;
-    result = applyFilters(result);
-    result = applySorting(result);
-    return result;
-  }, [users, filters, sortField, sortDirection]);
+  const filteredAndSortedUsers = React.useMemo(() => users, [users]);
 
   // Crear usuario
   const handleCreate = async (newData: User & { password_confirmation?: string }) => {
@@ -607,12 +496,14 @@ const Usuarios: React.FC = () => {
     key: keyof User;
     label: string;
     width?: number;
+    sortKey?: SortField;
     render?: (row: User) => React.ReactNode;
   }> = [
     { 
       key: 'cedula', 
       label: 'Cédula', 
       width: 150,
+      sortKey: 'cedula',
       render: (row) => (
         <span className="cedula-numero">{row.cedula || 'Sin cédula'}</span>
       )
@@ -621,18 +512,21 @@ const Usuarios: React.FC = () => {
       key: 'nombres', 
       label: 'Nombres', 
       width: 180,
+      sortKey: 'nombres',
       render: (row) => <span className="nombre-cell">{row.nombres || '-'}</span>
     },
     { 
       key: 'apellidos', 
       label: 'Apellidos', 
       width: 180,
+      sortKey: 'apellidos',
       render: (row) => <span className="apellido-cell">{row.apellidos || '-'}</span>
     },
     { 
       key: 'username', 
       label: 'Usuario', 
       width: 140,
+      sortKey: 'username',
       render: (row) =>
         row.id ? (
           <button
@@ -650,6 +544,7 @@ const Usuarios: React.FC = () => {
       key: 'email', 
       label: 'Email', 
       width: 260,
+      sortKey: 'email',
       render: (row) => (
         <span className="email-cell">{row.email}</span>
       )
@@ -809,18 +704,21 @@ const Usuarios: React.FC = () => {
       key: 'created_at',
       label: 'Fecha de creación',
       width: 180,
+      sortKey: 'created_at',
       render: (row) => <span className="datetime-cell">{formatDateTime(row.created_at)}</span>,
     },
     {
       key: 'updated_at',
       label: 'Última actualización',
       width: 200,
+      sortKey: 'updated_at',
       render: (row) => <span className="datetime-cell">{formatDateTime(row.updated_at)}</span>,
     },
     { 
       key: 'role', 
       label: 'Rol',
       width: 140,
+      sortKey: 'role',
       render: (row) => (
         <span 
           className="badge-rol"
@@ -842,6 +740,7 @@ const Usuarios: React.FC = () => {
       key: 'estado',
       label: 'Estado',
       width: 160,
+      sortKey: 'estado',
       render: (row) => {
         const labelMap: Record<string, string> = {
           nuevo: 'Nuevo',
@@ -1166,11 +1065,25 @@ const Usuarios: React.FC = () => {
           <table className="usuarios-table">
             <thead>
               <tr>
-                {columns.map(col => (
-                  <th key={col.key} style={{ width: col.width }}>
-                    {col.label}
-                  </th>
-                ))}
+                {columns.map(col => {
+                  const sortable = !!col.sortKey;
+                  return (
+                    <th
+                      key={col.key}
+                      style={{ width: col.width, cursor: sortable ? 'pointer' : 'default' }}
+                      onClick={() => {
+                        if (!sortable) return;
+                        handleSort(col.sortKey!);
+                      }}
+                      title={sortable ? 'Ordenar' : undefined}
+                    >
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        {col.label}
+                        {sortable ? <span style={{ opacity: 0.9 }}>{getSortIcon(col.sortKey!)}</span> : null}
+                      </span>
+                    </th>
+                  );
+                })}
                 <th style={{ width: 120 }}>Acciones</th>
               </tr>
             </thead>

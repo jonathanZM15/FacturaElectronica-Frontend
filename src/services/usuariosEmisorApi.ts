@@ -16,10 +16,8 @@ api.interceptors.request.use((config) => {
 });
 
 export const usuariosEmisorApi = {
-  list: async (emiId: string | number, page = 1, perPage = 20) => {
-    return api.get(`/emisores/${emiId}/usuarios`, {
-      params: { page, per_page: perPage }
-    });
+  list: async (emiId: string | number, params: Record<string, any> = {}) => {
+    return api.get(`/emisores/${emiId}/usuarios`, { params });
   },
 
   get: async (emiId: string | number, userId: string | number) => {

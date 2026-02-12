@@ -83,34 +83,39 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
     updateDateTo: ''
   });
 
+  React.useEffect(() => {
+    setPage((p) => (p === 1 ? p : 1));
+    setSortField('created_at');
+    setSortDirection('desc');
+  }, [filters]);
+
   const load = React.useCallback(async () => {
     if (!emiId) return;
     setLoading(true);
     try {
-      const res = await usuariosEmisorApi.list(emiId, page, perPage);
+      const res = await usuariosEmisorApi.list(emiId, {
+        page,
+        per_page: perPage,
+        sort_by: sortField,
+        sort_dir: sortDirection,
+        cedula: filters.cedula || undefined,
+        nombres: filters.nombres || undefined,
+        apellidos: filters.apellidos || undefined,
+        username: filters.username || undefined,
+        email: filters.email || undefined,
+        roles: filters.roles.length > 0 ? filters.roles : undefined,
+        estados: filters.estados.length > 0 ? filters.estados : undefined,
+        creator: filters.creator || undefined,
+        establecimiento: filters.establishment || undefined,
+        created_from: filters.dateFrom || undefined,
+        created_to: filters.dateTo || undefined,
+        updated_from: filters.updateDateFrom || undefined,
+        updated_to: filters.updateDateTo || undefined,
+      });
+
       let data = res.data?.data ?? [];
       const meta = res.data?.meta ?? {};
-      
-      // Excluir al usuario actual de la lista (emisor, gerente, cajero no deben verse a sí mismos)
-      if (user?.role === 'emisor' || user?.role === 'gerente' || user?.role === 'cajero') {
-        data = data.filter((u: User) => u.id !== user.id);
-      }
-      
-      // Gerente solo ve cajeros
-      if (user?.role === 'gerente') {
-        data = data.filter((u: User) => u.role === 'cajero');
-      }
-      // Cajero no ve a nadie (lista vacía manejada por backend)
-      if (user?.role === 'cajero') {
-        data = [];
-      }
-      
-      // Aplicar filtros locales
-      data = applyFilters(data);
-      
-      // Aplicar ordenamiento
-      data = applySorting(data);
-      
+
       setUsuarios(Array.isArray(data) ? data : []);
       setTotal(meta.total || 0);
       setLastPage(meta.last_page || 1);
@@ -120,142 +125,7 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [emiId, page, perPage, show, user]);
-
-  const applyFilters = (data: User[]): User[] => {
-    return data.filter((u) => {
-      // Filtro por cédula
-      if (filters.cedula && !u.cedula?.toLowerCase().includes(filters.cedula.toLowerCase())) {
-        return false;
-      }
-      
-      // Filtro por nombres
-      if (filters.nombres && !u.nombres?.toLowerCase().includes(filters.nombres.toLowerCase())) {
-        return false;
-      }
-      
-      // Filtro por apellidos
-      if (filters.apellidos && !u.apellidos?.toLowerCase().includes(filters.apellidos.toLowerCase())) {
-        return false;
-      }
-      
-      // Filtro por username
-      if (filters.username && !u.username?.toLowerCase().includes(filters.username.toLowerCase())) {
-        return false;
-      }
-      
-      // Filtro por email
-      if (filters.email && !u.email?.toLowerCase().includes(filters.email.toLowerCase())) {
-        return false;
-      }
-      
-      // Filtro por roles (multi-select)
-      if (filters.roles.length > 0 && !filters.roles.includes(u.role)) {
-        return false;
-      }
-      
-      // Filtro por estados (multi-select)
-      if (filters.estados.length > 0 && !filters.estados.includes(u.estado || 'activo')) {
-        return false;
-      }
-      
-      // Filtro por creador
-      if (filters.creator) {
-        const creatorText = `${u.created_by_role || ''} ${u.created_by_username || ''} ${u.created_by_nombres || ''} ${u.created_by_apellidos || ''}`.toLowerCase();
-        if (!creatorText.includes(filters.creator.toLowerCase())) {
-          return false;
-        }
-      }
-      
-      // Filtro por establecimiento
-      if (filters.establishment) {
-        const establishments = u.establecimientos || [];
-        const hasMatch = establishments.some(est => 
-          est.codigo.toLowerCase().includes(filters.establishment.toLowerCase()) ||
-          est.nombre.toLowerCase().includes(filters.establishment.toLowerCase())
-        );
-        if (!hasMatch) return false;
-      }
-      
-      // Filtro por rango de fechas de creación
-      if (filters.dateFrom && u.created_at) {
-        const createdDate = new Date(u.created_at);
-        const fromDate = new Date(filters.dateFrom);
-        if (createdDate < fromDate) return false;
-      }
-      
-      if (filters.dateTo && u.created_at) {
-        const createdDate = new Date(u.created_at);
-        const toDate = new Date(filters.dateTo);
-        toDate.setHours(23, 59, 59, 999);
-        if (createdDate > toDate) return false;
-      }
-      
-      // Filtro por rango de fechas de actualización
-      if (filters.updateDateFrom && u.updated_at) {
-        const updatedDate = new Date(u.updated_at);
-        const fromDate = new Date(filters.updateDateFrom);
-        if (updatedDate < fromDate) return false;
-      }
-      
-      if (filters.updateDateTo && u.updated_at) {
-        const updatedDate = new Date(u.updated_at);
-        const toDate = new Date(filters.updateDateTo);
-        toDate.setHours(23, 59, 59, 999);
-        if (updatedDate > toDate) return false;
-      }
-      
-      return true;
-    });
-  };
-
-  const applySorting = (data: User[]): User[] => {
-    return [...data].sort((a, b) => {
-      let aVal: any;
-      let bVal: any;
-      
-      switch (sortField) {
-        case 'cedula':
-          aVal = a.cedula || '';
-          bVal = b.cedula || '';
-          break;
-        case 'nombres':
-          aVal = `${a.nombres || ''} ${a.apellidos || ''}`;
-          bVal = `${b.nombres || ''} ${b.apellidos || ''}`;
-          break;
-        case 'username':
-          aVal = a.username || '';
-          bVal = b.username || '';
-          break;
-        case 'email':
-          aVal = a.email || '';
-          bVal = b.email || '';
-          break;
-        case 'estado':
-          aVal = a.estado || 'activo';
-          bVal = b.estado || 'activo';
-          break;
-        case 'role':
-          aVal = a.role || '';
-          bVal = b.role || '';
-          break;
-        case 'created_at':
-          aVal = new Date(a.created_at || 0).getTime();
-          bVal = new Date(b.created_at || 0).getTime();
-          break;
-        case 'updated_at':
-          aVal = new Date(a.updated_at || 0).getTime();
-          bVal = new Date(b.updated_at || 0).getTime();
-          break;
-        default:
-          return 0;
-      }
-      
-      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
-      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
-      return 0;
-    });
-  };
+  }, [emiId, page, perPage, show, filters, sortField, sortDirection]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -461,6 +331,18 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
     const cajeros = displayUsuarios.filter(u => u.role === 'cajero').length;
     return { total: displayUsuarios.length, activos, nuevos, pendientes, inactivos, gerentes, cajeros };
   }, [displayUsuarios]);
+
+  const totalForDisplay = useMemo(() => {
+    if (
+      user?.role === 'administrador' &&
+      distributorCreator &&
+      distributorCreator.role === 'distribuidor'
+    ) {
+      const isInPage = usuarios.some((u) => u.id === distributorCreator.id);
+      return total + (isInPage ? 0 : 1);
+    }
+    return total;
+  }, [total, user, distributorCreator, usuarios]);
 
   // Contar filtros activos
   const activeFilterCount = useMemo(() => {
@@ -719,7 +601,7 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
       {/* Toolbar */}
       <div className="eu-toolbar">
         <div className="eu-results-info">
-          Mostrando <strong>{displayUsuarios.length}</strong> de <strong>{total}</strong> usuarios
+          Mostrando <strong>{displayUsuarios.length}</strong> de <strong>{totalForDisplay}</strong> usuarios
         </div>
         <div className="eu-per-page">
           <span>Filas:</span>
