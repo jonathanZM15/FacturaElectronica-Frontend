@@ -626,8 +626,11 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
         <div className="eu-table-wrapper">
           <div className="eu-empty-state">
             <div className="eu-empty-icon">👥</div>
-            <h3>No hay usuarios registrados</h3>
-            <p>No se encontraron usuarios para este emisor con los filtros aplicados.</p>
+            <h3>
+              {activeFilterCount > 0
+                ? 'No se encontraron usuarios con los filtros aplicados.'
+                : 'No hay usuarios registrados'}
+            </h3>
           </div>
         </div>
       ) : (

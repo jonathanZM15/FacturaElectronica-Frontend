@@ -13,72 +13,134 @@ interface Props {
   onClose: () => void;
   onSubmit: (data: User) => Promise<void>;
   isEditing: boolean;
+  restrictRolesToAdminDistributor?: boolean;
 }
+
+const normalizeRole = (role: unknown): string => String(role ?? '').trim().toLowerCase();
+const normalizeEstado = (estado: unknown): string => String(estado ?? '').trim().toLowerCase();
 
 // Mapping de roles permitidos según el rol del usuario actual
 // Cuando se crea un nuevo usuario, solo se permiten Administrador y Distribuidor
-const getRolesPermitidos = (userRole: string, isCreating: boolean = false): { value: string; label: string }[] => {
-  // Roles permitidos al crear un nuevo usuario
+type RoleOption = { value: string; label: string };
+type EstadoOption = { value: string; label: string; tooltip: string };
+
+const getRolesPermitidos = (userRole: string, isCreating: boolean = false): RoleOption[] => {
   if (isCreating) {
     return [
       { value: 'administrador', label: '👨‍💼 Administrador' },
-      { value: 'distribuidor', label: '📦 Distribuidor' }
+      { value: 'distribuidor', label: '📦 Distribuidor' },
     ];
   }
 
-  const rolesMap: Record<string, { value: string; label: string }[]> = {
+  const rolesMap: Record<string, RoleOption[]> = {
     administrador: [
       { value: 'administrador', label: '👨‍💼 Administrador' },
       { value: 'distribuidor', label: '📦 Distribuidor' },
       { value: 'emisor', label: '🏢 Emisor' },
       { value: 'gerente', label: '📊 Gerente' },
-      { value: 'cajero', label: '💳 Cajero' }
+      { value: 'cajero', label: '💳 Cajero' },
     ],
     distribuidor: [
       { value: 'emisor', label: '🏢 Emisor' },
       { value: 'gerente', label: '📊 Gerente' },
-      { value: 'cajero', label: '💳 Cajero' }
+      { value: 'cajero', label: '💳 Cajero' },
     ],
     emisor: [
       { value: 'gerente', label: '📊 Gerente' },
-      { value: 'cajero', label: '💳 Cajero' }
+      { value: 'cajero', label: '💳 Cajero' },
     ],
-    gerente: [
-      { value: 'cajero', label: '💳 Cajero' }
-    ],
-    cajero: []
+    gerente: [{ value: 'cajero', label: '💳 Cajero' }],
+    cajero: [],
   };
 
   return rolesMap[userRole] || [];
 };
 
-// Transiciones de estado permitidas según el estado actual
-const getEstadosPermitidos = (estadoActual: string): { value: string; label: string; tooltip: string }[] => {
-  const transiciones: Record<string, { value: string; label: string; tooltip: string }[]> = {
+// Transiciones MANUALES permitidas (panel administrativo)
+// Nota: algunas transiciones son automáticas por verificación de correo y no deben forzarse desde el panel.
+const getEstadosPermitidos = (estadoActual: string): EstadoOption[] => {
+  const transiciones: Record<string, EstadoOption[]> = {
     nuevo: [
-      { value: 'nuevo', label: '🆕 Nuevo', tooltip: 'Usuario recién creado, pendiente de verificación de email' },
-      { value: 'pendiente_verificacion', label: '⏳ Pendiente Verificación', tooltip: 'Enviar email de verificación al usuario' }
+      {
+        value: 'nuevo',
+        label: '🆕 Nuevo',
+        tooltip: 'Usuario recién creado, pendiente de verificación de email. Sin acceso al sistema.',
+      },
     ],
     activo: [
-      { value: 'activo', label: '✅ Activo', tooltip: 'Usuario con acceso completo al sistema' },
-      { value: 'suspendido', label: '⏸️ Suspendido', tooltip: 'Suspender temporalmente el acceso del usuario' },
-      { value: 'retirado', label: '👋 Retirado', tooltip: 'Usuario ya no forma parte de la organización' }
+      {
+        value: 'activo',
+        label: '✅ Activo',
+        tooltip: 'Usuario con acceso completo al sistema',
+      },
+      {
+        value: 'suspendido',
+        label: '⏸️ Suspendido',
+        tooltip: 'Suspender temporalmente el acceso del usuario',
+      },
+      {
+        value: 'retirado',
+        label: '👋 Retirado',
+        tooltip: 'Usuario ya no forma parte de la organización',
+      },
     ],
     pendiente_verificacion: [
-      { value: 'activo', label: '✅ Activo', tooltip: 'Verificación completada, activar usuario' },
-      { value: 'suspendido', label: '⏸️ Suspendido', tooltip: 'Suspender temporalmente el acceso del usuario' },
-      { value: 'retirado', label: '👋 Retirado', tooltip: 'Usuario ya no forma parte de la organización' }
+      {
+        value: 'pendiente_verificacion',
+        label: '⏳ Pendiente Verificación',
+        tooltip: 'Requiere ingresar su contraseña y verificar el nuevo correo. Sin acceso al sistema.',
+      },
+      {
+        value: 'suspendido',
+        label: '⏸️ Suspendido',
+        tooltip:
+          'Bloqueo temporal durante el proceso de verificación (invalida la reactivación hasta nueva verificación).',
+      },
     ],
-    suspendido: [],
-    retirado: []
+    suspendido: [
+      {
+        value: 'suspendido',
+        label: '⏸️ Suspendido',
+        tooltip: 'Usuario bloqueado temporalmente',
+      },
+      {
+        value: 'activo',
+        label: '✅ Activo',
+        tooltip: 'Reactivación por autorización administrativa',
+      },
+      {
+        value: 'retirado',
+        label: '👋 Retirado',
+        tooltip: 'Baja definitiva mientras el usuario se encuentra suspendido',
+      },
+    ],
+    retirado: [
+      {
+        value: 'retirado',
+        label: '👋 Retirado',
+        tooltip:
+          'Baja definitiva. Solo reactivable mediante verificación de correo solicitada por el usuario que lo creó.',
+      },
+    ],
   };
 
-  return transiciones[estadoActual] || [
-    { value: 'nuevo', label: '🆕 Nuevo', tooltip: 'Usuario recién creado' }
+  return transiciones[normalizeEstado(estadoActual)] || [
+    {
+      value: 'nuevo',
+      label: '🆕 Nuevo',
+      tooltip: 'Usuario recién creado',
+    },
   ];
 };
 
-const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSubmit, isEditing }) => {
+const UsuarioFormModal: React.FC<Props> = ({
+  isOpen,
+  initialData,
+  onClose,
+  onSubmit,
+  isEditing,
+  restrictRolesToAdminDistributor = false,
+}) => {
   const { user: currentUser } = useUser();
   const { show } = useNotification();
   const [cedula, setCedula] = React.useState<string>('');
@@ -90,6 +152,7 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [loading, setLoading] = React.useState<boolean>(false);
   const [estado, setEstado] = React.useState<string>('nuevo');
+  const [estadoBase, setEstadoBase] = React.useState<string>('nuevo');
   const [checkingUsername, setCheckingUsername] = React.useState<boolean>(false);
   const [checkingCedula, setCheckingCedula] = React.useState<boolean>(false);
   const [checkingEmail, setCheckingEmail] = React.useState<boolean>(false);
@@ -97,13 +160,90 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
 
   // Memoizar rolesPermitidos para evitar recálculos infinitos
   const rolesPermitidos = React.useMemo(() => {
-    return currentUser && currentUser.role ? getRolesPermitidos(currentUser.role, !isEditing) : [];
-  }, [currentUser?.role, isEditing]);
+    if (!currentUser?.role) return [];
 
-  // Memoizar estadosPermitidos basados en el estado actual del usuario
+    if (restrictRolesToAdminDistributor) {
+      return getRolesPermitidos('administrador', true);
+    }
+
+    return getRolesPermitidos(normalizeRole(currentUser.role), !isEditing);
+  }, [currentUser?.role, isEditing, restrictRolesToAdminDistributor]);
+
+  // En edición, las opciones de estado no deben "desaparecer" cuando el usuario cambia el select,
+  // para permitir re-seleccionar mientras el formulario permanece abierto.
+  const baseEstadoForOptions = React.useMemo(() => {
+    return normalizeEstado(estadoBase) || normalizeEstado(estado) || 'nuevo';
+  }, [estadoBase, estado]);
+
   const estadosPermitidos = React.useMemo(() => {
-    return getEstadosPermitidos(estado);
-  }, [estado]);
+    const options = getEstadosPermitidos(baseEstadoForOptions);
+    const hasCurrent = options.some((o) => o.value === baseEstadoForOptions);
+    if (hasCurrent) return options;
+
+    const tooltips: Record<string, { label: string; tooltip: string }> = {
+      pendiente_verificacion: {
+        label: '⏳ Pendiente Verificación',
+        tooltip: 'Requiere ingresar su contraseña y verificar el nuevo correo. Sin acceso al sistema.',
+      },
+      nuevo: {
+        label: '🆕 Nuevo',
+        tooltip: 'Usuario recién creado, pendiente de verificación de email',
+      },
+      activo: {
+        label: '✅ Activo',
+        tooltip: 'Usuario con acceso completo al sistema',
+      },
+      suspendido: {
+        label: '⏸️ Suspendido',
+        tooltip: 'Suspender temporalmente el acceso del usuario',
+      },
+      retirado: {
+        label: '👋 Retirado',
+        tooltip: 'Usuario ya no forma parte de la organización',
+      },
+    };
+
+    const current = tooltips[baseEstadoForOptions];
+    if (!current) return options;
+    return [{ value: baseEstadoForOptions, label: current.label, tooltip: current.tooltip }, ...options];
+  }, [baseEstadoForOptions]);
+
+  const estadoInfoMessage = React.useMemo(() => {
+    const selected = normalizeEstado(estado);
+    if (selected === 'activo') return 'El usuario tendrá acceso al sistema con normalidad.';
+    if (selected === 'suspendido') return 'El usuario no podrá acceder al sistema hasta que sea reactivado.';
+    if (selected === 'retirado') {
+      return 'El usuario será dado de baja y no tendrá acceso al sistema. Solo podrá reactivarse mediante una nueva verificación de correo, solicitada por el usuario que lo creó.';
+    }
+    return estadosPermitidos.find((e) => e.value === selected)?.tooltip || 'Selecciona un estado';
+  }, [estado, estadosPermitidos]);
+
+  const shouldShowResendButton = React.useMemo(() => {
+    if (!isEditing || !initialData) return false;
+
+    const selected = normalizeEstado(estado);
+    const initial = normalizeEstado(initialData.estado);
+
+    const currentUserId = String(currentUser?.id ?? '');
+    const creatorId = String(initialData.created_by_id ?? '');
+    const isCreator = !!currentUserId && !!creatorId && currentUserId === creatorId;
+
+    // Regla: si estaba Activo y se cambia a Retirado, NO debe mostrarse el botón.
+    if (initial === 'activo' && selected === 'retirado') return false;
+
+    // Regla: si el usuario está Retirado, solo el creador puede reenviar correo.
+    if (initial === 'retirado' && selected === 'retirado' && !isCreator) return false;
+
+    // Reglas adicionales:
+    // - Suspendido → Activo no requiere reenvío
+    // - Suspendido → Retirado no requiere reenvío
+    // Para evitar confusión, no mostramos el botón cuando el estado seleccionado es 'suspendido'
+    // ni cuando se está marcando como 'retirado' desde otro estado (solo aplica si YA está retirado).
+    if (selected === 'suspendido') return false;
+    if (selected === 'retirado' && initial !== 'retirado') return false;
+
+    return ['nuevo', 'retirado'].includes(selected);
+  }, [isEditing, initialData, estado, currentUser?.id]);
 
   // Reset form when modal opens/closes
   React.useEffect(() => {
@@ -115,21 +255,31 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
       setApellidos(initialData.apellidos || '');
       setUsername(initialData.username || '');
       setEmail(initialData.email || '');
-      setRole(initialData.role || 'administrador');
-      setEstado(initialData.estado || (initialData.email === 'admin@factura.local' ? 'activo' : 'nuevo'));
+      const initialRole = normalizeRole(initialData.role) || 'administrador';
+      if (restrictRolesToAdminDistributor && initialRole !== 'administrador' && initialRole !== 'distribuidor') {
+        setRole('administrador');
+      } else {
+        setRole(initialRole);
+      }
+      const initialEstado = normalizeEstado(initialData.estado) || (initialData.email === 'admin@factura.local' ? 'activo' : 'nuevo');
+      setEstado(initialEstado);
+      setEstadoBase(initialEstado);
     } else {
       setCedula('');
       setNombres('');
       setApellidos('');
       setUsername('');
       setEmail('');
-      const userRole = currentUser?.role;
-      const defaultRoles = userRole ? getRolesPermitidos(userRole, true) : [];
+      const userRole = normalizeRole(currentUser?.role);
+      const defaultRoles = restrictRolesToAdminDistributor
+        ? getRolesPermitidos('administrador', true)
+        : (userRole ? getRolesPermitidos(userRole, true) : []);
       setRole(defaultRoles.length > 0 ? defaultRoles[0].value : 'administrador');
       setEstado('nuevo');
+      setEstadoBase('nuevo');
     }
     setErrors({});
-  }, [isOpen, isEditing, initialData, currentUser?.role]);
+  }, [isOpen, isEditing, initialData, currentUser?.role, restrictRolesToAdminDistributor]);
 
   const handleCedulaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\D/g, '').slice(0, 10);
@@ -343,6 +493,7 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
       // Actualizar estado local si cambió
       if (nuevoEstado !== estado) {
         setEstado(nuevoEstado);
+        setEstadoBase(nuevoEstado);
       }
 
       const mensajes: Record<string, { title: string; message: string }> = {
@@ -596,8 +747,8 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
                 )}
               </div>
 
-              {/* Estado - Solo en Edición y cuando el estado no es "Nuevo" - Ancho Completo */}
-              {isEditing && estado !== 'nuevo' && (
+              {/* Estado - Edición (interactivo mientras el modal está abierto) */}
+              {isEditing && (
                 <div className="usuario-form-group full-width">
                   <label htmlFor="modal-estado" className="usuario-form-label">
                     <span className="icon">🔄</span>
@@ -610,14 +761,14 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
                       <strong>✅ Activo</strong>
                       <span className="help-text">El administrador principal siempre debe estar activo</span>
                     </div>
-                  ) : (estado === 'retirado' || estado === 'suspendido') ? (
+                  ) : (normalizeEstado(initialData?.estado) === 'retirado' && normalizeEstado(estado) === 'retirado') ? (
                     <div className="usuario-estado-locked">
                       <span className="icon">ℹ️</span>
                       <strong>
-                        {estado === 'retirado' ? '👋 Retirado' : '⏸️ Suspendido'}
+                        👋 Retirado
                       </strong>
                       <span className="help-text">
-                        Para cambiar el estado, usa el botón "Reenviar Correo" para iniciar el proceso de verificación
+                        El usuario será dado de baja y no tendrá acceso al sistema. Solo podrá reactivarse mediante una nueva verificación de correo, solicitada por el usuario que lo creó.
                       </span>
                     </div>
                   ) : (
@@ -637,7 +788,7 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
                       </select>
                       <span className="usuario-help-text">
                         <span className="icon">ℹ️</span>
-                        {estadosPermitidos.find(e => e.value === estado)?.tooltip || 'Selecciona un estado'}
+                        {estadoInfoMessage}
                       </span>
                     </>
                   )}
@@ -683,7 +834,7 @@ const UsuarioFormModal: React.FC<Props> = ({ isOpen, initialData, onClose, onSub
             </button>
             
             {/* Botón Reenviar Correo - Solo visible en edición para estados específicos */}
-            {isEditing && initialData && ['nuevo', 'suspendido', 'retirado'].includes(estado) && (
+            {shouldShowResendButton && (
               <button 
                 type="button"
                 className="usuario-btn usuario-btn-resend"

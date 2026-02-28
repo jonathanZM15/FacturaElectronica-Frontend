@@ -52,6 +52,7 @@ interface Filters {
 }
 
 const Usuarios: React.FC = () => {
+  const normalizeRole = React.useCallback((role: unknown) => String(role ?? '').trim().toLowerCase(), []);
   const [currentPage, setCurrentPage] = React.useState(1);
   const [itemsPerPage, setItemsPerPage] = React.useState(10);
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -152,6 +153,28 @@ const Usuarios: React.FC = () => {
 
   const users = usuariosResponse?.data ?? [];
   const totalItems = usuariosResponse?.meta?.total ?? 0;
+
+  const hasActiveSearchOrFilters = React.useMemo(() => {
+    const hasSearch = searchQuery.trim().length > 0;
+    const hasRoles = (filters.roles ?? []).length > 0;
+    const hasEstados = (filters.estados ?? []).length > 0;
+
+    const hasTextOrDateFilters =
+      filters.cedula.trim().length > 0 ||
+      filters.nombres.trim().length > 0 ||
+      filters.apellidos.trim().length > 0 ||
+      filters.username.trim().length > 0 ||
+      filters.email.trim().length > 0 ||
+      filters.creator.trim().length > 0 ||
+      filters.establishment.trim().length > 0 ||
+      filters.emisor.trim().length > 0 ||
+      filters.dateFrom.trim().length > 0 ||
+      filters.dateTo.trim().length > 0 ||
+      filters.updateDateFrom.trim().length > 0 ||
+      filters.updateDateTo.trim().length > 0;
+
+    return hasSearch || hasRoles || hasEstados || hasTextOrDateFilters;
+  }, [searchQuery, filters]);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -320,12 +343,13 @@ const Usuarios: React.FC = () => {
     if (!currentUser) return false;
     
     // Solo administrador y distribuidor pueden editar/eliminar
-    if (currentUser.role === 'administrador' || currentUser.role === 'distribuidor') {
+    const currentRole = normalizeRole(currentUser.role);
+    if (currentRole === 'administrador' || currentRole === 'distribuidor') {
       return true;
     }
     
     return false;
-  }, [currentUser]);
+  }, [currentUser, normalizeRole]);
 
   /**
    * Verifica si el usuario actual puede editar un usuario específico
@@ -336,12 +360,15 @@ const Usuarios: React.FC = () => {
   const canEditUser = React.useCallback((targetUser: User): boolean => {
     if (!currentUser) return false;
 
-    const currentIsAllowed = currentUser.role === 'administrador' || currentUser.role === 'distribuidor';
+    const currentRole = normalizeRole(currentUser.role);
+    const targetRole = normalizeRole(targetUser.role);
+
+    const currentIsAllowed = currentRole === 'administrador' || currentRole === 'distribuidor';
     if (!currentIsAllowed) return false;
 
-    const targetIsAllowed = targetUser.role === 'administrador' || targetUser.role === 'distribuidor';
+    const targetIsAllowed = targetRole === 'administrador' || targetRole === 'distribuidor';
     return targetIsAllowed;
-  }, [currentUser]);
+  }, [currentUser, normalizeRole]);
 
   /**
    * Verifica si un usuario puede ser eliminado (debe estar en estado "Nuevo")
@@ -1061,88 +1088,98 @@ const Usuarios: React.FC = () => {
         </div>
       ) : (
       <div className="usuarios-table-container">
-        <div className="usuarios-table-wrapper">
-          <table className="usuarios-table">
-            <thead>
-              <tr>
-                {columns.map(col => {
-                  const sortable = !!col.sortKey;
-                  return (
-                    <th
-                      key={col.key}
-                      style={{ width: col.width, cursor: sortable ? 'pointer' : 'default' }}
-                      onClick={() => {
-                        if (!sortable) return;
-                        handleSort(col.sortKey!);
-                      }}
-                      title={sortable ? 'Ordenar' : undefined}
-                    >
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                        {col.label}
-                        {sortable ? <span style={{ opacity: 0.9 }}>{getSortIcon(col.sortKey!)}</span> : null}
-                      </span>
-                    </th>
-                  );
-                })}
-                <th style={{ width: 120 }}>Acciones</th>
-              </tr>
-            </thead>
-          <tbody>
-            {filteredAndSortedUsers.length === 0 ? (
-              <tr>
-                <td colSpan={columns.length + 1} style={{ textAlign: 'center', padding: '20px', color: '#9ca3af' }}>
-                  No hay usuarios registrados
-                </td>
-              </tr>
-            ) : (
-              filteredAndSortedUsers.map(user => (
-                <tr key={user.id}>
-                  {columns.map(col => (
-                    <td key={`${user.id}-${col.key}`}>
-                      {col.render ? col.render(user) : (user[col.key] as any)?.toString() || '-'}
-                    </td>
-                  ))}
-                  <td>
-                    <div className="usuarios-actions">
-                      <button
-                        className="btn-action btn-editar"
+        {filteredAndSortedUsers.length === 0 ? (
+          <div className="empty-state">
+            <p>
+              {hasActiveSearchOrFilters
+                ? 'No se encontraron usuarios con los filtros aplicados.'
+                : 'No hay usuarios registrados'}
+            </p>
+          </div>
+        ) : (
+          <div className="usuarios-table-wrapper">
+            <table className="usuarios-table">
+              <thead>
+                <tr>
+                  {columns.map(col => {
+                    const sortable = !!col.sortKey;
+                    return (
+                      <th
+                        key={col.key}
+                        style={{ width: col.width, cursor: sortable ? 'pointer' : 'default' }}
                         onClick={() => {
-                          setEditingUser(user);
-                          setOpenEdit(true);
+                          if (!sortable) return;
+                          handleSort(col.sortKey!);
                         }}
-                        disabled={!canEditUser(user)}
-                        title={
-                          canEditUser(user)
-                            ? 'Editar'
-                            : !currentUser || (currentUser.role !== 'administrador' && currentUser.role !== 'distribuidor')
-                            ? 'Solo un usuario con rol Administrador o Distribuidor puede editar'
-                            : 'Solo se pueden editar usuarios con rol Administrador o Distribuidor'
-                        }
+                        title={sortable ? 'Ordenar' : undefined}
                       >
-                        ✏️
-                      </button>
-                      <button
-                        className="btn-action btn-eliminar"
-                        onClick={() => handleDelete(user)}
-                        disabled={!canDeleteUser(user)}
-                        title={
-                          !canEditOrDeleteUser(user)
-                            ? 'Solo administrador o distribuidor puede eliminar'
-                            : user.estado !== 'nuevo'
-                            ? 'Solo se pueden eliminar usuarios en estado Nuevo'
-                            : 'Eliminar'
-                        }
-                      >
-                        🗑️
-                      </button>
-                    </div>
-                  </td>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                          {col.label}
+                          {sortable ? <span style={{ opacity: 0.9 }}>{getSortIcon(col.sortKey!)}</span> : null}
+                        </span>
+                      </th>
+                    );
+                  })}
+                  <th style={{ width: 120 }}>Acciones</th>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-        </div>
+              </thead>
+              <tbody>
+                {filteredAndSortedUsers.map(user => (
+                  <tr key={user.id}>
+                    {columns.map(col => (
+                      <td key={`${user.id}-${col.key}`}>
+                        {col.render ? col.render(user) : (user[col.key] as any)?.toString() || '-'}
+                      </td>
+                    ))}
+                    <td>
+                      <div className="usuarios-actions">
+                        <button
+                          className="btn-action btn-editar"
+                          onClick={() => {
+                            if (!canEditUser(user)) {
+                              show({
+                                title: '❌ No permitido',
+                                message: 'Desde el Panel Administrativo solo se pueden editar usuarios con rol Administrador o Distribuidor.',
+                                type: 'error',
+                              });
+                              return;
+                            }
+                            setEditingUser(user);
+                            setOpenEdit(true);
+                          }}
+                          disabled={!canEditUser(user)}
+                          title={
+                            canEditUser(user)
+                              ? 'Editar'
+                              : !currentUser || (normalizeRole(currentUser.role) !== 'administrador' && normalizeRole(currentUser.role) !== 'distribuidor')
+                              ? 'Solo un usuario con rol Administrador o Distribuidor puede editar'
+                              : 'Solo se pueden editar usuarios con rol Administrador o Distribuidor'
+                          }
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          className="btn-action btn-eliminar"
+                          onClick={() => handleDelete(user)}
+                          disabled={!canDeleteUser(user)}
+                          title={
+                            !canEditOrDeleteUser(user)
+                              ? 'Solo administrador o distribuidor puede eliminar'
+                              : user.estado !== 'nuevo'
+                              ? 'Solo se pueden eliminar usuarios en estado Nuevo'
+                              : 'Eliminar'
+                          }
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
         
         {/* Paginación dentro de la tabla - SIEMPRE VISIBLE */}
         <div className="pagination-controls">
@@ -1215,6 +1252,7 @@ const Usuarios: React.FC = () => {
         onClose={() => setOpenNew(false)}
         onSubmit={handleCreate}
         isEditing={false}
+        restrictRolesToAdminDistributor={true}
       />
 
       <UsuarioFormModal
@@ -1226,6 +1264,7 @@ const Usuarios: React.FC = () => {
         }}
         onSubmit={handleUpdate}
         isEditing={true}
+        restrictRolesToAdminDistributor={true}
       />
 
       <UsuarioDetailModal
@@ -1237,13 +1276,15 @@ const Usuarios: React.FC = () => {
           setSelectedUser(null);
           setDetailLoading(false);
         }}
-        onEdit={() => {
-          if (selectedUser) {
-            setEditingUser(selectedUser);
-            setOpenEdit(true);
-            setOpenDetail(false);
-          }
-        }}
+        onEdit={
+          selectedUser && canEditUser(selectedUser)
+            ? () => {
+                setEditingUser(selectedUser);
+                setOpenEdit(true);
+                setOpenDetail(false);
+              }
+            : undefined
+        }
         onDelete={() => {
           if (selectedUser) {
             handleDelete(selectedUser);
