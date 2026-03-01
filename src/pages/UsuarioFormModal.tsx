@@ -352,8 +352,8 @@ const UsuarioFormModal: React.FC<Props> = ({
     
     setErrors(prev => ({ ...prev, username: error }));
     
-    // Verificar disponibilidad si es válido y tiene al menos 4 caracteres
-    if (value.length >= 4 && !error && !isEditing) {
+    // Verificar disponibilidad si es válido y tiene al menos 3 caracteres
+    if (value.trim().length >= 3 && !error && !isEditing) {
       setCheckingUsername(true);
       setTimeout(async () => {
         try {

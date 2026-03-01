@@ -368,6 +368,8 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
     return (n + a).toUpperCase() || '?';
   };
 
+  const canCreateUsuario = Boolean(user && ['administrador', 'distribuidor', 'emisor', 'gerente'].includes(user.role));
+
   return (
     <div className="emisor-usuarios-modern">
       {/* Header */}
@@ -376,10 +378,12 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
           <h2>👥 Usuarios del Emisor</h2>
           <p>Gestiona los usuarios asociados a este emisor</p>
         </div>
-        <button onClick={onOpenModal} className="btn-nuevo-usuario">
-          <span>➕</span>
-          Nuevo Usuario
-        </button>
+        {canCreateUsuario && (
+          <button onClick={onOpenModal} className="btn-nuevo-usuario">
+            <span>➕</span>
+            Nuevo Usuario
+          </button>
+        )}
       </div>
 
       {/* Stats Cards */}

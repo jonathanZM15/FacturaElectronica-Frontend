@@ -1264,9 +1264,24 @@ const EmisorInfo: React.FC = () => {
           {tab === 'usuarios' && (
             <EmisorUsuariosList
               emiId={company?.id}
-              onEdit={(u) => {
-                setEditUser(u);
-                setOpenNewUser(true);
+              onEdit={async (u) => {
+                try {
+                  const targetEmiId = (company?.id ?? id) as any;
+                  if (!targetEmiId || !u?.id) {
+                    setEditUser(u);
+                    setOpenNewUser(true);
+                    return;
+                  }
+
+                  const userRes = await usuariosEmisorApi.get(targetEmiId, u.id);
+                  const userData = userRes.data?.data ?? userRes.data;
+                  setEditUser(userData);
+                  setOpenNewUser(true);
+                } catch (error) {
+                  // Fallback: abrir con el objeto de la lista (puede venir incompleto)
+                  setEditUser(u);
+                  setOpenNewUser(true);
+                }
               }}
               onOpenModal={() => {
                 setEditUser(null);

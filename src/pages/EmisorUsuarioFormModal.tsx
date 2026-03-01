@@ -49,6 +49,50 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
   const [resendingEmail, setResendingEmail] = React.useState(false);
   const [estado, setEstado] = React.useState<string>('nuevo');
   const isEditing = React.useMemo(() => Boolean(editingId), [editingId]);
+  const identityLocked = React.useMemo(() => {
+    if (!isEditing) return false;
+    return Boolean(initialData?.email_verified_at) || initialData?.estado === 'activo';
+  }, [initialData?.email_verified_at, initialData?.estado, isEditing]);
+
+  const normalizeIdArray = React.useCallback((value: any): number[] => {
+    if (Array.isArray(value)) {
+      return value
+        .map((v) => Number(v))
+        .filter((n) => Number.isFinite(n));
+    }
+
+    if (typeof value === 'string') {
+      let parsed: any = value;
+      for (let i = 0; i < 2; i++) {
+        if (typeof parsed !== 'string') break;
+        try {
+          parsed = JSON.parse(parsed);
+        } catch {
+          break;
+        }
+      }
+      if (Array.isArray(parsed)) {
+        return parsed
+          .map((v) => Number(v))
+          .filter((n) => Number.isFinite(n));
+      }
+    }
+
+    return [];
+  }, []);
+
+  const assignedPuntoIds = React.useMemo(() => {
+    if (!isEditing || !initialData) return new Set<number>();
+
+    const idsFromField = normalizeIdArray((initialData as any).puntos_emision_ids);
+    const idsFromObjects = Array.isArray((initialData as any).puntos_emision)
+      ? (initialData as any).puntos_emision
+          .map((p: any) => Number(p?.id))
+          .filter((n: number) => Number.isFinite(n))
+      : [];
+
+    return new Set<number>([...idsFromField, ...idsFromObjects]);
+  }, [initialData, isEditing, normalizeIdArray]);
 
   const cedulaCheckTimeoutRef = React.useRef<number | null>(null);
   const cedulaCheckSeqRef = React.useRef(0);
@@ -84,13 +128,30 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
     return getPuntoOperatividad(punto) === 'ACTIVO' && getPuntoDisponibilidad(punto) === 'LIBRE';
   }, [getPuntoOperatividad, getPuntoDisponibilidad]);
 
+  const isPuntoSelectableForThisForm = React.useCallback((punto: any) => {
+    // En asignación normal: solo Activo + Libre
+    // En edición: también debe mostrarse (y mantenerse) el punto ya asociado al usuario,
+    // aunque su disponibilidad no sea 'LIBRE' (por estar ocupado por esa asociación).
+    if (isPuntoActivoYLibre(punto)) return true;
+    if (isEditing && assignedPuntoIds.has(Number(punto?.id))) return true;
+    return false;
+  }, [assignedPuntoIds, isEditing, isPuntoActivoYLibre]);
+
   const availableEstablecimientos = React.useMemo(() => {
     // Requisito: al registrar y en edición, solo mostrar establecimientos ABIERTO.
-    return establecimientos
-      .filter((e) => getEstadoEstablecimiento(e) === 'ABIERTO')
-      .slice()
-      .sort((a, b) => compareCodigoDesc(a.codigo, b.codigo));
-  }, [establecimientos, getEstadoEstablecimiento, compareCodigoDesc]);
+    let base = establecimientos.filter((e) => getEstadoEstablecimiento(e) === 'ABIERTO');
+
+    // HU: si el usuario logeado es GERENTE, solo puede asociar usuarios a sus establecimientos.
+    if (currentUser?.role === 'gerente') {
+      const ids = Array.isArray(currentUser.establecimientos_ids)
+        ? currentUser.establecimientos_ids.map((v) => Number(v)).filter((n) => Number.isFinite(n))
+        : [];
+      const allowed = new Set(ids);
+      base = base.filter((e) => allowed.has(Number(e.id)));
+    }
+
+    return base.slice().sort((a, b) => compareCodigoDesc(a.codigo, b.codigo));
+  }, [establecimientos, getEstadoEstablecimiento, compareCodigoDesc, currentUser?.role, currentUser?.establecimientos_ids]);
 
   const availableEstablecimientosIds = React.useMemo(() => {
     return availableEstablecimientos.map((e) => e.id);
@@ -155,8 +216,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
         const isValid = prevValue && puntosEmision.some((p) => {
           if (p.id !== prevValue) return false;
           if (Number(p.establecimiento_id) !== Number(estId)) return false;
-          // Solo permitir puntos activos y libres
-          return isPuntoActivoYLibre(p);
+          return isPuntoSelectableForThisForm(p);
         })
           ? prevValue
           : null;
@@ -183,7 +243,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
 
       return changed ? next : prev;
     });
-  }, [activeEstablecimientos, puntosEmision, isPuntoActivoYLibre]);
+  }, [activeEstablecimientos, puntosEmision, isPuntoSelectableForThisForm]);
 
   const handlePuntoSelection = React.useCallback((estId: number, value: string) => {
     setSelectedPuntosPorEstablecimiento((prev) => ({
@@ -195,10 +255,10 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
   const getPuntosForEstablecimiento = React.useCallback((estId: number) => {
     return puntosEmision
       .filter((p) => Number(p.establecimiento_id) === Number(estId))
-      .filter((p) => isPuntoActivoYLibre(p))
+      .filter((p) => isPuntoSelectableForThisForm(p))
       .slice()
       .sort((a, b) => compareCodigoDesc(a.codigo, b.codigo));
-  }, [puntosEmision, isPuntoActivoYLibre, compareCodigoDesc]);
+  }, [puntosEmision, isPuntoSelectableForThisForm, compareCodigoDesc]);
 
   React.useEffect(() => {
     if (open && initialData) {
@@ -209,8 +269,54 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
       setEmail(initialData.email);
       setRole(initialData.role || 'gerente');
       setEstado(initialData.estado || 'nuevo');
-      setSelectedEstablecimientos([]);
-      setSelectedPuntosPorEstablecimiento({});
+
+      const allowedEsts = new Set(availableEstablecimientosIds.map((id) => Number(id)));
+
+      const estIdsFromField = normalizeIdArray((initialData as any).establecimientos_ids);
+      const estIdsFromObjects = Array.isArray((initialData as any).establecimientos)
+        ? (initialData as any).establecimientos
+            .map((e: any) => Number(e?.id))
+            .filter((n: number) => Number.isFinite(n))
+        : [];
+      const estIdsFromPuntos = Array.isArray((initialData as any).puntos_emision)
+        ? (initialData as any).puntos_emision
+            .map((p: any) => Number(p?.establecimiento_id))
+            .filter((n: number) => Number.isFinite(n))
+        : [];
+
+      const mergedEstIds = Array.from(
+        new Set([...estIdsFromField, ...estIdsFromObjects, ...estIdsFromPuntos])
+      )
+        .map((id) => Number(id))
+        .filter((id) => Number.isFinite(id) && allowedEsts.has(id));
+
+      setSelectedEstablecimientos(mergedEstIds);
+
+      const nextMap: Record<number, number | null> = {};
+      // Preferir objetos (traen establecimiento_id)
+      if (Array.isArray((initialData as any).puntos_emision) && (initialData as any).puntos_emision.length > 0) {
+        (initialData as any).puntos_emision.forEach((p: any) => {
+          const estId = Number(p?.establecimiento_id);
+          const puntoId = Number(p?.id);
+          if (!Number.isFinite(estId) || !Number.isFinite(puntoId)) return;
+          if (!allowedEsts.has(estId)) return;
+          if (nextMap[estId] != null) return;
+          nextMap[estId] = puntoId;
+        });
+      } else {
+        // Fallback: ids + lookup por catálogo de puntos
+        const puntoIds = normalizeIdArray((initialData as any).puntos_emision_ids);
+        puntoIds.forEach((pid) => {
+          const found = puntosEmision.find((p) => Number(p.id) === Number(pid));
+          if (!found) return;
+          const estId = Number(found.establecimiento_id);
+          if (!Number.isFinite(estId) || !allowedEsts.has(estId)) return;
+          if (nextMap[estId] != null) return;
+          nextMap[estId] = Number(pid);
+        });
+      }
+
+      setSelectedPuntosPorEstablecimiento(nextMap);
     } else if (open) {
       // Reset form
       setCedula('');
@@ -224,7 +330,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
       setSelectedPuntosPorEstablecimiento({});
     }
     setErrors({});
-  }, [open, initialData, getRolesPermitidos]);
+  }, [open, initialData, getRolesPermitidos, availableEstablecimientosIds, normalizeIdArray, puntosEmision]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -247,27 +353,9 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
 
     // Validar restricciones de asociación por rol
     if (role === 'emisor') {
-      // Emisor: se asocia automáticamente a todos los establecimientos disponibles,
-      // y debe escoger un punto de emisión para cada establecimiento.
+      // Emisor: se asocia automáticamente a todos los establecimientos disponibles.
       if (availableEstablecimientosIds.length === 0) {
         newErrors.establecimientos = 'No hay establecimientos disponibles (ABIERTO) para asignar al Emisor.';
-      }
-      const estsSinSeleccion: string[] = [];
-
-      for (const estId of availableEstablecimientosIds) {
-        const estInfo = availableEstablecimientos.find((e) => e.id === estId);
-        const label = estInfo ? `${estInfo.codigo} - ${estInfo.nombre}` : `Establecimiento #${estId}`;
-        const puntosDisponibles = getPuntosForEstablecimiento(estId);
-        // Si no hay puntos disponibles, NO es obligatorio escoger.
-        if (puntosDisponibles.length === 0) continue;
-        const selected = selectedPuntosPorEstablecimiento[estId];
-        if (!selected) {
-          estsSinSeleccion.push(label);
-        }
-      }
-
-      if (estsSinSeleccion.length > 0) {
-        newErrors.puntos_emision_ids = `Debes seleccionar un punto de emisión para: ${estsSinSeleccion.join(', ')}`;
       }
     } else if (role === 'gerente' || role === 'cajero') {
       // Gerente y Cajero: establecimientos obligatorios
@@ -280,69 +368,11 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const puntosEmisionStatus = React.useMemo(() => {
-    const isRoleConAsociacion = role === 'emisor' || role === 'gerente' || role === 'cajero';
-    if (!isRoleConAsociacion) return { ok: true, error: '' };
-
-    // Para gerente/cajero, no validar puntos hasta que haya establecimientos elegidos
-    if ((role === 'gerente' || role === 'cajero') && activeEstablecimientos.length === 0) {
-      return { ok: true, error: '' };
-    }
-
-    // Para emisor, debe haber establecimientos disponibles
-    if (role === 'emisor' && availableEstablecimientosIds.length === 0) {
-      return {
-        ok: false,
-        error: 'No hay establecimientos disponibles (ABIERTO) para asignar al Emisor.'
-      };
-    }
-
-    const estIdsToCheck = role === 'emisor' ? availableEstablecimientosIds : activeEstablecimientos;
-    const estsSinSeleccion: string[] = [];
-
-    for (const estId of estIdsToCheck) {
-      const estInfo = availableEstablecimientos.find((e) => e.id === estId);
-      const label = estInfo ? `${estInfo.codigo} - ${estInfo.nombre}` : `Establecimiento #${estId}`;
-      const puntosDisponibles = getPuntosForEstablecimiento(estId);
-      // Si no hay puntos disponibles, NO es obligatorio escoger.
-      if (puntosDisponibles.length === 0) continue;
-      const selected = selectedPuntosPorEstablecimiento[estId];
-      if (!selected) {
-        estsSinSeleccion.push(label);
-      }
-    }
-    if (estsSinSeleccion.length > 0) {
-      return {
-        ok: false,
-        error: `Debes seleccionar un punto de emisión para: ${estsSinSeleccion.join(', ')}`
-      };
-    }
-
-    return { ok: true, error: '' };
-  }, [
-    role,
-    activeEstablecimientos,
-    availableEstablecimientos,
-    availableEstablecimientosIds,
-    getPuntosForEstablecimiento,
-    selectedPuntosPorEstablecimiento
-  ]);
-
-  React.useEffect(() => {
-    if (!open) return;
-    setErrors((prev) => {
-      const current = prev.puntos_emision_ids || '';
-      const nextMsg = puntosEmisionStatus.error || '';
-      if (current === nextMsg) return prev;
-      const next = { ...prev };
-      if (nextMsg) {
-        next.puntos_emision_ids = nextMsg;
-      } else {
-        delete next.puntos_emision_ids;
-      }
-      return next;
-    });
-  }, [open, puntosEmisionStatus.error]);
+  const puntosSeleccionados = React.useMemo(() => {
+    return activeEstablecimientos
+      .map((estId) => selectedPuntosPorEstablecimiento[estId] ?? null)
+      .filter((p): p is number => Boolean(p));
+  }, [activeEstablecimientos, selectedPuntosPorEstablecimiento]);
 
   const canSubmit = React.useMemo(() => {
     if (loading || resendingEmail || checkingCedula || checkingEmail || checkingUsername) return false;
@@ -370,7 +400,6 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
       usernameV.valid &&
       Boolean(role) &&
       establecimientosOk &&
-      puntosEmisionStatus.ok &&
       !hasAnyInlineErrors
     );
   }, [
@@ -387,7 +416,6 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
     role,
     selectedEstablecimientos.length,
     availableEstablecimientosIds.length,
-    puntosEmisionStatus.ok,
     username
   ]);
 
@@ -400,8 +428,8 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
     const error = validation.valid ? '' : (validation.error || '');
     setErrors((prev) => ({ ...prev, username: error }));
 
-    // Verificar disponibilidad si es válido y tiene al menos 4 caracteres
-    if (value.length >= 4 && !error && (!isEditing || value !== initialData?.username)) {
+    // Verificar disponibilidad si es válido y tiene al menos 3 caracteres
+    if (value.trim().length >= 3 && !error && (!isEditing || value !== initialData?.username)) {
       setTimeout(async () => {
         setCheckingUsername(true);
         try {
@@ -576,23 +604,22 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
         apellidos,
         username,
         email,
-        role, // Usar 'role' en lugar de 'rol'
-        estado: 'activo'
+        role // Usar 'role' en lugar de 'rol'
       };
-
-      const puntosAsignados = activeEstablecimientos
-        .map((estId) => selectedPuntosPorEstablecimiento[estId] ?? null)
-        .filter((p): p is number => Boolean(p));
 
       // Aplicar reglas de asociación según el rol
       if (role === 'emisor') {
         // Emisor: se asocia automáticamente a todos los establecimientos disponibles
         payload.establecimientos_ids = availableEstablecimientosIds;
-        payload.puntos_emision_ids = puntosAsignados;
+        if (puntosSeleccionados.length > 0) {
+          payload.puntos_emision_ids = puntosSeleccionados;
+        }
       } else if (role === 'gerente' || role === 'cajero') {
         // Gerente y Cajero: establecimientos obligatorios
         payload.establecimientos_ids = selectedEstablecimientos.length > 0 ? selectedEstablecimientos : [];
-        payload.puntos_emision_ids = puntosAsignados;
+        if (isEditing || puntosSeleccionados.length > 0) {
+          payload.puntos_emision_ids = puntosSeleccionados;
+        }
       }
 
       if (!editingId) {
@@ -694,7 +721,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                 onChange={handleUsernameChange}
                 placeholder="usuario1"
                 autoComplete="off"
-                disabled={loading}
+                disabled={loading || identityLocked}
                 style={{
                   width: '100%',
                   padding: '10px 12px',
@@ -722,7 +749,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                 onChange={handleEmailChange}
                 placeholder="usuario@dominio.com"
                 autoComplete="off"
-                disabled={loading}
+                disabled={loading || identityLocked}
                 style={{
                   width: '100%',
                   padding: '10px 12px',
@@ -1061,6 +1088,20 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                     fontWeight: 700
                   }}>
                     {errors.puntos_emision_ids}
+                  </div>
+                )}
+
+                {(role === 'emisor' || role === 'gerente' || role === 'cajero') && puntosSeleccionados.length === 0 && (
+                  <div style={{
+                    padding: '12px 14px',
+                    background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                    border: '1px solid #fbbf24',
+                    borderRadius: 10,
+                    color: '#92400e',
+                    fontSize: 13,
+                    fontWeight: 700
+                  }}>
+                    ℹ️ Si no seleccionas ningún punto de emisión, el usuario no tendrá asignación de punto.
                   </div>
                 )}
                 {activeEstablecimientos.map((estId, index) => {

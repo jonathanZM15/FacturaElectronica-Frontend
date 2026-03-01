@@ -62,8 +62,8 @@ const Navbar: React.FC = () => {
             </li>
           )}
           
-          {/* Usuarios: solo visible para Administradores */}
-          {user && user.role === 'administrador' && (
+          {/* Usuarios: Administrador y Distribuidor */}
+          {user && (user.role === 'administrador' || user.role === 'distribuidor') && (
             <li className="nav-item">
               <NavLink 
                 to="/usuarios" 

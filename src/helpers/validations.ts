@@ -94,17 +94,14 @@ export const validateUsername = (username: string): { valid: boolean; error?: st
     return { valid: false, error: 'El username es requerido' };
   }
 
-  if (username.length < 4) {
-    return { valid: false, error: 'El username debe tener al menos 4 caracteres' };
+  // HU: el nombre de usuario acepta todo tipo de caracteres.
+  // Solo validamos longitud y que no sea solo espacios.
+  if (username.trim().length < 3) {
+    return { valid: false, error: 'El username debe tener al menos 3 caracteres' };
   }
 
-  if (username.length > 50) {
-    return { valid: false, error: 'El username es demasiado largo (máx. 50 caracteres)' };
-  }
-
-  // Solo permitir letras, números, guiones y guiones bajos
-  if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
-    return { valid: false, error: 'Solo se permiten letras, números, guiones y guiones bajos' };
+  if (username.length > 255) {
+    return { valid: false, error: 'El username es demasiado largo (máx. 255 caracteres)' };
   }
 
   return { valid: true };

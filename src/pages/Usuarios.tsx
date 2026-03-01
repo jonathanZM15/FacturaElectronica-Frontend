@@ -62,7 +62,6 @@ const Usuarios: React.FC = () => {
   const [creatorInfoById, setCreatorInfoById] = React.useState<
     Record<string, { role?: string; username?: string; nombres?: string; apellidos?: string }>
   >({});
-  const [openNew, setOpenNew] = React.useState(false);
   const [openEdit, setOpenEdit] = React.useState(false);
   const [editingUser, setEditingUser] = React.useState<User | null>(null);
   const [openDelete, setOpenDelete] = React.useState(false);
@@ -336,26 +335,10 @@ const Usuarios: React.FC = () => {
   };
 
   /**
-   * Verifica si el usuario actual puede editar/eliminar usuarios
-   * Solo administrador y distribuidor tienen estos permisos
-   */
-  const canEditOrDeleteUser = React.useCallback((targetUser: User): boolean => {
-    if (!currentUser) return false;
-    
-    // Solo administrador y distribuidor pueden editar/eliminar
-    const currentRole = normalizeRole(currentUser.role);
-    if (currentRole === 'administrador' || currentRole === 'distribuidor') {
-      return true;
-    }
-    
-    return false;
-  }, [currentUser, normalizeRole]);
-
-  /**
    * Verifica si el usuario actual puede editar un usuario específico
    * Condiciones:
-   *  - El usuario autenticado debe ser administrador o distribuidor
-   *  - Solo se permiten ediciones sobre usuarios cuyo rol sea administrador o distribuidor
+   *  - Admin puede editar cualquier usuario (backend aplica reglas adicionales)
+   *  - Distribuidor solo puede editar usuarios con rol: emisor, gerente, cajero
    */
   const canEditUser = React.useCallback((targetUser: User): boolean => {
     if (!currentUser) return false;
@@ -363,18 +346,20 @@ const Usuarios: React.FC = () => {
     const currentRole = normalizeRole(currentUser.role);
     const targetRole = normalizeRole(targetUser.role);
 
-    const currentIsAllowed = currentRole === 'administrador' || currentRole === 'distribuidor';
-    if (!currentIsAllowed) return false;
+    if (currentRole === 'administrador') return true;
 
-    const targetIsAllowed = targetRole === 'administrador' || targetRole === 'distribuidor';
-    return targetIsAllowed;
+    if (currentRole === 'distribuidor') {
+      return targetRole === 'emisor' || targetRole === 'gerente' || targetRole === 'cajero';
+    }
+
+    return false;
   }, [currentUser, normalizeRole]);
 
   /**
    * Verifica si un usuario puede ser eliminado (debe estar en estado "Nuevo")
    */
   const canDeleteUser = React.useCallback((targetUser: User): boolean => {
-    if (!canEditOrDeleteUser(targetUser)) {
+    if (!canEditUser(targetUser)) {
       return false;
     }
     
@@ -384,7 +369,7 @@ const Usuarios: React.FC = () => {
     }
     
     return true;
-  }, [canEditOrDeleteUser]);
+  }, [canEditUser]);
 
   const getSortIcon = (field: SortField) => {
     if (sortField !== field) return '⇅';
@@ -393,20 +378,6 @@ const Usuarios: React.FC = () => {
 
   // Aplicar filtros y ordenamiento a los usuarios cargados
   const filteredAndSortedUsers = React.useMemo(() => users, [users]);
-
-  // Crear usuario
-  const handleCreate = async (newData: User & { password_confirmation?: string }) => {
-    try {
-      await usuariosApi.create(newData);
-      show({ title: 'Éxito', message: 'Usuario creado exitosamente', type: 'success' });
-      setOpenNew(false);
-      setCurrentPage(1);
-      await refetchUsuarios({ forceFresh: true });
-    } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.message || 'Error creando usuario';
-      show({ title: 'Error', message: msg, type: 'error' });
-    }
-  };
 
   // Actualizar usuario
   const handleUpdate = async (newData: User & { password_confirmation?: string }) => {
@@ -833,15 +804,7 @@ const Usuarios: React.FC = () => {
           <p className="usuarios-header-subtitle">Administra los usuarios del sistema de facturación</p>
         </div>
         <div className="header-actions">
-          <button 
-            className="btn-nuevo"
-            onClick={() => setOpenNew(true)}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-            Nuevo Usuario
-          </button>
+          {/* HU: el registro de usuarios es exclusivo desde Emisor Info → Usuarios */}
         </div>
       </div>
 
@@ -1139,7 +1102,7 @@ const Usuarios: React.FC = () => {
                             if (!canEditUser(user)) {
                               show({
                                 title: '❌ No permitido',
-                                message: 'Desde el Panel Administrativo solo se pueden editar usuarios con rol Administrador o Distribuidor.',
+                                message: 'No tienes permisos para editar este usuario.',
                                 type: 'error',
                               });
                               return;
@@ -1151,9 +1114,11 @@ const Usuarios: React.FC = () => {
                           title={
                             canEditUser(user)
                               ? 'Editar'
-                              : !currentUser || (normalizeRole(currentUser.role) !== 'administrador' && normalizeRole(currentUser.role) !== 'distribuidor')
-                              ? 'Solo un usuario con rol Administrador o Distribuidor puede editar'
-                              : 'Solo se pueden editar usuarios con rol Administrador o Distribuidor'
+                              : !currentUser
+                              ? 'No autenticado'
+                              : normalizeRole(currentUser.role) === 'distribuidor'
+                              ? 'Distribuidor solo puede editar: emisor, gerente, cajero'
+                              : 'No tienes permisos para editar'
                           }
                         >
                           ✏️
@@ -1163,8 +1128,8 @@ const Usuarios: React.FC = () => {
                           onClick={() => handleDelete(user)}
                           disabled={!canDeleteUser(user)}
                           title={
-                            !canEditOrDeleteUser(user)
-                              ? 'Solo administrador o distribuidor puede eliminar'
+                            !canEditUser(user)
+                              ? 'No tienes permisos para eliminar'
                               : user.estado !== 'nuevo'
                               ? 'Solo se pueden eliminar usuarios en estado Nuevo'
                               : 'Eliminar'
@@ -1246,15 +1211,6 @@ const Usuarios: React.FC = () => {
       )}
 
       {/* Modales */}
-      <UsuarioFormModal
-        isOpen={openNew}
-        initialData={null}
-        onClose={() => setOpenNew(false)}
-        onSubmit={handleCreate}
-        isEditing={false}
-        restrictRolesToAdminDistributor={true}
-      />
-
       <UsuarioFormModal
         isOpen={openEdit}
         initialData={editingUser}
