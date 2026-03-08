@@ -82,13 +82,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
-    try {
-      await auth.logout();
-    } catch (e) {
-      // ignore
-    }
     clearAuth();
     navigate('/');
+    // Fire-and-forget: invalidar token en backend sin bloquear la UI
+    auth.logout().catch(() => {});
   };
 
   return (
