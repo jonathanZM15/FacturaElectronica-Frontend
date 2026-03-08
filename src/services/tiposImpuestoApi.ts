@@ -1,4 +1,8 @@
 import api from './api';
+import { fetchWithCache, cacheManager } from './cacheManager';
+
+const CACHE_NS = 'tiposImpuesto';
+const CACHE_TTL = 20_000;
 
 // Tipos de impuesto disponibles
 export type TipoImpuestoEnum = 'IVA' | 'ICE' | 'IRBPNR';
@@ -104,13 +108,17 @@ export const TARIFA_POR_TIPO: Record<TipoImpuestoEnum, TipoTarifaEnum[]> = {
 
 // API Service
 export const tiposImpuestoApi = {
-  // Listar tipos de impuesto con paginación y filtros
+  // Listar tipos de impuesto con paginación y filtros (con caché)
   list(params?: Record<string, any>) {
     // Convertir array de tipos_impuesto a string separado por comas
     if (params?.tipos_impuesto && Array.isArray(params.tipos_impuesto)) {
       params.tipos_impuesto = params.tipos_impuesto.join(',');
     }
-    return api.get<TipoImpuestoListResponse>('/api/tipos-impuesto', { params });
+    const key = `${CACHE_NS}:list:${JSON.stringify(params)}`;
+    return fetchWithCache(key, async () => {
+      const res = await api.get<TipoImpuestoListResponse>('/api/tipos-impuesto', { params });
+      return res.data;
+    }, { ttl: CACHE_TTL }).then(data => ({ data }));
   },
 
   // Obtener un tipo de impuesto específico
@@ -120,19 +128,19 @@ export const tiposImpuestoApi = {
 
   // Crear un nuevo tipo de impuesto
   create(data: Omit<TipoImpuestoFormData, 'password'>) {
-    return api.post<{ message: string; data: TipoImpuesto }>('/api/tipos-impuesto', data);
+    return api.post<{ message: string; data: TipoImpuesto }>('/api/tipos-impuesto', data).then(r => { cacheManager.clearNamespace(CACHE_NS); return r; });
   },
 
   // Actualizar un tipo de impuesto existente (requiere password)
   update(id: number, data: TipoImpuestoFormData) {
-    return api.put<{ message: string; data: TipoImpuesto }>(`/api/tipos-impuesto/${id}`, data);
+    return api.put<{ message: string; data: TipoImpuesto }>(`/api/tipos-impuesto/${id}`, data).then(r => { cacheManager.clearNamespace(CACHE_NS); return r; });
   },
 
   // Eliminar un tipo de impuesto (requiere password)
   delete(id: number, password: string) {
     return api.delete<{ message: string }>(`/api/tipos-impuesto/${id}`, {
       data: { password },
-    });
+    }).then(r => { cacheManager.clearNamespace(CACHE_NS); return r; });
   },
 
   // Obtener opciones para selectores del formulario

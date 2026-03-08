@@ -107,18 +107,18 @@ const SuscripcionesList: React.FC<Props> = ({ emisorId }) => {
     loadEstados();
   }, []);
 
+  // Evaluar estados automáticamente solo una vez al montar
+  useEffect(() => {
+    suscripcionesApi.evaluarEstados(emisorId).catch(err => {
+      console.warn('Error evaluando estados:', err);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [emisorId]);
+
   // Cargar suscripciones
   const loadSuscripciones = useCallback(async () => {
     try {
       setLoading(true);
-      
-      // Primero evaluar estados automáticamente (sincroniza estados según fechas/uso)
-      try {
-        await suscripcionesApi.evaluarEstados(emisorId);
-      } catch (evalErr) {
-        // Silenciosamente ignorar errores de evaluación, continuar cargando
-        console.warn('Error evaluando estados:', evalErr);
-      }
       
       const params: Record<string, any> = {
         page: currentPage,

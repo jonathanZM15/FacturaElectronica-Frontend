@@ -1,4 +1,8 @@
 import api from './api';
+import { fetchWithCache, cacheManager } from './cacheManager';
+
+const CACHE_NS = 'planes';
+const CACHE_TTL = 20_000; // 20s
 
 export interface Plan {
   id?: number;
@@ -30,9 +34,13 @@ export interface Plan {
 }
 
 export const planesApi = {
-  // Listar planes con filtros, búsqueda y paginación
+  // Listar planes con filtros, búsqueda y paginación (con caché)
   list(params: Record<string, any>) {
-    return api.get('/api/planes', { params });
+    const key = `${CACHE_NS}:list:${JSON.stringify(params)}`;
+    return fetchWithCache(key, async () => {
+      const res = await api.get('/api/planes', { params });
+      return res.data;
+    }, { ttl: CACHE_TTL }).then(data => ({ data }));
   },
 
   // Obtener plan específico
@@ -42,17 +50,17 @@ export const planesApi = {
 
   // Crear nuevo plan
   create(payload: Partial<Plan>) {
-    return api.post('/api/planes', payload);
+    return api.post('/api/planes', payload).then(r => { cacheManager.clearNamespace(CACHE_NS); return r; });
   },
 
   // Actualizar plan
   update(id: number | string, payload: Partial<Plan>) {
-    return api.put(`/api/planes/${id}`, payload);
+    return api.put(`/api/planes/${id}`, payload).then(r => { cacheManager.clearNamespace(CACHE_NS); return r; });
   },
 
   // Eliminar plan (soft delete)
   delete(id: number | string, payload?: { password: string }) {
-    return api.delete(`/api/planes/${id}`, { data: payload });
+    return api.delete(`/api/planes/${id}`, { data: payload }).then(r => { cacheManager.clearNamespace(CACHE_NS); return r; });
   },
 
   // Obtener lista de períodos disponibles

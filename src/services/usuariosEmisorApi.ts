@@ -1,4 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
+import { fetchWithCache, cacheManager } from './cacheManager';
 
 const api: AxiosInstance = axios.create({
   baseURL: 'http://localhost:8000/api',
@@ -17,7 +18,12 @@ api.interceptors.request.use((config) => {
 
 export const usuariosEmisorApi = {
   list: async (emiId: string | number, params: Record<string, any> = {}) => {
-    return api.get(`/emisores/${emiId}/usuarios`, { params });
+    const key = `emisorUsers:${emiId}:list:${JSON.stringify(params)}`;
+    const data = await fetchWithCache(key, async () => {
+      const res = await api.get(`/emisores/${emiId}/usuarios`, { params });
+      return res.data;
+    }, { ttl: 15_000 });
+    return { data };
   },
 
   get: async (emiId: string | number, userId: string | number) => {
@@ -25,17 +31,17 @@ export const usuariosEmisorApi = {
   },
 
   create: async (emiId: string | number, data: any) => {
-    return api.post(`/emisores/${emiId}/usuarios`, data);
+    return api.post(`/emisores/${emiId}/usuarios`, data).then(r => { cacheManager.clearNamespace(`emisorUsers:${emiId}`); return r; });
   },
 
   update: async (emiId: string | number, userId: string | number, data: any) => {
-    return api.put(`/emisores/${emiId}/usuarios/${userId}`, data);
+    return api.put(`/emisores/${emiId}/usuarios/${userId}`, data).then(r => { cacheManager.clearNamespace(`emisorUsers:${emiId}`); return r; });
   },
 
   delete: async (emiId: string | number, userId: string | number, password: string) => {
     return api.delete(`/emisores/${emiId}/usuarios/${userId}`, {
       data: { password }
-    });
+    }).then(r => { cacheManager.clearNamespace(`emisorUsers:${emiId}`); return r; });
   },
 
   // Verificar disponibilidad de email

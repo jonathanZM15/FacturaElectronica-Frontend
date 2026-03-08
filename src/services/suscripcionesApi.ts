@@ -1,4 +1,5 @@
 import api from './api';
+import { fetchWithCache, cacheManager } from './cacheManager';
 
 export interface Suscripcion {
   id?: number;
@@ -154,9 +155,13 @@ export interface HistorialEstadoItem {
 }
 
 export const suscripcionesApi = {
-  // Listar suscripciones de un emisor
+  // Listar suscripciones de un emisor (con caché)
   list(emisorId: number, params?: Record<string, any>) {
-    return api.get(`/api/emisores/${emisorId}/suscripciones`, { params });
+    const key = `suscripciones:${emisorId}:list:${JSON.stringify(params)}`;
+    return fetchWithCache(key, async () => {
+      const res = await api.get(`/api/emisores/${emisorId}/suscripciones`, { params });
+      return res.data;
+    }, { ttl: 15_000 }).then(data => ({ data }));
   },
 
   // Obtener suscripción específica
@@ -194,7 +199,7 @@ export const suscripcionesApi = {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
-    });
+    }).then(r => { cacheManager.clearNamespace(`suscripciones:${emisorId}`); return r; });
   },
 
   // Actualizar suscripción existente
@@ -225,13 +230,13 @@ export const suscripcionesApi = {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
-    });
+    }).then(r => { cacheManager.clearNamespace(`suscripciones:${emisorId}`); return r; });
   },
 
   // Eliminar suscripción (HU8)
   // Solo se permite si: estado_transaccion="Pendiente", estado_suscripcion="Pendiente"/"Programado", sin comprobantes emitidos
   delete(emisorId: number, suscripcionId: number) {
-    return api.delete(`/api/emisores/${emisorId}/suscripciones/${suscripcionId}`);
+    return api.delete(`/api/emisores/${emisorId}/suscripciones/${suscripcionId}`).then(r => { cacheManager.clearNamespace(`suscripciones:${emisorId}`); return r; });
   },
 
   // Obtener campos editables para una suscripción
@@ -266,7 +271,7 @@ export const suscripcionesApi = {
     return api.post(`/api/emisores/${emisorId}/suscripciones/${suscripcionId}/cambiar-estado`, {
       nuevo_estado: nuevoEstado,
       motivo,
-    });
+    }).then(r => { cacheManager.clearNamespace(`suscripciones:${emisorId}`); return r; });
   },
 
   // Obtener transiciones de estado disponibles

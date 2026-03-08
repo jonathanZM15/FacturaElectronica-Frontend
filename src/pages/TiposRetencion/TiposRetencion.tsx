@@ -52,16 +52,6 @@ const TiposRetencion: React.FC = () => {
       setTotalItems(response.pagination.total);
       setTotalPages(response.pagination.last_page);
       
-      // Calcular stats
-      const allResponse = await tiposRetencionApi.getAll({ per_page: 1000 });
-      const allData = allResponse.data;
-      setStats({
-        iva: allData.filter(t => t.tipo_retencion === 'IVA').length,
-        renta: allData.filter(t => t.tipo_retencion === 'RENTA').length,
-        isd: allData.filter(t => t.tipo_retencion === 'ISD').length,
-        total: allData.length,
-      });
-      
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       show({ type: 'error', title: 'Error', message: 'Error al cargar tipos de retención: ' + errorMessage });
@@ -73,6 +63,20 @@ const TiposRetencion: React.FC = () => {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Cargar stats solo una vez al montar (usa caché)
+  useEffect(() => {
+    tiposRetencionApi.getAll({ per_page: 1000 }).then(allResponse => {
+      const allData = allResponse.data;
+      setStats({
+        iva: allData.filter((t: any) => t.tipo_retencion === 'IVA').length,
+        renta: allData.filter((t: any) => t.tipo_retencion === 'RENTA').length,
+        isd: allData.filter((t: any) => t.tipo_retencion === 'ISD').length,
+        total: allData.length,
+      });
+    }).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Manejadores
   const handleSort = (column: string) => {

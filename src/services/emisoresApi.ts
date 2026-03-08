@@ -1,10 +1,18 @@
 import { Emisor } from '../types/emisor';
 import api from './api';
+import { fetchWithCache, cacheManager } from './cacheManager';
+
+const CACHE_NS = 'emisores';
+const CACHE_TTL = 20_000;
 
 export const emisoresApi = {
-  // Accept flexible params to support dynamic filtering/sorting/pagination
+  // Accept flexible params to support dynamic filtering/sorting/pagination (con caché)
   list(params: Record<string, any>) {
-    return api.get('/api/emisores', { params });
+    const key = `${CACHE_NS}:list:${JSON.stringify(params)}`;
+    return fetchWithCache(key, async () => {
+      const res = await api.get('/api/emisores', { params });
+      return res.data;
+    }, { ttl: CACHE_TTL }).then(data => ({ data }));
   },
 
   checkRuc(ruc: string) {
@@ -21,9 +29,9 @@ export const emisoresApi = {
       });
       if (payload.logoFile) fd.append('logo', payload.logoFile);
       // Let axios set the multipart boundary automatically
-      return api.post('/api/emisores', fd);
+      return api.post('/api/emisores', fd).then(r => { cacheManager.clearNamespace(CACHE_NS); return r; });
     }
-    return api.post('/api/emisores', payload);
+    return api.post('/api/emisores', payload).then(r => { cacheManager.clearNamespace(CACHE_NS); return r; });
   },
   get(id: number | string) {
     return api.get(`/api/emisores/${id}`);
@@ -61,14 +69,14 @@ export const emisoresApi = {
         console.log('About to send POST (spoof PUT) request with FormData containing logo');
       }
       // IMPORTANT: Enviamos POST para que PHP reconozca el archivo en $_FILES
-      return api.post(`/api/emisores/${id}`, fd);
+      return api.post(`/api/emisores/${id}`, fd).then(r => { cacheManager.clearNamespace(CACHE_NS); return r; });
     }
     console.log('No logo file, sending without multipart');
-    return api.put(`/api/emisores/${id}`, payload);
+    return api.put(`/api/emisores/${id}`, payload).then(r => { cacheManager.clearNamespace(CACHE_NS); return r; });
   },
   delete(id: number | string, password: string) {
     // axios allows a request body on DELETE via the `data` option
-    return api.delete(`/api/emisores/${id}`, { data: { password } });
+    return api.delete(`/api/emisores/${id}`, { data: { password } }).then(r => { cacheManager.clearNamespace(CACHE_NS); return r; });
   },
   validateDelete(id: number | string) {
     return api.get(`/api/emisores/${id}/validate-delete`);
@@ -78,6 +86,6 @@ export const emisoresApi = {
   },
 
   deletePermanent(id: number | string, password: string) {
-    return api.delete(`/api/emisores/${id}/permanent`, { data: { password } });
+    return api.delete(`/api/emisores/${id}/permanent`, { data: { password } }).then(r => { cacheManager.clearNamespace(CACHE_NS); return r; });
   },
 };

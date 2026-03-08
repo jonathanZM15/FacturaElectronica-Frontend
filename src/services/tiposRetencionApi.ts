@@ -1,4 +1,8 @@
 import api from './api';
+import { fetchWithCache, cacheManager } from './cacheManager';
+
+const CACHE_NS = 'tiposRetencion';
+const CACHE_TTL = 20_000;
 
 // Tipos de retención disponibles
 export type TipoRetencionEnum = 'IVA' | 'RENTA' | 'ISD';
@@ -81,7 +85,7 @@ export const TIPOS_RETENCION: TipoRetencionEnum[] = ['IVA', 'RENTA', 'ISD'];
 // API de Tipos de Retención
 export const tiposRetencionApi = {
   /**
-   * Listar tipos de retención con paginación y filtros
+   * Listar tipos de retención con paginación y filtros (con caché)
    */
   getAll: async (params?: {
     page?: number;
@@ -112,9 +116,12 @@ export const tiposRetencionApi = {
       if (f.porcentaje_max !== undefined) queryParams.porcentaje_max = f.porcentaje_max.toString();
     }
     
-    const queryString = new URLSearchParams(queryParams).toString();
-    const response = await api.get(`/api/tipos-retencion${queryString ? `?${queryString}` : ''}`);
-    return response.data;
+    const key = `${CACHE_NS}:list:${JSON.stringify(queryParams)}`;
+    return fetchWithCache(key, async () => {
+      const queryString = new URLSearchParams(queryParams).toString();
+      const response = await api.get(`/api/tipos-retencion${queryString ? `?${queryString}` : ''}`);
+      return response.data;
+    }, { ttl: CACHE_TTL });
   },
   
   /**
@@ -130,6 +137,7 @@ export const tiposRetencionApi = {
    */
   create: async (data: TipoRetencionFormData): Promise<{ message: string; data: TipoRetencion }> => {
     const response = await api.post('/api/tipos-retencion', data);
+    cacheManager.clearNamespace(CACHE_NS);
     return response.data;
   },
   
@@ -138,6 +146,7 @@ export const tiposRetencionApi = {
    */
   update: async (id: number, data: Partial<TipoRetencionFormData> & { password: string }): Promise<{ message: string; data: TipoRetencion }> => {
     const response = await api.put(`/api/tipos-retencion/${id}`, data);
+    cacheManager.clearNamespace(CACHE_NS);
     return response.data;
   },
   
@@ -146,6 +155,7 @@ export const tiposRetencionApi = {
    */
   delete: async (id: number, password: string): Promise<{ message: string }> => {
     const response = await api.delete(`/api/tipos-retencion/${id}`, { data: { password } });
+    cacheManager.clearNamespace(CACHE_NS);
     return response.data;
   },
   
