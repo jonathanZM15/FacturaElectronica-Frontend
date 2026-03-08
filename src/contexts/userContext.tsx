@@ -19,8 +19,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const navigate = useNavigate();
 
   const clearAuth = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('authUser');
+    sessionStorage.removeItem('authToken');
+    sessionStorage.removeItem('authUser');
     setUser(null);
   };
 
@@ -28,7 +28,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const init = async () => {
-      const token = localStorage.getItem('authToken');
+      const token = sessionStorage.getItem('authToken');
       if (token) {
         try {
           const res = await auth.me();
@@ -42,17 +42,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     init();
 
-    // Listen for storage events (other tabs) to react to token removal
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === 'authToken' && e.newValue == null) {
-        // token removed in another tab - force logout here
-        clearAuth();
-        navigate('/');
-      }
-    };
-    window.addEventListener('storage', onStorage);
-
-    return () => window.removeEventListener('storage', onStorage);
+    // sessionStorage no emite eventos cross-tab, pero mantenemos cleanup
+    return () => {};
   }, [navigate]);
 
   const login = async (email: string, password: string) => {
@@ -61,8 +52,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const res = await auth.login(email, password);
       const { token, user: u } = res.data;
       if (token) {
-        localStorage.setItem('authToken', token);
-        localStorage.setItem('authUser', JSON.stringify(u));
+        sessionStorage.setItem('authToken', token);
+        sessionStorage.setItem('authUser', JSON.stringify(u));
         setUser(u);
         navigate('/emisores'); // ← ir directo a Emisores
       }
@@ -80,8 +71,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const res = await auth.register(name, email, password);
       const { token, user: u } = res.data;
       if (token) {
-        localStorage.setItem('authToken', token);
-        localStorage.setItem('authUser', JSON.stringify(u));
+        sessionStorage.setItem('authToken', token);
+        sessionStorage.setItem('authUser', JSON.stringify(u));
         setUser(u);
         navigate('/emisores'); // ← ir directo a Emisores
       }

@@ -1,28 +1,28 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
-import Login from './pages/Login';
-import PasswordRecovery from './pages/PasswordRecovery';
-import CambiarPassword from './pages/cambiarPassword';
-import VerifyEmail from './pages/VerifyEmail';
-import ChangePassword from './pages/ChangePassword';
+import Login from './pages/Auth/Login';
+import PasswordRecovery from './pages/Auth/PasswordRecovery';
+import CambiarPassword from './pages/Auth/cambiarPassword';
+import VerifyEmail from './pages/Auth/VerifyEmail';
+import ChangePassword from './pages/Auth/ChangePassword';
 import { auth } from './services/api';
 import { UserProvider, useUser } from './contexts/userContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { SidebarProvider } from './contexts/SidebarContext';
 
 import AppLayout from './layouts/AppLayout';
-import Emisores from './pages/Emisores';
-import EmisorInfo from './pages/EmisorInfo';
-import EstablecimientoInfo from './pages/EstablecimientoInfo';
-import EstablecimientoEditInfo from './pages/EstablecimientoEditInfo';
-import PuntoEmisionInfo from './pages/PuntoEmisionInfo';
-import Usuarios from './pages/Usuarios';
-import UsuarioInfo from './pages/UsuarioInfo';
-import Planes from './pages/Planes';
-import TiposImpuesto from './pages/TiposImpuesto';
-import TiposRetencion from './pages/TiposRetencion';
-import Blank from './pages/Blank';
+import Emisores from './pages/Emisores/Emisores';
+import EmisorInfo from './pages/Emisores/EmisorInfo';
+import EstablecimientoInfo from './pages/Establecimientos/EstablecimientoInfo';
+import EstablecimientoEditInfo from './pages/Establecimientos/EstablecimientoEditInfo';
+import PuntoEmisionInfo from './pages/PuntosEmision/PuntoEmisionInfo';
+import Usuarios from './pages/Usuarios/Usuarios';
+import UsuarioInfo from './pages/Usuarios/UsuarioInfo';
+import Planes from './pages/Planes/Planes';
+import TiposImpuesto from './pages/TiposImpuesto/TiposImpuesto';
+import TiposRetencion from './pages/TiposRetencion/TiposRetencion';
+import Blank from './pages/Dashboard/Blank';
 
 const ChangePasswordAuthed: React.FC = () => {
   const { logout } = useUser();

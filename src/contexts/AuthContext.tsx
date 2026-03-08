@@ -18,13 +18,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Cargar usuario desde localStorage al montar
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
+    const storedUser = sessionStorage.getItem('user');
     if (storedUser) {
       try {
         setUser(JSON.parse(storedUser));
       } catch (error) {
         console.error('Error parsing stored user:', error);
-        localStorage.removeItem('user');
+        sessionStorage.removeItem('user');
       }
     }
     setLoading(false);
@@ -36,8 +36,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const userData = response.data.user as User;
       
       setUser(userData);
-      localStorage.setItem('user', JSON.stringify(userData));
-      localStorage.setItem('token', response.data.token);
+      sessionStorage.setItem('user', JSON.stringify(userData));
+      sessionStorage.setItem('token', response.data.token);
       
       // Configurar el header para futuras peticiones
       api.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
@@ -49,8 +49,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
+    sessionStorage.removeItem('user');
+    sessionStorage.removeItem('token');
     delete api.defaults.headers.common['Authorization'];
   };
 
