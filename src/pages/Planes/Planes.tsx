@@ -99,6 +99,9 @@ const Planes: React.FC = () => {
     setCurrentPage(1);
   };
 
+  // Estado para estadísticas (todos los planes sin paginación)
+  const [planesForStats, setPlanesForStats] = React.useState<Plan[]>([]);
+
   // Cargar planes
   const loadPlanes = React.useCallback(async () => {
     try {
@@ -134,10 +137,34 @@ const Planes: React.FC = () => {
     }
   }, [currentPage, itemsPerPage, appliedFilters, sortField, sortDirection, show]);
 
+  // Cargar todos los planes sin paginación (para estadísticas)
+  const loadPlanesForStats = React.useCallback(async () => {
+    try {
+      const params: Record<string, any> = {
+        page: 1,
+        per_page: 10000,
+      };
+      
+      // Aplicar solo filtros de estado, ignorar búsqueda y paginación
+      if (appliedFilters.estados.length > 0) params.estado = appliedFilters.estados.join(',');
+      
+      const response = await planesApi.list(params);
+      const data = response.data as ListResponse;
+      setPlanesForStats(data.data);
+    } catch (err: any) {
+      // Silencioso: es solo para estadísticas
+    }
+  }, [appliedFilters.estados]);
+
   // Cargar al montar y cuando cambien página/sort/appliedFilters
   React.useEffect(() => {
     loadPlanes();
   }, [loadPlanes]);
+
+  // Cargar stats cuando cambien filtros
+  React.useEffect(() => {
+    loadPlanesForStats();
+  }, [loadPlanesForStats]);
 
   // Manejar cambio de ordenamiento
   const handleSort = (field: SortField) => {
@@ -189,16 +216,16 @@ const Planes: React.FC = () => {
   // Calcular rango de páginas
   const totalPages = Math.ceil(totalItems / itemsPerPage);
 
-  // Calcular estadísticas
+  // Calcular estadísticas basadas en todos los planes
   const stats = React.useMemo(() => {
-    const total = planes.length;
-    const activos = planes.filter(p => p.estado === 'Activo').length;
-    const inactivos = planes.filter(p => p.estado === 'Desactivado').length;
-    const precioPromedio = planes.length > 0 
-      ? planes.reduce((sum, p) => sum + p.precio, 0) / planes.length 
+    const total = planesForStats.length;
+    const activos = planesForStats.filter(p => p.estado === 'Activo').length;
+    const inactivos = planesForStats.filter(p => p.estado === 'Desactivado').length;
+    const precioPromedio = planesForStats.length > 0 
+      ? planesForStats.reduce((sum, p) => sum + p.precio, 0) / planesForStats.length 
       : 0;
-    return { total: totalItems, activos, inactivos, precioPromedio };
-  }, [planes, totalItems]);
+    return { total, activos, inactivos, precioPromedio };
+  }, [planesForStats]);
 
   if (!isAdmin) {
     return (

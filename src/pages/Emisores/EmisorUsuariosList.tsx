@@ -56,6 +56,7 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
   const { show } = useNotification();
   const { user } = useUser();
   const [usuarios, setUsuarios] = React.useState<User[]>([]);
+  const [usuariosForStats, setUsuariosForStats] = React.useState<User[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [page, setPage] = React.useState(1);
   const [perPage, setPerPage] = React.useState(10);
@@ -125,6 +126,22 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
     }
   }, [emiId, page, perPage, show, appliedFilters, sortField, sortDirection]);
 
+  const loadUsuariosForStats = React.useCallback(async () => {
+    if (!emiId) return;
+    try {
+      const res = await usuariosEmisorApi.list(emiId, {
+        page: 1,
+        per_page: 10000,
+        roles: appliedFilters.roles.length > 0 ? appliedFilters.roles : undefined,
+        estados: appliedFilters.estados.length > 0 ? appliedFilters.estados : undefined,
+      });
+      let data = res.data?.data ?? [];
+      setUsuariosForStats(Array.isArray(data) ? data : []);
+    } catch (e: any) {
+      setUsuariosForStats([]);
+    }
+  }, [emiId, appliedFilters.roles, appliedFilters.estados]);
+
   const handleSort = (field: SortField) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -170,6 +187,10 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
   React.useEffect(() => {
     load();
   }, [load, refreshTrigger]);
+
+  React.useEffect(() => {
+    loadUsuariosForStats();
+  }, [loadUsuariosForStats]);
 
   const handleDelete = async (usuario: User) => {
     // Validar que el usuario esté en estado "Nuevo"
@@ -316,16 +337,16 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
     return <span className="eu-sort-icon active">{sortDirection === 'asc' ? '↑' : '↓'}</span>;
   };
 
-  // Calcular estadísticas
+  // Calcular estadísticas basadas en todos los usuarios
   const stats = useMemo(() => {
-    const activos = displayUsuarios.filter(u => u.estado === 'activo').length;
-    const nuevos = displayUsuarios.filter(u => u.estado === 'nuevo').length;
-    const pendientes = displayUsuarios.filter(u => u.estado === 'pendiente_verificacion').length;
-    const inactivos = displayUsuarios.filter(u => u.estado === 'suspendido' || u.estado === 'retirado').length;
-    const gerentes = displayUsuarios.filter(u => u.role === 'gerente').length;
-    const cajeros = displayUsuarios.filter(u => u.role === 'cajero').length;
-    return { total: displayUsuarios.length, activos, nuevos, pendientes, inactivos, gerentes, cajeros };
-  }, [displayUsuarios]);
+    const activos = usuariosForStats.filter(u => u.estado === 'activo').length;
+    const nuevos = usuariosForStats.filter(u => u.estado === 'nuevo').length;
+    const pendientes = usuariosForStats.filter(u => u.estado === 'pendiente_verificacion').length;
+    const inactivos = usuariosForStats.filter(u => u.estado === 'suspendido' || u.estado === 'retirado').length;
+    const gerentes = usuariosForStats.filter(u => u.role === 'gerente').length;
+    const cajeros = usuariosForStats.filter(u => u.role === 'cajero').length;
+    return { total: usuariosForStats.length, activos, nuevos, pendientes, inactivos, gerentes, cajeros };
+  }, [usuariosForStats]);
 
   const totalForDisplay = useMemo(() => {
     if (

@@ -164,6 +164,8 @@ const EmisorInfo: React.FC = () => {
     } finally { setLoading(false); }
   }, [id]);
 
+  const [establecimientosForStats, setEstablecimientosForStats] = React.useState<any[]>([]);
+
   const loadEstablecimientos = React.useCallback(async (companyId?: number | string) => {
     if (!companyId) return;
     try {
@@ -217,6 +219,28 @@ const EmisorInfo: React.FC = () => {
     }
   }, [user, isLimitedRole, role]);
 
+  const loadEstablecimientosForStats = React.useCallback(async (companyId?: number | string) => {
+    if (!companyId) return;
+    try {
+      const r = await establecimientosApi.list(companyId);
+      let data = r.data?.data ?? r.data ?? [];
+      
+      if (user && isLimitedRole) {
+        let user_establecimientos_ids = (user as any).establecimientos_ids || [];
+        if (typeof user_establecimientos_ids === 'string') {
+          try { user_establecimientos_ids = JSON.parse(user_establecimientos_ids); } catch (e) { user_establecimientos_ids = []; }
+        }
+        if (Array.isArray(user_establecimientos_ids) && user_establecimientos_ids.length > 0) {
+          data = data.filter((est: any) => user_establecimientos_ids.includes(est.id) || user_establecimientos_ids.includes(String(est.id)) || user_establecimientos_ids.includes(Number(est.id)));
+        }
+      }
+      
+      setEstablecimientosForStats(Array.isArray(data) ? data : []);
+    } catch (e) {
+      setEstablecimientosForStats([]);
+    }
+  }, [user, isLimitedRole]);
+
   const loadPuntosEmision = React.useCallback(async (companyId?: number | string) => {
     if (!companyId) return;
     try {
@@ -237,9 +261,10 @@ const EmisorInfo: React.FC = () => {
   React.useEffect(() => { 
     if (company?.id) {
       loadEstablecimientos(company.id);
+      loadEstablecimientosForStats(company.id);
       loadPuntosEmision(company.id);
     }
-  }, [company, loadEstablecimientos, loadPuntosEmision]);
+  }, [company, loadEstablecimientos, loadEstablecimientosForStats, loadPuntosEmision]);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -783,28 +808,28 @@ const EmisorInfo: React.FC = () => {
                 <div className="est-stat-card total">
                   <div className="est-stat-icon total">🏢</div>
                   <div className="est-stat-content">
-                    <div className="est-stat-value">{establecimientos.length}</div>
+                    <div className="est-stat-value">{establecimientosForStats.length}</div>
                     <div className="est-stat-label">Total Establecimientos</div>
                   </div>
                 </div>
                 <div className="est-stat-card activos">
                   <div className="est-stat-icon activos">✓</div>
                   <div className="est-stat-content">
-                    <div className="est-stat-value">{establecimientos.filter(e => e.estado === 'ABIERTO').length}</div>
+                    <div className="est-stat-value">{establecimientosForStats.filter(e => e.estado === 'ABIERTO').length}</div>
                     <div className="est-stat-label">Activos</div>
                   </div>
                 </div>
                 <div className="est-stat-card cerrados">
                   <div className="est-stat-icon cerrados">⏸</div>
                   <div className="est-stat-content">
-                    <div className="est-stat-value">{establecimientos.filter(e => e.estado !== 'ABIERTO').length}</div>
+                    <div className="est-stat-value">{establecimientosForStats.filter(e => e.estado !== 'ABIERTO').length}</div>
                     <div className="est-stat-label">Cerrados</div>
                   </div>
                 </div>
                 <div className="est-stat-card usuarios">
                   <div className="est-stat-icon usuarios">👥</div>
                   <div className="est-stat-content">
-                    <div className="est-stat-value">{establecimientos.reduce((acc, e) => acc + (e.usuarios?.length || 0), 0)}</div>
+                    <div className="est-stat-value">{establecimientosForStats.reduce((acc, e) => acc + (e.usuarios?.length || 0), 0)}</div>
                     <div className="est-stat-label">Usuarios Asociados</div>
                   </div>
                 </div>

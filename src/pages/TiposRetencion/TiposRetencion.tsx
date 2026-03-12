@@ -64,9 +64,12 @@ const TiposRetencion: React.FC = () => {
     loadData();
   }, [loadData]);
 
-  // Cargar stats solo una vez al montar (usa caché)
+  // Cargar stats considerando filtros aplicados
   useEffect(() => {
-    tiposRetencionApi.getAll({ per_page: 1000 }).then(allResponse => {
+    tiposRetencionApi.getAll({ 
+      per_page: 1000,
+      filters: appliedFilters,
+    }).then(allResponse => {
       const allData = allResponse.data;
       setStats({
         iva: allData.filter((t: any) => t.tipo_retencion === 'IVA').length,
@@ -75,8 +78,7 @@ const TiposRetencion: React.FC = () => {
         total: allData.length,
       });
     }).catch(() => {});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [appliedFilters]);
 
   // Manejadores
   const handleSort = (column: string) => {

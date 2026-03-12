@@ -24,6 +24,7 @@ type SortDirection = 'asc' | 'desc';
 const SuscripcionesList: React.FC<Props> = ({ emisorId }) => {
   const navigate = useNavigate();
   const [suscripciones, setSuscripciones] = useState<Suscripcion[]>([]);
+  const [suscripcionesForStats, setSuscripcionesForStats] = useState<Suscripcion[]>([]);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -140,9 +141,28 @@ const SuscripcionesList: React.FC<Props> = ({ emisorId }) => {
     }
   }, [emisorId, currentPage, itemsPerPage, sortBy, sortDir, activeFilters, show]);
 
+  const loadSuscripcionesForStats = useCallback(async () => {
+    try {
+      const params: Record<string, any> = {
+        page: 1,
+        per_page: 10000,
+        ...activeFilters,
+      };
+      const response = await suscripcionesApi.list(emisorId, params);
+      const data = response.data as { data: Suscripcion[]; pagination: any };
+      setSuscripcionesForStats(data.data);
+    } catch (err: any) {
+      setSuscripcionesForStats([]);
+    }
+  }, [emisorId, activeFilters]);
+
   useEffect(() => {
     loadSuscripciones();
   }, [loadSuscripciones]);
+
+  useEffect(() => {
+    loadSuscripcionesForStats();
+  }, [loadSuscripcionesForStats]);
 
   // Aplicar filtros
   const applyFilters = () => {
@@ -361,13 +381,13 @@ const SuscripcionesList: React.FC<Props> = ({ emisorId }) => {
   // Calcular el número de filtros activos
   const activeFilterCount = Object.keys(activeFilters).length;
 
-  // Calcular estadísticas
+  // Calcular estadísticas basadas en todas las suscripciones
   const stats = useMemo(() => {
-    const vigentes = suscripciones.filter(s => s.estado_suscripcion === 'Vigente').length;
-    const pendientes = suscripciones.filter(s => s.estado_suscripcion === 'Pendiente' || s.estado_suscripcion === 'Programado').length;
-    const suspendidos = suscripciones.filter(s => ['Suspendido', 'Caducado', 'Sin comprobantes'].includes(s.estado_suscripcion)).length;
-    return { vigentes, pendientes, suspendidos, total: totalItems };
-  }, [suscripciones, totalItems]);
+    const vigentes = suscripcionesForStats.filter(s => s.estado_suscripcion === 'Vigente').length;
+    const pendientes = suscripcionesForStats.filter(s => s.estado_suscripcion === 'Pendiente' || s.estado_suscripcion === 'Programado').length;
+    const suspendidos = suscripcionesForStats.filter(s => ['Suspendido', 'Caducado', 'Sin comprobantes'].includes(s.estado_suscripcion)).length;
+    return { vigentes, pendientes, suspendidos, total: suscripcionesForStats.length };
+  }, [suscripcionesForStats]);
 
   // Badge class para estado suscripción (nuevo)
   const getBadgeClass = (estado: string): string => {

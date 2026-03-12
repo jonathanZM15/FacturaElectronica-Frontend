@@ -39,6 +39,9 @@ const TiposImpuesto: React.FC = () => {
   const [openDelete, setOpenDelete] = useState(false);
   const [selectedTipoImpuesto, setSelectedTipoImpuesto] = useState<TipoImpuesto | null>(null);
 
+  // Estado para estadísticas (todos los tipos sin paginación)
+  const [tiposImpuestoForStats, setTiposImpuestoForStats] = useState<TipoImpuesto[]>([]);
+
   // Contar filtros activos
   const activeFiltersCount = useMemo(() => {
     let count = 0;
@@ -55,13 +58,14 @@ const TiposImpuesto: React.FC = () => {
     return count;
   }, [activeFilters]);
 
-  // Estadísticas por tipo
+  // Estadísticas por tipo (basadas en todos los datos)
   const stats = useMemo(() => {
-    const iva = tiposImpuesto.filter(t => t.tipo_impuesto === 'IVA').length;
-    const ice = tiposImpuesto.filter(t => t.tipo_impuesto === 'ICE').length;
-    const irbpnr = tiposImpuesto.filter(t => t.tipo_impuesto === 'IRBPNR').length;
-    return { iva, ice, irbpnr, total: totalItems };
-  }, [tiposImpuesto, totalItems]);
+    const iva = tiposImpuestoForStats.filter(t => t.tipo_impuesto === 'IVA').length;
+    const ice = tiposImpuestoForStats.filter(t => t.tipo_impuesto === 'ICE').length;
+    const irbpnr = tiposImpuestoForStats.filter(t => t.tipo_impuesto === 'IRBPNR').length;
+    const total = tiposImpuestoForStats.length;
+    return { iva, ice, irbpnr, total };
+  }, [tiposImpuestoForStats]);
 
   // Cargar tipos de impuesto
   const loadTiposImpuesto = useCallback(async () => {
@@ -91,9 +95,34 @@ const TiposImpuesto: React.FC = () => {
     }
   }, [currentPage, itemsPerPage, sortBy, sortDir, activeFilters, show]);
 
+  // Cargar todos los tipos sin paginación (para estadísticas)
+  const loadTiposImpuestoForStats = useCallback(async () => {
+    try {
+      const params: Record<string, any> = {
+        page: 1,
+        per_page: 10000,
+      };
+      
+      // Aplicar solo filtros de tipo, ignorar búsqueda y paginación
+      if (activeFilters.tipos_impuesto?.length) {
+        params.tipos_impuesto = activeFilters.tipos_impuesto;
+      }
+      
+      const response = await tiposImpuestoApi.list(params);
+      setTiposImpuestoForStats(response.data.data || []);
+    } catch (err: any) {
+      // Silencioso: es solo para estadísticas
+    }
+  }, [activeFilters.tipos_impuesto]);
+
   useEffect(() => {
     loadTiposImpuesto();
   }, [loadTiposImpuesto]);
+
+  // Cargar stats cuando cambien filtros
+  useEffect(() => {
+    loadTiposImpuestoForStats();
+  }, [loadTiposImpuestoForStats]);
 
   // Manejar ordenamiento
   const handleSort = (column: string) => {

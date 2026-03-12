@@ -173,6 +173,31 @@ const Usuarios: React.FC = () => {
     useCacheOnMount: true,
   });
 
+  // Fetch para estadísticas (todos los usuarios sin paginación)
+  const usuariosStatsCacheKey = 'usuarios:stats:all';
+  
+  const fetchUsuariosForStats = React.useCallback(async () => {
+    const response = await usuariosApi.list({
+      page: 1,
+      per_page: 10000,
+      // Solo copiar filtros de estado y roles, ignorar búsqueda y paginación
+      ...(appliedFilters.roles && (appliedFilters.roles.length > 0) && { roles: appliedFilters.roles }),
+      ...(appliedFilters.estados && (appliedFilters.estados.length > 0) && { estados: appliedFilters.estados }),
+    });
+    return response.data as ListResponse;
+  }, [appliedFilters.roles, appliedFilters.estados]);
+
+  const {
+    data: usuariosStatsResponse,
+  } = useRealtimeResource<ListResponse>({
+    cacheKey: usuariosStatsCacheKey,
+    fetcher: fetchUsuariosForStats,
+    interval: 15000,
+    ttl: 1000 * 10,
+    enabled: true,
+    useCacheOnMount: true,
+  });
+
   React.useEffect(() => {
     if (!usuariosError) return;
     const msg =
@@ -827,12 +852,13 @@ const Usuarios: React.FC = () => {
 
   // Calcular estadísticas de usuarios
   const stats = React.useMemo(() => {
-    const total = users.length;
-    const activos = users.filter(u => u.estado === 'activo').length;
-    const nuevos = users.filter(u => u.estado === 'nuevo').length;
-    const inactivos = users.filter(u => u.estado === 'suspendido' || u.estado === 'retirado').length;
+    const allUsers = usuariosStatsResponse?.data ?? [];
+    const total = allUsers.length;
+    const activos = allUsers.filter(u => u.estado === 'activo').length;
+    const nuevos = allUsers.filter(u => u.estado === 'nuevo').length;
+    const inactivos = allUsers.filter(u => u.estado === 'suspendido' || u.estado === 'retirado').length;
     return { total, activos, nuevos, inactivos };
-  }, [users]);
+  }, [usuariosStatsResponse]);
 
   // Las columnas adicionales estarán disponibles en el modal de detalle
 
