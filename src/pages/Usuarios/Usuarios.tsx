@@ -81,6 +81,7 @@ const Usuarios: React.FC = () => {
     Record<string, { role?: string; username?: string; nombres?: string; apellidos?: string }>
   >({});
   const [openEdit, setOpenEdit] = React.useState(false);
+  const [openCreate, setOpenCreate] = React.useState(false);
   const [editingUser, setEditingUser] = React.useState<User | null>(null);
   const [openDelete, setOpenDelete] = React.useState(false);
   const [deletingUser, setDeletingUser] = React.useState<User | null>(null);
@@ -399,6 +400,11 @@ const Usuarios: React.FC = () => {
     return sortDirection === 'asc' ? '↑' : '↓';
   };
 
+  const canCreateFromUsuarios = React.useMemo(
+    () => normalizeRole(currentUser?.role) === 'administrador',
+    [currentUser?.role, normalizeRole]
+  );
+
   // Aplicar filtros y ordenamiento a los usuarios cargados
   const filteredAndSortedUsers = React.useMemo(() => users, [users]);
 
@@ -414,6 +420,20 @@ const Usuarios: React.FC = () => {
     } catch (err: any) {
       const msg = err?.response?.data?.message || err?.message || 'Error actualizando usuario';
       show({ title: 'Error', message: msg, type: 'error' });
+    }
+  };
+
+  // Crear usuario (panel global: administrador/distribuidor)
+  const handleCreate = async (newData: User & { password_confirmation?: string }) => {
+    try {
+      await usuariosApi.create(newData);
+      show({ title: 'Éxito', message: 'Usuario registrado exitosamente', type: 'success' });
+      setOpenCreate(false);
+      await refetchUsuarios({ forceFresh: true });
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || 'Error creando usuario';
+      show({ title: 'Error', message: msg, type: 'error' });
+      throw err;
     }
   };
 
@@ -828,7 +848,15 @@ const Usuarios: React.FC = () => {
           <p className="usuarios-header-subtitle">Administra los usuarios del sistema de facturación</p>
         </div>
         <div className="header-actions">
-          {/* HU: el registro de usuarios es exclusivo desde Emisor Info → Usuarios */}
+          <button
+            className="btn-nuevo"
+            onClick={() => setOpenCreate(true)}
+            disabled={!canCreateFromUsuarios}
+            title={canCreateFromUsuarios ? 'Registrar nuevo usuario' : 'Solo un administrador puede crear usuarios desde este panel'}
+          >
+            <span>+</span>
+            Nuevo Usuario
+          </button>
         </div>
       </div>
 
@@ -1209,6 +1237,16 @@ const Usuarios: React.FC = () => {
       )}
 
       {/* Modales */}
+      <UsuarioFormModal
+        isOpen={openCreate}
+        onClose={() => {
+          setOpenCreate(false);
+        }}
+        onSubmit={handleCreate}
+        isEditing={false}
+        restrictRolesToAdminDistributor={true}
+      />
+
       <UsuarioFormModal
         isOpen={openEdit}
         initialData={editingUser}
