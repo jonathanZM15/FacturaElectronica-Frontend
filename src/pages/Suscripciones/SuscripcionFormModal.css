@@ -1,0 +1,20 @@
+.suscripcion-modal-content-match-usuarios {
+	max-width: 960px !important;
+	overflow-x: hidden;
+}
+
+.suscripcion-modal-content-match-usuarios .usuario-modal-main {
+	max-height: 80vh;
+	overflow-y: hidden;
+	overflow-x: hidden;
+}
+
+.suscripcion-modal-content-match-usuarios .usuario-modal-body {
+	max-height: calc(80vh - 190px);
+	overflow-y: auto;
+	overflow-x: hidden;
+}
+
+.suscripcion-modal-content-match-usuarios .usuario-form-grid {
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}

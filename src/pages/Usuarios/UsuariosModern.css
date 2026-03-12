@@ -270,7 +270,7 @@ body, html {
 .usuarios-table-container {
   background: white;
   border-radius: 20px;
-  overflow: hidden;
+  overflow: visible;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.05);
   margin-bottom: 24px;
   display: flex;
@@ -281,7 +281,7 @@ body, html {
 
 .usuarios-table-wrapper {
   overflow-x: auto;
-  overflow-y: hidden;
+  overflow-y: visible;
   position: relative;
   z-index: auto;
 }
@@ -405,6 +405,7 @@ body, html {
   vertical-align: middle;
   border-bottom: 1px solid #e2e8f0;
   white-space: nowrap;
+  position: relative;
 }
 
 .usuarios-table tbody td:first-child {
@@ -529,6 +530,10 @@ body, html {
 .badge-estado:hover {
   transform: translateY(-3px) scale(1.02);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+.usuarios-estado-tooltip-trigger {
+  cursor: help;
 }
 
 /* Botones de acción premium */
@@ -770,35 +775,6 @@ body, html {
   }
 }
 
-/* Tooltip Container */
-.tooltip-container {
-  position: relative;
-  display: inline-flex;
-  width: 100%;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  z-index: 1;
-  max-width: 170px;
-  margin: 0 auto;
-}
-
-.tooltip-container .badge-estado {
-  position: relative;
-  z-index: 1;
-  max-width: 100%;
-}
-
-.tooltip-container:hover,
-.tooltip-container:focus-within {
-  z-index: 1000;
-}
-
-.tooltip-container:hover .badge-estado,
-.tooltip-container:focus-within .badge-estado {
-  z-index: -1;
-}
-
 .info-icon {
   color: #6366f1;
   cursor: help;
@@ -812,12 +788,10 @@ body, html {
   filter: drop-shadow(0 4px 8px rgba(79, 70, 229, 0.4));
 }
 
-/* Tooltip Content */
-.tooltip-content {
-  position: absolute;
-  bottom: calc(100% + 12px);
-  left: 50%;
-  transform: translateX(-50%) translateY(10px);
+/* Tooltip flotante global para estado (renderizado en document.body) */
+.usuarios-floating-tooltip {
+  position: fixed;
+  transform: translate(-50%, calc(-100% - 12px));
   background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
   color: white;
   padding: 12px 16px;
@@ -832,17 +806,24 @@ body, html {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25),
               0 0 0 1px rgba(255, 255, 255, 0.1) inset;
   pointer-events: none;
-  opacity: 0;
-  visibility: hidden;
-  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-  z-index: 10000;
+  z-index: 2147483647;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  animation: usuarios-tooltip-in 0.16s ease-out;
 }
 
-/* Tooltip Arrow */
-.tooltip-content::after {
-  content: '';
+@keyframes usuarios-tooltip-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-100% - 4px));
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, calc(-100% - 12px));
+  }
+}
+
+.usuarios-floating-tooltip-arrow {
   position: absolute;
   top: 100%;
   left: 50%;
@@ -850,26 +831,6 @@ body, html {
   border: 8px solid transparent;
   border-top-color: #4f46e5;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
-}
-
-/* Todos los tooltips aparecen hacia abajo */
-.usuarios-table tbody tr .tooltip-content {
-  bottom: auto;
-  top: calc(100% + 12px);
-}
-
-.usuarios-table tbody tr .tooltip-content::after {
-  top: auto;
-  bottom: 100%;
-  border-top-color: transparent;
-  border-bottom-color: #4f46e5;
-}
-
-/* Show tooltip on hover */
-.tooltip-container:hover .tooltip-content {
-  opacity: 1;
-  visibility: visible;
-  transform: translateX(-50%) translateY(0);
 }
 
 /* Animation pulse for icon */
@@ -882,13 +843,14 @@ body, html {
   }
 }
 
-.tooltip-container:hover .info-icon {
+.usuarios-estado-tooltip-trigger:hover + .info-icon,
+.usuarios-estado-tooltip-trigger:focus + .info-icon {
   animation: pulse-icon 1s ease-in-out infinite;
 }
 
 /* Responsive tooltip */
 @media (max-width: 768px) {
-  .tooltip-content {
+  .usuarios-floating-tooltip {
     max-width: 220px;
     font-size: 12px;
     padding: 10px 14px;

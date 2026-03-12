@@ -1047,7 +1047,7 @@ const EmisorInfo: React.FC = () => {
 
               {/* Tabla moderna */}
               <div className="est-table-container">
-                <div className="est-table-wrapper">
+                <div className={`est-table-wrapper ${paginatedEsts.length === 0 ? 'est-table-wrapper--empty' : ''}`}>
                   {paginatedEsts.length === 0 && (
                     <div className="est-empty-overlay">
                       <div className="est-empty-overlay-content">

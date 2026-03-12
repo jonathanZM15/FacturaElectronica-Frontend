@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import ReactDOM from 'react-dom';
 import { suscripcionesApi, PlanActivo, SuscripcionFormData, Suscripcion, CamposEditablesResponse } from '../../services/suscripcionesApi';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useUser } from '../../contexts/userContext';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import '../Usuarios/UsuarioFormModalModern.css';
+import './SuscripcionFormModal.css';
 
 interface Props {
   open: boolean;
@@ -418,11 +420,21 @@ const SuscripcionFormModal: React.FC<Props> = ({ open, emisorId, suscripcion, on
     setFormData(prev => ({ ...prev, [field]: file }));
   };
 
+  useEffect(() => {
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open]);
+
   if (!open) return null;
 
-  return (
+  const modalContent = (
     <div className="usuario-modal-overlay">
-      <div className="usuario-modal-content usuario-modal-content-barra-izquierda">
+      <div className="usuario-modal-content usuario-modal-content-barra-izquierda suscripcion-modal-content-match-usuarios">
         <div className="usuario-modal-barra-izquierda" style={{ backgroundColor: isEditMode ? '#3b82f6' : '#10b981' }}></div>
         <div className="usuario-modal-main">
           <div className="usuario-modal-header" style={{ position: 'relative' }}>
@@ -910,6 +922,8 @@ const SuscripcionFormModal: React.FC<Props> = ({ open, emisorId, suscripcion, on
       </div>
     </div>
   );
+
+  return ReactDOM.createPortal(modalContent, document.body);
 };
 
 export default SuscripcionFormModal;

@@ -1,4 +1,5 @@
 import React from 'react';
+import ReactDOM from 'react-dom';
 import '../Emisores/Emisores.css'; // Reutilizar estilos de Emisores
 import './UsuariosModern.css'; // Estilos modernos para usuarios
 import { usuariosApi } from '../../services/usuariosApi';
@@ -91,6 +92,39 @@ const Usuarios: React.FC = () => {
   const [showFilters, setShowFilters] = React.useState(false);
   const [filters, setFilters] = React.useState<Filters>(defaultFilters);
   const [appliedFilters, setAppliedFilters] = React.useState<Filters>(defaultFilters);
+  const [estadoTooltip, setEstadoTooltip] = React.useState<{
+    text: string;
+    top: number;
+    left: number;
+  } | null>(null);
+
+  const hideEstadoTooltip = React.useCallback(() => {
+    setEstadoTooltip(null);
+  }, []);
+
+  const showEstadoTooltip = React.useCallback(
+    (target: HTMLElement, text: string) => {
+      const rect = target.getBoundingClientRect();
+      const left = Math.max(24, Math.min(rect.left + rect.width / 2, window.innerWidth - 24));
+      const top = Math.max(24, rect.top - 10);
+
+      setEstadoTooltip({ text, top, left });
+    },
+    []
+  );
+
+  React.useEffect(() => {
+    if (!estadoTooltip) return;
+
+    const closeTooltip = () => setEstadoTooltip(null);
+    window.addEventListener('scroll', closeTooltip, true);
+    window.addEventListener('resize', closeTooltip);
+
+    return () => {
+      window.removeEventListener('scroll', closeTooltip, true);
+      window.removeEventListener('resize', closeTooltip);
+    };
+  }, [estadoTooltip]);
 
   const usuariosListParams = React.useMemo(() => ({
     page: currentPage,
@@ -754,17 +788,18 @@ const Usuarios: React.FC = () => {
         const description = estadoDescriptions[key] || 'Estado sin descripción.';
         
         return (
-          <div className="tooltip-container">
-            <span 
-              className="badge-estado"
-              style={{ background: colorMap[key] || 'linear-gradient(135deg, #9ca3af 0%, #6b7280 100%)' }}
-            >
-              {labelMap[key] || row.estado}
-            </span>
-            <div className="tooltip-content">
-              {description}
-            </div>
-          </div>
+          <span
+            className="badge-estado usuarios-estado-tooltip-trigger"
+            style={{ background: colorMap[key] || 'linear-gradient(135deg, #9ca3af 0%, #6b7280 100%)' }}
+            tabIndex={0}
+            onMouseEnter={(e) => showEstadoTooltip(e.currentTarget, description)}
+            onMouseLeave={hideEstadoTooltip}
+            onFocus={(e) => showEstadoTooltip(e.currentTarget, description)}
+            onBlur={hideEstadoTooltip}
+            aria-label={description}
+          >
+            {labelMap[key] || row.estado}
+          </span>
         );
       }
     },
@@ -1038,7 +1073,6 @@ const Usuarios: React.FC = () => {
                           if (!sortable) return;
                           handleSort(col.sortKey!);
                         }}
-                        title={sortable ? 'Ordenar' : undefined}
                       >
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                           {col.label}
@@ -1221,6 +1255,18 @@ const Usuarios: React.FC = () => {
         }}
         onSubmit={handleConfirmDelete}
       />
+
+      {estadoTooltip &&
+        ReactDOM.createPortal(
+          <div
+            className="usuarios-floating-tooltip"
+            style={{ top: estadoTooltip.top, left: estadoTooltip.left }}
+          >
+            {estadoTooltip.text}
+            <div className="usuarios-floating-tooltip-arrow" />
+          </div>,
+          document.body
+        )}
     </div>
   );
 };
