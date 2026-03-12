@@ -848,15 +848,16 @@ const Usuarios: React.FC = () => {
           <p className="usuarios-header-subtitle">Administra los usuarios del sistema de facturación</p>
         </div>
         <div className="header-actions">
-          <button
-            className="btn-nuevo"
-            onClick={() => setOpenCreate(true)}
-            disabled={!canCreateFromUsuarios}
-            title={canCreateFromUsuarios ? 'Registrar nuevo usuario' : 'Solo un administrador puede crear usuarios desde este panel'}
-          >
-            <span>+</span>
-            Nuevo Usuario
-          </button>
+          {canCreateFromUsuarios && (
+            <button
+              className="btn-nuevo"
+              onClick={() => setOpenCreate(true)}
+              title="Registrar nuevo usuario"
+            >
+              <span>+</span>
+              Nuevo Usuario
+            </button>
+          )}
         </div>
       </div>
 
