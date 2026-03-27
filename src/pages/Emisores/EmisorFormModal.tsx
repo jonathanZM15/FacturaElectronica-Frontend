@@ -5,6 +5,7 @@ import { Emisor } from '../../types/emisor';
 import { validateRucEcuador } from '../../helpers/validateRuc';
 import ConfirmDialog from '../../components/ConfirmDialog/ConfirmDialog';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import { getImageUrl } from '../../helpers/imageUrl';
 
 type Props = {
   open: boolean;
@@ -54,6 +55,65 @@ const EmisorFormModal: React.FC<Props> = (props) => {
   const [checkingRuc, setCheckingRuc] = React.useState(false);
     const [touchedFields, setTouchedFields] = React.useState<Set<string>>(new Set());
 
+  const loadSystemLogoFile = async (): Promise<File | null> => {
+    try {
+      const defaultLogoPath = require('../../assets/maximofactura.png');
+      const response = await fetch(defaultLogoPath);
+      const blob = await response.blob();
+
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(blob);
+      const file = await new Promise<File>((resolve, reject) => {
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+
+          const maxWidth = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth) {
+            height = (maxWidth / width) * height;
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          ctx?.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob((resizedBlob) => {
+            if (!resizedBlob) {
+              reject(new Error('Failed to create blob'));
+              return;
+            }
+            const resizedFile = new File([resizedBlob], 'maximofactura.png', { type: 'image/png' });
+            (resizedFile as any).__orientationInvalid = false;
+            resolve(resizedFile);
+          }, 'image/png', 0.8);
+        };
+        img.onerror = () => reject(new Error('Failed to load image'));
+        img.src = objectUrl;
+      });
+
+      URL.revokeObjectURL(objectUrl);
+      return file;
+    } catch (err) {
+      console.warn('Could not load system logo:', err);
+      return null;
+    }
+  };
+
+  const onUseSystemLogo = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setLogoError(null);
+    setTouchedFields(prev => new Set(prev).add('logo'));
+    if (fileInputRef.current) fileInputRef.current.value = '';
+
+    const f = await loadSystemLogoFile();
+    if (f) setLogoFile(f);
+  };
+
   React.useEffect(() => {
     if (open) {
       setV(initialData ?? initial);
@@ -61,7 +121,8 @@ const EmisorFormModal: React.FC<Props> = (props) => {
       if (!editingId) {
         setLogoFile(null);
       }
-      setExistingLogoUrl((initialData as any)?.logo_url || null);
+      const logoRaw = (initialData as any)?.logo_url || (initialData as any)?.logo_path || (initialData as any)?.logo || null;
+      setExistingLogoUrl(logoRaw);
       setEmailError(null);
       setLogoError(null);
       setLocalRucEditable(rucEditable ?? true);
@@ -257,55 +318,7 @@ const EmisorFormModal: React.FC<Props> = (props) => {
       // If no logo is uploaded, use default logo from assets
       let finalLogoFile = logoFile;
       if (!logoFile && !editingId) {
-        // Fetch the default logo and convert to File with optimization
-        try {
-          const defaultLogoPath = require('../../assets/maximofactura.png');
-          const response = await fetch(defaultLogoPath);
-          const blob = await response.blob();
-          
-          // Create an image to resize it
-          const img = new Image();
-          const imageLoadPromise = new Promise<File>((resolve, reject) => {
-            img.onload = () => {
-              // Create canvas to resize
-              const canvas = document.createElement('canvas');
-              const ctx = canvas.getContext('2d');
-              
-              // Calculate new dimensions (max 800px width maintaining aspect ratio)
-              const maxWidth = 800;
-              let width = img.width;
-              let height = img.height;
-              
-              if (width > maxWidth) {
-                height = (maxWidth / width) * height;
-                width = maxWidth;
-              }
-              
-              canvas.width = width;
-              canvas.height = height;
-              
-              // Draw resized image
-              ctx?.drawImage(img, 0, 0, width, height);
-              
-              // Convert to blob with compression
-              canvas.toBlob((resizedBlob) => {
-                if (resizedBlob) {
-                  const resizedFile = new File([resizedBlob], 'maximofactura.png', { type: 'image/png' });
-                  resolve(resizedFile);
-                } else {
-                  reject(new Error('Failed to create blob'));
-                }
-              }, 'image/png', 0.8); // 80% quality
-            };
-            
-            img.onerror = () => reject(new Error('Failed to load image'));
-          });
-          
-          img.src = URL.createObjectURL(blob);
-          finalLogoFile = await imageLoadPromise;
-        } catch (err) {
-          console.warn('Could not load default logo:', err);
-        }
+        finalLogoFile = await loadSystemLogoFile();
       }
 
       if (editingId) {
@@ -765,7 +778,7 @@ const EmisorFormModal: React.FC<Props> = (props) => {
               </div>
             </div>
 
-            <label style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+            <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
               <span style={{fontWeight: 600, fontSize: '14px', color: '#374151'}}>Logo</span>
               <div style={{
                 position: 'relative',
@@ -783,6 +796,7 @@ const EmisorFormModal: React.FC<Props> = (props) => {
                 justifyContent: 'center',
                 gap: '12px'
               }}
+              onClick={() => fileInputRef.current?.click()}
               onMouseEnter={(e) => {
                 e.currentTarget.style.borderColor = '#7c3aed';
                 e.currentTarget.style.background = 'linear-gradient(135deg, #f3e8ff 0%, #ede9fe 100%)';
@@ -796,29 +810,76 @@ const EmisorFormModal: React.FC<Props> = (props) => {
               >
                 {!logoFile ? (
                   <>
-                    <div style={{
-                      width: '56px',
-                      height: '56px',
-                      background: 'linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%)',
-                      borderRadius: '50%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '28px',
-                      color: '#fff',
-                      boxShadow: '0 4px 12px rgba(124, 58, 237, 0.3)'
-                    }}>
-                      📁
-                    </div>
-                    <div style={{fontSize: '15px', fontWeight: 600, color: '#374151'}}>
-                      Seleccionar logo personalizado (Opcional)
-                    </div>
-                    <div style={{fontSize: '13px', color: '#6b7280'}}>
-                      Click para buscar o arrastra aquí
-                    </div>
-                    <div style={{fontSize: '12px', color: '#7c3aed', fontStyle: 'italic', marginTop: '4px'}}>
-                      Si no seleccionas ninguno, se usará el logo por defecto
-                    </div>
+                    {existingLogoUrl ? (
+                      <>
+                        <img
+                          src={getImageUrl(existingLogoUrl)}
+                          alt="Logo actual"
+                          style={{
+                            maxWidth: '240px',
+                            maxHeight: '64px',
+                            objectFit: 'contain',
+                            background: '#fff',
+                            borderRadius: '10px',
+                            padding: '8px 12px',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                          }}
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                        <div style={{fontSize: '15px', fontWeight: 700, color: '#374151'}}>
+                          Logo actual
+                        </div>
+                        <div style={{display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '8px'}}>
+                          <div style={{fontSize: '12px', color: '#7c3aed', fontWeight: 600}}>
+                            Click para cambiar
+                          </div>
+                          <button
+                            type="button"
+                            onClick={onUseSystemLogo}
+                            style={{
+                              fontSize: '12px',
+                              color: '#7c3aed',
+                              fontWeight: 600,
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                              padding: 0,
+                              textDecoration: 'underline'
+                            }}
+                          >
+                            Usar logo del sistema
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div style={{
+                          width: '56px',
+                          height: '56px',
+                          background: 'linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%)',
+                          borderRadius: '50%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '28px',
+                          color: '#fff',
+                          boxShadow: '0 4px 12px rgba(124, 58, 237, 0.3)'
+                        }}>
+                          📁
+                        </div>
+                        <div style={{fontSize: '15px', fontWeight: 600, color: '#374151'}}>
+                          Seleccionar logo personalizado (Opcional)
+                        </div>
+                        <div style={{fontSize: '13px', color: '#6b7280'}}>
+                          Click para buscar o arrastra aquí
+                        </div>
+                        <div style={{fontSize: '12px', color: '#7c3aed', fontStyle: 'italic', marginTop: '4px'}}>
+                          Si no seleccionas ninguno, se usará el logo por defecto
+                        </div>
+                      </>
+                    )}
                   </>
                 ) : (
                   <>
@@ -857,12 +918,31 @@ const EmisorFormModal: React.FC<Props> = (props) => {
                       <div style={{fontSize: '12px', color: '#7c3aed', fontWeight: 600}}>
                         Click para cambiar
                       </div>
+                      <button
+                        type="button"
+                        onClick={onUseSystemLogo}
+                        style={{
+                          fontSize: '12px',
+                          color: '#7c3aed',
+                          fontWeight: 600,
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          padding: 0,
+                          textDecoration: 'underline'
+                        }}
+                      >
+                        Usar logo del sistema
+                      </button>
                       <button 
                         type="button"
                         onClick={(e) => {
+                          e.preventDefault();
                           e.stopPropagation();
                           setLogoFile(null);
                           setLogoError(null);
+                          setTouchedFields(prev => new Set(prev).add('logo'));
+                          if (fileInputRef.current) fileInputRef.current.value = '';
                         }}
                         style={{
                           fontSize: '12px',
@@ -883,14 +963,9 @@ const EmisorFormModal: React.FC<Props> = (props) => {
                 <input 
                   type="file" 
                   accept=".jpg,.jpeg,.png"
+                  ref={fileInputRef}
                   style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    opacity: 0,
-                    cursor: 'pointer'
+                    display: 'none'
                   }}
                   onChange={e => {
                     const f = e.target.files?.[0] || null;
@@ -946,7 +1021,7 @@ const EmisorFormModal: React.FC<Props> = (props) => {
                 <span>•</span>
                 <span>📐 Horizontal (ancho &gt; alto)</span>
               </div>
-            </label>
+            </div>
           </section>
         </div>
 

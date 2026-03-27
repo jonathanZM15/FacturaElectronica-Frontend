@@ -1,9 +1,9 @@
 ﻿import React from 'react';
-import ReactDOM from 'react-dom';
 import { Link } from 'react-router-dom';
 import './Emisores.css';
 import '../Usuarios/UsuarioDeleteModalModern.css';
 import { emisoresApi } from '../../services/emisoresApi';
+import { suscripcionesApi, PlanActivo } from '../../services/suscripcionesApi';
 import EmisorFormModal from './EmisorFormModal';
 import ImageViewerModal from '../../components/ImageViewerModal/ImageViewerModal';
 import { Emisor } from '../../types/emisor';
@@ -251,6 +251,7 @@ const Emisores: React.FC = () => {
   const { show } = useNotification();
   const { user, loading: userLoading } = useUser();
   const [loading, setLoading] = React.useState(false);
+  const deleteInFlightRef = React.useRef(false);
   // Dynamic filtering
   type FilterField = 'ruc'|'razon_social'|'estado'|'tipo_plan'|'cantidad_creados_gt'|'cantidad_restantes_lt'|'nombre_comercial'|'direccion_matriz'|'regimen_tributario'|'obligado_contabilidad'|'contribuyente_especial'|'agente_retencion'|'codigo_artesano'|'tipo_persona'|'ambiente'|'tipo_emision'|'registrador';
   const [activeFilter, setActiveFilter] = React.useState<FilterField | null>(null);
@@ -307,14 +308,54 @@ const Emisores: React.FC = () => {
   const [filterRazonSocial, setFilterRazonSocial] = React.useState('');
   const [filterEstado, setFilterEstado] = React.useState('ACTIVO');
   const [filterNombreComercial, setFilterNombreComercial] = React.useState('');
+  const [filterDireccionMatriz, setFilterDireccionMatriz] = React.useState('');
   const [filterRegimenTributario, setFilterRegimenTributario] = React.useState('');
   const [filterObligadoContabilidad, setFilterObligadoContabilidad] = React.useState('');
+  const [filterAgenteRetencion, setFilterAgenteRetencion] = React.useState('');
+  const [filterContribuyenteEspecial, setFilterContribuyenteEspecial] = React.useState('');
+  const [filterCodigoArtesano, setFilterCodigoArtesano] = React.useState('');
   const [filterTipoPersona, setFilterTipoPersona] = React.useState('');
   const [filterAmbiente, setFilterAmbiente] = React.useState('');
+  const [filterTipoEmision, setFilterTipoEmision] = React.useState('');
+  const [filterRegistrador, setFilterRegistrador] = React.useState('');
+
+  // Plan vigente (multi-select)
+  const [planesActivos, setPlanesActivos] = React.useState<PlanActivo[]>([]);
+  const [filterPlanIds, setFilterPlanIds] = React.useState<number[]>([]);
+
+  // Cantidades (criterio + entero)
+  type CmpOp = '' | 'gte' | 'lte' | 'eq';
+  const [filterCreadosOp, setFilterCreadosOp] = React.useState<CmpOp>('');
+  const [filterCreadosVal, setFilterCreadosVal] = React.useState<string>('');
+  const [filterRestantesOp, setFilterRestantesOp] = React.useState<CmpOp>('');
+  const [filterRestantesVal, setFilterRestantesVal] = React.useState<string>('');
+
+  // Fechas adicionales
+  const [filterPlanInicioFrom, setFilterPlanInicioFrom] = React.useState('');
+  const [filterPlanInicioTo, setFilterPlanInicioTo] = React.useState('');
+  const [filterPlanFinFrom, setFilterPlanFinFrom] = React.useState('');
+  const [filterPlanFinTo, setFilterPlanFinTo] = React.useState('');
+  const [filterUltimoLoginFrom, setFilterUltimoLoginFrom] = React.useState('');
+  const [filterUltimoLoginTo, setFilterUltimoLoginTo] = React.useState('');
+  const [filterUltimoComprobanteFrom, setFilterUltimoComprobanteFrom] = React.useState('');
+  const [filterUltimoComprobanteTo, setFilterUltimoComprobanteTo] = React.useState('');
+
   const [filterCreatedFrom, setFilterCreatedFrom] = React.useState('');
   const [filterCreatedTo, setFilterCreatedTo] = React.useState('');
   const [filterUpdatedFrom, setFilterUpdatedFrom] = React.useState('');
   const [filterUpdatedTo, setFilterUpdatedTo] = React.useState('');
+
+  React.useEffect(() => {
+    // Cargar planes activos para el filtro de multi-selección
+    suscripcionesApi.getPlanesActivos()
+      .then((res) => {
+        const list = (res.data?.data ?? []) as PlanActivo[];
+        setPlanesActivos(Array.isArray(list) ? list : []);
+      })
+      .catch(() => {
+        setPlanesActivos([]);
+      });
+  }, []);
 
   const activeFiltersCount = React.useMemo(() => {
     let count = 0;
@@ -322,6 +363,23 @@ const Emisores: React.FC = () => {
     if (filterRazonSocial) count++;
     if (filterEstado && filterEstado !== 'ACTIVO') count++;
     if (filterNombreComercial) count++;
+    if (filterDireccionMatriz) count++;
+    if (filterPlanIds.length > 0) count++;
+    if (filterCreadosOp && filterCreadosVal) count++;
+    if (filterRestantesOp && filterRestantesVal) count++;
+    if (filterAgenteRetencion) count++;
+    if (filterContribuyenteEspecial) count++;
+    if (filterCodigoArtesano) count++;
+    if (filterTipoEmision) count++;
+    if (filterRegistrador) count++;
+    if (filterPlanInicioFrom) count++;
+    if (filterPlanInicioTo) count++;
+    if (filterPlanFinFrom) count++;
+    if (filterPlanFinTo) count++;
+    if (filterUltimoLoginFrom) count++;
+    if (filterUltimoLoginTo) count++;
+    if (filterUltimoComprobanteFrom) count++;
+    if (filterUltimoComprobanteTo) count++;
     if (filterRegimenTributario) count++;
     if (filterObligadoContabilidad) count++;
     if (filterTipoPersona) count++;
@@ -331,17 +389,68 @@ const Emisores: React.FC = () => {
     if (filterUpdatedFrom) count++;
     if (filterUpdatedTo) count++;
     return count;
-  }, [filterRuc, filterRazonSocial, filterEstado, filterNombreComercial, filterRegimenTributario, filterObligadoContabilidad, filterTipoPersona, filterAmbiente, filterCreatedFrom, filterCreatedTo, filterUpdatedFrom, filterUpdatedTo]);
+  }, [
+    filterRuc,
+    filterRazonSocial,
+    filterEstado,
+    filterNombreComercial,
+    filterDireccionMatriz,
+    filterPlanIds,
+    filterCreadosOp,
+    filterCreadosVal,
+    filterRestantesOp,
+    filterRestantesVal,
+    filterAgenteRetencion,
+    filterContribuyenteEspecial,
+    filterCodigoArtesano,
+    filterTipoEmision,
+    filterRegistrador,
+    filterPlanInicioFrom,
+    filterPlanInicioTo,
+    filterPlanFinFrom,
+    filterPlanFinTo,
+    filterUltimoLoginFrom,
+    filterUltimoLoginTo,
+    filterUltimoComprobanteFrom,
+    filterUltimoComprobanteTo,
+    filterRegimenTributario,
+    filterObligadoContabilidad,
+    filterTipoPersona,
+    filterAmbiente,
+    filterCreatedFrom,
+    filterCreatedTo,
+    filterUpdatedFrom,
+    filterUpdatedTo,
+  ]);
 
   const clearAllFilters = React.useCallback(() => {
     setFilterRuc('');
     setFilterRazonSocial('');
     setFilterEstado('ACTIVO');
     setFilterNombreComercial('');
+    setFilterDireccionMatriz('');
+    setFilterPlanIds([]);
+    setFilterCreadosOp('');
+    setFilterCreadosVal('');
+    setFilterRestantesOp('');
+    setFilterRestantesVal('');
+    setFilterAgenteRetencion('');
+    setFilterContribuyenteEspecial('');
+    setFilterCodigoArtesano('');
     setFilterRegimenTributario('');
     setFilterObligadoContabilidad('');
     setFilterTipoPersona('');
     setFilterAmbiente('');
+    setFilterTipoEmision('');
+    setFilterRegistrador('');
+    setFilterPlanInicioFrom('');
+    setFilterPlanInicioTo('');
+    setFilterPlanFinFrom('');
+    setFilterPlanFinTo('');
+    setFilterUltimoLoginFrom('');
+    setFilterUltimoLoginTo('');
+    setFilterUltimoComprobanteFrom('');
+    setFilterUltimoComprobanteTo('');
     setFilterCreatedFrom('');
     setFilterCreatedTo('');
     setFilterUpdatedFrom('');
@@ -478,12 +587,43 @@ const Emisores: React.FC = () => {
       if (filterRazonSocial) params.razon_social = filterRazonSocial;
       if (filterEstado) params.estado = filterEstado;
       if (filterNombreComercial) params.nombre_comercial = filterNombreComercial;
+      if (filterDireccionMatriz) params.direccion_matriz = filterDireccionMatriz;
       if (filterRegimenTributario) params.regimen_tributario = filterRegimenTributario;
       if (filterObligadoContabilidad) params.obligado_contabilidad = filterObligadoContabilidad;
+      if (filterAgenteRetencion) params.agente_retencion = filterAgenteRetencion;
+      if (filterContribuyenteEspecial) params.contribuyente_especial = filterContribuyenteEspecial;
+      if (filterCodigoArtesano) params.codigo_artesano = filterCodigoArtesano;
       if (filterTipoPersona) params.tipo_persona = filterTipoPersona;
       if (filterAmbiente) params.ambiente = filterAmbiente;
+      if (filterTipoEmision) params.tipo_emision = filterTipoEmision;
+      if (filterRegistrador) params.registrador = filterRegistrador;
       if (filterUpdatedFrom) params.updated_at_from = filterUpdatedFrom;
       if (filterUpdatedTo) params.updated_at_to = filterUpdatedTo;
+
+      // Plan vigente (multi-select)
+      if (filterPlanIds.length > 0) params.plan_ids = filterPlanIds.join(',');
+
+      // Cantidades (criterio + entero)
+      if (filterCreadosOp && filterCreadosVal) {
+        params.vigente_creados_op = filterCreadosOp;
+        params.vigente_creados = filterCreadosVal;
+      }
+      if (filterRestantesOp && filterRestantesVal) {
+        params.vigente_restantes_op = filterRestantesOp;
+        params.vigente_restantes = filterRestantesVal;
+      }
+
+      // Fechas de suscripción vigente
+      if (filterPlanInicioFrom) params.vigente_inicio_from = filterPlanInicioFrom;
+      if (filterPlanInicioTo) params.vigente_inicio_to = filterPlanInicioTo;
+      if (filterPlanFinFrom) params.vigente_fin_from = filterPlanFinFrom;
+      if (filterPlanFinTo) params.vigente_fin_to = filterPlanFinTo;
+
+      // Fechas de último login / último comprobante
+      if (filterUltimoLoginFrom) params.ultimo_login_from = filterUltimoLoginFrom;
+      if (filterUltimoLoginTo) params.ultimo_login_to = filterUltimoLoginTo;
+      if (filterUltimoComprobanteFrom) params.ultimo_comprobante_from = filterUltimoComprobanteFrom;
+      if (filterUltimoComprobanteTo) params.ultimo_comprobante_to = filterUltimoComprobanteTo;
 
       // Old column-header filter system (for non-panel filters)
       if (activeFilter && activeFilter !== 'estado' && filterValue.trim()) {
@@ -513,7 +653,47 @@ const Emisores: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [activeFilter, filterValue, q, desde, hasta, user, userLoading, filterRuc, filterRazonSocial, filterEstado, filterNombreComercial, filterRegimenTributario, filterObligadoContabilidad, filterTipoPersona, filterAmbiente, filterCreatedFrom, filterCreatedTo, filterUpdatedFrom, filterUpdatedTo]);
+  }, [
+    activeFilter,
+    filterValue,
+    q,
+    desde,
+    hasta,
+    user,
+    userLoading,
+    filterRuc,
+    filterRazonSocial,
+    filterEstado,
+    filterNombreComercial,
+    filterDireccionMatriz,
+    filterRegimenTributario,
+    filterObligadoContabilidad,
+    filterAgenteRetencion,
+    filterContribuyenteEspecial,
+    filterCodigoArtesano,
+    filterTipoPersona,
+    filterAmbiente,
+    filterTipoEmision,
+    filterRegistrador,
+    filterPlanIds,
+    filterCreadosOp,
+    filterCreadosVal,
+    filterRestantesOp,
+    filterRestantesVal,
+    filterPlanInicioFrom,
+    filterPlanInicioTo,
+    filterPlanFinFrom,
+    filterPlanFinTo,
+    filterUltimoLoginFrom,
+    filterUltimoLoginTo,
+    filterUltimoComprobanteFrom,
+    filterUltimoComprobanteTo,
+    filterCreatedFrom,
+    filterCreatedTo,
+    filterUpdatedFrom,
+    filterUpdatedTo,
+  ]);
+
 
   // Initial load: only once when user is ready
   React.useEffect(() => {
@@ -541,9 +721,83 @@ const Emisores: React.FC = () => {
   const sortedData = React.useMemo(() => {
     if (!sortBy) return data;
 
+    const getVigente = (row: any) => {
+      const vigentes = row?.suscripciones_vigentes || row?.suscripcionesVigentes;
+      if (vigentes && Array.isArray(vigentes) && vigentes.length > 0) return vigentes[0];
+      return null;
+    };
+
+    const normalizeIsoDate = (value: any): string => {
+      if (!value) return '';
+      // Prefer YYYY-MM-DD when possible
+      const date = new Date(value);
+      if (!Number.isNaN(date.getTime())) return date.toISOString().slice(0, 10);
+      const text = String(value);
+      const parts = text.split(/[\/\-]/);
+      if (parts.length === 3) {
+        let [a, b, c] = parts;
+        if (a.length === 4) return `${a}-${b.padStart(2, '0')}-${c.padStart(2, '0')}`;
+        if (c.length === 4) return `${c}-${b.padStart(2, '0')}-${a.padStart(2, '0')}`;
+      }
+      return text;
+    };
+
+    const toSortValue = (row: Emisor, key: keyof Emisor | 'logo'): string | number | null => {
+      if (key === 'logo') return null;
+
+      const anyRow = row as any;
+      const vigente = getVigente(anyRow);
+
+      if (key === 'tipo_plan') {
+        // Ordenar por el mismo texto que se muestra
+        if (vigente?.plan) {
+          const nombre = vigente.plan.nombre || '-';
+          const periodo = vigente.plan.periodo || '-';
+          const comprobantes = vigente.plan.cantidad_comprobantes ?? '-';
+          const precio = vigente.plan.precio ? `$${Number(vigente.plan.precio).toFixed(2)}` : '-';
+          return `${nombre} - ${periodo} - ${comprobantes} C - ${precio}`;
+        }
+        if (anyRow.tipo_plan) return String(anyRow.tipo_plan);
+        return '';
+      }
+
+      if (key === 'fecha_inicio_plan') {
+        return normalizeIsoDate(vigente?.fecha_inicio || anyRow.fecha_inicio_plan);
+      }
+      if (key === 'fecha_fin_plan') {
+        return normalizeIsoDate(vigente?.fecha_fin || anyRow.fecha_fin_plan);
+      }
+
+      if (key === 'cantidad_creados') {
+        const v = anyRow.cantidad_creados ?? vigente?.comprobantes_usados;
+        return v == null || v === '' ? null : Number(v);
+      }
+      if (key === 'cantidad_restantes') {
+        const v = anyRow.cantidad_restantes;
+        if (v != null && v !== '') return Number(v);
+        if (vigente) {
+          const asignados = Number(vigente.cantidad_comprobantes ?? 0);
+          const usados = Number(vigente.comprobantes_usados ?? 0);
+          return asignados - usados;
+        }
+        return null;
+      }
+
+      if (key === 'ultimo_login') {
+        return anyRow.ultimo_login ? String(anyRow.ultimo_login) : '';
+      }
+      if (key === 'ultimo_comprobante') {
+        return anyRow.ultimo_comprobante ? String(anyRow.ultimo_comprobante) : '';
+      }
+
+      const raw = (row as any)[key];
+      if (raw == null) return null;
+      return typeof raw === 'number' ? raw : String(raw);
+    };
+
     const sorted = [...data].sort((a, b) => {
-      const aVal = a[sortBy as keyof Emisor];
-      const bVal = b[sortBy as keyof Emisor];
+      const aVal = toSortValue(a, sortBy as any);
+      const bVal = toSortValue(b, sortBy as any);
 
       // Handle null/undefined
       if (aVal == null && bVal == null) return 0;
@@ -551,20 +805,14 @@ const Emisores: React.FC = () => {
       if (bVal == null) return sortOrder === 'asc' ? -1 : 1;
 
       // Compare values
-      if (typeof aVal === 'string' && typeof bVal === 'string') {
-        return sortOrder === 'asc' 
-          ? aVal.localeCompare(bVal, 'es') 
-          : bVal.localeCompare(aVal, 'es');
-      }
-
       if (typeof aVal === 'number' && typeof bVal === 'number') {
         return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
       }
-
-      // Fallback to string comparison
+      const aStr = String(aVal);
+      const bStr = String(bVal);
       return sortOrder === 'asc'
-        ? String(aVal).localeCompare(String(bVal), 'es')
-        : String(bVal).localeCompare(String(aVal), 'es');
+        ? aStr.localeCompare(bStr, 'es')
+        : bStr.localeCompare(aStr, 'es');
     });
 
     return sorted;
@@ -655,6 +903,85 @@ const Emisores: React.FC = () => {
               </div>
             </div>
 
+            {/* Fila 1.1: Más texto */}
+            <div className="emisores-filters-grid" style={{ marginTop: 18 }}>
+              <div className="emisores-filter-group">
+                <label>📍 Dirección Matriz</label>
+                <input
+                  type="text"
+                  placeholder="Buscar por dirección matriz"
+                  value={filterDireccionMatriz}
+                  onChange={(e) => setFilterDireccionMatriz(e.target.value)}
+                />
+              </div>
+              <div className="emisores-filter-group">
+                <label>🧾 Nombre del Registrador</label>
+                <input
+                  type="text"
+                  placeholder="Buscar por registrador"
+                  value={filterRegistrador}
+                  onChange={(e) => setFilterRegistrador(e.target.value)}
+                />
+              </div>
+              <div className="emisores-filter-group">
+                <label>🧵 Código Artesano</label>
+                <input
+                  type="text"
+                  placeholder="Buscar por código artesano"
+                  value={filterCodigoArtesano}
+                  onChange={(e) => setFilterCodigoArtesano(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Fila 1.2: Contribuyente/Retención */}
+            <div className="emisores-filters-grid" style={{ marginTop: 18 }}>
+              <div className="emisores-filter-group">
+                <label>🧾 Contribuyente Especial</label>
+                <input
+                  type="text"
+                  placeholder='Ej: SI, NO o # resolución'
+                  value={filterContribuyenteEspecial}
+                  onChange={(e) => setFilterContribuyenteEspecial(e.target.value)}
+                />
+              </div>
+              <div className="emisores-filter-group">
+                <label>🧾 Agente de Retención</label>
+                <input
+                  type="text"
+                  placeholder='Ej: SI, NO o # resolución'
+                  value={filterAgenteRetencion}
+                  onChange={(e) => setFilterAgenteRetencion(e.target.value)}
+                />
+              </div>
+              <div className="emisores-filter-group">
+                <label>📦 Plan de suscripción vigente</label>
+                <select
+                  multiple
+                  value={filterPlanIds.map(String)}
+                  onChange={(e) => {
+                    const ids = Array.from(e.currentTarget.selectedOptions)
+                      .map((o) => Number(o.value))
+                      .filter((v) => Number.isFinite(v));
+                    setFilterPlanIds(ids);
+                  }}
+                  size={4}
+                >
+                  {planesActivos.length === 0 ? (
+                    <option value="" disabled>
+                      (Sin planes disponibles)
+                    </option>
+                  ) : (
+                    planesActivos.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.label}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
+            </div>
+
             {/* Fila 2: Selects */}
             <div className="emisores-filters-grid" style={{ marginTop: 18 }}>
               <div className="emisores-filter-group">
@@ -699,6 +1026,67 @@ const Emisores: React.FC = () => {
                   <option value="PRUEBAS">Pruebas</option>
                 </select>
               </div>
+
+              <div className="emisores-filter-group">
+                <label>📡 Tipo de Emisión</label>
+                <select value={filterTipoEmision} onChange={(e) => setFilterTipoEmision(e.target.value)}>
+                  <option value="">Todos</option>
+                  <option value="NORMAL">Normal</option>
+                  <option value="INDISPONIBILIDAD">Indisponibilidad del SRI</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Fila 2.1: Cantidades */}
+            <div className="emisores-filters-grid" style={{ marginTop: 18 }}>
+              <div className="emisores-filter-group">
+                <label>📄 Cantidad de comprobantes creados (suscripción vigente)</label>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <select
+                    value={filterCreadosOp}
+                    onChange={(e) => setFilterCreadosOp(e.target.value as CmpOp)}
+                    style={{ flex: 1 }}
+                  >
+                    <option value="">Criterio</option>
+                    <option value="gte">Mayor o igual que</option>
+                    <option value="lte">Menor o igual que</option>
+                    <option value="eq">Igual que</option>
+                  </select>
+                  <input
+                    type="number"
+                    min={0}
+                    step={1}
+                    placeholder="0"
+                    value={filterCreadosVal}
+                    onChange={(e) => setFilterCreadosVal(e.target.value)}
+                    style={{ flex: 1 }}
+                  />
+                </div>
+              </div>
+              <div className="emisores-filter-group">
+                <label>📄 Cantidad de comprobantes restantes (suscripción vigente)</label>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <select
+                    value={filterRestantesOp}
+                    onChange={(e) => setFilterRestantesOp(e.target.value as CmpOp)}
+                    style={{ flex: 1 }}
+                  >
+                    <option value="">Criterio</option>
+                    <option value="gte">Mayor o igual que</option>
+                    <option value="lte">Menor o igual que</option>
+                    <option value="eq">Igual que</option>
+                  </select>
+                  <input
+                    type="number"
+                    min={0}
+                    step={1}
+                    placeholder="0"
+                    value={filterRestantesVal}
+                    onChange={(e) => setFilterRestantesVal(e.target.value)}
+                    style={{ flex: 1 }}
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Fila 3: Fechas */}
@@ -718,6 +1106,46 @@ const Emisores: React.FC = () => {
               <div className="emisores-filter-group">
                 <label>🔄 Actualización hasta</label>
                 <input type="date" value={filterUpdatedTo} onChange={(e) => setFilterUpdatedTo(e.target.value)} />
+              </div>
+            </div>
+
+            {/* Fila 4: Fechas suscripción vigente */}
+            <div className="emisores-filters-grid" style={{ marginTop: 18 }}>
+              <div className="emisores-filter-group">
+                <label>🗓️ Inicio suscripción vigente desde</label>
+                <input type="date" value={filterPlanInicioFrom} onChange={(e) => setFilterPlanInicioFrom(e.target.value)} />
+              </div>
+              <div className="emisores-filter-group">
+                <label>🗓️ Inicio suscripción vigente hasta</label>
+                <input type="date" value={filterPlanInicioTo} onChange={(e) => setFilterPlanInicioTo(e.target.value)} />
+              </div>
+              <div className="emisores-filter-group">
+                <label>🗓️ Final suscripción vigente desde</label>
+                <input type="date" value={filterPlanFinFrom} onChange={(e) => setFilterPlanFinFrom(e.target.value)} />
+              </div>
+              <div className="emisores-filter-group">
+                <label>🗓️ Final suscripción vigente hasta</label>
+                <input type="date" value={filterPlanFinTo} onChange={(e) => setFilterPlanFinTo(e.target.value)} />
+              </div>
+            </div>
+
+            {/* Fila 5: Fechas último login / comprobante */}
+            <div className="emisores-filters-grid" style={{ marginTop: 18 }}>
+              <div className="emisores-filter-group">
+                <label>🔐 Último inicio de sesión desde</label>
+                <input type="date" value={filterUltimoLoginFrom} onChange={(e) => setFilterUltimoLoginFrom(e.target.value)} />
+              </div>
+              <div className="emisores-filter-group">
+                <label>🔐 Último inicio de sesión hasta</label>
+                <input type="date" value={filterUltimoLoginTo} onChange={(e) => setFilterUltimoLoginTo(e.target.value)} />
+              </div>
+              <div className="emisores-filter-group">
+                <label>🧾 Último comprobante creado desde</label>
+                <input type="date" value={filterUltimoComprobanteFrom} onChange={(e) => setFilterUltimoComprobanteFrom(e.target.value)} />
+              </div>
+              <div className="emisores-filter-group">
+                <label>🧾 Último comprobante creado hasta</label>
+                <input type="date" value={filterUltimoComprobanteTo} onChange={(e) => setFilterUltimoComprobanteTo(e.target.value)} />
               </div>
             </div>
 
@@ -968,14 +1396,16 @@ const Emisores: React.FC = () => {
                           // Validate if the emisor can be deleted before opening the modal
                           try {
                             const res = await emisoresApi.validateDelete(row.id!);
-                            const { can_delete, blockers } = res.data;
+                            const { can_delete, blockers, message } = res.data;
                             
                             if (!can_delete) {
                               // Show error message with blockers
-                              const blockersList = blockers.join('\n• ');
+                              const blockersList = Array.isArray(blockers) ? blockers.join('\n• ') : '';
                               show({
                                 title: 'No se puede eliminar',
-                                message: `Este emisor no puede ser eliminado por las siguientes razones:\n• ${blockersList}`,
+                                message: blockersList
+                                  ? `Este emisor no puede ser eliminado por las siguientes razones:\n• ${blockersList}`
+                                  : (message || 'Este emisor no puede ser eliminado.'),
                                 type: 'error'
                               });
                               return;
@@ -1266,6 +1696,8 @@ const Emisores: React.FC = () => {
                   if (e.key === 'Enter' && deletePassword && !deleteLoading) {
                     (async () => {
                       if (!deletingId) return;
+                      if (deleteInFlightRef.current) return;
+                      deleteInFlightRef.current = true;
                       setDeleteLoading(true);
                       setDeleteError(null);
                       try {
@@ -1283,10 +1715,13 @@ const Emisores: React.FC = () => {
                         setDeletingWithHistory(false);
                         show({ title: 'Éxito', message: 'Emisor eliminado correctamente', type: 'success' });
                       } catch (err: any) {
+                        const blockers = err?.response?.data?.blockers;
+                        const blockersList = Array.isArray(blockers) ? blockers.join('\n• ') : '';
                         const msg = err?.response?.data?.message || 'No se pudo eliminar el emisor';
-                        setDeleteError(msg);
+                        setDeleteError(blockersList ? `${msg}\n• ${blockersList}` : msg);
                       } finally {
                         setDeleteLoading(false);
+                        deleteInFlightRef.current = false;
                       }
                     })();
                   }
@@ -1318,6 +1753,8 @@ const Emisores: React.FC = () => {
               className="delete-btn delete-btn-danger" 
               onClick={async () => {
                 if (!deletingId) return;
+                if (deleteInFlightRef.current) return;
+                deleteInFlightRef.current = true;
                 setDeleteLoading(true);
                 setDeleteError(null);
                 try {
@@ -1335,10 +1772,13 @@ const Emisores: React.FC = () => {
                   setDeletingWithHistory(false);
                   show({ title: 'Éxito', message: 'Emisor eliminado correctamente', type: 'success' });
                 } catch (err: any) {
+                  const blockers = err?.response?.data?.blockers;
+                  const blockersList = Array.isArray(blockers) ? blockers.join('\n• ') : '';
                   const msg = err?.response?.data?.message || 'No se pudo eliminar el emisor';
-                  setDeleteError(msg);
+                  setDeleteError(blockersList ? `${msg}\n• ${blockersList}` : msg);
                 } finally {
                   setDeleteLoading(false);
+                  deleteInFlightRef.current = false;
                 }
               }} 
               disabled={deleteLoading || deletePassword.length === 0}
