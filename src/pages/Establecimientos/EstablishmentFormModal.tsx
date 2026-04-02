@@ -28,6 +28,7 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
   const [v, setV] = React.useState<Establecimiento>(initial);
   const [logoFile, setLogoFile] = React.useState<File | null>(null);
   const [logoOption, setLogoOption] = React.useState<'custom' | 'default' | 'none'>('none');
+  const [logoChangeEnabled, setLogoChangeEnabled] = React.useState(false);
   const [fieldErrors, setFieldErrors] = React.useState<Record<string,string>>({});
   const [touched, setTouched] = React.useState<Set<string>>(new Set());
   const [checkingCode, setCheckingCode] = React.useState(false);
@@ -35,6 +36,25 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
   const [loading, setLoading] = React.useState(false);
   const [showConfirm, setShowConfirm] = React.useState(false);
   const [localCodigoEditable, setLocalCodigoEditable] = React.useState<boolean>(true);
+
+  const hasExistingLogo = React.useMemo(() => {
+    if (!editingEst) return false;
+    const anyEst = editingEst as any;
+    return !!(anyEst?.logo_url || anyEst?.logo || editingEst.logo_path);
+  }, [editingEst]);
+
+  const canEditLogo = !editingEst || !hasExistingLogo || logoChangeEnabled;
+
+  const applyLogoChangeEnabled = React.useCallback((checked: boolean) => {
+    setLogoChangeEnabled(checked);
+    setLogoFile(null);
+    setLogoOption(checked ? 'custom' : 'none');
+    setFieldErrors((prev) => {
+      const next = { ...(prev || {}) };
+      delete next.logo;
+      return next;
+    });
+  }, []);
 
   React.useEffect(() => {
     if (open) {
@@ -47,11 +67,33 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
       }
       setLogoFile(null);
       setLogoOption('none');
+      // Si el establecimiento ya tiene logo, NO permitir cambios hasta que el usuario lo habilite.
+      // Evita que al editar un campo de texto se borre el logo por defecto.
+      const editingHasLogo = !!(
+        editingEst && ((editingEst as any)?.logo_url || (editingEst as any)?.logo || editingEst.logo_path)
+      );
+      setLogoChangeEnabled(!editingHasLogo);
       setFieldErrors({});
       setTouched(new Set());
       setCodeDuplicateError(null);
     }
   }, [open, editingEst, codigoEditable]);
+
+  const todayIsoDate = React.useMemo(() => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }, []);
+
+  const getMinTodayDateError = React.useCallback((raw: string | undefined | null): string | undefined => {
+    const datePart = String(raw ?? '').trim().slice(0, 10);
+    if (!datePart) return undefined; // opcional
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(datePart)) return undefined;
+    if (datePart < todayIsoDate) return 'La fecha debe ser igual o posterior a hoy';
+    return undefined;
+  }, [todayIsoDate]);
 
   const getCorreoError = (correoValue: string | undefined | null): string | undefined => {
     const value = (correoValue ?? '').trim();
@@ -71,11 +113,12 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
     }
 
     // Para campos con validación de formato, marcar como tocado al primer cambio
-    if (k === 'correo') {
+    if (k === 'correo' || k === 'fecha_inicio_actividades' || k === 'fecha_reinicio_actividades' || k === 'fecha_cierre_establecimiento') {
       setTouched(prev => {
-        if (prev.has('correo')) return prev;
+        const key = k as string;
+        if (prev.has(key)) return prev;
         const next = new Set(prev);
-        next.add('correo');
+        next.add(key);
         return next;
       });
     }
@@ -96,6 +139,12 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
         else if ('correo' in next) delete next.correo;
       }
 
+      if (k === 'fecha_inicio_actividades' || k === 'fecha_reinicio_actividades' || k === 'fecha_cierre_establecimiento') {
+        const dateErr = getMinTodayDateError(value);
+        if (dateErr) next[ks] = dateErr;
+        else if (ks in next) delete next[ks];
+      }
+
       return next;
     });
     if (k === 'codigo') setCodeDuplicateError(null);
@@ -109,7 +158,7 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
     }
   };
 
-  const markTouched = (k: keyof Establecimiento) => {
+  const markTouched = (k: keyof Establecimiento | 'logo') => {
     setTouched(prev => {
       const n = new Set(prev);
       n.add(k as string);
@@ -188,8 +237,19 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
     if (v.telefono && !/^\d+$/.test(v.telefono)) e.telefono = 'Teléfono debe contener solo números';
     if (v.telefono && v.telefono.length > 10) e.telefono = 'Teléfono máximo 10 dígitos';
     if (codeDuplicateError) e.codigo = codeDuplicateError;
-    // Si eligió logo personalizado, debe subir un archivo
-    if (logoOption === 'custom' && !logoFile) e.logo = 'Debes subir un archivo para logo personalizado';
+
+    const inicioErr = getMinTodayDateError(v.fecha_inicio_actividades);
+    if (inicioErr) e.fecha_inicio_actividades = inicioErr;
+    const reinicioErr = getMinTodayDateError(v.fecha_reinicio_actividades);
+    if (reinicioErr) e.fecha_reinicio_actividades = reinicioErr;
+    const cierreErr = getMinTodayDateError(v.fecha_cierre_establecimiento);
+    if (cierreErr) e.fecha_cierre_establecimiento = cierreErr;
+
+    // Si habilitó el cambio de logo y eligió logo propio, debe subir un archivo
+    if (canEditLogo) {
+      if (logoOption === 'custom' && !logoFile) e.logo = 'Debes subir un archivo para logo propio';
+      if (logoOption === 'custom' && logoFile && !/\.jpe?g$|\.png$/i.test(logoFile.name)) e.logo = 'El logo debe ser JPG, JPEG o PNG';
+    }
     setFieldErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -202,10 +262,15 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
     if (getCorreoError(v.correo)) return false;
     if (v.telefono && (!/^\d+$/.test(v.telefono) || v.telefono.length > 10)) return false;
     if (codeDuplicateError || checkingCode) return false;
-    // Si eligió logo personalizado, debe haber archivo
-    if (logoOption === 'custom' && !logoFile) return false;
-    // Validar formato del archivo si hay uno
-    if (logoOption === 'custom' && logoFile && !/\.jpe?g$|\.png$/i.test(logoFile.name)) return false;
+    if (getMinTodayDateError(v.fecha_inicio_actividades)) return false;
+    if (getMinTodayDateError(v.fecha_reinicio_actividades)) return false;
+    if (getMinTodayDateError(v.fecha_cierre_establecimiento)) return false;
+    if (canEditLogo) {
+      // Si eligió logo propio, debe haber archivo
+      if (logoOption === 'custom' && !logoFile) return false;
+      // Validar formato del archivo si hay uno
+      if (logoOption === 'custom' && logoFile && !/\.jpe?g$|\.png$/i.test(logoFile.name)) return false;
+    }
     return true;
   };
 
@@ -215,74 +280,90 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
     try {
       let finalLogoFile: File | null = null;
 
-      // Determinar qué logo usar según la opción seleccionada
-      if (logoOption === 'custom') {
-        // Usar el archivo que subió el usuario
-        finalLogoFile = logoFile;
-      } else if (logoOption === 'default') {
-        // Cargar y optimizar el logo por defecto
-        try {
-          const response = await fetch('/maximofactura.png');
-          const blob = await response.blob();
-          
-          // Optimizar la imagen (redimensionar y comprimir) manteniendo PNG para transparencia
-          const optimizedBlob = await new Promise<Blob>((resolve, reject) => {
-            const img = new Image();
-            img.onload = () => {
-              const canvas = document.createElement('canvas');
-              const ctx = canvas.getContext('2d');
-              
-              // Redimensionar si es muy grande
-              const maxWidth = 800;
-              let width = img.width;
-              let height = img.height;
-              
-              if (width > maxWidth) {
-                height = (height * maxWidth) / width;
-                width = maxWidth;
-              }
-              
-              canvas.width = width;
-              canvas.height = height;
-              
-              // Fondo transparente para PNG
-              if (ctx) {
-                ctx.clearRect(0, 0, width, height);
-                ctx.drawImage(img, 0, 0, width, height);
-              }
-              
-              canvas.toBlob(
-                (optimizedBlob) => {
-                  if (optimizedBlob) resolve(optimizedBlob);
-                  else reject(new Error('No se pudo optimizar'));
-                },
-                'image/png', // PNG mantiene transparencia
-                0.9 // 90% calidad para PNG
-              );
-            };
-            img.onerror = reject;
-            img.src = URL.createObjectURL(blob);
-          });
+      // Solo aplicar cambios de logo si el usuario lo habilitó (cuando ya existía uno)
+      // o si estamos creando / editando un establecimiento sin logo previo.
+      const shouldApplyLogoChange = canEditLogo;
 
-          finalLogoFile = new File([optimizedBlob], 'maximofactura.png', { type: 'image/png' });
-        } catch (err) {
-          console.error('Error cargando logo por defecto:', err);
-          alert('No se pudo cargar el logo por defecto');
-          setLoading(false);
-          return;
+      let removeLogoFlag = false;
+
+      if (shouldApplyLogoChange) {
+        // Determinar qué logo usar según la opción seleccionada
+        if (logoOption === 'custom') {
+          // Usar el archivo que subió el usuario
+          finalLogoFile = logoFile;
+        } else if (logoOption === 'default') {
+          // Cargar y optimizar el logo del sistema
+          try {
+            const response = await fetch('/maximofactura.png');
+            const blob = await response.blob();
+            
+            // Optimizar la imagen (redimensionar y comprimir) manteniendo PNG para transparencia
+            const optimizedBlob = await new Promise<Blob>((resolve, reject) => {
+              const img = new Image();
+              img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Redimensionar si es muy grande
+                const maxWidth = 800;
+                let width = img.width;
+                let height = img.height;
+                
+                if (width > maxWidth) {
+                  height = (height * maxWidth) / width;
+                  width = maxWidth;
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                
+                // Fondo transparente para PNG
+                if (ctx) {
+                  ctx.clearRect(0, 0, width, height);
+                  ctx.drawImage(img, 0, 0, width, height);
+                }
+                
+                canvas.toBlob(
+                  (optimizedBlob) => {
+                    if (optimizedBlob) resolve(optimizedBlob);
+                    else reject(new Error('No se pudo optimizar'));
+                  },
+                  'image/png', // PNG mantiene transparencia
+                  0.9 // 90% calidad para PNG
+                );
+              };
+              img.onerror = reject;
+              img.src = URL.createObjectURL(blob);
+            });
+
+            finalLogoFile = new File([optimizedBlob], 'maximofactura.png', { type: 'image/png' });
+          } catch (err) {
+            console.error('Error cargando logo del sistema:', err);
+            alert('No se pudo cargar el logo del sistema');
+            setLoading(false);
+            return;
+          }
+        } else if (logoOption === 'none') {
+          // Sin logo
+          finalLogoFile = null;
+          removeLogoFlag = true;
         }
-      } else if (logoOption === 'none') {
-        // Sin logo
-        finalLogoFile = null;
       }
 
-      const removeLogoFlag = logoOption === 'none';
       if (editingEst && editingEst.id) {
-        const res = await establecimientosApi.update(companyId, editingEst.id, { ...v, logoFile: finalLogoFile, remove_logo: removeLogoFlag });
+        const payload: any = { ...v };
+        if (shouldApplyLogoChange) {
+          if (finalLogoFile) payload.logoFile = finalLogoFile;
+          if (removeLogoFlag) payload.remove_logo = true;
+        }
+        const res = await establecimientosApi.update(companyId, editingEst.id, payload);
         const updated: Establecimiento = res.data?.data ?? res.data;
         onUpdated && onUpdated(updated);
       } else {
-        const res = await establecimientosApi.create(companyId, { ...v, logoFile: finalLogoFile, remove_logo: removeLogoFlag });
+        const payload: any = { ...v };
+        if (finalLogoFile) payload.logoFile = finalLogoFile;
+        if (removeLogoFlag) payload.remove_logo = true;
+        const res = await establecimientosApi.create(companyId, payload);
         const created: Establecimiento = res.data?.data ?? res.data;
         onCreated && onCreated(created);
       }
@@ -309,10 +390,6 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
       doSubmit();
     }
   };
-
-  const requiredKeys = React.useMemo(() => new Set<string>([
-    'codigo','nombre','direccion','estado'
-  ]), []);
 
   if (!open) return null;
 
@@ -359,12 +436,17 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
             {v.codigo === '000' && touched.has('codigo') && <span className="err" style={{marginLeft: '192px', display: 'block', marginTop: -8}}>El código no puede ser "000"</span>}
             {codeDuplicateError && <span className="err" style={{marginLeft: '192px', display: 'block', marginTop: -8}}>{codeDuplicateError}</span>}
             {touched.has('codigo') && fieldErrors.codigo && !codeDuplicateError && <span className="err" style={{marginLeft: '192px', display: 'block', marginTop: -8}}>{fieldErrors.codigo}</span>}
+            {touched.has('codigo') && isMissing('codigo') && !fieldErrors.codigo && !codeDuplicateError && (
+              <span className="err" style={{marginLeft: '192px', display: 'block', marginTop: -8}}>Código es obligatorio</span>
+            )}
 
             <label className="horizontal">
               <span>Nombre <span style={{color:'#dc2626'}}>*</span></span>
               <input value={v.nombre || ''} onBlur={()=>markTouched('nombre')} onChange={e=>onChange('nombre', e.target.value)} className={touched.has('nombre') && isMissing('nombre') ? 'error-input' : ''} />
             </label>
-            {touched.has('nombre') && fieldErrors.nombre && <span className="err" style={{marginLeft: '192px'}}>{fieldErrors.nombre}</span>}
+            {touched.has('nombre') && (fieldErrors.nombre || isMissing('nombre')) && (
+              <span className="err" style={{marginLeft: '192px'}}>{fieldErrors.nombre || 'Nombre es obligatorio'}</span>
+            )}
 
             <label className="horizontal">Nombre Comercial
               <input value={v.nombre_comercial || ''} onBlur={()=>markTouched('nombre_comercial')} onChange={e=>onChange('nombre_comercial', e.target.value)} />
@@ -376,7 +458,9 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
               <span>Dirección <span style={{color:'#dc2626'}}>*</span></span>
               <input value={v.direccion || ''} onBlur={()=>markTouched('direccion')} onChange={e=>onChange('direccion', e.target.value)} className={touched.has('direccion') && isMissing('direccion') ? 'error-input' : ''} />
             </label>
-            {touched.has('direccion') && fieldErrors.direccion && <span className="err" style={{marginLeft: '192px'}}>{fieldErrors.direccion}</span>}
+            {touched.has('direccion') && (fieldErrors.direccion || isMissing('direccion')) && (
+              <span className="err" style={{marginLeft: '192px'}}>{fieldErrors.direccion || 'Dirección es obligatoria'}</span>
+            )}
             <small style={{marginLeft: '192px', display: 'block', marginTop: 2, color: '#64748b'}}>Se mostrará en los comprobantes</small>
 
             <label className="horizontal">Correo
@@ -407,35 +491,76 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
             {touched.has('telefono') && fieldErrors.telefono && <span className="err" style={{marginLeft: '192px'}}>{fieldErrors.telefono}</span>}
             <small style={{marginLeft: '192px', display: 'block', marginTop: 2, color: '#64748b'}}>Se mostrará en los comprobantes • Máximo 10 dígitos</small>
 
-            <label className="horizontal" style={{marginTop: 24}}>
+            <div className="mf-horizontal" style={{marginTop: 24, alignItems: 'flex-start'}}>
               <span style={{fontWeight: 600, fontSize: '14px', color: '#374151'}}>Logo</span>
-              <select 
-                value={logoOption} 
-                onChange={(e) => {
-                  setLogoOption(e.target.value as 'custom' | 'default' | 'none');
-                  setLogoFile(null);
-                }}
-                style={{
-                  padding: '10px 12px',
-                  borderRadius: '8px',
-                  border: '2px solid #e5e7eb',
-                  fontSize: '14px',
-                  color: '#374151',
-                  background: '#fff',
-                  cursor: 'pointer',
-                  transition: 'border-color 0.2s ease'
-                }}
-              >
-                <option value="none">🚫 Sin logo</option>
-                <option value="default">🏢 Logo por defecto (Máximo Facturas)</option>
-                <option value="custom">📁 Logo personalizado</option>
-              </select>
-            </label>
-            <small style={{marginLeft: '192px', display: 'block', marginTop: 2, color: '#64748b'}}>Se mostrará en los comprobantes</small>
-            {fieldErrors.logo && <span className="err" style={{marginLeft: '192px', display: 'block', marginTop: -8}}>{fieldErrors.logo}</span>}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {editingEst && hasExistingLogo && (
+                  <div className="mf-logo-gate">
+                    <div className="mf-logo-gate__title">Existe un logo cargado</div>
+                    <div className="mf-logo-gate__note">
+                      {logoChangeEnabled
+                        ? 'Cambio habilitado. Selecciona una opción de logo.'
+                        : 'Se mantendrá el logo actual. Habilita el cambio solo si deseas modificarlo o eliminarlo.'}
+                    </div>
 
-              {/* Área de carga de archivo (solo visible cuando logoOption === 'custom') */}
-              {logoOption === 'custom' && (
+                    <label className={`mf-logo-gate__toggle ${logoChangeEnabled ? 'is-enabled' : ''}`}>
+                      <input
+                        type="checkbox"
+                        className="mf-checkbox"
+                        checked={logoChangeEnabled}
+                        onChange={(e) => applyLogoChangeEnabled(e.target.checked)}
+                      />
+                      <div className="mf-logo-gate__toggleText">
+                        <div className="mf-logo-gate__toggleTitle">Habilitar cambio de logo</div>
+                        <div className="mf-logo-gate__toggleDesc">
+                          {logoChangeEnabled
+                            ? 'Ahora podrás elegir: Logo propio, Logo del sistema o Sin logo.'
+                            : 'Por seguridad, esta acción no se aplica si no la habilitas.'}
+                        </div>
+                      </div>
+                    </label>
+                  </div>
+                )}
+
+                {canEditLogo && (
+                  <>
+                    <select 
+                      value={logoOption} 
+                      onChange={(e) => {
+                        const nextOption = e.target.value as 'custom' | 'default' | 'none';
+                        setLogoOption(nextOption);
+                        setLogoFile(null);
+                        // Marcar y sincronizar error para que el usuario sepa qué falta
+                        markTouched('logo');
+                        setFieldErrors(prev => {
+                          const next = { ...(prev || {}) };
+                          delete next.logo;
+                          if (nextOption === 'custom') next.logo = 'Debes subir un archivo para logo propio';
+                          return next;
+                        });
+                      }}
+                      style={{
+                        padding: '10px 12px',
+                        borderRadius: '8px',
+                        border: '2px solid #e5e7eb',
+                        fontSize: '14px',
+                        color: '#374151',
+                        background: '#fff',
+                        cursor: 'pointer',
+                        transition: 'border-color 0.2s ease'
+                      }}
+                    >
+                      <option value="custom">Logo propio</option>
+                      <option value="default">Logo del sistema</option>
+                      <option value="none">Sin logo</option>
+                    </select>
+
+                    {logoOption === 'custom' && fieldErrors.logo && (
+                      <span className="err" style={{display: 'block', marginTop: 6, marginBottom: 6}}>{fieldErrors.logo}</span>
+                    )}
+
+                    {/* Área de carga de archivo (solo visible cuando logoOption === 'custom') */}
+                    {logoOption === 'custom' && (
                 <>
                   <div style={{
                     position: 'relative',
@@ -451,7 +576,7 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '8px',
-                    marginTop: '12px'
+                    marginTop: '10px'
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.borderColor = '#7c3aed';
@@ -518,7 +643,18 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
                         opacity: 0,
                         cursor: 'pointer'
                       }}
-                      onChange={e=>setLogoFile(e.target.files?.[0] || null)} 
+                      onChange={e=>{
+                        const f = e.target.files?.[0] || null;
+                        setLogoFile(f);
+                        markTouched('logo');
+                        setFieldErrors(prev => {
+                          const next = { ...(prev || {}) };
+                          delete next.logo;
+                          if (!f) next.logo = 'Debes subir un archivo para logo propio';
+                          else if (!/\.jpe?g$|\.png$/i.test(f.name)) next.logo = 'El logo debe ser JPG, JPEG o PNG';
+                          return next;
+                        });
+                      }} 
                     />
                   </div>
 
@@ -528,10 +664,15 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
                     color: '#6b7280',
                     textAlign: 'center'
                   }}>
-                    📎 JPG, JPEG, PNG • 📐 Horizontal (ancho &gt; alto)
+                    📎 JPG, JPEG, PNG
                   </div>
                 </>
-              )}
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+            <small style={{marginLeft: '192px', display: 'block', marginTop: 2, color: '#64748b'}}>Se mostrará en los comprobantes</small>
 
             <label style={{ marginTop: 16 }}>Actividades economicas
               <textarea value={v.actividades_economicas || ''} onChange={e=>onChange('actividades_economicas', e.target.value)} rows={3} />
@@ -540,17 +681,47 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
             <div className="date-row">
               <label>
                 <span>Fecha inicio de actividades</span>
-                <input type="date" value={v.fecha_inicio_actividades||''} onChange={e=>onChange('fecha_inicio_actividades', e.target.value)} />
+                <input
+                  type="date"
+                  min={todayIsoDate}
+                  value={v.fecha_inicio_actividades||''}
+                  onBlur={()=>markTouched('fecha_inicio_actividades')}
+                  onChange={e=>onChange('fecha_inicio_actividades', e.target.value)}
+                  className={touched.has('fecha_inicio_actividades') && fieldErrors.fecha_inicio_actividades ? 'error-input' : ''}
+                />
+                {touched.has('fecha_inicio_actividades') && fieldErrors.fecha_inicio_actividades && (
+                  <span className="err">{fieldErrors.fecha_inicio_actividades}</span>
+                )}
               </label>
               <label>
                 <span>Fecha reinicio de actividades</span>
-                <input type="date" value={v.fecha_reinicio_actividades||''} onChange={e=>onChange('fecha_reinicio_actividades', e.target.value)} />
+                <input
+                  type="date"
+                  min={todayIsoDate}
+                  value={v.fecha_reinicio_actividades||''}
+                  onBlur={()=>markTouched('fecha_reinicio_actividades')}
+                  onChange={e=>onChange('fecha_reinicio_actividades', e.target.value)}
+                  className={touched.has('fecha_reinicio_actividades') && fieldErrors.fecha_reinicio_actividades ? 'error-input' : ''}
+                />
+                {touched.has('fecha_reinicio_actividades') && fieldErrors.fecha_reinicio_actividades && (
+                  <span className="err">{fieldErrors.fecha_reinicio_actividades}</span>
+                )}
               </label>
             </div>
 
             <label className="horizontal" style={{ maxWidth: '500px', margin: '12px auto' }}>Fecha cierre de establecimiento
-              <input type="date" value={v.fecha_cierre_establecimiento||''} onChange={e=>onChange('fecha_cierre_establecimiento', e.target.value)} />
+              <input
+                type="date"
+                min={todayIsoDate}
+                value={v.fecha_cierre_establecimiento||''}
+                onBlur={()=>markTouched('fecha_cierre_establecimiento')}
+                onChange={e=>onChange('fecha_cierre_establecimiento', e.target.value)}
+                className={touched.has('fecha_cierre_establecimiento') && fieldErrors.fecha_cierre_establecimiento ? 'error-input' : ''}
+              />
             </label>
+            {touched.has('fecha_cierre_establecimiento') && fieldErrors.fecha_cierre_establecimiento && (
+              <span className="err" style={{ maxWidth: '500px', margin: '-6px auto 0', display: 'block' }}>{fieldErrors.fecha_cierre_establecimiento}</span>
+            )}
           </section>
         </div>
 
@@ -584,8 +755,12 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
           /* Form fields - HORIZONTAL layout */
           label.horizontal{display:grid;grid-template-columns:200px 1fr;gap:12px;align-items:center;
             margin:10px 0;font-weight:500;color:#475569}
-          label.horizontal input,label.horizontal select{height:40px;padding:10px 12px;border:1px solid #cbd5e1;
+          label.horizontal input:not([type="radio"]):not([type="checkbox"]):not([type="file"]),label.horizontal select{height:40px;padding:10px 12px;border:1px solid #cbd5e1;
             border-radius:8px;width:100%;box-sizing:border-box;font-size:14px;background:#fff;transition:all 0.2s ease}
+
+          /* Layout horizontal sin semántica de label (para Logo) */
+          .mf-horizontal{display:grid;grid-template-columns:200px 1fr;gap:12px;align-items:center;
+            margin:10px 0;font-weight:500;color:#475569}
           
           /* Form fields - VERTICAL layout (default) */
           label{display:flex;flex-direction:column;gap:8px;margin:12px 0;font-weight:500;color:#475569}
@@ -616,6 +791,19 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
             border-radius:6px;background:#f8fafc;color:#475569;cursor:pointer;font-weight:500;font-size:12px;
             margin-right:10px;transition:all 0.2s ease}
           input[type="file"]::file-selector-button:hover{background:#3b82f6;color:#fff;border-color:#3b82f6}
+
+          /* Logo gate (edición) */
+          .mf-logo-gate{border:1px solid #e5e7eb;background:#fff;border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px}
+          .mf-logo-gate__title{font-size:13px;font-weight:800;color:#059669}
+          .mf-logo-gate__note{font-size:12px;color:#64748b;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px;line-height:1.35}
+          .mf-logo-gate__toggle{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:8px;border:1px solid #e5e7eb;background:#f8fafc;cursor:pointer;user-select:none;transition:all 0.2s ease}
+          .mf-logo-gate__toggle:hover{border-color:#cbd5e1;background:#f1f5f9}
+          .mf-logo-gate__toggle.is-enabled{border-color:#3b82f6;background:#f0f9ff}
+          .mf-logo-gate__toggle:focus-within{outline:none;box-shadow:0 0 0 3px rgba(59,130,246,0.14)}
+          .mf-checkbox{width:18px;height:18px;margin-top:2px;accent-color:#3b82f6}
+          .mf-logo-gate__toggleText{display:flex;flex-direction:column;gap:2px}
+          .mf-logo-gate__toggleTitle{font-size:13px;color:#374151;font-weight:800;line-height:1.2}
+          .mf-logo-gate__toggleDesc{font-size:12px;color:#64748b;line-height:1.3}
 
           /* Toggle switch - MEJORADO */
           .switch{position:relative;display:inline-block;width:50px;height:26px}
@@ -651,7 +839,7 @@ const EstablishmentFormModal: React.FC<Props> = ({ open, onClose, companyId, onC
             .mf-modal{width:calc(100vw - 24px);border-radius:10px}
             .mf-body{padding:16px}
             section{padding:16px}
-            label.horizontal{grid-template-columns:1fr;gap:6px}
+            label.horizontal,.mf-horizontal{grid-template-columns:1fr;gap:6px}
             .date-row{grid-template-columns:1fr}
           }
         `}</style>

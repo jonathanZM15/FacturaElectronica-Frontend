@@ -16,10 +16,12 @@ import './Emisores.css';
 import '../Usuarios/UsuarioDeleteModalModern.css';
 import '../Establecimientos/EstablecimientosTab.css';
 import { getImageUrl } from '../../helpers/imageUrl';
+import { formatDateTime } from '../../helpers/formatDate';
 import { User } from '../../types/user';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { usuariosApi } from '../../services/usuariosApi';
 import { usuariosEmisorApi } from '../../services/usuariosEmisorApi';
+import SortArrow from '../../components/SortArrow';
 
 const EmisorInfo: React.FC = () => {
   const { id } = useParams();
@@ -298,9 +300,22 @@ const EmisorInfo: React.FC = () => {
   }, [company?.created_by, role]);
 
   // Sorting and pagination state for establecimientos
-  type EstCol = 'codigo'|'nombre'|'nombre_comercial'|'direccion'|'estado';
-  const [sortByEst, setSortByEst] = React.useState<EstCol>('codigo');
-  const [sortDirEst, setSortDirEst] = React.useState<'asc'|'desc'>('asc');
+  type EstCol =
+    | 'codigo'
+    | 'estado'
+    | 'nombre'
+    | 'nombre_comercial'
+    | 'direccion'
+    | 'correo'
+    | 'telefono'
+    | 'fecha_inicio_actividades'
+    | 'fecha_reinicio_actividades'
+    | 'fecha_cierre_establecimiento'
+    | 'created_at'
+    | 'updated_at'
+    | 'usuarios';
+  const [sortByEst, setSortByEst] = React.useState<EstCol>('created_at');
+  const [sortDirEst, setSortDirEst] = React.useState<'asc'|'desc'>('desc');
   const [pageEst, setPageEst] = React.useState(1);
   const [perPageEst, setPerPageEst] = React.useState(10);
   const [estFiltersOpen, setEstFiltersOpen] = React.useState(false);
@@ -318,8 +333,18 @@ const EmisorInfo: React.FC = () => {
     fecha_reinicio_desde: '',
     fecha_reinicio_hasta: '',
     fecha_cierre_desde: '',
-    fecha_cierre_hasta: ''
+    fecha_cierre_hasta: '',
+    fecha_creacion_desde: '',
+    fecha_creacion_hasta: '',
+    fecha_actualizacion_desde: '',
+    fecha_actualizacion_hasta: ''
   });
+
+  // Al aplicar filtros, volver al ordenamiento por defecto.
+  React.useEffect(() => {
+    setSortByEst('created_at');
+    setSortDirEst('desc');
+  }, [estFilters]);
 
   const toggleSortEst = (col: EstCol) => {
     setPageEst(1);
@@ -331,6 +356,36 @@ const EmisorInfo: React.FC = () => {
     }
   };
 
+  const parseLocalDateOnly = React.useCallback((value: any): Date | null => {
+    if (value === undefined || value === null) return null;
+    const raw = String(value).trim();
+    if (!raw) return null;
+
+    // Evitar desfase por zona horaria:
+    // - 'YYYY-MM-DD' se interpreta como UTC en JS y puede mostrar el día anterior.
+    // - Tomamos solo la parte de fecha y construimos Date(year, monthIndex, day) (local).
+    const datePart = raw.slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+      const [y, m, d] = datePart.split('-').map((n) => Number(n));
+      if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return null;
+      const dt = new Date(y, m - 1, d);
+      return Number.isNaN(dt.getTime()) ? null : dt;
+    }
+
+    const dt = new Date(raw);
+    return Number.isNaN(dt.getTime()) ? null : dt;
+  }, []);
+
+  const formatDateDDMMYYYY = React.useCallback((value: any): string => {
+    const dt = parseLocalDateOnly(value);
+    if (!dt) return '-';
+    return dt.toLocaleDateString('es-EC', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  }, [parseLocalDateOnly]);
+
   const filteredEsts = React.useMemo(() => {
     const normalize = (val: any) => String(val ?? '').toLowerCase().trim();
     const includesText = (fieldValue: any, filterValue: string) => {
@@ -340,15 +395,17 @@ const EmisorInfo: React.FC = () => {
     const inDateRange = (dateValue: any, fromValue: string, toValue: string) => {
       if (!fromValue && !toValue) return true;
       if (!dateValue) return false;
-      const date = new Date(dateValue);
-      if (Number.isNaN(date.getTime())) return false;
+      const date = parseLocalDateOnly(dateValue);
+      if (!date) return false;
       if (fromValue) {
-        const from = new Date(fromValue);
+        const from = parseLocalDateOnly(fromValue);
+        if (!from) return false;
         from.setHours(0, 0, 0, 0);
         if (date < from) return false;
       }
       if (toValue) {
-        const to = new Date(toValue);
+        const to = parseLocalDateOnly(toValue);
+        if (!to) return false;
         to.setHours(23, 59, 59, 999);
         if (date > to) return false;
       }
@@ -379,24 +436,127 @@ const EmisorInfo: React.FC = () => {
       if (!inDateRange(est.fecha_inicio_actividades, estFilters.fecha_inicio_desde, estFilters.fecha_inicio_hasta)) return false;
       if (!inDateRange(est.fecha_reinicio_actividades, estFilters.fecha_reinicio_desde, estFilters.fecha_reinicio_hasta)) return false;
       if (!inDateRange(est.fecha_cierre_establecimiento, estFilters.fecha_cierre_desde, estFilters.fecha_cierre_hasta)) return false;
+      if (!inDateRange(est.created_at, estFilters.fecha_creacion_desde, estFilters.fecha_creacion_hasta)) return false;
+      if (!inDateRange(est.updated_at, estFilters.fecha_actualizacion_desde, estFilters.fecha_actualizacion_hasta)) return false;
 
       return true;
     });
-  }, [establecimientos, estFilters]);
+  }, [establecimientos, estFilters, parseLocalDateOnly]);
 
   const sortedEsts = React.useMemo(() => {
     const data = [...filteredEsts];
     const dir = sortDirEst === 'asc' ? 1 : -1;
+
+    const isEmpty = (val: any) => {
+      if (val === undefined || val === null) return true;
+      if (typeof val === 'string' && val.trim() === '') return true;
+      return false;
+    };
+
+    const compareValuesAsc = (aVal: any, bVal: any) => {
+      const aEmpty = isEmpty(aVal);
+      const bEmpty = isEmpty(bVal);
+      if (aEmpty && bEmpty) return 0;
+      if (aEmpty) return 1; // vacíos al final
+      if (bEmpty) return -1;
+
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        if (aVal === bVal) return 0;
+        return aVal < bVal ? -1 : 1;
+      }
+
+      return String(aVal).localeCompare(String(bVal), 'es', {
+        numeric: true,
+        sensitivity: 'base'
+      });
+    };
+
+    const parseDateTime = (value: any): number | null => {
+      if (value === undefined || value === null) return null;
+      const raw = String(value).trim();
+      if (!raw) return null;
+      const dt = new Date(raw);
+      if (!Number.isNaN(dt.getTime())) return dt.getTime();
+      const local = parseLocalDateOnly(raw);
+      return local ? local.getTime() : null;
+    };
+
+    const parseDateOnly = (value: any): number | null => {
+      const dt = parseLocalDateOnly(value);
+      return dt ? dt.getTime() : null;
+    };
+
+    const getUsuariosSortKey = (est: any): string | null => {
+      const usuarios = Array.isArray(est?.usuarios) ? est.usuarios : [];
+      if (usuarios.length === 0) return null;
+
+      return usuarios
+        .map((usr: any) => {
+          const role = String(usr?.role ?? '').trim();
+          const username = String(usr?.username ?? '').trim();
+          const nombres = String(usr?.nombres ?? '').trim();
+          const apellidos = String(usr?.apellidos ?? '').trim();
+          return `${role} ${username} ${nombres} ${apellidos}`.trim().toUpperCase();
+        })
+        .filter(Boolean)
+        .join(' | ');
+    };
+
+    const getSortValue = (est: any, col: EstCol): string | number | null => {
+      switch (col) {
+        case 'codigo': {
+          const raw = String(est?.codigo ?? '').trim();
+          if (!raw) return null;
+          const n = Number(raw);
+          return Number.isFinite(n) ? n : raw;
+        }
+        case 'telefono': {
+          const raw = String(est?.telefono ?? '').trim();
+          if (!raw) return null;
+          const digits = raw.replace(/[^0-9]/g, '');
+          return digits || raw;
+        }
+        case 'fecha_inicio_actividades':
+          return parseDateOnly(est?.fecha_inicio_actividades);
+        case 'fecha_reinicio_actividades':
+          return parseDateOnly(est?.fecha_reinicio_actividades);
+        case 'fecha_cierre_establecimiento':
+          return parseDateOnly(est?.fecha_cierre_establecimiento);
+        case 'created_at':
+          return parseDateTime(est?.created_at);
+        case 'updated_at':
+          return parseDateTime(est?.updated_at);
+        case 'usuarios':
+          return getUsuariosSortKey(est);
+        case 'estado':
+          return String(est?.estado ?? '').trim();
+        case 'nombre':
+          return String(est?.nombre ?? '').trim();
+        case 'nombre_comercial':
+          return String(est?.nombre_comercial ?? '').trim();
+        case 'direccion':
+          return String(est?.direccion ?? '').trim();
+        case 'correo':
+          return String(est?.correo ?? '').trim();
+        default:
+          return String(est?.[col] ?? '').trim();
+      }
+    };
+
     data.sort((a, b) => {
-      const va = (a?.[sortByEst] ?? '') as string;
-      const vb = (b?.[sortByEst] ?? '') as string;
-      // Try numeric comparison if both are numbers
-      const na = Number(va); const nb = Number(vb);
-      if (!Number.isNaN(na) && !Number.isNaN(nb)) return (na - nb) * dir;
-      return String(va).localeCompare(String(vb), 'es', { numeric: true, sensitivity: 'base' }) * dir;
+      const va = getSortValue(a, sortByEst);
+      const vb = getSortValue(b, sortByEst);
+
+      const primary = compareValuesAsc(va, vb);
+      if (primary !== 0) return primary * dir;
+
+      // Desempate estable: por código ascendente
+      const ca = getSortValue(a, 'codigo');
+      const cb = getSortValue(b, 'codigo');
+      return compareValuesAsc(ca, cb);
     });
     return data;
-  }, [filteredEsts, sortByEst, sortDirEst]);
+  }, [filteredEsts, sortByEst, sortDirEst, parseLocalDateOnly]);
 
   const paginatedEsts = React.useMemo(() => {
     const start = (pageEst - 1) * perPageEst;
@@ -661,8 +821,8 @@ const EmisorInfo: React.FC = () => {
                     <h3 className="card-title">Actividad de la cuenta</h3>
                   </div>
                   <div className="card-body" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 16 }}>
-                    <div className="info-row"><span className="info-label">Fecha de creación:</span><span className="info-value">{company?.created_at ?? '-'}</span></div>
-                    <div className="info-row"><span className="info-label">Fecha de actualización:</span><span className="info-value">{company?.updated_at ?? '-'}</span></div>
+                    <div className="info-row"><span className="info-label">Fecha de creación:</span><span className="info-value">{formatDateTime(company?.created_at)}</span></div>
+                    <div className="info-row"><span className="info-label">Fecha de actualización:</span><span className="info-value">{formatDateTime(company?.updated_at)}</span></div>
                     <div className="info-row"><span className="info-label">Fecha de último comprobante:</span><span className="info-value">{company?.ultimo_comprobante ?? '-'}</span></div>
                     <div className="info-row"><span className="info-label">Fecha último inicio de sesión:</span><span className="info-value">{company?.ultimo_login ?? '-'}</span></div>
                     <div className="info-row">
@@ -1013,6 +1173,40 @@ const EmisorInfo: React.FC = () => {
                             />
                           </div>
                         </div>
+
+                        <div className="est-ffield-date">
+                          <label>🆕 Fecha de creación</label>
+                          <div className="est-date-pair">
+                            <input
+                              type="date"
+                              value={estFilters.fecha_creacion_desde}
+                              onChange={(e) => setEstFilters((prev) => ({ ...prev, fecha_creacion_desde: e.target.value }))}
+                            />
+                            <span className="est-date-arrow">→</span>
+                            <input
+                              type="date"
+                              value={estFilters.fecha_creacion_hasta}
+                              onChange={(e) => setEstFilters((prev) => ({ ...prev, fecha_creacion_hasta: e.target.value }))}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="est-ffield-date">
+                          <label>✏️ Fecha de actualización</label>
+                          <div className="est-date-pair">
+                            <input
+                              type="date"
+                              value={estFilters.fecha_actualizacion_desde}
+                              onChange={(e) => setEstFilters((prev) => ({ ...prev, fecha_actualizacion_desde: e.target.value }))}
+                            />
+                            <span className="est-date-arrow">→</span>
+                            <input
+                              type="date"
+                              value={estFilters.fecha_actualizacion_hasta}
+                              onChange={(e) => setEstFilters((prev) => ({ ...prev, fecha_actualizacion_hasta: e.target.value }))}
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1036,7 +1230,11 @@ const EmisorInfo: React.FC = () => {
                           fecha_reinicio_desde: '',
                           fecha_reinicio_hasta: '',
                           fecha_cierre_desde: '',
-                          fecha_cierre_hasta: ''
+                          fecha_cierre_hasta: '',
+                          fecha_creacion_desde: '',
+                          fecha_creacion_hasta: '',
+                          fecha_actualizacion_desde: '',
+                          fecha_actualizacion_hasta: ''
                         });
                       }}
                     >
@@ -1090,38 +1288,120 @@ const EmisorInfo: React.FC = () => {
                           className="sortable" 
                           onClick={() => toggleSortEst('codigo')}
                         >
-                          Código 
-                          <span className="sort-icon">{sortByEst === 'codigo' ? (sortDirEst === 'asc' ? '▲' : '▼') : '▾'}</span>
+                          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                            Código
+                            <SortArrow active={sortByEst === 'codigo'} direction={sortDirEst} />
+                          </span>
                         </th>
                         <th 
                           className="sortable" 
                           onClick={() => toggleSortEst('estado')}
                         >
-                          Estado 
-                          <span className="sort-icon">{sortByEst === 'estado' ? (sortDirEst === 'asc' ? '▲' : '▼') : '▾'}</span>
+                          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                            Estado
+                            <SortArrow active={sortByEst === 'estado'} direction={sortDirEst} />
+                          </span>
                         </th>
                         <th 
                           className="sortable" 
                           onClick={() => toggleSortEst('nombre')}
                         >
-                          Nombre 
-                          <span className="sort-icon">{sortByEst === 'nombre' ? (sortDirEst === 'asc' ? '▲' : '▼') : '▾'}</span>
+                          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                            Nombre
+                            <SortArrow active={sortByEst === 'nombre'} direction={sortDirEst} />
+                          </span>
                         </th>
                         <th 
                           className="sortable" 
                           onClick={() => toggleSortEst('nombre_comercial')}
                         >
-                          N. Comercial 
-                          <span className="sort-icon">{sortByEst === 'nombre_comercial' ? (sortDirEst === 'asc' ? '▲' : '▼') : '▾'}</span>
+                          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                            N. Comercial
+                            <SortArrow active={sortByEst === 'nombre_comercial'} direction={sortDirEst} />
+                          </span>
                         </th>
                         <th>Logo</th>
-                        <th>Dirección</th>
-                        <th>Correo</th>
-                        <th>Teléfono</th>
-                        <th>Inicio de Actividades</th>
-                        <th>Reinicio de Actividades</th>
-                        <th>Cierre del Establecimiento</th>
-                        <th>Usuarios Gerentes Asociados</th>
+                        <th
+                          className="sortable"
+                          onClick={() => toggleSortEst('direccion')}
+                        >
+                          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                            Dirección
+                            <SortArrow active={sortByEst === 'direccion'} direction={sortDirEst} />
+                          </span>
+                        </th>
+                        <th
+                          className="sortable"
+                          onClick={() => toggleSortEst('correo')}
+                        >
+                          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                            Correo
+                            <SortArrow active={sortByEst === 'correo'} direction={sortDirEst} />
+                          </span>
+                        </th>
+                        <th
+                          className="sortable"
+                          onClick={() => toggleSortEst('telefono')}
+                        >
+                          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                            Teléfono
+                            <SortArrow active={sortByEst === 'telefono'} direction={sortDirEst} />
+                          </span>
+                        </th>
+                        <th
+                          className="sortable"
+                          onClick={() => toggleSortEst('fecha_inicio_actividades')}
+                        >
+                          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                            Inicio de Actividades
+                            <SortArrow active={sortByEst === 'fecha_inicio_actividades'} direction={sortDirEst} />
+                          </span>
+                        </th>
+                        <th
+                          className="sortable"
+                          onClick={() => toggleSortEst('fecha_reinicio_actividades')}
+                        >
+                          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                            Reinicio de Actividades
+                            <SortArrow active={sortByEst === 'fecha_reinicio_actividades'} direction={sortDirEst} />
+                          </span>
+                        </th>
+                        <th
+                          className="sortable"
+                          onClick={() => toggleSortEst('fecha_cierre_establecimiento')}
+                        >
+                          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                            Cierre del Establecimiento
+                            <SortArrow active={sortByEst === 'fecha_cierre_establecimiento'} direction={sortDirEst} />
+                          </span>
+                        </th>
+                        <th
+                          className="sortable"
+                          onClick={() => toggleSortEst('created_at')}
+                        >
+                          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                            Fecha de creación
+                            <SortArrow active={sortByEst === 'created_at'} direction={sortDirEst} />
+                          </span>
+                        </th>
+                        <th
+                          className="sortable"
+                          onClick={() => toggleSortEst('updated_at')}
+                        >
+                          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                            Fecha de actualización
+                            <SortArrow active={sortByEst === 'updated_at'} direction={sortDirEst} />
+                          </span>
+                        </th>
+                        <th
+                          className="sortable"
+                          onClick={() => toggleSortEst('usuarios')}
+                        >
+                          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                            Usuarios Gerentes Asociados
+                            <SortArrow active={sortByEst === 'usuarios'} direction={sortDirEst} />
+                          </span>
+                        </th>
                         <th>Acciones</th>
                       </tr>
                     </thead>
@@ -1129,7 +1409,7 @@ const EmisorInfo: React.FC = () => {
                     <tbody>
                       {paginatedEsts.length === 0 ? (
                         <tr style={{ display: 'none' }}>
-                          <td colSpan={13}></td>
+                          <td colSpan={15}></td>
                         </tr>
                       ) : paginatedEsts.map((est) => (
                         <tr key={est.id}>
@@ -1189,28 +1469,30 @@ const EmisorInfo: React.FC = () => {
                           <td>{est.telefono || '-'}</td>
                           {/* Fecha de Inicio de Actividades */}
                           <td>
-                            {est.fecha_inicio_actividades ? (
-                              new Date(est.fecha_inicio_actividades).toLocaleDateString('es-EC', {
-                                day: '2-digit',
-                                month: '2-digit',
-                                year: 'numeric'
-                              })
-                            ) : '-'}
+                            {formatDateDDMMYYYY(est.fecha_inicio_actividades)}
                           </td>
                           {/* Fecha de Reinicio de Actividades */}
                           <td>
-                            {est.fecha_reinicio_actividades ? (
-                              new Date(est.fecha_reinicio_actividades).toLocaleDateString('es-EC', {
+                            {formatDateDDMMYYYY(est.fecha_reinicio_actividades)}
+                          </td>
+                          {/* Fecha de Cierre de Establecimiento */}
+                          <td>
+                            {formatDateDDMMYYYY(est.fecha_cierre_establecimiento)}
+                          </td>
+                          {/* Fecha de creación */}
+                          <td>
+                            {est.created_at ? (
+                              new Date(est.created_at).toLocaleDateString('es-EC', {
                                 day: '2-digit',
                                 month: '2-digit',
                                 year: 'numeric'
                               })
                             ) : '-'}
                           </td>
-                          {/* Fecha de Cierre de Establecimiento */}
+                          {/* Fecha de actualización */}
                           <td>
-                            {est.fecha_cierre_establecimiento ? (
-                              new Date(est.fecha_cierre_establecimiento).toLocaleDateString('es-EC', {
+                            {est.updated_at ? (
+                              new Date(est.updated_at).toLocaleDateString('es-EC', {
                                 day: '2-digit',
                                 month: '2-digit',
                                 year: 'numeric'
@@ -1222,20 +1504,20 @@ const EmisorInfo: React.FC = () => {
                             {est.usuarios && est.usuarios.length > 0 ? (
                               <div className="est-usuarios-list">
                                 {est.usuarios.slice(0, 3).map((usr: any, idx: number) => (
-                                  <div key={idx} className="est-usuario-item">
-                                    <span className={`est-usuario-role ${usr.role?.toLowerCase() || ''}`}>
-                                      {usr.role?.substring(0, 3).toUpperCase() || '?'}
+                                  <div key={usr?.id ?? idx} className="est-usuario-item">
+                                    <span className="est-usuario-name">
+                                      {String(usr?.role ?? '—').trim().toUpperCase()} –{' '}
+                                      {usr?.id ? (
+                                        <Link className="est-usuario-link" to={`/usuarios/${usr.id}`}>
+                                          {String(usr?.username ?? '—').trim().toUpperCase()}
+                                        </Link>
+                                      ) : (
+                                        <span className="est-usuario-link">
+                                          {String(usr?.username ?? '—').trim().toUpperCase()}
+                                        </span>
+                                      )}
+                                      {' '}– {String(usr?.nombres ?? '—').trim().toUpperCase()} – {String(usr?.apellidos ?? '—').trim().toUpperCase()}
                                     </span>
-                                    <a 
-                                      href="#" 
-                                      className="est-usuario-link"
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        handleOpenUserDetail(usr);
-                                      }}
-                                    >
-                                      {usr.username || 'N/A'}
-                                    </a>
                                   </div>
                                 ))}
                                 {est.usuarios.length > 3 && (
@@ -1287,6 +1569,7 @@ const EmisorInfo: React.FC = () => {
                         <option value={10}>10</option>
                         <option value={15}>15</option>
                         <option value={25}>25</option>
+                        <option value={50}>50</option>
                       </select>
                       por página
                     </label>

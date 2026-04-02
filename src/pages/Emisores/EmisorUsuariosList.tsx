@@ -4,6 +4,7 @@ import { useNotification } from '../../contexts/NotificationContext';
 import { useUser } from '../../contexts/userContext';
 import { User } from '../../types/user';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import SortArrow from '../../components/SortArrow';
 import {
   navigateToEstablecimiento,
   navigateToPuntoEmision,
@@ -333,8 +334,7 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
   }, [usuarios, user, distributorCreator]);
 
   const getSortIcon = (field: SortField) => {
-    if (sortField !== field) return <span className="eu-sort-icon">⇅</span>;
-    return <span className="eu-sort-icon active">{sortDirection === 'asc' ? '↑' : '↓'}</span>;
+    return <SortArrow active={sortField === field} direction={sortDirection} />;
   };
 
   // Calcular estadísticas basadas en todos los usuarios
@@ -707,20 +707,30 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
               <thead>
                 <tr>
                   <th onClick={() => handleSort('nombres')}>
-                    Usuario {getSortIcon('nombres')}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      Usuario {getSortIcon('nombres')}
+                    </span>
                   </th>
                   <th onClick={() => handleSort('email')}>
-                    Email {getSortIcon('email')}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      Email {getSortIcon('email')}
+                    </span>
                   </th>
                   <th onClick={() => handleSort('role')}>
-                    Rol {getSortIcon('role')}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      Rol {getSortIcon('role')}
+                    </span>
                   </th>
                   <th onClick={() => handleSort('estado')}>
-                    Estado {getSortIcon('estado')}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      Estado {getSortIcon('estado')}
+                    </span>
                   </th>
                   <th>Asignaciones</th>
                   <th onClick={() => handleSort('created_at')}>
-                    Registro {getSortIcon('created_at')}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      Registro {getSortIcon('created_at')}
+                    </span>
                   </th>
                   <th className="eu-th-actions">Acciones</th>
                 </tr>

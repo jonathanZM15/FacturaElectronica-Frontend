@@ -779,6 +779,18 @@
   border-radius: 0 0 16px 16px;
 }
 
+/* Cuando no hay puntos, ocultar barra y bloquear scroll (empty overlay) */
+.estd-table-wrapper.estd-table-wrapper--empty {
+  overflow: hidden;
+  scrollbar-width: none;
+  min-height: 300px;
+}
+
+.estd-table-wrapper.estd-table-wrapper--empty::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
 .estd-table-wrapper::-webkit-scrollbar {
   height: 10px;
 }

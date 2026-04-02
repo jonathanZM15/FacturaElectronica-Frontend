@@ -515,10 +515,10 @@
 }
 
 .est-table {
-  width: 100%;
+  width: max-content;
+  min-width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
-  min-width: 1200px;
 }
 
 .est-table thead {
@@ -541,6 +541,8 @@
   letter-spacing: 0.8px;
   white-space: nowrap;
   border: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Anchos específicos de columnas */
@@ -569,19 +571,25 @@
 .est-table tbody td:nth-child(8) { width: 120px; min-width: 100px; } /* Teléfono */
 
 .est-table thead th:nth-child(9),
-.est-table tbody td:nth-child(9) { width: 150px; min-width: 130px; } /* Fecha Inicio Actividades */
+.est-table tbody td:nth-child(9) { width: 200px; min-width: 180px; } /* Fecha Inicio Actividades */
 
 .est-table thead th:nth-child(10),
-.est-table tbody td:nth-child(10) { width: 150px; min-width: 130px; } /* Fecha Reinicio Actividades */
+.est-table tbody td:nth-child(10) { width: 220px; min-width: 200px; } /* Fecha Reinicio Actividades */
 
 .est-table thead th:nth-child(11),
-.est-table tbody td:nth-child(11) { width: 150px; min-width: 130px; } /* Fecha Cierre */
+.est-table tbody td:nth-child(11) { width: 260px; min-width: 230px; } /* Fecha Cierre */
 
 .est-table thead th:nth-child(12),
-.est-table tbody td:nth-child(12) { width: 200px; min-width: 170px; } /* Usuarios Gerentes Asociados */
+.est-table tbody td:nth-child(12) { width: 180px; min-width: 160px; } /* Fecha de creación */
 
 .est-table thead th:nth-child(13),
-.est-table tbody td:nth-child(13) { width: 100px; min-width: 100px; } /* Acciones - pequeño */
+.est-table tbody td:nth-child(13) { width: 220px; min-width: 190px; } /* Fecha de actualización */
+
+.est-table thead th:nth-child(14),
+.est-table tbody td:nth-child(14) { width: 320px; min-width: 280px; } /* Usuarios Gerentes Asociados */
+
+.est-table thead th:nth-child(15),
+.est-table tbody td:nth-child(15) { width: 100px; min-width: 100px; } /* Acciones - pequeño */
 
 .est-table thead th.sortable {
   cursor: pointer;

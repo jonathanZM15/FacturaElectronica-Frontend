@@ -11,6 +11,7 @@ import PuntoEmisionDeleteModal from '../PuntosEmision/PuntoEmisionDeleteModal';
 import { PuntoEmision } from '../../types/puntoEmision';
 import { getImageUrl } from '../../helpers/imageUrl';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import SortArrow from '../../components/SortArrow';
 import '../Usuarios/UsuarioDeleteModalModern.css';
 import './EstablecimientosTab.css';
 
@@ -770,46 +771,74 @@ const EstablecimientoInfo: React.FC = () => {
             <thead>
               <tr>
                 <th className="th-sticky sticky-left-0" style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('codigo')}>
-                  Código {sortByPunto === 'codigo' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
+                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    Código <SortArrow active={sortByPunto === 'codigo'} direction={sortDirPunto} />
+                  </span>
                 </th>
                 <th className="th-sticky sticky-left-1" style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('nombre')}>
-                  Nombre {sortByPunto === 'nombre' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
+                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    Nombre <SortArrow active={sortByPunto === 'nombre'} direction={sortDirPunto} />
+                  </span>
                 </th>
                 <th className="th-sticky sticky-left-2" style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('estado_operatividad')}>
-                  Estado de operatividad {sortByPunto === 'estado_operatividad' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
+                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    Estado de operatividad <SortArrow active={sortByPunto === 'estado_operatividad'} direction={sortDirPunto} />
+                  </span>
                 </th>
                 <th style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('estado_disponibilidad')}>
-                  Estado de disponibilidad {sortByPunto === 'estado_disponibilidad' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
+                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    Estado de disponibilidad <SortArrow active={sortByPunto === 'estado_disponibilidad'} direction={sortDirPunto} />
+                  </span>
                 </th>
                 <th style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('usuario')}>
-                  Usuario asociado {sortByPunto === 'usuario' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
+                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    Usuario asociado <SortArrow active={sortByPunto === 'usuario'} direction={sortDirPunto} />
+                  </span>
                 </th>
                 <th style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('secuencial_factura')}>
-                  Secuencial Facturas {sortByPunto === 'secuencial_factura' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
+                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    Secuencial Facturas <SortArrow active={sortByPunto === 'secuencial_factura'} direction={sortDirPunto} />
+                  </span>
                 </th>
                 <th style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('secuencial_liquidacion_compra')}>
-                  Secuencial Liquidaciones de compra {sortByPunto === 'secuencial_liquidacion_compra' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
+                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    Secuencial Liquidaciones de compra <SortArrow active={sortByPunto === 'secuencial_liquidacion_compra'} direction={sortDirPunto} />
+                  </span>
                 </th>
                 <th style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('secuencial_nota_credito')}>
-                  Secuencial Notas Crédito {sortByPunto === 'secuencial_nota_credito' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
+                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    Secuencial Notas Crédito <SortArrow active={sortByPunto === 'secuencial_nota_credito'} direction={sortDirPunto} />
+                  </span>
                 </th>
                 <th style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('secuencial_nota_debito')}>
-                  Secuencial Notas Débito {sortByPunto === 'secuencial_nota_debito' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
+                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    Secuencial Notas Débito <SortArrow active={sortByPunto === 'secuencial_nota_debito'} direction={sortDirPunto} />
+                  </span>
                 </th>
                 <th style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('secuencial_guia_remision')}>
-                  Secuencial Guías de remisión {sortByPunto === 'secuencial_guia_remision' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
+                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    Secuencial Guías de remisión <SortArrow active={sortByPunto === 'secuencial_guia_remision'} direction={sortDirPunto} />
+                  </span>
                 </th>
                 <th style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('secuencial_retencion')}>
-                  Secuencial Retenciones {sortByPunto === 'secuencial_retencion' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
+                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    Secuencial Retenciones <SortArrow active={sortByPunto === 'secuencial_retencion'} direction={sortDirPunto} />
+                  </span>
                 </th>
                 <th style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('secuencial_proforma')}>
-                  Secuencial Proformas {sortByPunto === 'secuencial_proforma' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
+                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    Secuencial Proformas <SortArrow active={sortByPunto === 'secuencial_proforma'} direction={sortDirPunto} />
+                  </span>
                 </th>
                 <th style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('created_at')}>
-                  Fecha de creación {sortByPunto === 'created_at' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
+                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    Fecha de creación <SortArrow active={sortByPunto === 'created_at'} direction={sortDirPunto} />
+                  </span>
                 </th>
                 <th style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('updated_at')}>
-                  Fecha de actualización {sortByPunto === 'updated_at' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
+                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    Fecha de actualización <SortArrow active={sortByPunto === 'updated_at'} direction={sortDirPunto} />
+                  </span>
                 </th>
                 <th className="th-sticky sticky-right">Acciones</th>
               </tr>

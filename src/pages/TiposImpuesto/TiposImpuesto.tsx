@@ -7,6 +7,7 @@ import {
   TipoTarifaEnum,
 } from '../../services/tiposImpuestoApi';
 import { useNotification } from '../../contexts/NotificationContext';
+import SortArrow from '../../components/SortArrow';
 import TipoImpuestoFormModal from './TipoImpuestoFormModal';
 import TipoImpuestoDeleteModal from './TipoImpuestoDeleteModal';
 import './TiposImpuesto.css';
@@ -219,8 +220,7 @@ const TiposImpuesto: React.FC = () => {
 
   // Renderizar sort icon
   const renderSortIcon = (column: string) => {
-    if (sortBy !== column) return <span className="sort-icon">↕</span>;
-    return <span className="sort-icon active">{sortDir === 'asc' ? '↑' : '↓'}</span>;
+    return <SortArrow active={sortBy === column} direction={sortDir} />;
   };
 
   // Generar páginas para paginación

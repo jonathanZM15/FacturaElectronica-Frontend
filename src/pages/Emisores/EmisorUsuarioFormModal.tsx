@@ -96,6 +96,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
 
   const cedulaCheckTimeoutRef = React.useRef<number | null>(null);
   const cedulaCheckSeqRef = React.useRef(0);
+  const initFormKeyRef = React.useRef<string | null>(null);
 
   const getEstadoEstablecimiento = React.useCallback((est: { estado?: string | null }) => {
     // Si el backend no envía estado, asumimos ABIERTO para no dejar la UI vacía.
@@ -261,12 +262,27 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
   }, [puntosEmision, isPuntoSelectableForThisForm, compareCodigoDesc]);
 
   React.useEffect(() => {
+    if (!open) {
+      initFormKeyRef.current = null;
+      return;
+    }
+
+    // Clave de inicialización para no pisar lo que el usuario escribe
+    const initKey = editingId ? `edit:${editingId}` : 'create';
+
+    // En edición, esperar a que llegue initialData
+    if (editingId && !initialData) return;
+
+    // Si ya inicializamos este modo/usuario, no volver a resetear
+    if (initFormKeyRef.current === initKey) return;
+    initFormKeyRef.current = initKey;
+
     if (open && initialData) {
       setCedula(initialData.cedula || '');
       setNombres(initialData.nombres || '');
       setApellidos(initialData.apellidos || '');
       setUsername(initialData.username || '');
-      setEmail(initialData.email);
+      setEmail(initialData.email || '');
       setRole(initialData.role || 'gerente');
       setEstado(initialData.estado || 'nuevo');
 
@@ -317,8 +333,8 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
       }
 
       setSelectedPuntosPorEstablecimiento(nextMap);
-    } else if (open) {
-      // Reset form
+    } else {
+      // Reset form (solo al abrir)
       setCedula('');
       setNombres('');
       setApellidos('');
@@ -329,8 +345,9 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
       setSelectedEstablecimientos([]);
       setSelectedPuntosPorEstablecimiento({});
     }
+
     setErrors({});
-  }, [open, initialData, getRolesPermitidos, availableEstablecimientosIds, normalizeIdArray, puntosEmision]);
+  }, [open, editingId, initialData, getRolesPermitidos, availableEstablecimientosIds, normalizeIdArray, puntosEmision]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};

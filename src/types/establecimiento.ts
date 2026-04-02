@@ -9,6 +9,8 @@ export interface Establecimiento {
   correo?: string;
   telefono?: string;
   logo_path?: string;
+  created_at?: string;
+  updated_at?: string;
   actividades_economicas?: string;
   fecha_inicio_actividades?: string | null;
   fecha_reinicio_actividades?: string | null;

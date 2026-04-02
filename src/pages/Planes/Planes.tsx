@@ -6,6 +6,7 @@ import PlanDeleteModal from './PlanDeleteModal';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useUser } from '../../contexts/userContext';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import SortArrow from '../../components/SortArrow';
 
 interface ListResponse {
   data: Plan[];
@@ -190,8 +191,7 @@ const Planes: React.FC = () => {
 
   // Renderizar ícono de ordenamiento
   const renderSortIcon = (field: SortField) => {
-    if (sortField !== field) return null;
-    return sortDirection === 'asc' ? ' ↑' : ' ↓';
+    return <SortArrow active={sortField === field} direction={sortDirection} />;
   };
 
   // Formatear precio
@@ -446,34 +446,54 @@ const Planes: React.FC = () => {
               <thead>
                 <tr>
                   <th className="planes-th-sticky-left" onClick={() => handleSort('nombre')} style={{ cursor: 'pointer' }}>
-                    Nombre {renderSortIcon('nombre')}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      Nombre {renderSortIcon('nombre')}
+                    </span>
                   </th>
                   <th onClick={() => handleSort('cantidad_comprobantes')} style={{ cursor: 'pointer' }}>
-                    Comprobantes {renderSortIcon('cantidad_comprobantes')}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      Comprobantes {renderSortIcon('cantidad_comprobantes')}
+                    </span>
                   </th>
                   <th onClick={() => handleSort('precio')} style={{ cursor: 'pointer' }}>
-                    Precio {renderSortIcon('precio')}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      Precio {renderSortIcon('precio')}
+                    </span>
                   </th>
                   <th onClick={() => handleSort('periodo')} style={{ cursor: 'pointer' }}>
-                    Período {renderSortIcon('periodo')}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      Período {renderSortIcon('periodo')}
+                    </span>
                   </th>
                   <th onClick={() => handleSort('observacion')} style={{ cursor: 'pointer' }}>
-                    Observación {renderSortIcon('observacion')}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      Observación {renderSortIcon('observacion')}
+                    </span>
                   </th>
                   <th onClick={() => handleSort('estado')} style={{ cursor: 'pointer' }}>
-                    Estado {renderSortIcon('estado')}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      Estado {renderSortIcon('estado')}
+                    </span>
                   </th>
                   <th onClick={() => handleSort('comprobantes_minimos')} style={{ cursor: 'pointer' }}>
-                    Comprobantes Mínimos {renderSortIcon('comprobantes_minimos')}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      Comprobantes Mínimos {renderSortIcon('comprobantes_minimos')}
+                    </span>
                   </th>
                   <th onClick={() => handleSort('dias_minimos')} style={{ cursor: 'pointer' }}>
-                    Días Mínimos {renderSortIcon('dias_minimos')}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      Días Mínimos {renderSortIcon('dias_minimos')}
+                    </span>
                   </th>
                   <th onClick={() => handleSort('created_at')} style={{ cursor: 'pointer' }}>
-                    Creación {renderSortIcon('created_at')}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      Creación {renderSortIcon('created_at')}
+                    </span>
                   </th>
                   <th onClick={() => handleSort('updated_at')} style={{ cursor: 'pointer' }}>
-                    Actualización {renderSortIcon('updated_at')}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      Actualización {renderSortIcon('updated_at')}
+                    </span>
                   </th>
                   <th className="planes-th-sticky-right">Acciones</th>
                 </tr>

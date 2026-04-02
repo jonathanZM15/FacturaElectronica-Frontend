@@ -12,7 +12,9 @@ import ImageViewerModal from '../../components/ImageViewerModal/ImageViewerModal
 import UsuarioDetailModal from '../Usuarios/UsuarioDetailModal';
 import { PuntoEmision } from '../../types/puntoEmision';
 import { getImageUrl } from '../../helpers/imageUrl';
+import { formatDateTime } from '../../helpers/formatDate';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import SortArrow from '../../components/SortArrow';
 import '../Usuarios/UsuarioDeleteModalModern.css';
 import './EstablecimientoDetail.css';
 import './EstablecimientosTab.css';
@@ -103,10 +105,57 @@ const EstablecimientoEditInfo: React.FC = () => {
   const [puntoFiltersOpen, setPuntoFiltersOpen] = React.useState(false);
   const [puntoFilters, setPuntoFilters] = React.useState<PuntoFilters>(DEFAULT_PUNTO_FILTERS);
 
+  const isValidDate = (d: Date) => !Number.isNaN(d.getTime());
+
+  const parseDateSafe = (value: any): Date | null => {
+    if (value === undefined || value === null) return null;
+    if (value instanceof Date) return isValidDate(value) ? value : null;
+
+    const raw = String(value).trim();
+    if (!raw) return null;
+
+    // ISO with timezone indicator (Z or ±HH:MM)
+    if (/([zZ]|[+-]\d{2}:\d{2})$/.test(raw)) {
+      const dt = new Date(raw);
+      return isValidDate(dt) ? dt : null;
+    }
+
+    // ISO-ish / SQL-ish without timezone
+    const m = raw.match(
+      /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?(?:\.(\d+))?$/
+    );
+    if (m) {
+      const y = Number(m[1]);
+      const mo = Number(m[2]);
+      const d = Number(m[3]);
+      const hh = Number(m[4]);
+      const mm = Number(m[5]);
+      const ss = Number(m[6] ?? 0);
+      const frac = m[7] ?? '';
+      const ms = frac ? Number((frac + '000').slice(0, 3)) : 0;
+
+      const dt = new Date(y, mo - 1, d, hh, mm, ss, ms);
+      return isValidDate(dt) ? dt : null;
+    }
+
+    // Date-only
+    const dOnly = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (dOnly) {
+      const y = Number(dOnly[1]);
+      const mo = Number(dOnly[2]);
+      const d = Number(dOnly[3]);
+      const dt = new Date(y, mo - 1, d, 0, 0, 0, 0);
+      return isValidDate(dt) ? dt : null;
+    }
+
+    const fallback = new Date(raw);
+    return isValidDate(fallback) ? fallback : null;
+  };
+
   const formatDate = (dateStr: string) => {
-    if (!dateStr) return '';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const dt = parseDateSafe(dateStr);
+    if (!dt) return '';
+    return dt.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
 
   const normalizeText = (v: any) => String(v ?? '').toLowerCase().trim();
@@ -114,8 +163,18 @@ const EstablecimientoEditInfo: React.FC = () => {
     const n = Number.parseInt(String(v ?? ''), 10);
     return Number.isFinite(n) ? n : null;
   };
-  const dateStart = (ymd: string) => new Date(`${ymd}T00:00:00`);
-  const dateEnd = (ymd: string) => new Date(`${ymd}T23:59:59.999`);
+  const dateStart = (ymd: string) => {
+    const dt = parseDateSafe(ymd);
+    if (!dt) return new Date(Number.NaN);
+    dt.setHours(0, 0, 0, 0);
+    return dt;
+  };
+  const dateEnd = (ymd: string) => {
+    const dt = parseDateSafe(ymd);
+    if (!dt) return new Date(Number.NaN);
+    dt.setHours(23, 59, 59, 999);
+    return dt;
+  };
 
   const matchesSeqFilter = (rawValue: any, filter: SeqFilter) => {
     if (!filter.value) return true;
@@ -199,17 +258,33 @@ const EstablecimientoEditInfo: React.FC = () => {
 
       // Fechas (rango inclusivo)
       if (puntoFilters.fecha_creacion_desde || puntoFilters.fecha_creacion_hasta) {
-        const created = p?.created_at ? new Date(p.created_at) : null;
+        const created = parseDateSafe(p?.created_at);
         if (!created) return false;
-        if (puntoFilters.fecha_creacion_desde && created < dateStart(puntoFilters.fecha_creacion_desde)) return false;
-        if (puntoFilters.fecha_creacion_hasta && created > dateEnd(puntoFilters.fecha_creacion_hasta)) return false;
+        if (puntoFilters.fecha_creacion_desde) {
+          const start = dateStart(puntoFilters.fecha_creacion_desde);
+          if (!isValidDate(start)) return false;
+          if (created < start) return false;
+        }
+        if (puntoFilters.fecha_creacion_hasta) {
+          const end = dateEnd(puntoFilters.fecha_creacion_hasta);
+          if (!isValidDate(end)) return false;
+          if (created > end) return false;
+        }
       }
 
       if (puntoFilters.fecha_actualizacion_desde || puntoFilters.fecha_actualizacion_hasta) {
-        const updated = p?.updated_at ? new Date(p.updated_at) : null;
+        const updated = parseDateSafe(p?.updated_at);
         if (!updated) return false;
-        if (puntoFilters.fecha_actualizacion_desde && updated < dateStart(puntoFilters.fecha_actualizacion_desde)) return false;
-        if (puntoFilters.fecha_actualizacion_hasta && updated > dateEnd(puntoFilters.fecha_actualizacion_hasta)) return false;
+        if (puntoFilters.fecha_actualizacion_desde) {
+          const start = dateStart(puntoFilters.fecha_actualizacion_desde);
+          if (!isValidDate(start)) return false;
+          if (updated < start) return false;
+        }
+        if (puntoFilters.fecha_actualizacion_hasta) {
+          const end = dateEnd(puntoFilters.fecha_actualizacion_hasta);
+          if (!isValidDate(end)) return false;
+          if (updated > end) return false;
+        }
       }
 
       return true;
@@ -297,9 +372,9 @@ const EstablecimientoEditInfo: React.FC = () => {
       case 'secuencial_proforma':
         return p?.secuencial_proforma ?? '';
       case 'created_at':
-        return p?.created_at ? new Date(p.created_at).getTime() : null;
+        return parseDateSafe(p?.created_at)?.getTime() ?? null;
       case 'updated_at':
-        return p?.updated_at ? new Date(p.updated_at).getTime() : null;
+        return parseDateSafe(p?.updated_at)?.getTime() ?? null;
       default:
         return '';
     }
@@ -662,12 +737,12 @@ const EstablecimientoEditInfo: React.FC = () => {
           <div className="estd-activity-grid">
             <div className="estd-activity-item">
               <span className="estd-activity-label">📅 Fecha de creación:</span>
-              <span className="estd-activity-value">{est?.created_at ?? '-'}</span>
+              <span className="estd-activity-value">{formatDateTime(est?.created_at)}</span>
             </div>
 
             <div className="estd-activity-item">
               <span className="estd-activity-label">🔄 Fecha de actualización:</span>
-              <span className="estd-activity-value">{est?.updated_at ?? '-'}</span>
+              <span className="estd-activity-value">{formatDateTime(est?.updated_at)}</span>
             </div>
 
             <div className="estd-activity-item">
@@ -835,173 +910,210 @@ const EstablecimientoEditInfo: React.FC = () => {
             onClick={() => setPuntoFiltersOpen((open) => !open)}
           >
             <div className="est-filters-title">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46"></polygon>
-              </svg>
-              Filtros
-              {activePuntoFiltersCount > 0 && (
-                <span className="est-filters-badge">
-                  {activePuntoFiltersCount} activo{activePuntoFiltersCount > 1 ? 's' : ''}
-                </span>
-              )}
+              <span className="est-filters-title-icon">🔍</span>
+              <span>Filtros de Búsqueda</span>
+              {activePuntoFiltersCount > 0 && <span className="est-filters-badge">{activePuntoFiltersCount}</span>}
             </div>
-            <button className={`est-filters-toggle ${puntoFiltersOpen ? 'open' : ''}`}>
-              {puntoFiltersOpen ? 'Ocultar' : 'Mostrar'}
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="6,9 12,15 18,9"></polyline>
-              </svg>
-            </button>
+            <span className={`est-filters-chevron ${puntoFiltersOpen ? 'open' : ''}`}>▼</span>
           </div>
           <div className={`est-filters-body ${puntoFiltersOpen ? 'open' : ''}`}>
-            <div className="est-filters-grid">
-              <div className="est-filter-group">
-                <label className="est-filter-label">Código</label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  className="est-filter-input"
-                  placeholder="Buscar por código..."
-                  value={puntoFilters.codigo}
-                  onChange={(e) => {
-                    const onlyDigits = e.target.value.replace(/[^0-9]/g, '');
-                    setPuntoFilters((prev) => ({ ...prev, codigo: onlyDigits }));
-                  }}
-                />
+            {/* Card 1: Datos Generales */}
+            <div className="est-fcard">
+              <div className="est-fcard-header">
+                <span className="est-fcard-icon general">📍</span>
+                <span className="est-fcard-title">Datos Generales</span>
               </div>
+              <div className="est-fcard-body">
+                <div className="est-fcard-grid cols-5">
+                  <div className="est-ffield">
+                    <label>🔢 Código</label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      placeholder="Buscar código..."
+                      value={puntoFilters.codigo}
+                      onChange={(e) => {
+                        const onlyDigits = e.target.value.replace(/[^0-9]/g, '');
+                        setPuntoFilters((prev) => ({ ...prev, codigo: onlyDigits }));
+                      }}
+                    />
+                  </div>
 
-              <div className="est-filter-group">
-                <label className="est-filter-label">Nombre</label>
-                <input
-                  type="text"
-                  className="est-filter-input"
-                  placeholder="Buscar por nombre..."
-                  value={puntoFilters.nombre}
-                  onChange={(e) => setPuntoFilters((prev) => ({ ...prev, nombre: e.target.value }))}
-                />
+                  <div className="est-ffield">
+                    <label>🏷️ Nombre</label>
+                    <input
+                      type="text"
+                      placeholder="Buscar nombre..."
+                      value={puntoFilters.nombre}
+                      onChange={(e) => setPuntoFilters((prev) => ({ ...prev, nombre: e.target.value }))}
+                    />
+                  </div>
+
+                  <div className="est-ffield">
+                    <label>📊 Estado operatividad</label>
+                    <select
+                      value={puntoFilters.estado_operatividad}
+                      onChange={(e) =>
+                        setPuntoFilters((prev) => ({
+                          ...prev,
+                          estado_operatividad: e.target.value as PuntoFilters['estado_operatividad']
+                        }))
+                      }
+                    >
+                      <option value="">Todos</option>
+                      <option value="ACTIVO">Activo</option>
+                      <option value="DESACTIVADO">Desactivado</option>
+                    </select>
+                  </div>
+
+                  <div className="est-ffield">
+                    <label>📦 Estado disponibilidad</label>
+                    <select
+                      value={puntoFilters.estado_disponibilidad}
+                      onChange={(e) =>
+                        setPuntoFilters((prev) => ({
+                          ...prev,
+                          estado_disponibilidad: e.target.value as PuntoFilters['estado_disponibilidad']
+                        }))
+                      }
+                    >
+                      <option value="">Todos</option>
+                      <option value="LIBRE">Libre</option>
+                      <option value="OCUPADO">Ocupado</option>
+                    </select>
+                  </div>
+
+                  <div className="est-ffield">
+                    <label>👤 Usuario asociado</label>
+                    <input
+                      type="text"
+                      placeholder="Buscar usuario..."
+                      value={puntoFilters.usuario}
+                      onChange={(e) => setPuntoFilters((prev) => ({ ...prev, usuario: e.target.value }))}
+                    />
+                  </div>
+                </div>
               </div>
+            </div>
 
-              <div className="est-filter-group">
-                <label className="est-filter-label">Estado de operatividad</label>
-                <select
-                  className="est-filter-select"
-                  value={puntoFilters.estado_operatividad}
-                  onChange={(e) => setPuntoFilters((prev) => ({ ...prev, estado_operatividad: e.target.value as PuntoFilters['estado_operatividad'] }))}
-                >
-                  <option value="">Todos</option>
-                  <option value="ACTIVO">Activo</option>
-                  <option value="DESACTIVADO">Desactivado</option>
-                </select>
+            {/* Card 2: Secuenciales */}
+            <div className="est-fcard">
+              <div className="est-fcard-header">
+                <span className="est-fcard-icon contact">🧾</span>
+                <span className="est-fcard-title">Secuenciales</span>
               </div>
-
-              <div className="est-filter-group">
-                <label className="est-filter-label">Estado de disponibilidad</label>
-                <select
-                  className="est-filter-select"
-                  value={puntoFilters.estado_disponibilidad}
-                  onChange={(e) => setPuntoFilters((prev) => ({ ...prev, estado_disponibilidad: e.target.value as PuntoFilters['estado_disponibilidad'] }))}
-                >
-                  <option value="">Todos</option>
-                  <option value="LIBRE">Libre</option>
-                  <option value="OCUPADO">Ocupado</option>
-                </select>
+              <div className="est-fcard-body">
+                <div className="est-fcard-grid cols-3">
+                  {(
+                    [
+                      { key: 'secuencial_factura', label: 'Secuencial de facturas' },
+                      { key: 'secuencial_liquidacion_compra', label: 'Secuencial de liquidaciones de compra' },
+                      { key: 'secuencial_nota_credito', label: 'Secuencial de notas de crédito' },
+                      { key: 'secuencial_nota_debito', label: 'Secuencial de notas de débito' },
+                      { key: 'secuencial_guia_remision', label: 'Secuencial de guías de remisión' },
+                      { key: 'secuencial_retencion', label: 'Secuencial de retenciones' },
+                      { key: 'secuencial_proforma', label: 'Secuencial de proformas' }
+                    ] as Array<{ key: keyof PuntoFilters; label: string }>
+                  ).map(({ key, label }) => {
+                    const seq = puntoFilters[key] as unknown as SeqFilter;
+                    return (
+                      <div key={String(key)} className="est-ffield">
+                        <label>🧾 {label}</label>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <select
+                            value={seq.op}
+                            style={{ flex: 1, minWidth: 0 }}
+                            onChange={(e) => {
+                              const op = e.target.value as SeqOp;
+                              setPuntoFilters((prev) => ({
+                                ...prev,
+                                [key]: { ...(prev[key] as unknown as SeqFilter), op }
+                              } as PuntoFilters));
+                            }}
+                          >
+                            <option value="gte">Mayor o igual que</option>
+                            <option value="lte">Menor o igual que</option>
+                            <option value="eq">Igual que</option>
+                          </select>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            placeholder="Número"
+                            style={{ flex: 1, minWidth: 0 }}
+                            value={seq.value}
+                            onChange={(e) => {
+                              const onlyDigits = e.target.value.replace(/[^0-9]/g, '');
+                              setPuntoFilters((prev) => ({
+                                ...prev,
+                                [key]: { ...(prev[key] as unknown as SeqFilter), value: onlyDigits }
+                              } as PuntoFilters));
+                            }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
+            </div>
 
-              <div className="est-filter-group">
-                <label className="est-filter-label">Usuario asociado</label>
-                <input
-                  type="text"
-                  className="est-filter-input"
-                  placeholder="Buscar usuario..."
-                  value={puntoFilters.usuario}
-                  onChange={(e) => setPuntoFilters((prev) => ({ ...prev, usuario: e.target.value }))}
-                />
+            {/* Card 3: Fechas */}
+            <div className="est-fcard">
+              <div className="est-fcard-header">
+                <span className="est-fcard-icon dates">📅</span>
+                <span className="est-fcard-title">Fechas</span>
               </div>
-
-              {(
-                [
-                  { key: 'secuencial_factura', label: 'Secuencial de facturas' },
-                  { key: 'secuencial_liquidacion_compra', label: 'Secuencial de liquidaciones de compra' },
-                  { key: 'secuencial_nota_credito', label: 'Secuencial de notas de crédito' },
-                  { key: 'secuencial_nota_debito', label: 'Secuencial de notas de débito' },
-                  { key: 'secuencial_guia_remision', label: 'Secuencial de guías de remisión' },
-                  { key: 'secuencial_retencion', label: 'Secuencial de retenciones' },
-                  { key: 'secuencial_proforma', label: 'Secuencial de proformas' }
-                ] as Array<{ key: keyof PuntoFilters; label: string }>
-              ).map(({ key, label }) => {
-                const seq = puntoFilters[key] as unknown as SeqFilter;
-                return (
-                  <div key={String(key)} className="est-filter-group wide">
-                    <label className="est-filter-label long">{label}</label>
-                    <div className="est-filter-range">
-                      <select
-                        className="est-filter-select"
-                        value={seq.op}
-                        onChange={(e) => {
-                          const op = e.target.value as SeqOp;
-                          setPuntoFilters((prev) => ({
-                            ...prev,
-                            [key]: { ...(prev[key] as unknown as SeqFilter), op }
-                          } as PuntoFilters));
-                        }}
-                      >
-                        <option value="gte">Mayor o igual que</option>
-                        <option value="lte">Menor o igual que</option>
-                        <option value="eq">Igual que</option>
-                      </select>
+              <div className="est-fcard-body">
+                <div className="est-fcard-grid cols-3">
+                  <div className="est-ffield-date">
+                    <label>🆕 Fecha de creación</label>
+                    <div className="est-date-pair">
                       <input
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        className="est-filter-input"
-                        placeholder="Número"
-                        value={seq.value}
-                        onChange={(e) => {
-                          const onlyDigits = e.target.value.replace(/[^0-9]/g, '');
-                          setPuntoFilters((prev) => ({
-                            ...prev,
-                            [key]: { ...(prev[key] as unknown as SeqFilter), value: onlyDigits }
-                          } as PuntoFilters));
-                        }}
+                        type="date"
+                        value={puntoFilters.fecha_creacion_desde}
+                        onChange={(e) =>
+                          setPuntoFilters((prev) => ({ ...prev, fecha_creacion_desde: e.target.value }))
+                        }
+                      />
+                      <span className="est-date-arrow">→</span>
+                      <input
+                        type="date"
+                        value={puntoFilters.fecha_creacion_hasta}
+                        onChange={(e) =>
+                          setPuntoFilters((prev) => ({ ...prev, fecha_creacion_hasta: e.target.value }))
+                        }
                       />
                     </div>
                   </div>
-                );
-              })}
 
-              <div className="est-filter-group wide">
-                <label className="est-filter-label">Fecha de creación</label>
-                <div className="est-filter-range">
-                  <input
-                    type="date"
-                    className="est-filter-input"
-                    value={puntoFilters.fecha_creacion_desde}
-                    onChange={(e) => setPuntoFilters((prev) => ({ ...prev, fecha_creacion_desde: e.target.value }))}
-                  />
-                  <input
-                    type="date"
-                    className="est-filter-input"
-                    value={puntoFilters.fecha_creacion_hasta}
-                    onChange={(e) => setPuntoFilters((prev) => ({ ...prev, fecha_creacion_hasta: e.target.value }))}
-                  />
-                </div>
-              </div>
-
-              <div className="est-filter-group wide">
-                <label className="est-filter-label">Fecha de última actualización</label>
-                <div className="est-filter-range">
-                  <input
-                    type="date"
-                    className="est-filter-input"
-                    value={puntoFilters.fecha_actualizacion_desde}
-                    onChange={(e) => setPuntoFilters((prev) => ({ ...prev, fecha_actualizacion_desde: e.target.value }))}
-                  />
-                  <input
-                    type="date"
-                    className="est-filter-input"
-                    value={puntoFilters.fecha_actualizacion_hasta}
-                    onChange={(e) => setPuntoFilters((prev) => ({ ...prev, fecha_actualizacion_hasta: e.target.value }))}
-                  />
+                  <div className="est-ffield-date">
+                    <label>🔄 Última actualización</label>
+                    <div className="est-date-pair">
+                      <input
+                        type="date"
+                        value={puntoFilters.fecha_actualizacion_desde}
+                        onChange={(e) =>
+                          setPuntoFilters((prev) => ({
+                            ...prev,
+                            fecha_actualizacion_desde: e.target.value
+                          }))
+                        }
+                      />
+                      <span className="est-date-arrow">→</span>
+                      <input
+                        type="date"
+                        value={puntoFilters.fecha_actualizacion_hasta}
+                        onChange={(e) =>
+                          setPuntoFilters((prev) => ({
+                            ...prev,
+                            fecha_actualizacion_hasta: e.target.value
+                          }))
+                        }
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1019,187 +1131,189 @@ const EstablecimientoEditInfo: React.FC = () => {
           </div>
         </div>
 
-        <div
-          className="estd-table-wrapper"
-          style={{
-            overflowX: activePuntoFiltersCount > 0 && totalPuntos === 0 ? 'hidden' : undefined
-          }}
-        >
-          {activePuntoFiltersCount > 0 && totalPuntos === 0 && (
-            <div
-              style={{
-                position: 'absolute',
-                inset: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '24px',
-                textAlign: 'center',
-                color: '#6b7280',
-                fontSize: 14,
-                fontStyle: 'italic',
-                pointerEvents: 'none',
-                background: 'linear-gradient(135deg, rgba(249, 250, 251, 0.85) 0%, rgba(255, 255, 255, 0.9) 100%)'
-              }}
-            >
-              No se encontraron puntos de emisión con los filtros aplicados.
+        <div className={`estd-table-wrapper ${totalPuntos === 0 ? 'estd-table-wrapper--empty' : ''}`}>
+          {totalPuntos === 0 && (
+            <div className="est-empty-overlay">
+              <div className="est-empty-overlay-content">
+                <div className="est-empty-icon">📍</div>
+                <div className="est-empty-title">No hay puntos de emisión</div>
+                <div className="est-empty-text">
+                  {activePuntoFiltersCount > 0
+                    ? 'No se encontraron resultados con los filtros aplicados'
+                    : 'Aún no se han registrado puntos de emisión'}
+                </div>
+              </div>
             </div>
           )}
             <table className="estd-table">
               <thead>
                 <tr>
                   <th className="estd-th sticky-codigo" style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('codigo')}>
-                    CÓDIGO {sortByPunto === 'codigo' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      CÓDIGO <SortArrow active={sortByPunto === 'codigo'} direction={sortDirPunto} />
+                    </span>
                   </th>
                   <th className="estd-th sticky-nombre" style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('nombre')}>
-                    NOMBRE {sortByPunto === 'nombre' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      NOMBRE <SortArrow active={sortByPunto === 'nombre'} direction={sortDirPunto} />
+                    </span>
                   </th>
                   <th className="estd-th sticky-estado" style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('estado_operatividad')}>
-                    ESTADO DE OPERATIVIDAD {sortByPunto === 'estado_operatividad' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      ESTADO DE OPERATIVIDAD <SortArrow active={sortByPunto === 'estado_operatividad'} direction={sortDirPunto} />
+                    </span>
                   </th>
                   <th className="estd-th" style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('estado_disponibilidad')}>
-                    ESTADO DE DISPONIBILIDAD {sortByPunto === 'estado_disponibilidad' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      ESTADO DE DISPONIBILIDAD <SortArrow active={sortByPunto === 'estado_disponibilidad'} direction={sortDirPunto} />
+                    </span>
                   </th>
                   <th className="estd-th" style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('usuario')}>
-                    USUARIO ASOCIADO {sortByPunto === 'usuario' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      USUARIO ASOCIADO <SortArrow active={sortByPunto === 'usuario'} direction={sortDirPunto} />
+                    </span>
                   </th>
                   <th className="estd-th" style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('secuencial_factura')}>
-                    SECUENCIAL FACTURAS {sortByPunto === 'secuencial_factura' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      SECUENCIAL FACTURAS <SortArrow active={sortByPunto === 'secuencial_factura'} direction={sortDirPunto} />
+                    </span>
                   </th>
                   <th className="estd-th" style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('secuencial_liquidacion_compra')}>
-                    SECUENCIAL LIQUIDACIONES COMPRA {sortByPunto === 'secuencial_liquidacion_compra' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      SECUENCIAL LIQUIDACIONES COMPRA <SortArrow active={sortByPunto === 'secuencial_liquidacion_compra'} direction={sortDirPunto} />
+                    </span>
                   </th>
                   <th className="estd-th" style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('secuencial_nota_credito')}>
-                    SECUENCIAL NOTAS CRÉDITO {sortByPunto === 'secuencial_nota_credito' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      SECUENCIAL NOTAS CRÉDITO <SortArrow active={sortByPunto === 'secuencial_nota_credito'} direction={sortDirPunto} />
+                    </span>
                   </th>
                   <th className="estd-th" style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('secuencial_nota_debito')}>
-                    SECUENCIAL NOTAS DÉBITO {sortByPunto === 'secuencial_nota_debito' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      SECUENCIAL NOTAS DÉBITO <SortArrow active={sortByPunto === 'secuencial_nota_debito'} direction={sortDirPunto} />
+                    </span>
                   </th>
                   <th className="estd-th" style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('secuencial_guia_remision')}>
-                    SECUENCIAL GUÍAS REMISIÓN {sortByPunto === 'secuencial_guia_remision' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      SECUENCIAL GUÍAS REMISIÓN <SortArrow active={sortByPunto === 'secuencial_guia_remision'} direction={sortDirPunto} />
+                    </span>
                   </th>
                   <th className="estd-th" style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('secuencial_retencion')}>
-                    SECUENCIAL RETENCIONES {sortByPunto === 'secuencial_retencion' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      SECUENCIAL RETENCIONES <SortArrow active={sortByPunto === 'secuencial_retencion'} direction={sortDirPunto} />
+                    </span>
                   </th>
                   <th className="estd-th" style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('secuencial_proforma')}>
-                    SECUENCIAL PROFORMAS {sortByPunto === 'secuencial_proforma' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      SECUENCIAL PROFORMAS <SortArrow active={sortByPunto === 'secuencial_proforma'} direction={sortDirPunto} />
+                    </span>
                   </th>
                   <th className="estd-th" style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('created_at')}>
-                    FECHA DE CREACIÓN {sortByPunto === 'created_at' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      FECHA DE CREACIÓN <SortArrow active={sortByPunto === 'created_at'} direction={sortDirPunto} />
+                    </span>
                   </th>
                   <th className="estd-th" style={{ cursor: 'pointer' }} onClick={() => toggleSortPunto('updated_at')}>
-                    FECHA DE ACTUALIZACIÓN {sortByPunto === 'updated_at' ? (sortDirPunto === 'asc' ? '▲' : '▼') : ''}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      FECHA DE ACTUALIZACIÓN <SortArrow active={sortByPunto === 'updated_at'} direction={sortDirPunto} />
+                    </span>
                   </th>
                   <th className="estd-th sticky-acciones">ACCIONES</th>
                 </tr>
               </thead>
               <tbody>
-                {(() => {
-                  if (totalPuntos === 0) {
-                    return (
-                      <tr>
-                        <td colSpan={15} className="estd-empty-cell">
-                          {activePuntoFiltersCount > 0
-                            ? '\u00A0'
-                            : 'No hay puntos de emisión registrados'}
-                        </td>
-                      </tr>
-                    );
-                  }
-
-                  return paginatedPuntos.map((punto: any, idx: number) => (
-                    <tr 
-                      key={punto.id ?? idx}
-                      className={`estd-tr ${idx % 2 === 0 ? 'even' : 'odd'}`}
-                    >
-                      <td className="estd-td sticky-codigo">
-                        <a 
-                          href={`/emisores/${id}/establecimientos/${estId}/puntos/${punto.id}`}
-                          onClick={(e) => { 
-                            e.preventDefault(); 
-                            navigate(`/emisores/${id}/establecimientos/${estId}/puntos/${punto.id}`); 
-                          }} 
+                {paginatedPuntos.map((punto: any, idx: number) => (
+                  <tr 
+                    key={punto.id ?? idx}
+                    className={`estd-tr ${idx % 2 === 0 ? 'even' : 'odd'}`}
+                  >
+                    <td className="estd-td sticky-codigo">
+                      <a 
+                        href={`/emisores/${id}/establecimientos/${estId}/puntos/${punto.id}`}
+                        onClick={(e) => { 
+                          e.preventDefault(); 
+                          navigate(`/emisores/${id}/establecimientos/${estId}/puntos/${punto.id}`); 
+                        }} 
+                        className="estd-punto-link"
+                      >
+                        {punto.codigo ?? '-'}
+                      </a>
+                    </td>
+                    <td className="estd-td sticky-nombre">{punto.nombre ?? '-'}</td>
+                    <td className="estd-td sticky-estado">
+                      <span className={`estd-punto-estado ${punto.estado === 'ACTIVO' ? 'activo' : 'inactivo'}`}>
+                        {punto.estado === 'ACTIVO' ? 'Activo' : 'Desactivado'}
+                      </span>
+                    </td>
+                    <td className="estd-td">
+                      <span className={`estd-punto-estado ${punto.estado_disponibilidad === 'OCUPADO' ? 'inactivo' : 'activo'}`}>
+                        {punto.estado_disponibilidad === 'OCUPADO' ? 'Ocupado' : 'Libre'}
+                      </span>
+                    </td>
+                    <td className="estd-td">
+                      {punto?.user?.id ? (
+                        <a
+                          href={`/usuarios/${punto.user.id}`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            navigate(`/usuarios/${punto.user.id}`);
+                          }}
                           className="estd-punto-link"
+                          title="Ver usuario"
                         >
-                          {punto.codigo ?? '-'}
+                          {(() => {
+                            const role = (punto.user?.role?.value ?? punto.user?.role ?? '').toString().toUpperCase();
+                            const username = (punto.user?.username ?? '').toString().toUpperCase();
+                            const nombres = (punto.user?.nombres ?? '').toString().toUpperCase();
+                            const apellidos = (punto.user?.apellidos ?? '').toString().toUpperCase();
+                            return `${role} – ${username} – ${nombres} – ${apellidos}`;
+                          })()}
                         </a>
-                      </td>
-                      <td className="estd-td sticky-nombre">{punto.nombre ?? '-'}</td>
-                      <td className="estd-td sticky-estado">
-                        <span className={`estd-punto-estado ${punto.estado === 'ACTIVO' ? 'activo' : 'inactivo'}`}>
-                          {punto.estado === 'ACTIVO' ? 'Activo' : 'Desactivado'}
-                        </span>
-                      </td>
-                      <td className="estd-td">
-                        <span className={`estd-punto-estado ${punto.estado_disponibilidad === 'OCUPADO' ? 'inactivo' : 'activo'}`}>
-                          {punto.estado_disponibilidad === 'OCUPADO' ? 'Ocupado' : 'Libre'}
-                        </span>
-                      </td>
-                      <td className="estd-td">
-                        {punto?.user?.id ? (
-                          <a
-                            href={`/usuarios/${punto.user.id}`}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              navigate(`/usuarios/${punto.user.id}`);
-                            }}
-                            className="estd-punto-link"
-                            title="Ver usuario"
-                          >
-                            {(() => {
-                              const role = (punto.user?.role?.value ?? punto.user?.role ?? '').toString().toUpperCase();
-                              const username = (punto.user?.username ?? '').toString().toUpperCase();
-                              const nombres = (punto.user?.nombres ?? '').toString().toUpperCase();
-                              const apellidos = (punto.user?.apellidos ?? '').toString().toUpperCase();
-                              return `${role} – ${username} – ${nombres} – ${apellidos}`;
-                            })()}
-                          </a>
-                        ) : (
-                          <span style={{ color: '#94a3b8' }}>Sin asignar</span>
-                        )}
-                      </td>
-                      <td className="estd-td">{punto.secuencial_factura ?? '-'}</td>
-                      <td className="estd-td">{punto.secuencial_liquidacion_compra ?? '-'}</td>
-                      <td className="estd-td">{punto.secuencial_nota_credito ?? '-'}</td>
-                      <td className="estd-td">{punto.secuencial_nota_debito ?? '-'}</td>
-                      <td className="estd-td">{punto.secuencial_guia_remision ?? '-'}</td>
-                      <td className="estd-td">{punto.secuencial_retencion ?? '-'}</td>
-                      <td className="estd-td">{punto.secuencial_proforma ?? '-'}</td>
-                      <td className="estd-td">{formatDate(punto.created_at)}</td>
-                      <td className="estd-td">{formatDate(punto.updated_at)}</td>
-                      <td className="estd-td sticky-acciones">
-                        <div className="estd-action-buttons">
-                          <button
-                            type="button"
-                            title={isLimitedRole ? 'Tu rol no permite editar puntos de emisión' : 'Editar punto'}
-                            className={`estd-action-btn edit ${isLimitedRole ? 'disabled' : ''}`}
-                            disabled={isLimitedRole}
-                            onClick={() => {
-                              if (isLimitedRole) return;
-                              setSelectedPunto(punto);
-                              setPuntoFormOpen(true);
-                            }}
-                          >
-                            ✏️
-                          </button>
-                          <button
-                            type="button"
-                            title={isLimitedRole ? 'Tu rol no permite eliminar puntos de emisión' : 'Eliminar punto'}
-                            className={`estd-action-btn delete ${isLimitedRole ? 'disabled' : ''}`}
-                            disabled={isLimitedRole}
-                            onClick={() => {
-                              if (isLimitedRole) return;
-                              setPuntoToDelete(punto);
-                              setPuntoDeleteOpen(true);
-                            }}
-                          >
-                            🗑️
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ));
-                })()}
+                      ) : (
+                        <span style={{ color: '#94a3b8' }}>Sin asignar</span>
+                      )}
+                    </td>
+                    <td className="estd-td">{punto.secuencial_factura ?? '-'}</td>
+                    <td className="estd-td">{punto.secuencial_liquidacion_compra ?? '-'}</td>
+                    <td className="estd-td">{punto.secuencial_nota_credito ?? '-'}</td>
+                    <td className="estd-td">{punto.secuencial_nota_debito ?? '-'}</td>
+                    <td className="estd-td">{punto.secuencial_guia_remision ?? '-'}</td>
+                    <td className="estd-td">{punto.secuencial_retencion ?? '-'}</td>
+                    <td className="estd-td">{punto.secuencial_proforma ?? '-'}</td>
+                    <td className="estd-td">{formatDate(punto.created_at)}</td>
+                    <td className="estd-td">{formatDate(punto.updated_at)}</td>
+                    <td className="estd-td sticky-acciones">
+                      <div className="estd-action-buttons">
+                        <button
+                          type="button"
+                          title={isLimitedRole ? 'Tu rol no permite editar puntos de emisión' : 'Editar punto'}
+                          className={`estd-action-btn edit ${isLimitedRole ? 'disabled' : ''}`}
+                          disabled={isLimitedRole}
+                          onClick={() => {
+                            if (isLimitedRole) return;
+                            setSelectedPunto(punto);
+                            setPuntoFormOpen(true);
+                          }}
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          type="button"
+                          title={isLimitedRole ? 'Tu rol no permite eliminar puntos de emisión' : 'Eliminar punto'}
+                          className={`estd-action-btn delete ${isLimitedRole ? 'disabled' : ''}`}
+                          disabled={isLimitedRole}
+                          onClick={() => {
+                            if (isLimitedRole) return;
+                            setPuntoToDelete(punto);
+                            setPuntoDeleteOpen(true);
+                          }}
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

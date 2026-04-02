@@ -4,6 +4,7 @@ import { suscripcionesApi, Suscripcion, SuscripcionFilters } from '../../service
 import { useNotification } from '../../contexts/NotificationContext';
 import { useUser } from '../../contexts/userContext';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import SortArrow from '../../components/SortArrow';
 import SuscripcionFormModal from './SuscripcionFormModal';
 import SuscripcionEstadoModal from './SuscripcionEstadoModal';
 import './SuscripcionesList.css';
@@ -219,8 +220,7 @@ const SuscripcionesList: React.FC<Props> = ({ emisorId }) => {
 
   // Renderizar icono de ordenamiento
   const renderSortIcon = (column: string) => {
-    if (sortBy !== column) return <span className="susc-sort-icon">⇅</span>;
-    return <span className="susc-sort-icon active">{sortDir === 'asc' ? '↑' : '↓'}</span>;
+    return <SortArrow active={sortBy === column} direction={sortDir} />;
   };
 
   // Formatear fecha

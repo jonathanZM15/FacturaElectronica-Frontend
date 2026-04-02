@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { tiposRetencionApi, TipoRetencion, TipoRetencionFilters, TIPOS_RETENCION, TipoRetencionEnum } from '../../services/tiposRetencionApi';
 import { useNotification } from '../../contexts/NotificationContext';
+import SortArrow from '../../components/SortArrow';
 import TipoRetencionFormModal from './TipoRetencionFormModal';
 import TipoRetencionDeleteModal from './TipoRetencionDeleteModal';
 import './TiposRetencion.css';
@@ -465,43 +466,55 @@ const TiposRetencion: React.FC = () => {
                       className={sortBy === 'tipo_retencion' ? 'sorted' : ''} 
                       onClick={() => handleSort('tipo_retencion')}
                     >
-                      Tipo
-                      <span className="sort-indicator">{sortBy === 'tipo_retencion' ? (sortDir === 'asc' ? '▲' : '▼') : '▼'}</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                        Tipo
+                        <SortArrow active={sortBy === 'tipo_retencion'} direction={sortDir} />
+                      </span>
                     </th>
                     <th 
                       className={sortBy === 'nombre' ? 'sorted' : ''} 
                       onClick={() => handleSort('nombre')}
                     >
-                      Nombre
-                      <span className="sort-indicator">{sortBy === 'nombre' ? (sortDir === 'asc' ? '▲' : '▼') : '▼'}</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                        Nombre
+                        <SortArrow active={sortBy === 'nombre'} direction={sortDir} />
+                      </span>
                     </th>
                     <th 
                       className={sortBy === 'codigo' ? 'sorted' : ''} 
                       onClick={() => handleSort('codigo')}
                     >
-                      Código
-                      <span className="sort-indicator">{sortBy === 'codigo' ? (sortDir === 'asc' ? '▲' : '▼') : '▼'}</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                        Código
+                        <SortArrow active={sortBy === 'codigo'} direction={sortDir} />
+                      </span>
                     </th>
                     <th 
                       className={sortBy === 'porcentaje' ? 'sorted' : ''} 
                       onClick={() => handleSort('porcentaje')}
                     >
-                      Porcentaje
-                      <span className="sort-indicator">{sortBy === 'porcentaje' ? (sortDir === 'asc' ? '▲' : '▼') : '▼'}</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                        Porcentaje
+                        <SortArrow active={sortBy === 'porcentaje'} direction={sortDir} />
+                      </span>
                     </th>
                     <th 
                       className={sortBy === 'created_at' ? 'sorted' : ''} 
                       onClick={() => handleSort('created_at')}
                     >
-                      Fecha Creación
-                      <span className="sort-indicator">{sortBy === 'created_at' ? (sortDir === 'asc' ? '▲' : '▼') : '▼'}</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                        Fecha Creación
+                        <SortArrow active={sortBy === 'created_at'} direction={sortDir} />
+                      </span>
                     </th>
                     <th 
                       className={sortBy === 'updated_at' ? 'sorted' : ''} 
                       onClick={() => handleSort('updated_at')}
                     >
-                      Fecha Actualización
-                      <span className="sort-indicator">{sortBy === 'updated_at' ? (sortDir === 'asc' ? '▲' : '▼') : '▼'}</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                        Fecha Actualización
+                        <SortArrow active={sortBy === 'updated_at'} direction={sortDir} />
+                      </span>
                     </th>
                     <th>Acciones</th>
                   </tr>

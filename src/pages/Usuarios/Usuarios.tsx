@@ -11,6 +11,7 @@ import { User } from '../../types/user';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useUser } from '../../contexts/userContext';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import SortArrow from '../../components/SortArrow';
 import { useRealtimeResource } from '../../hooks/useRealtimeResource';
 import {
   navigateToEmisor,
@@ -419,11 +420,6 @@ const Usuarios: React.FC = () => {
     
     return true;
   }, [canEditUser]);
-
-  const getSortIcon = (field: SortField) => {
-    if (sortField !== field) return '⇅';
-    return sortDirection === 'asc' ? '↑' : '↓';
-  };
 
   const canCreateFromUsuarios = React.useMemo(
     () => normalizeRole(currentUser?.role) === 'administrador',
@@ -1131,7 +1127,9 @@ const Usuarios: React.FC = () => {
                       >
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                           {col.label}
-                          {sortable ? <span style={{ opacity: 0.9 }}>{getSortIcon(col.sortKey!)}</span> : null}
+                          {sortable ? (
+                            <SortArrow active={sortField === col.sortKey} direction={sortDirection} />
+                          ) : null}
                         </span>
                       </th>
                     );
