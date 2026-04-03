@@ -308,8 +308,8 @@ const EstablecimientoEditInfo: React.FC = () => {
     | 'created_at'
     | 'updated_at';
 
-  const [sortByPunto, setSortByPunto] = React.useState<PuntoCol>('codigo');
-  const [sortDirPunto, setSortDirPunto] = React.useState<'asc' | 'desc'>('asc');
+  const [sortByPunto, setSortByPunto] = React.useState<PuntoCol>('created_at');
+  const [sortDirPunto, setSortDirPunto] = React.useState<'asc' | 'desc'>('desc');
   const [pagePunto, setPagePunto] = React.useState(1);
   const [perPagePunto, setPerPagePunto] = React.useState(10);
 
@@ -324,15 +324,9 @@ const EstablecimientoEditInfo: React.FC = () => {
   };
 
   React.useEffect(() => {
-    // Al aplicar filtros: orden por defecto fecha creación DESC
-    if (activePuntoFiltersCount > 0) {
-      setSortByPunto('created_at');
-      setSortDirPunto('desc');
-    } else {
-      // Vista inicial: código ASC
-      setSortByPunto('codigo');
-      setSortDirPunto('asc');
-    }
+    // Orden por defecto (actualización): fecha de creación DESC
+    setSortByPunto('created_at');
+    setSortDirPunto('desc');
     setPagePunto(1);
   }, [activePuntoFiltersCount, puntoFilters]);
 
@@ -419,8 +413,8 @@ const EstablecimientoEditInfo: React.FC = () => {
 
   const resetPuntoTable = () => {
     setPuntoFilters(DEFAULT_PUNTO_FILTERS);
-    setSortByPunto('codigo');
-    setSortDirPunto('asc');
+    setSortByPunto('created_at');
+    setSortDirPunto('desc');
     setPagePunto(1);
     setPerPagePunto(10);
   };
@@ -497,7 +491,21 @@ const EstablecimientoEditInfo: React.FC = () => {
     setUserDetailOpen(true);
     try {
       const response = await usuariosApi.get(userId);
-      const userData = response.data?.data ?? response.data;
+      let userData = response.data?.data ?? response.data;
+
+      if (
+        company &&
+        userData?.emisor_id != null &&
+        company?.id != null &&
+        String(userData.emisor_id) === String(company.id)
+      ) {
+        userData = {
+          ...userData,
+          emisor_ruc: company.ruc,
+          emisor_razon_social: company.razon_social,
+          emisor_estado: company.estado,
+        };
+      }
       setSelectedUserDetail(userData);
     } catch (e: any) {
       show({ title: 'Error', message: 'No se pudo cargar la información del usuario', type: 'error' });
@@ -1252,23 +1260,39 @@ const EstablecimientoEditInfo: React.FC = () => {
                     </td>
                     <td className="estd-td">
                       {punto?.user?.id ? (
-                        <a
-                          href={`/usuarios/${punto.user.id}`}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            navigate(`/usuarios/${punto.user.id}`);
-                          }}
-                          className="estd-punto-link"
-                          title="Ver usuario"
-                        >
-                          {(() => {
-                            const role = (punto.user?.role?.value ?? punto.user?.role ?? '').toString().toUpperCase();
-                            const username = (punto.user?.username ?? '').toString().toUpperCase();
-                            const nombres = (punto.user?.nombres ?? '').toString().toUpperCase();
-                            const apellidos = (punto.user?.apellidos ?? '').toString().toUpperCase();
-                            return `${role} – ${username} – ${nombres} – ${apellidos}`;
-                          })()}
-                        </a>
+                        (() => {
+                          const roleValue = (punto.user?.role?.value ?? punto.user?.role ?? '').toString().toUpperCase();
+                          const username = (punto.user?.username ?? '').toString().toUpperCase();
+                          const nombres = (punto.user?.nombres ?? '').toString().toUpperCase();
+                          const apellidos = (punto.user?.apellidos ?? '').toString().toUpperCase();
+
+                          return (
+                            <span>
+                              <span style={{ fontWeight: 600 }}>{roleValue}</span>
+                              {' – '}
+                              <a
+                                href="#"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  handleOpenUserDetail(punto.user.id);
+                                }}
+                                style={{
+                                  color: '#1b4ab4',
+                                  fontWeight: 600,
+                                  textDecoration: 'underline',
+                                  cursor: 'pointer',
+                                }}
+                                title="Ver usuario"
+                              >
+                                {username}
+                              </a>
+                              {' – '}
+                              <span>{nombres}</span>
+                              {' – '}
+                              <span>{apellidos}</span>
+                            </span>
+                          );
+                        })()
                       ) : (
                         <span style={{ color: '#94a3b8' }}>Sin asignar</span>
                       )}

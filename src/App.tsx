@@ -18,7 +18,6 @@ import EstablecimientoInfo from './pages/Establecimientos/EstablecimientoInfo';
 import EstablecimientoEditInfo from './pages/Establecimientos/EstablecimientoEditInfo';
 import PuntoEmisionInfo from './pages/PuntosEmision/PuntoEmisionInfo';
 import Usuarios from './pages/Usuarios/Usuarios';
-import UsuarioInfo from './pages/Usuarios/UsuarioInfo';
 import Planes from './pages/Planes/Planes';
 import TiposImpuesto from './pages/TiposImpuesto/TiposImpuesto';
 import TiposRetencion from './pages/TiposRetencion/TiposRetencion';
@@ -67,7 +66,6 @@ function App() {
                 
                 {/* Usuarios */}
                 <Route path="/usuarios" element={<Usuarios />} />
-                <Route path="/usuarios/:id" element={<UsuarioInfo />} />
                 
                 {/* Planes */}
                 <Route path="/planes" element={<Planes />} />

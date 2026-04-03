@@ -4,9 +4,12 @@ import './Emisores.css';
 import '../Usuarios/UsuarioDeleteModalModern.css';
 import { emisoresApi } from '../../services/emisoresApi';
 import { suscripcionesApi, PlanActivo } from '../../services/suscripcionesApi';
+import { usuariosApi } from '../../services/usuariosApi';
 import EmisorFormModal from './EmisorFormModal';
 import ImageViewerModal from '../../components/ImageViewerModal/ImageViewerModal';
+import UsuarioDetailModal from '../Usuarios/UsuarioDetailModal';
 import { Emisor } from '../../types/emisor';
+import { User } from '../../types/user';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useUser } from '../../contexts/userContext';
 import { getImageUrl } from '../../helpers/imageUrl';
@@ -20,7 +23,10 @@ function truncateWords(text: string, maxWords: number = 10): string {
   return words.slice(0, maxWords).join(' ') + '...';
 }
 
-const createDynamicColumns = (formatPlanDateIso: (value?: string | null) => string) : Array<{
+const createDynamicColumns = (
+  formatPlanDateIso: (value?: string | null) => string,
+  onOpenUserDetail: (userId: number, emisorRow: Emisor) => void
+) : Array<{
   key: keyof Emisor | 'logo';
   label: string;
   width?: number;
@@ -216,7 +222,25 @@ const createDynamicColumns = (formatPlanDateIso: (value?: string | null) => stri
         const fullName = `${nombres} ${apellidos}`.trim() || username;
         return (
           <span>
-            {rol} – <a href={`/usuarios/${creator.id}`} style={{ color: '#6366f1', textDecoration: 'none', fontWeight: 600 }}>{username}</a> – {fullName}
+            {rol} –{' '}
+            <button
+              type="button"
+              title="Ver usuario"
+              onClick={() => onOpenUserDetail(creator.id, row)}
+              style={{
+                color: '#6366f1',
+                textDecoration: 'none',
+                fontWeight: 600,
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer',
+                font: 'inherit',
+              }}
+            >
+              {username}
+            </button>
+            {' '}– {fullName}
           </span>
         );
       }
@@ -482,6 +506,48 @@ const Emisores: React.FC = () => {
   const [viewerImage, setViewerImage] = React.useState<string | null>(null);
   const hasAutoLoadedRef = React.useRef(false);
 
+  // Usuario detail modal states
+  const [userDetailOpen, setUserDetailOpen] = React.useState(false);
+  const [selectedUserDetail, setSelectedUserDetail] = React.useState<User | null>(null);
+  const [userDetailLoading, setUserDetailLoading] = React.useState(false);
+
+  const handleOpenUserDetail = React.useCallback(
+    async (userId: number, emisorRow?: Emisor) => {
+      if (!userId) return;
+
+      setUserDetailLoading(true);
+      setUserDetailOpen(true);
+      setSelectedUserDetail(null);
+
+      try {
+        const response = await usuariosApi.get(userId);
+        let userData: any = response.data?.data ?? response.data;
+
+        if (
+          emisorRow &&
+          userData?.emisor_id != null &&
+          emisorRow?.id != null &&
+          String(userData.emisor_id) === String(emisorRow.id)
+        ) {
+          userData = {
+            ...userData,
+            emisor_ruc: emisorRow.ruc,
+            emisor_razon_social: emisorRow.razon_social,
+            emisor_estado: emisorRow.estado,
+          };
+        }
+
+        setSelectedUserDetail(userData);
+      } catch (error: any) {
+        show({ title: 'Error', message: 'No se pudo cargar la información del usuario', type: 'error' });
+        setUserDetailOpen(false);
+      } finally {
+        setUserDetailLoading(false);
+      }
+    },
+    [show]
+  );
+
   const formatDate = React.useCallback((iso: string) => {
     if (!iso) return '';
     // Expecting yyyy-mm-dd
@@ -510,7 +576,10 @@ const Emisores: React.FC = () => {
     return value;
   }, []);
 
-  const dynamicColumns = React.useMemo(() => createDynamicColumns(formatPlanDateIso), [formatPlanDateIso]);
+  const dynamicColumns = React.useMemo(
+    () => createDynamicColumns(formatPlanDateIso, handleOpenUserDetail),
+    [formatPlanDateIso, handleOpenUserDetail]
+  );
 
   // Verificar si el usuario tiene permisos para editar/eliminar un emisor
   const canEditEmit = React.useCallback((emit: Emisor) => {
@@ -1805,6 +1874,16 @@ const Emisores: React.FC = () => {
 
     {/* notifications handled by NotificationProvider */}
     <ImageViewerModal open={viewerOpen} imageUrl={viewerImage} onClose={() => setViewerOpen(false)} />
+    <UsuarioDetailModal
+      open={userDetailOpen}
+      user={selectedUserDetail}
+      loading={userDetailLoading}
+      onClose={() => {
+        setUserDetailOpen(false);
+        setSelectedUserDetail(null);
+        setUserDetailLoading(false);
+      }}
+    />
     </>
   );
 };

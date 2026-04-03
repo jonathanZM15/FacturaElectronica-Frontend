@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { suscripcionesApi, Suscripcion, SuscripcionFilters } from '../../services/suscripcionesApi';
+import { emisoresApi } from '../../services/emisoresApi';
+import { usuariosApi } from '../../services/usuariosApi';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useUser } from '../../contexts/userContext';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import SortArrow from '../../components/SortArrow';
 import SuscripcionFormModal from './SuscripcionFormModal';
 import SuscripcionEstadoModal from './SuscripcionEstadoModal';
+import UsuarioDetailModal from '../Usuarios/UsuarioDetailModal';
 import './SuscripcionesList.css';
 
 interface Props {
@@ -23,7 +25,6 @@ interface EstadosData {
 type SortDirection = 'asc' | 'desc';
 
 const SuscripcionesList: React.FC<Props> = ({ emisorId }) => {
-  const navigate = useNavigate();
   const [suscripciones, setSuscripciones] = useState<Suscripcion[]>([]);
   const [suscripcionesForStats, setSuscripcionesForStats] = useState<Suscripcion[]>([]);
   const [loading, setLoading] = useState(false);
@@ -38,6 +39,10 @@ const SuscripcionesList: React.FC<Props> = ({ emisorId }) => {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const { show } = useNotification();
   const { user: currentUser } = useUser();
+
+  const [userDetailOpen, setUserDetailOpen] = useState(false);
+  const [selectedUserDetail, setSelectedUserDetail] = useState<any | null>(null);
+  const [userDetailLoading, setUserDetailLoading] = useState(false);
 
   // Estados para filtros
   const [estados, setEstados] = useState<EstadosData | null>(null);
@@ -351,10 +356,46 @@ const SuscripcionesList: React.FC<Props> = ({ emisorId }) => {
     }
   };
 
-  // Navegar al usuario
-  const navigateToUser = (userId: number) => {
-    navigate(`/usuarios/${userId}`);
-  };
+  const handleOpenUserDetail = useCallback(
+    async (userId: number) => {
+      if (!userId) return;
+
+      setUserDetailLoading(true);
+      setUserDetailOpen(true);
+      setSelectedUserDetail(null);
+
+      try {
+        const response = await usuariosApi.get(userId);
+        let userData = response.data?.data ?? response.data;
+
+        if (userData?.emisor_id) {
+          try {
+            const emisorRes = await emisoresApi.get(userData.emisor_id);
+            const emisorData = emisorRes.data?.data;
+            if (emisorData) {
+              userData = {
+                ...userData,
+                emisor_ruc: emisorData.ruc,
+                emisor_razon_social: emisorData.razon_social,
+                emisor_estado: emisorData.estado,
+              };
+            }
+          } catch (emisorError) {
+            console.error('Error cargando emisor asociado al usuario', emisorError);
+          }
+        }
+
+        setSelectedUserDetail(userData);
+      } catch (err: any) {
+        const msg = err?.response?.data?.message || err?.message || 'No se pudo cargar la información del usuario';
+        show({ title: 'Error', message: msg, type: 'error' });
+        setUserDetailOpen(false);
+      } finally {
+        setUserDetailLoading(false);
+      }
+    },
+    [show]
+  );
 
   // Renderizar archivo (comprobante/factura)
   const renderFileLink = (filePath?: string, label?: string) => {
@@ -892,7 +933,7 @@ const SuscripcionesList: React.FC<Props> = ({ emisorId }) => {
                             {suscripcion.createdBy ? (
                               <button
                                 type="button"
-                                onClick={() => navigateToUser(suscripcion.createdBy!.id)}
+                                onClick={() => handleOpenUserDetail(suscripcion.createdBy!.id)}
                                 className="susc-usuario-btn"
                                 title="Ver usuario"
                               >
@@ -1114,6 +1155,17 @@ const SuscripcionesList: React.FC<Props> = ({ emisorId }) => {
           </div>
         </div>
       )}
+
+      <UsuarioDetailModal
+        open={userDetailOpen}
+        user={selectedUserDetail}
+        loading={userDetailLoading}
+        onClose={() => {
+          setUserDetailOpen(false);
+          setSelectedUserDetail(null);
+          setUserDetailLoading(false);
+        }}
+      />
     </div>
   );
 };

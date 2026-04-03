@@ -3,11 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { establecimientosApi } from '../../services/establecimientosApi';
 import { puntosEmisionApi } from '../../services/puntosEmisionApi';
 import { emisoresApi } from '../../services/emisoresApi';
+import { usuariosApi } from '../../services/usuariosApi';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useUser } from '../../contexts/userContext';
 import ImageViewerModal from '../../components/ImageViewerModal/ImageViewerModal';
 import PuntoEmisionFormModal from '../PuntosEmision/PuntoEmisionFormModal';
 import PuntoEmisionDeleteModal from '../PuntosEmision/PuntoEmisionDeleteModal';
+import UsuarioDetailModal from '../Usuarios/UsuarioDetailModal';
 import { PuntoEmision } from '../../types/puntoEmision';
 import { getImageUrl } from '../../helpers/imageUrl';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -60,6 +62,11 @@ const EstablecimientoInfo: React.FC = () => {
   // Image viewer states
   const [viewerOpen, setViewerOpen] = React.useState(false);
   const [viewerImage, setViewerImage] = React.useState<string | null>(null);
+
+  // Usuario detail modal states
+  const [userDetailOpen, setUserDetailOpen] = React.useState(false);
+  const [selectedUserDetail, setSelectedUserDetail] = React.useState<any | null>(null);
+  const [userDetailLoading, setUserDetailLoading] = React.useState(false);
 
   // Punto emisión modal states
   const [puntoFormOpen, setPuntoFormOpen] = React.useState(false);
@@ -236,8 +243,8 @@ const EstablecimientoInfo: React.FC = () => {
     | 'created_at'
     | 'updated_at';
 
-  const [sortByPunto, setSortByPunto] = React.useState<PuntoCol>('codigo');
-  const [sortDirPunto, setSortDirPunto] = React.useState<'asc' | 'desc'>('asc');
+  const [sortByPunto, setSortByPunto] = React.useState<PuntoCol>('created_at');
+  const [sortDirPunto, setSortDirPunto] = React.useState<'asc' | 'desc'>('desc');
   const [pagePunto, setPagePunto] = React.useState(1);
   const [perPagePunto, setPerPagePunto] = React.useState(10);
 
@@ -252,15 +259,9 @@ const EstablecimientoInfo: React.FC = () => {
   };
 
   React.useEffect(() => {
-    // Al aplicar filtros: orden por defecto fecha creación DESC
-    if (activePuntoFiltersCount > 0) {
-      setSortByPunto('created_at');
-      setSortDirPunto('desc');
-    } else {
-      // Vista inicial: código ASC
-      setSortByPunto('codigo');
-      setSortDirPunto('asc');
-    }
+    // Orden por defecto (actualización): fecha de creación DESC
+    setSortByPunto('created_at');
+    setSortDirPunto('desc');
     setPagePunto(1);
   }, [activePuntoFiltersCount, puntoFilters]);
 
@@ -348,8 +349,8 @@ const EstablecimientoInfo: React.FC = () => {
 
   const resetPuntoTable = () => {
     setPuntoFilters(DEFAULT_PUNTO_FILTERS);
-    setSortByPunto('codigo');
-    setSortDirPunto('asc');
+    setSortByPunto('created_at');
+    setSortDirPunto('desc');
     setPagePunto(1);
     setPerPagePunto(10);
   };
@@ -409,6 +410,38 @@ const EstablecimientoInfo: React.FC = () => {
   const openDeleteModal = () => {
     setActionsOpen(false);
     setDeleteOpen(true);
+  };
+
+  const handleOpenUserDetail = async (userId: number) => {
+    setUserDetailLoading(true);
+    setUserDetailOpen(true);
+    setSelectedUserDetail(null);
+
+    try {
+      const response = await usuariosApi.get(userId);
+      let userData = response.data?.data ?? response.data;
+
+      if (
+        company &&
+        userData?.emisor_id != null &&
+        company?.id != null &&
+        String(userData.emisor_id) === String(company.id)
+      ) {
+        userData = {
+          ...userData,
+          emisor_ruc: company.ruc,
+          emisor_razon_social: company.razon_social,
+          emisor_estado: company.estado,
+        };
+      }
+
+      setSelectedUserDetail(userData);
+    } catch (e: any) {
+      show({ title: 'Error', message: 'No se pudo cargar la información del usuario', type: 'error' });
+      setUserDetailOpen(false);
+    } finally {
+      setUserDetailLoading(false);
+    }
   };
 
   return (
@@ -869,22 +902,34 @@ const EstablecimientoInfo: React.FC = () => {
                     </td>
                     <td style={{ fontWeight: 600 }}>
                       {p?.user?.id ? (
-                        <a
-                          href={`/usuarios/${p.user.id}`}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            navigate(`/usuarios/${p.user.id}`);
-                          }}
-                          style={{ color: '#1b4ab4', textDecoration: 'underline', cursor: 'pointer' }}
-                        >
-                          {(() => {
-                            const roleValue = (p.user?.role?.value ?? p.user?.role ?? '').toString().toUpperCase();
-                            const username = (p.user?.username ?? '').toString().toUpperCase();
-                            const nombres = (p.user?.nombres ?? '').toString().toUpperCase();
-                            const apellidos = (p.user?.apellidos ?? '').toString().toUpperCase();
-                            return `${roleValue} – ${username} – ${nombres} – ${apellidos}`;
-                          })()}
-                        </a>
+                        (() => {
+                          const roleValue = (p.user?.role?.value ?? p.user?.role ?? '').toString().toUpperCase();
+                          const username = (p.user?.username ?? '').toString().toUpperCase();
+                          const nombres = (p.user?.nombres ?? '').toString().toUpperCase();
+                          const apellidos = (p.user?.apellidos ?? '').toString().toUpperCase();
+
+                          return (
+                            <span>
+                              <span style={{ fontWeight: 600 }}>{roleValue}</span>
+                              {' – '}
+                              <a
+                                href="#"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  handleOpenUserDetail(p.user.id);
+                                }}
+                                style={{ color: '#1b4ab4', fontWeight: 600, textDecoration: 'underline', cursor: 'pointer' }}
+                                title="Ver usuario"
+                              >
+                                {username}
+                              </a>
+                              {' – '}
+                              <span>{nombres}</span>
+                              {' – '}
+                              <span>{apellidos}</span>
+                            </span>
+                          );
+                        })()
                       ) : (
                         <span style={{ color: '#94a3b8' }}>Sin asignar</span>
                       )}
@@ -1298,6 +1343,17 @@ const EstablecimientoInfo: React.FC = () => {
       )}
 
       <ImageViewerModal open={viewerOpen} imageUrl={viewerImage} onClose={() => setViewerOpen(false)} />
+
+      <UsuarioDetailModal
+        open={userDetailOpen}
+        user={selectedUserDetail}
+        loading={userDetailLoading}
+        onClose={() => {
+          setUserDetailOpen(false);
+          setSelectedUserDetail(null);
+          setUserDetailLoading(false);
+        }}
+      />
 
       <PuntoEmisionFormModal
         isOpen={puntoFormOpen}

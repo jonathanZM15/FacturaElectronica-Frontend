@@ -85,12 +85,39 @@ const EmisorInfo: React.FC = () => {
     setOpenUserDetail(true);
     
     try {
-      // Fetch detailed user data using emisor-specific API
-      const userRes = await usuariosEmisorApi.get(id!, usuario.id!);
-      let userData = userRes.data?.data ?? userRes.data;
-      
-      // Add emisor info from current company context
-      if (company) {
+      if (!usuario?.id) {
+        throw new Error('Usuario inválido');
+      }
+
+      let userData: any = null;
+      let shouldAttachCompany = false;
+
+      // 1) Intentar endpoint específico del emisor (usuarios del emisor)
+      if (id) {
+        try {
+          const userRes = await usuariosEmisorApi.get(id, usuario.id);
+          userData = userRes.data?.data ?? userRes.data;
+          shouldAttachCompany = true;
+        } catch {
+          // 2) Fallback a endpoint global (p.ej. creador distribuidor)
+          const userRes = await usuariosApi.get(usuario.id);
+          userData = userRes.data?.data ?? userRes.data;
+
+          if (company && userData?.emisor_id != null && company?.id != null) {
+            shouldAttachCompany = String(userData.emisor_id) === String(company.id);
+          }
+        }
+      } else {
+        const userRes = await usuariosApi.get(usuario.id);
+        userData = userRes.data?.data ?? userRes.data;
+
+        if (company && userData?.emisor_id != null && company?.id != null) {
+          shouldAttachCompany = String(userData.emisor_id) === String(company.id);
+        }
+      }
+
+      // Adjuntar info del emisor solo si corresponde
+      if (shouldAttachCompany && company) {
         userData = {
           ...userData,
           emisor_id: company.id,
@@ -99,7 +126,7 @@ const EmisorInfo: React.FC = () => {
           emisor_estado: company.estado
         };
       }
-      
+
       setSelectedUserDetail(userData);
     } catch (error: any) {
       console.error('Error loading user details:', error);
@@ -831,9 +858,23 @@ const EmisorInfo: React.FC = () => {
                         {company?.creator ? (
                           <>
                             {(company.creator.role || 'USUARIO').toUpperCase()} – {' '}
-                            <Link to={`/usuarios/${company.creator.id}`} style={{ color: '#6366f1', textDecoration: 'none', fontWeight: 600 }}>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenUserDetail(company.creator)}
+                              title="Ver usuario"
+                              style={{
+                                color: '#6366f1',
+                                textDecoration: 'none',
+                                fontWeight: 600,
+                                background: 'none',
+                                border: 'none',
+                                padding: 0,
+                                cursor: 'pointer',
+                                font: 'inherit',
+                              }}
+                            >
                               {company.creator.username || company.creator.email?.split('@')[0] || '-'}
-                            </Link>
+                            </button>
                             {' '} – {company.creator.nombres && company.creator.apellidos 
                               ? `${company.creator.nombres} ${company.creator.apellidos}`
                               : company.creator.name || '-'}
@@ -1508,9 +1549,20 @@ const EmisorInfo: React.FC = () => {
                                     <span className="est-usuario-name">
                                       {String(usr?.role ?? '—').trim().toUpperCase()} –{' '}
                                       {usr?.id ? (
-                                        <Link className="est-usuario-link" to={`/usuarios/${usr.id}`}>
+                                        <button
+                                          type="button"
+                                          className="est-usuario-link"
+                                          title="Ver usuario"
+                                          onClick={() => handleOpenUserDetail(usr)}
+                                          style={{
+                                            background: 'none',
+                                            border: 'none',
+                                            padding: 0,
+                                            font: 'inherit',
+                                          }}
+                                        >
                                           {String(usr?.username ?? '—').trim().toUpperCase()}
-                                        </Link>
+                                        </button>
                                       ) : (
                                         <span className="est-usuario-link">
                                           {String(usr?.username ?? '—').trim().toUpperCase()}

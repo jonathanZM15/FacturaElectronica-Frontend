@@ -4,11 +4,13 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { puntosEmisionApi } from '../../services/puntosEmisionApi';
 import { establecimientosApi } from '../../services/establecimientosApi';
 import { emisoresApi } from '../../services/emisoresApi';
+import { usuariosApi } from '../../services/usuariosApi';
 import { useNotification } from '../../contexts/NotificationContext';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import ImageViewerModal from '../../components/ImageViewerModal/ImageViewerModal';
 import PuntoEmisionFormModal from './PuntoEmisionFormModal';
 import PuntoEmisionDeleteModal from './PuntoEmisionDeleteModal';
+import UsuarioDetailModal from '../Usuarios/UsuarioDetailModal';
 import { getImageUrl } from '../../helpers/imageUrl';
 import './PuntoEmisionInfo.css';
 
@@ -27,6 +29,10 @@ const PuntoEmisionInfo: React.FC = () => {
   const [actionsMenuPos, setActionsMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+
+  const [userDetailOpen, setUserDetailOpen] = useState(false);
+  const [selectedUserDetail, setSelectedUserDetail] = useState<any | null>(null);
+  const [userDetailLoading, setUserDetailLoading] = useState(false);
 
   const actionsButtonRef = React.useRef<HTMLButtonElement | null>(null);
 
@@ -138,9 +144,51 @@ const PuntoEmisionInfo: React.FC = () => {
     return 'unknown';
   };
 
+  const handleOpenUserDetail = async (userId: number) => {
+    setUserDetailLoading(true);
+    setUserDetailOpen(true);
+    setSelectedUserDetail(null);
+
+    try {
+      const response = await usuariosApi.get(userId);
+      let userData = response.data?.data ?? response.data;
+
+      if (
+        emisor &&
+        userData?.emisor_id != null &&
+        emisor?.id != null &&
+        String(userData.emisor_id) === String(emisor.id)
+      ) {
+        userData = {
+          ...userData,
+          emisor_ruc: emisor.ruc,
+          emisor_razon_social: emisor.razon_social,
+          emisor_estado: emisor.estado,
+        };
+      }
+
+      setSelectedUserDetail(userData);
+    } catch (error: any) {
+      show({ title: 'Error', message: 'No se pudo cargar la información del usuario', type: 'error' });
+      setUserDetailOpen(false);
+    } finally {
+      setUserDetailLoading(false);
+    }
+  };
+
   return (
     <div className="punto-info-page">
       <ImageViewerModal open={viewerOpen} imageUrl={viewerImage} onClose={() => setViewerOpen(false)} />
+      <UsuarioDetailModal
+        open={userDetailOpen}
+        user={selectedUserDetail}
+        loading={userDetailLoading}
+        onClose={() => {
+          setUserDetailOpen(false);
+          setSelectedUserDetail(null);
+          setUserDetailLoading(false);
+        }}
+      />
 
       {/* ========== HEADER PREMIUM ========== */}
       <div className="punto-info-header">
@@ -221,10 +269,7 @@ const PuntoEmisionInfo: React.FC = () => {
       {/* ========== BREADCRUMB CARDS ========== */}
       <div className="punto-breadcrumb-section">
         {/* Card Emisor */}
-        <Link
-          className="punto-breadcrumb-card emisor"
-          to={`/emisores/${id}`}
-        >
+        <div className="punto-breadcrumb-card emisor">
           <div className="punto-card-header">
             <div className="punto-card-icon">🏢</div>
             <span className="punto-card-title">Emisor</span>
@@ -232,7 +277,9 @@ const PuntoEmisionInfo: React.FC = () => {
           <div className="punto-card-body">
             <div className="punto-card-row">
               <span className="punto-card-label">RUC</span>
-              <span className="punto-card-value link">{emisor?.ruc ?? '-'}</span>
+              <Link className="punto-card-value link" to={`/emisores/${id}`} title="Ver emisor">
+                {emisor?.ruc ?? '-'}
+              </Link>
             </div>
             <div className="punto-card-row">
               <span className="punto-card-label">Razón Social</span>
@@ -245,13 +292,10 @@ const PuntoEmisionInfo: React.FC = () => {
               </span>
             </div>
           </div>
-        </Link>
+        </div>
 
         {/* Card Establecimiento */}
-        <Link
-          className="punto-breadcrumb-card establecimiento"
-          to={`/emisores/${id}/establecimientos/${estId}`}
-        >
+        <div className="punto-breadcrumb-card establecimiento">
           {establecimientoLogoUrl && (
             <img
               src={establecimientoLogoUrl}
@@ -259,7 +303,6 @@ const PuntoEmisionInfo: React.FC = () => {
               title="Haz clic para ampliar"
               className="punto-est-logo-corner"
               onClick={(e) => {
-                e.preventDefault();
                 e.stopPropagation();
                 setViewerImage(establecimientoLogoUrl);
                 setViewerOpen(true);
@@ -274,7 +317,13 @@ const PuntoEmisionInfo: React.FC = () => {
           <div className="punto-card-body">
             <div className="punto-card-row">
               <span className="punto-card-label">Código</span>
-              <span className="punto-card-value link">{establecimiento?.codigo ?? '-'}</span>
+              <Link
+                className="punto-card-value link"
+                to={`/emisores/${id}/establecimientos/${estId}`}
+                title="Ver establecimiento"
+              >
+                {establecimiento?.codigo ?? '-'}
+              </Link>
             </div>
             <div className="punto-card-row">
               <span className="punto-card-label">Nombre</span>
@@ -303,7 +352,7 @@ const PuntoEmisionInfo: React.FC = () => {
               </span>
             </div>
           </div>
-        </Link>
+        </div>
       </div>
 
       {/* ========== CONTENIDO PRINCIPAL ========== */}
@@ -391,10 +440,35 @@ const PuntoEmisionInfo: React.FC = () => {
             </div>
             <div className="punto-info-item">
               <span className="punto-info-label">Usuario Asociado</span>
-              {punto?.user_id ? (
-                <span className="punto-user-link">
-                  {punto?.user?.name ?? punto?.user_id}
-                </span>
+              {punto?.user?.id ? (
+                (() => {
+                  const roleValue = (punto.user?.role?.value ?? punto.user?.role ?? '').toString().toUpperCase();
+                  const username = (punto.user?.username ?? '').toString().toUpperCase();
+                  const nombres = (punto.user?.nombres ?? '').toString().toUpperCase();
+                  const apellidos = (punto.user?.apellidos ?? '').toString().toUpperCase();
+
+                  return (
+                    <span className="punto-info-value">
+                      {roleValue} –{' '}
+                      <button
+                        type="button"
+                        className="punto-user-link"
+                        title="Ver usuario"
+                        onClick={() => handleOpenUserDetail(punto.user.id)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          padding: 0,
+                          font: 'inherit',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {username}
+                      </button>
+                      {' '}– {nombres} – {apellidos}
+                    </span>
+                  );
+                })()
               ) : (
                 <span className="punto-info-value" style={{ color: '#94a3b8' }}>Sin asignar</span>
               )}
