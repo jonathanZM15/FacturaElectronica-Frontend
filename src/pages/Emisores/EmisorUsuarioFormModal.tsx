@@ -144,8 +144,16 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
 
     // HU: si el usuario logeado es GERENTE, solo puede asociar usuarios a sus establecimientos.
     if (currentUser?.role === 'gerente') {
-      const ids = Array.isArray(currentUser.establecimientos_ids)
-        ? currentUser.establecimientos_ids.map((v) => Number(v)).filter((n) => Number.isFinite(n))
+      let idsVal = currentUser.establecimientos_ids;
+      if (typeof idsVal === 'string') {
+        try {
+          idsVal = JSON.parse(idsVal);
+        } catch (e) {
+          idsVal = [];
+        }
+      }
+      const ids = Array.isArray(idsVal)
+        ? idsVal.map((v) => Number(v)).filter((n) => Number.isFinite(n))
         : [];
       const allowed = new Set(ids);
       base = base.filter((e) => allowed.has(Number(e.id)));
@@ -252,6 +260,9 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
       [estId]: value ? Number(value) : null
     }));
   }, []);
+
+  // HU: No se puede seleccionar establecimientos y puntos de emisor para el rol CAJERO creado por usuario de rol GERENTE
+  const disabledEmision = currentUser?.role === 'gerente' && role === 'cajero';
 
   const getPuntosForEstablecimiento = React.useCallback((estId: number) => {
     return puntosEmision
@@ -375,10 +386,8 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
         newErrors.establecimientos = 'No hay establecimientos disponibles (ABIERTO) para asignar al Emisor.';
       }
     } else if (role === 'gerente' || role === 'cajero') {
-      // Gerente y Cajero: establecimientos obligatorios
-      if (selectedEstablecimientos.length === 0) {
-        newErrors.establecimientos = 'Debe seleccionar al menos un establecimiento';
-      }
+      // Gerente y Cajero: establecimientos y puntos NO obligatorios
+      // Ya no forzamos seleccionar establishment
     }
 
     setErrors(newErrors);
@@ -403,9 +412,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
     const establecimientosOk =
       role === 'emisor'
         ? availableEstablecimientosIds.length > 0
-        : role === 'gerente' || role === 'cajero'
-          ? selectedEstablecimientos.length > 0
-          : true;
+        : true; // Gerentes y Cajeros no están obligados a seleccionar establecimientos
 
     const hasAnyInlineErrors = Object.values(errors).some((e) => e && e.length > 0);
 
@@ -437,7 +444,8 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
   ]);
 
   const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
+    // Almacenar en minúsculas y sin espacios inmediatamente
+    let value = e.target.value.toLowerCase().replace(/\s/g, '');
     setUsername(value);
 
     // Validación usando helper
@@ -504,43 +512,6 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
     const validation = validateCedulaEcuatoriana(value);
     const error = validation.valid ? '' : (validation.error || '');
     setErrors((prev) => ({ ...prev, cedula: error }));
-
-    if (cedulaCheckTimeoutRef.current) {
-      clearTimeout(cedulaCheckTimeoutRef.current);
-      cedulaCheckTimeoutRef.current = null;
-    }
-
-    // Solo verificar disponibilidad si la cédula es válida y completa
-    if (!validation.valid || value.length !== 10) {
-      return;
-    }
-
-    // En edición, si no cambió, no verificar
-    if (isEditing && value === (initialData?.cedula || '')) {
-      return;
-    }
-
-    const seq = ++cedulaCheckSeqRef.current;
-    cedulaCheckTimeoutRef.current = window.setTimeout(async () => {
-      setCheckingCedula(true);
-      try {
-        const res = await usuariosEmisorApi.checkCedula(value, editingId || undefined);
-        if (seq !== cedulaCheckSeqRef.current) return;
-
-        const available = res?.data?.available ?? !res?.data?.exists;
-        setErrors((prev) => ({
-          ...prev,
-          cedula: available ? '' : '❌ Esta cédula ya está registrada en el sistema.'
-        }));
-      } catch (err: any) {
-        if (seq !== cedulaCheckSeqRef.current) return;
-        show({ title: 'Error', message: 'No se pudo verificar la cédula', type: 'error' });
-      } finally {
-        if (seq === cedulaCheckSeqRef.current) {
-          setCheckingCedula(false);
-        }
-      }
-    }, 450);
   };
 
   const handleNombresChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -632,7 +603,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
           payload.puntos_emision_ids = puntosSeleccionados;
         }
       } else if (role === 'gerente' || role === 'cajero') {
-        // Gerente y Cajero: establecimientos obligatorios
+        // Gerente y Cajero: establecimientos y puntos ya NO obligatorios
         payload.establecimientos_ids = selectedEstablecimientos.length > 0 ? selectedEstablecimientos : [];
         if (isEditing || puntosSeleccionados.length > 0) {
           payload.puntos_emision_ids = puntosSeleccionados;
@@ -849,7 +820,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                       color: '#78350f',
                       letterSpacing: '-0.02em'
                     }}>
-                      Establecimientos <span style={{ color: '#dc2626' }}>*</span>
+                      Establecimientos (Opcional)
                     </h3>
                     <p style={{ 
                       fontSize: 13, 
@@ -857,7 +828,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                       margin: '4px 0 0',
                       fontWeight: 500
                     }}>
-                      Obligatorio para {role} - Selecciona los establecimientos asignados
+                      Opcional para {role} - Selecciona los establecimientos asignados
                     </p>
                   </div>
                 </div>
@@ -911,7 +882,8 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                             ? '2px solid #f59e0b'
                             : '2px solid #e2e8f0',
                           borderRadius: 10,
-                          cursor: 'pointer',
+                          cursor: disabledEmision ? 'not-allowed' : 'pointer',
+                          opacity: disabledEmision ? 0.6 : 1,
                           transition: 'all 0.2s ease',
                           position: 'relative',
                           overflow: 'hidden'
@@ -943,6 +915,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                         <input
                           type="checkbox"
                           checked={selectedEstablecimientos.includes(est.id)}
+                          disabled={disabledEmision}
                           onChange={(e) => {
                             if (e.target.checked) {
                               setSelectedEstablecimientos(prev => [...prev, est.id]);
@@ -958,7 +931,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                           }}
                           style={{ 
                             marginRight: 12, 
-                            cursor: 'pointer',
+                            cursor: disabledEmision ? 'not-allowed' : 'pointer',
                             width: 18,
                             height: 18,
                             accentColor: '#f59e0b'
@@ -991,6 +964,12 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                         }}>
                           {est.codigo} - {est.nombre}
                         </span>
+
+                        {disabledEmision && (
+                          <div style={{ marginLeft: 'auto', fontSize: '11px', color: '#ef4444', fontWeight: 500 }}>
+                            Restringido (CAJERO creado por GERENTE)
+                          </div>
+                        )}
                       </label>
                     ))}
                   </div>
@@ -1078,7 +1057,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                       margin: '4px 0 0',
                       fontWeight: 500
                     }}>
-                      Selecciona como máximo un punto de emisión para cada establecimiento asignado
+                      Seleccione únicamente un punto de emisión por cada establecimiento asignado
                     </p>
                   </div>
                 </div>
@@ -1118,7 +1097,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                     fontSize: 13,
                     fontWeight: 700
                   }}>
-                    ℹ️ Si no seleccionas ningún punto de emisión, el usuario no tendrá asignación de punto.
+                    ℹ️ Si no se selecciona un punto de emisión, el usuario no tendrá un punto de emisión asignado.
                   </div>
                 )}
                 {activeEstablecimientos.map((estId, index) => {
@@ -1203,7 +1182,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                           }}>
                             <span style={{ fontSize: 20 }}>⚠️</span>
                             <p style={{ fontSize: 13, color: '#92400e', margin: 0, fontWeight: 600 }}>
-                              No hay puntos de emisión disponibles (Activo y Libre) para este establecimiento
+                              No existen puntos de emisión disponibles (activos y libres) para este establecimiento
                             </p>
                           </div>
                         ) : (
@@ -1211,6 +1190,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                             <select
                               value={selectedPuntoId != null ? String(selectedPuntoId) : ''}
                               onChange={(e) => handlePuntoSelection(estId, e.target.value)}
+                              disabled={disabledEmision}
                               style={{
                                 width: '100%',
                                 padding: '12px 16px',
@@ -1219,12 +1199,15 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
                                 fontSize: 14,
                                 fontWeight: 600,
                                 color: '#334155',
-                                background: '#ffffff',
-                                cursor: 'pointer',
+                                background: disabledEmision ? '#f1f5f9' : '#ffffff',
+                                cursor: disabledEmision ? 'not-allowed' : 'pointer',
                                 transition: 'all 0.2s ease',
-                                outline: 'none'
+                                outline: 'none',
+                                opacity: disabledEmision ? 0.7 : 1
+                                
                               }}
                               onFocus={(e) => {
+                                if(disabledEmision) return;
                                 e.target.style.borderColor = index % 3 === 0 ? '#6366f1' : index % 3 === 1 ? '#8b5cf6' : '#ec4899';
                                 e.target.style.boxShadow = `0 0 0 3px ${
                                   index % 3 === 0 ? 'rgba(99, 102, 241, 0.1)' : 

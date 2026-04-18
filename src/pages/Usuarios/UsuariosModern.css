@@ -268,15 +268,18 @@ body, html {
 
 /* Contenedor de tabla premium */
 .usuarios-table-container {
-  background: white;
-  border-radius: 20px;
-  overflow: visible;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  background: linear-gradient(to bottom, #ffffff, #fafbfc);
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(99, 102, 241, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.5);
   margin-bottom: 24px;
   display: flex;
   flex-direction: column;
   max-height: none;
   min-height: 0;
+  border: 1px solid rgba(226, 232, 240, 0.6);
+  backdrop-filter: blur(10px);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .usuarios-table-wrapper {
@@ -284,6 +287,7 @@ body, html {
   overflow-y: visible;
   position: relative;
   z-index: auto;
+  border-radius: 24px;
 }
 
 /* Scrollbar personalizado */
@@ -313,11 +317,13 @@ body, html {
   border-spacing: 0;
 }
 
-/* Header de tabla con gradiente índigo */
+/* Header de tabla con gradiente índigo premium */
 .usuarios-table thead {
   position: sticky;
   top: 0;
   z-index: 20;
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  border-radius: 20px 20px 0 0;
 }
 
 .usuarios-table thead tr {
@@ -325,16 +331,24 @@ body, html {
 }
 
 .usuarios-table thead th {
-  padding: 14px 12px;
+  padding: 18px 16px;
   text-align: center;
   font-weight: 700;
   font-size: 11px;
   color: #ffffff;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
   border: none;
   white-space: nowrap;
   background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  user-select: none;
+}
+
+.usuarios-table thead th:hover {
+  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 /* Columna CÉDULA fija a la izquierda */
@@ -342,19 +356,20 @@ body, html {
   position: sticky;
   left: 0;
   z-index: 30;
-  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%) !important;
-  padding-left: 16px;
+  background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%) !important;
+  padding-left: 20px;
+  border-radius: 20px 0 0 0;
 }
 
 .usuarios-table tbody td:first-child {
   position: sticky;
   left: 0;
   z-index: 10;
-  background: #eef2ff !important;
+  background: linear-gradient(to right, #f3f0ff, #eef2ff) !important;
   font-weight: 700;
-  padding-left: 16px;
+  padding-left: 20px;
   white-space: nowrap;
-  border-right: 2px solid #c7d2fe;
+  border-right: 2px solid rgba(199, 210, 254, 0.5);
 }
 
 /* Columna ACCIONES fija a la derecha */
@@ -362,58 +377,66 @@ body, html {
   position: sticky;
   right: 0;
   z-index: 30;
-  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%) !important;
+  background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%) !important;
   text-align: center;
-  padding-right: 16px;
+  padding-right: 20px;
+  border-radius: 0 20px 0 0;
 }
 
 .usuarios-table tbody td:last-child {
   position: sticky;
   right: 0;
   z-index: 10;
-  background: #eef2ff !important;
-  padding-right: 16px;
-  border-left: 2px solid #c7d2fe;
+  background: linear-gradient(to left, #f3f0ff, #eef2ff) !important;
+  padding-right: 20px;
+  border-left: 2px solid rgba(199, 210, 254, 0.5);
 }
 
 /* Filas de la tabla */
 .usuarios-table tbody tr {
-  border-bottom: 1px solid #f3f4f6;
-  transition: all 0.3s ease;
+  border-bottom: 1px solid #f1f5f9;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
+  margin-bottom: 8px;
+  background: linear-gradient(to right, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 1));
 }
 
 .usuarios-table tbody tr:hover {
-  background: #f8fafc;
+  background: linear-gradient(135deg, #f0f4ff 0%, #faf8ff 100%);
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+  border-bottom-color: #e0e7ff;
 }
 
 /* Mantener fondo índigo claro en columnas sticky al hacer hover */
 .usuarios-table tbody tr:hover td:first-child,
 .usuarios-table tbody tr:hover td:last-child {
-  background: #e0e7ff !important;
+  background: #e8ebf8 !important;
 }
 
 .usuarios-table tbody tr:last-child {
-  border-bottom: none;
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 0;
 }
 
 .usuarios-table tbody td {
   text-align: center;
-  padding: 12px 10px;
+  padding: 16px 14px;
   color: #334155;
   font-size: 13px;
   vertical-align: middle;
   border-bottom: 1px solid #e2e8f0;
   white-space: nowrap;
   position: relative;
+  transition: all 0.3s ease;
 }
 
 .usuarios-table tbody td:first-child {
-  padding-left: 16px;
+  padding-left: 20px;
 }
 
 .usuarios-table tbody td:last-child {
-  padding-right: 16px;
+  padding-right: 20px;
 }
 
 /* Cédula clickeable mejorada */
@@ -422,16 +445,19 @@ body, html {
   font-weight: 700;
   cursor: pointer;
   text-decoration: none;
-  padding: 4px 8px;
-  border-radius: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
   display: inline-block;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
+  background: rgba(99, 102, 241, 0.06);
 }
 
 .cedula-link:hover {
-  background: #eef2ff;
+  background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
   color: #4338ca;
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
 }
 
 /* Formato mejorado para cédula */
@@ -482,21 +508,24 @@ body, html {
   font-size: 13px;
   font-weight: 600;
   color: #4f46e5;
-  background: transparent;
-  padding: 4px 8px;
-  border-radius: 6px;
+  background: rgba(99, 102, 241, 0.08);
+  padding: 6px 12px;
+  border-radius: 8px;
   display: inline-block;
   text-decoration: underline;
-  text-underline-offset: 2px;
+  text-underline-offset: 3px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  border: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(99, 102, 241, 0.2);
   appearance: none;
 }
 
 .username-link:hover {
-  background: #eef2ff;
+  background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
   color: #4338ca;
+  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+  transform: translateY(-2px);
 }
 
 .username-link:focus {

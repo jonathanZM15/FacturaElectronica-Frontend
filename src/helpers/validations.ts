@@ -94,8 +94,6 @@ export const validateUsername = (username: string): { valid: boolean; error?: st
     return { valid: false, error: 'El username es requerido' };
   }
 
-  // HU: el nombre de usuario acepta todo tipo de caracteres.
-  // Solo validamos longitud y que no sea solo espacios.
   if (username.trim().length < 3) {
     return { valid: false, error: 'El username debe tener al menos 3 caracteres' };
   }
@@ -104,9 +102,14 @@ export const validateUsername = (username: string): { valid: boolean; error?: st
     return { valid: false, error: 'El username es demasiado largo (máx. 255 caracteres)' };
   }
 
+  // Solo permite letras (a-z), números (0-9) y los caracteres especiales: punto (.), guion bajo (_) y guion medio (-).
+  // No se permiten espacios en blanco, tildes ni otros caracteres especiales.
+  if (!/^[a-z0-9._-]+$/.test(username)) {
+    return { valid: false, error: 'Solo permite letras minúsculas sin tildes, números, punto, guion bajo o medio. Sin espacios.' };
+  }
+
   return { valid: true };
 };
-
 /**
  * Valida nombres y apellidos
  */

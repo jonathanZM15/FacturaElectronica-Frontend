@@ -14,11 +14,7 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import SortArrow from '../../components/SortArrow';
 import { useRealtimeResource } from '../../hooks/useRealtimeResource';
 import {
-  navigateToEmisor,
-  navigateToEstablecimiento,
-  navigateToPuntoEmision,
-  formatEmisorInfo,
-  formatEstablecimientoInfo
+  formatEmisorInfo
 } from '../../helpers/navigation';
 
 interface ListResponse {
@@ -38,8 +34,7 @@ type SortDirection = 'asc' | 'desc';
 
 interface Filters {
   cedula: string;
-  nombres: string;
-  apellidos: string;
+  nombre: string;
   username: string;
   email: string;
   roles: string[];
@@ -55,8 +50,7 @@ interface Filters {
 
 const defaultFilters: Filters = {
   cedula: '',
-  nombres: '',
-  apellidos: '',
+  nombre: '',
   username: '',
   email: '',
   roles: [],
@@ -135,8 +129,8 @@ const Usuarios: React.FC = () => {
     sort_by: sortField,
     sort_dir: sortDirection,
     cedula: appliedFilters.cedula || undefined,
-    nombres: appliedFilters.nombres || undefined,
-    apellidos: appliedFilters.apellidos || undefined,
+    nombres: appliedFilters.nombre || undefined,
+    apellidos: appliedFilters.nombre || undefined,
     username: appliedFilters.username || undefined,
     email: appliedFilters.email || undefined,
     roles: appliedFilters.roles.length > 0 ? appliedFilters.roles : undefined,
@@ -218,8 +212,7 @@ const Usuarios: React.FC = () => {
 
     const hasTextOrDateFilters =
       appliedFilters.cedula.trim().length > 0 ||
-      appliedFilters.nombres.trim().length > 0 ||
-      appliedFilters.apellidos.trim().length > 0 ||
+      appliedFilters.nombre.trim().length > 0 ||
       appliedFilters.username.trim().length > 0 ||
       appliedFilters.email.trim().length > 0 ||
       appliedFilters.creator.trim().length > 0 ||
@@ -559,53 +552,40 @@ const Usuarios: React.FC = () => {
     label: string;
     width?: number;
     sortKey?: SortField;
+    isSticky?: boolean;
     render?: (row: User) => React.ReactNode;
   }> = [
     { 
-      key: 'cedula', 
-      label: 'Cédula', 
-      width: 120,
-      sortKey: 'cedula',
+      key: 'nombres', 
+      label: 'Usuario', 
+      width: 250,
+      sortKey: 'nombres',
+      isSticky: true,
       render: (row) => (
-        <span className="cedula-numero">{row.cedula || 'Sin cédula'}</span>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left' }}>
+          <span style={{ fontWeight: '600', color: '#111827' }}>
+            {row.nombres || ''} {row.apellidos || ''}
+          </span>
+          <span style={{ fontSize: '13px', color: '#6b7280', margin: '2px 0' }}>
+            {row.username || '—'} • {row.cedula || 'Sin cédula'}
+          </span>
+          {row.id ? (
+            <button
+              type="button"
+              className="user-link-btn"
+              onClick={() => handleOpenDetail(row)}
+              style={{ padding: 0, marginTop: '2px', background: 'none', border: 'none', color: '#4F46E5', fontSize: '13px', cursor: 'pointer', textAlign: 'left', fontWeight: '500' }}
+            >
+              Ver detalles
+            </button>
+          ) : null}
+        </div>
       )
     },
     { 
-      key: 'nombres', 
-      label: 'Nombres', 
-      width: 130,
-      sortKey: 'nombres',
-      render: (row) => <span className="nombre-cell">{row.nombres || '-'}</span>
-    },
-    { 
-      key: 'apellidos', 
-      label: 'Apellidos', 
-      width: 130,
-      sortKey: 'apellidos',
-      render: (row) => <span className="apellido-cell">{row.apellidos || '-'}</span>
-    },
-    { 
-      key: 'username', 
-      label: 'Usuario', 
-      width: 110,
-      sortKey: 'username',
-      render: (row) =>
-        row.id ? (
-          <button
-            type="button"
-            className="username-link"
-            onClick={() => handleOpenDetail(row)}
-          >
-            {row.username || '-'}
-          </button>
-        ) : (
-          <span className="username-cell">{row.username || '-'}</span>
-        )
-    },
-    { 
       key: 'email', 
-      label: 'Email', 
-      width: 200,
+      label: 'Correo electrónico', 
+      width: 220,
       sortKey: 'email',
       render: (row) => (
         <span className="email-cell">{row.email}</span>
@@ -627,8 +607,10 @@ const Usuarios: React.FC = () => {
                 href={`/emisores/${row.emisor_id}`}
                 onClick={(e) => {
                   e.preventDefault();
-                  navigateToEmisor(row.emisor_id as any);
+                  window.open(`/emisores/${row.emisor_id}`, '_blank');
                 }}
+                target="_blank"
+                rel="noopener noreferrer"
               >
                 {text}
               </a>
@@ -641,77 +623,93 @@ const Usuarios: React.FC = () => {
     },
     {
       key: 'establecimientos',
-      label: 'Establecimientos',
-      width: 180,
+      label: 'Establecimiento - Punto de emisión',
+      width: 300,
       render: (row) => {
         const establecimientos = row.establecimientos || [];
-        if (establecimientos.length === 0) return '-';
+        const puntos = row.puntos_emision || [];
+        
+        if (establecimientos.length === 0 && puntos.length === 0) return '-';
 
         return (
           <div className="list-items">
             {establecimientos.map((est) => {
-              const label = formatEstablecimientoInfo(est.codigo, est.nombre);
-              const canLink = !!row.emisor_id && !!est.id;
-              return (
-                <div className="list-item-link" key={String(est.id ?? est.codigo)}>
-                  {canLink ? (
-                    <a
-                      href={`/emisores/${row.emisor_id}/establecimientos/${est.id}`}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        navigateToEstablecimiento(row.emisor_id as any, est.id as any);
-                      }}
-                    >
-                      {label}
-                    </a>
-                  ) : (
-                    <span>{label}</span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        );
-      },
-    },
-    {
-      key: 'puntos_emision',
-      label: 'Puntos de emisión',
-      width: 220,
-      render: (row) => {
-        const puntos = row.puntos_emision || [];
-        if (puntos.length === 0) return '-';
+              const ptsEst = puntos.filter(p => String(p.establecimiento_id) === String(est.id));
+              
+              if (ptsEst.length === 0) {
+                const labelEst = `${est.codigo || ''} - ${est.nombre || ''}`;
+                const canLinkEst = !!row.emisor_id && !!est.id;
 
-        const establecimientos = row.establecimientos || [];
+                return (
+                  <div className="list-item-link" key={`est-${est.id ?? est.codigo}`}>
+                    <div className="est-info" style={{ fontWeight: 600 }}>
+                      {canLinkEst ? (
+                        <a
+                          href={`/emisores/${row.emisor_id}/establecimientos/${est.id}`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            window.open(`/emisores/${row.emisor_id}/establecimientos/${est.id}`, '_blank');
+                          }}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {labelEst}
+                        </a>
+                      ) : (
+                        <span>{labelEst}</span>
+                      )}
+                      <span style={{color: '#64748b', fontWeight: 'normal'}}> - Sin punto asignado</span>
+                    </div>
+                  </div>
+                );
+              }
 
-        return (
-          <div className="list-items">
-            {puntos.map((p) => {
-              const estCodigo =
-                p.establecimiento_codigo ||
-                establecimientos.find((e) => String(e.id) === String(p.establecimiento_id))?.codigo ||
-                '—';
+              return ptsEst.map((p) => {
+                const labelEst = `${est.codigo || ''} - ${est.nombre || ''}`;
+                const labelPunto = `${p.codigo || ''} - ${p.nombre || ''}`;
+                const canLinkEst = !!row.emisor_id && !!est.id;
+                const canLinkPunto = !!row.emisor_id && !!p.id && !!est.id;
 
-              const label = `${estCodigo} – ${p.codigo || '—'} – ${p.nombre || '—'}`;
-              const canLink = !!row.emisor_id && !!p.establecimiento_id && !!p.id;
-
-              return (
-                <div className="list-item-link" key={String(p.id ?? `${p.establecimiento_id}-${p.codigo}`)}>
-                  {canLink ? (
-                    <a
-                      href={`/emisores/${row.emisor_id}/establecimientos/${p.establecimiento_id}/puntos/${p.id}`}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        navigateToPuntoEmision(row.emisor_id as any, p.establecimiento_id as any, p.id as any);
-                      }}
-                    >
-                      {label}
-                    </a>
-                  ) : (
-                    <span>{label}</span>
-                  )}
-                </div>
-              );
+                return (
+                  <div className="list-item-link" key={`est-pto-${est.id}-${p.id}`}>
+                    <div className="est-info">
+                      <strong>
+                      {canLinkEst ? (
+                        <a
+                          href={`/emisores/${row.emisor_id}/establecimientos/${est.id}`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            window.open(`/emisores/${row.emisor_id}/establecimientos/${est.id}`, '_blank');
+                          }}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {labelEst}
+                        </a>
+                      ) : (
+                        <span>{labelEst}</span>
+                      )}
+                      </strong>
+                      <span style={{color: '#64748b'}}> - </span>
+                      {canLinkPunto ? (
+                        <a
+                          href={`/emisores/${row.emisor_id}/establecimientos/${est.id}/puntos/${p.id}`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            window.open(`/emisores/${row.emisor_id}/establecimientos/${est.id}/puntos/${p.id}`, '_blank');
+                          }}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {labelPunto}
+                        </a>
+                      ) : (
+                        <span>{labelPunto}</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              });
             })}
           </div>
         );
@@ -942,42 +940,32 @@ const Usuarios: React.FC = () => {
             </div>
 
             <div className="usuarios-filter-group">
-              <label>👤 Nombres</label>
+              <label>👤 Nombre</label>
               <input
                 type="text"
-                value={filters.nombres}
-                onChange={(e) => setFilters({...filters, nombres: e.target.value})}
-                placeholder="Buscar por nombres"
+                value={filters.nombre}
+                onChange={(e) => setFilters({...filters, nombre: e.target.value})}
+                placeholder="Buscar por nombres o apellidos"
               />
             </div>
 
             <div className="usuarios-filter-group">
-              <label>👥 Apellidos</label>
-              <input
-                type="text"
-                value={filters.apellidos}
-                onChange={(e) => setFilters({...filters, apellidos: e.target.value})}
-                placeholder="Buscar por apellidos"
-              />
-            </div>
-
-            <div className="usuarios-filter-group">
-              <label>📝 Username</label>
+              <label>📝 Nombre de usuario</label>
               <input
                 type="text"
                 value={filters.username}
                 onChange={(e) => setFilters({...filters, username: e.target.value})}
-                placeholder="Buscar por username"
+                placeholder="Buscar por nombre de usuario"
               />
             </div>
 
             <div className="usuarios-filter-group">
-              <label>📧 Email</label>
+              <label>📧 Correo electrónico</label>
               <input
                 type="text"
                 value={filters.email}
                 onChange={(e) => setFilters({...filters, email: e.target.value})}
-                placeholder="Buscar por email"
+                placeholder="Buscar por correo electrónico"
               />
             </div>
 
@@ -1119,7 +1107,7 @@ const Usuarios: React.FC = () => {
                     return (
                       <th
                         key={col.key}
-                        style={{ minWidth: col.width, cursor: sortable ? 'pointer' : 'default' }}
+                        style={col.isSticky ? { minWidth: col.width, cursor: sortable ? 'pointer' : 'default', position: 'sticky', left: 0, zIndex: 10, background: '#f8fafc' } : { minWidth: col.width, cursor: sortable ? 'pointer' : 'default' }}
                         onClick={() => {
                           if (!sortable) return;
                           handleSort(col.sortKey!);

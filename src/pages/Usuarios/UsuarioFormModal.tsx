@@ -290,30 +290,6 @@ const UsuarioFormModal: React.FC<Props> = ({
     let error = validation.valid ? '' : (validation.error || '');
     
     setErrors(prev => ({ ...prev, cedula: error }));
-    
-    // Verificar disponibilidad si tiene 10 dígitos y es válida
-    if (value.length === 10 && !error && !isEditing) {
-      setCheckingCedula(true);
-      setTimeout(async () => {
-        try {
-          const res = await usuariosApi.checkCedula(value);
-          const available = res?.data?.available ?? !res?.data?.exists;
-          if (!available) {
-            setErrors(prev => ({ ...prev, cedula: '❌ Esta cédula ya está registrada en el sistema' }));
-          } else {
-            setErrors(prev => {
-              const newErrors = { ...prev };
-              delete newErrors.cedula;
-              return newErrors;
-            });
-          }
-        } catch (err: any) {
-          // Si hay error de red/servidor, no bloquear el formulario con un falso positivo
-        } finally {
-          setCheckingCedula(false);
-        }
-      }, 500);
-    }
   };
 
   const handleNombresChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -343,7 +319,8 @@ const UsuarioFormModal: React.FC<Props> = ({
   };
 
   const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
+    // Almacenar en minúsculas y sin espacios inmediatamente
+    let value = e.target.value.toLowerCase().replace(/\s/g, '');
     setUsername(value);
     
     // Validación usando helper

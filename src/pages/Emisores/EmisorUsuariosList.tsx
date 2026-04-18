@@ -858,8 +858,27 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
                         <div className="eu-registro-cell">
                           {shouldShowCreador(u.created_by_role) && u.created_by_username ? (
                             <div className="eu-creator-info">
-                              <span className="eu-creator-role">{u.created_by_role?.charAt(0).toUpperCase()}{u.created_by_role?.slice(1)}</span>
-                              <span className="eu-creator-name">{u.created_by_username}</span>
+                              {u.created_by_id && onViewDetail ? (
+                                <button 
+                                  className="eu-creator-link"
+                                  onClick={() => {
+                                    // Intentar obtener el usuario creador como objeto completo
+                                    const creator = usuarios.find(us => us.id === u.created_by_id);
+                                    if (creator) {
+                                      onViewDetail(creator);
+                                    }
+                                  }}
+                                  title={`Ver ${u.created_by_username}`}
+                                >
+                                  <span className="eu-creator-role">{u.created_by_role?.charAt(0).toUpperCase()}{u.created_by_role?.slice(1)}</span>
+                                  <span className="eu-creator-name">{u.created_by_username}</span>
+                                </button>
+                              ) : (
+                                <div>
+                                  <span className="eu-creator-role">{u.created_by_role?.charAt(0).toUpperCase()}{u.created_by_role?.slice(1)}</span>
+                                  <span className="eu-creator-name">{u.created_by_username}</span>
+                                </div>
+                              )}
                             </div>
                           ) : null}
                           {u.created_at && (
