@@ -603,7 +603,7 @@ const UsuarioFormModal: React.FC<Props> = ({
                   onChange={handleEmailChange}
                   placeholder="usuario@example.com"
                   className={errors.email ? 'usuario-form-input error' : 'usuario-form-input'}
-                  disabled={loading || (isEditing && estado !== 'nuevo')}
+                  disabled={loading || (isEditing && !['nuevo', 'activo'].includes(estado))}
                   autoComplete="off"
                 />
                 {errors.email && (

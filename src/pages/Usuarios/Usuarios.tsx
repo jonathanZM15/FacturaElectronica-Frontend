@@ -7,6 +7,7 @@ import { emisoresApi } from '../../services/emisoresApi';
 import UsuarioFormModal from './UsuarioFormModal';
 import UsuarioDetailModal from './UsuarioDetailModal';
 import UsuarioDeleteModal from './UsuarioDeleteModal';
+import ChangeEmailModal from './ChangeEmailModal';
 import { User } from '../../types/user';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useUser } from '../../contexts/userContext';
@@ -83,6 +84,8 @@ const Usuarios: React.FC = () => {
   const [openDetail, setOpenDetail] = React.useState(false);
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
   const [detailLoading, setDetailLoading] = React.useState(false);
+  const [openChangeEmail, setOpenChangeEmail] = React.useState(false);
+  const [userToChangeEmail, setUserToChangeEmail] = React.useState<User | null>(null);
   const [sortField, setSortField] = React.useState<SortField>('created_at');
   const [sortDirection, setSortDirection] = React.useState<SortDirection>('desc');
   const [showFilters, setShowFilters] = React.useState(false);
@@ -1176,6 +1179,28 @@ const Usuarios: React.FC = () => {
                         >
                           🗑️
                         </button>
+                        {user.estado === 'activo' && (
+                          <button
+                            className="btn-action"
+                            onClick={() => {
+                              if (!canEditUser(user)) {
+                                show({
+                                  title: 'No permitido',
+                                  message: 'No tienes permisos para cambiar correo a este usuario.',
+                                  type: 'error',
+                                });
+                                return;
+                              }
+                              setUserToChangeEmail(user);
+                              setOpenChangeEmail(true);
+                            }}
+                            disabled={!canEditUser(user)}
+                            title={canEditUser(user) ? 'Cambiar correo' : 'No tienes permisos'}
+                            style={{ color: '#ec4899' }}
+                          >
+                            📧
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -1305,6 +1330,18 @@ const Usuarios: React.FC = () => {
           setDeletingUser(null);
         }}
         onSubmit={handleConfirmDelete}
+      />
+
+      <ChangeEmailModal
+        isOpen={openChangeEmail}
+        user={userToChangeEmail}
+        onClose={() => {
+          setOpenChangeEmail(false);
+          setUserToChangeEmail(null);
+        }}
+        onSuccess={() => {
+          refetch();
+        }}
       />
 
       {estadoTooltip &&
