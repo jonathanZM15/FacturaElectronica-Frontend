@@ -46,4 +46,9 @@ export const usuariosApi = {
   resendVerificationEmail(id: number | string, nuevoEstado?: string) {
     return api.post(`/api/usuarios/${id}/resend-verification`, { estado: nuevoEstado });
   },
+
+  // Solicitar cambio de email
+  requestEmailChange(id: number | string, newEmail: string) {
+    return api.post(`/api/usuarios/${id}/request-email-change`, { email: newEmail });
+  },
 };

@@ -22,6 +22,7 @@ export const auth = {
   logout: () => api.post('/api/logout'),
   me: () => api.get('/api/user'),
   verifyEmail: (token: string) => api.post('/api/verify-email', { token }),
+  confirmEmailChange: (token: string) => api.post('/api/confirm-email-change', { token }),
   changeInitialPassword: (token: string, password: string, password_confirmation: string) => 
     api.post('/api/change-initial-password', { token, password, password_confirmation }),
 };

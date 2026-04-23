@@ -54,22 +54,22 @@ const ChangeEmailModal: React.FC<Props> = ({ isOpen, user, onClose, onSuccess })
 
     setLoading(true);
     try {
-      // Llamar al endpoint de actualización de usuario con el nuevo email
-      await usuariosApi.update(user.id, { email: newEmail.trim() });
+      // Llamar al nuevo endpoint de solicitud de cambio de email
+      await usuariosApi.requestEmailChange(user.id, newEmail.trim());
 
-      setSuccessMessage('✅ Correo cambiado exitosamente. Se han enviado correos de confirmación a ambas direcciones.');
+      setSuccessMessage('✅ ¡Correos enviados exitosamente!\n\nSe han enviado correos de confirmación a:\n📧 ' + user.email + ' → Notificación del cambio\n📧 ' + newEmail.trim() + ' → Link para confirmar (válido 48h)\n\nRevisa tu bandeja de entrada y confirma desde el nuevo correo.');
       
       // Limpiar formulario
       setNewEmail('');
       setConfirmEmail('');
       setErrors({});
 
-      // Cerrar después de 2 segundos
+      // Cerrar después de 4 segundos
       setTimeout(() => {
         onClose();
         setSuccessMessage('');
         onSuccess();
-      }, 2000);
+      }, 4000);
     } catch (error: any) {
       setLoading(false);
       const errorMessage = error?.response?.data?.message || error?.message || 'Error al cambiar el correo';
@@ -98,7 +98,17 @@ const ChangeEmailModal: React.FC<Props> = ({ isOpen, user, onClose, onSuccess })
         </div>
 
         <div className="modal-body" style={{ padding: '22px 22px 0px 22px' }}>
-          {loading && <LoadingSpinner />}
+          {loading && (
+            <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+              <LoadingSpinner />
+              <h3 style={{ color: '#6366f1', marginTop: '20px', fontSize: '16px', fontWeight: '600' }}>
+                📧 Enviando correos de confirmación...
+              </h3>
+              <p style={{ color: '#666', marginTop: '8px', fontSize: '13px' }}>
+                Por favor espera mientras enviamos los correos a ambas direcciones
+              </p>
+            </div>
+          )}
 
           {!loading && (
             <>
@@ -110,11 +120,12 @@ const ChangeEmailModal: React.FC<Props> = ({ isOpen, user, onClose, onSuccess })
 
               {/* Mensaje de éxito */}
               {successMessage && (
-                <div style={{ marginBottom: '12px', padding: '10px 12px', backgroundColor: 'linear-gradient(135deg, rgba(34, 197, 94, 0.08) 0%, rgba(74, 222, 128, 0.08) 100%)', borderRadius: '8px', borderLeft: '3px solid #22c55e', animation: 'slideIn 0.3s ease-out' }}>
-                  <p style={{ margin: 0, fontSize: '11px', color: '#166534', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '5px', lineHeight: '1.3' }}>
-                    <span>✅</span>
-                    {successMessage}
-                  </p>
+                <div style={{ marginBottom: '12px', padding: '12px 14px', backgroundColor: 'linear-gradient(135deg, rgba(34, 197, 94, 0.08) 0%, rgba(74, 222, 128, 0.08) 100%)', borderRadius: '8px', borderLeft: '3px solid #22c55e', animation: 'slideIn 0.3s ease-out' }}>
+                  <div style={{ margin: 0, fontSize: '12px', color: '#166534', fontWeight: '500', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
+                    {successMessage.split('\n').map((line, idx) => (
+                      <div key={idx}>{line}</div>
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -305,7 +316,7 @@ const ChangeEmailModal: React.FC<Props> = ({ isOpen, user, onClose, onSuccess })
               }
             }}
           >
-            {loading ? '⏳ Procesando...' : '✉️ Cambiar'}
+            {loading ? '📧 Enviando correos...' : '✉️ Cambiar'}
           </button>
         </div>
       </div>

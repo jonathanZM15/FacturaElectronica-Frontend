@@ -5,6 +5,7 @@ import { useNotification } from '../../contexts/NotificationContext';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { usuariosApi } from '../../services/usuariosApi';
 import { validateCedulaEcuatoriana, validateEmail, validateUsername, validateNombre } from '../../helpers/validations';
+import ChangeEmailModal from './ChangeEmailModal';
 import './UsuarioFormModalModern.css';
 
 interface Props {
@@ -157,6 +158,7 @@ const UsuarioFormModal: React.FC<Props> = ({
   const [checkingCedula, setCheckingCedula] = React.useState<boolean>(false);
   const [checkingEmail, setCheckingEmail] = React.useState<boolean>(false);
   const [resendingEmail, setResendingEmail] = React.useState<boolean>(false);
+  const [showChangeEmailModal, setShowChangeEmailModal] = React.useState<boolean>(false);
 
   // Memoizar rolesPermitidos para evitar recálculos infinitos
   const rolesPermitidos = React.useMemo(() => {
@@ -603,7 +605,7 @@ const UsuarioFormModal: React.FC<Props> = ({
                   onChange={handleEmailChange}
                   placeholder="usuario@example.com"
                   className={errors.email ? 'usuario-form-input error' : 'usuario-form-input'}
-                  disabled={loading || (isEditing && !['nuevo', 'activo'].includes(estado))}
+                  disabled={loading || (isEditing && estado !== 'nuevo')}
                   autoComplete="off"
                 />
                 {errors.email && (
@@ -836,6 +838,19 @@ const UsuarioFormModal: React.FC<Props> = ({
               </button>
             )}
 
+            {/* Botón Cambio de Correo - Solo visible en edición y cuando el usuario NO es nuevo */}
+            {isEditing && estado !== 'nuevo' && (
+              <button 
+                type="button"
+                className="usuario-btn usuario-btn-secondary"
+                onClick={() => setShowChangeEmailModal(true)}
+                disabled={loading}
+                title="Cambiar la dirección de correo del usuario"
+              >
+                ✉️ Cambio de Correo
+              </button>
+            )}
+
             <button 
               type="submit" 
               className="usuario-btn usuario-btn-submit" 
@@ -874,6 +889,17 @@ const UsuarioFormModal: React.FC<Props> = ({
             </button>
           </div>
           </form>
+
+          {/* Modal para cambio de correo */}
+          <ChangeEmailModal
+            isOpen={showChangeEmailModal}
+            onClose={() => setShowChangeEmailModal(false)}
+            user={initialData}
+            onSuccess={() => {
+              setShowChangeEmailModal(false);
+              // Aquí podríamos refrescar los datos del usuario si es necesario
+            }}
+          />
         </div>
       </div>
     </div>

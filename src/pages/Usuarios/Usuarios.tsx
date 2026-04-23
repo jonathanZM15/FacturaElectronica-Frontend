@@ -7,7 +7,6 @@ import { emisoresApi } from '../../services/emisoresApi';
 import UsuarioFormModal from './UsuarioFormModal';
 import UsuarioDetailModal from './UsuarioDetailModal';
 import UsuarioDeleteModal from './UsuarioDeleteModal';
-import ChangeEmailModal from './ChangeEmailModal';
 import { User } from '../../types/user';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useUser } from '../../contexts/userContext';
@@ -35,7 +34,8 @@ type SortDirection = 'asc' | 'desc';
 
 interface Filters {
   cedula: string;
-  nombre: string;
+  nombres: string;
+  apellidos: string;
   username: string;
   email: string;
   roles: string[];
@@ -51,7 +51,8 @@ interface Filters {
 
 const defaultFilters: Filters = {
   cedula: '',
-  nombre: '',
+  nombres: '',
+  apellidos: '',
   username: '',
   email: '',
   roles: [],
@@ -84,8 +85,6 @@ const Usuarios: React.FC = () => {
   const [openDetail, setOpenDetail] = React.useState(false);
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
   const [detailLoading, setDetailLoading] = React.useState(false);
-  const [openChangeEmail, setOpenChangeEmail] = React.useState(false);
-  const [userToChangeEmail, setUserToChangeEmail] = React.useState<User | null>(null);
   const [sortField, setSortField] = React.useState<SortField>('created_at');
   const [sortDirection, setSortDirection] = React.useState<SortDirection>('desc');
   const [showFilters, setShowFilters] = React.useState(false);
@@ -132,8 +131,8 @@ const Usuarios: React.FC = () => {
     sort_by: sortField,
     sort_dir: sortDirection,
     cedula: appliedFilters.cedula || undefined,
-    nombres: appliedFilters.nombre || undefined,
-    apellidos: appliedFilters.nombre || undefined,
+    nombres: appliedFilters.nombres || undefined,
+    apellidos: appliedFilters.apellidos || undefined,
     username: appliedFilters.username || undefined,
     email: appliedFilters.email || undefined,
     roles: appliedFilters.roles.length > 0 ? appliedFilters.roles : undefined,
@@ -215,7 +214,8 @@ const Usuarios: React.FC = () => {
 
     const hasTextOrDateFilters =
       appliedFilters.cedula.trim().length > 0 ||
-      appliedFilters.nombre.trim().length > 0 ||
+      appliedFilters.nombres.trim().length > 0 ||
+      appliedFilters.apellidos.trim().length > 0 ||
       appliedFilters.username.trim().length > 0 ||
       appliedFilters.email.trim().length > 0 ||
       appliedFilters.creator.trim().length > 0 ||
@@ -943,12 +943,22 @@ const Usuarios: React.FC = () => {
             </div>
 
             <div className="usuarios-filter-group">
-              <label>👤 Nombre</label>
+              <label>👤 Nombres</label>
               <input
                 type="text"
-                value={filters.nombre}
-                onChange={(e) => setFilters({...filters, nombre: e.target.value})}
-                placeholder="Buscar por nombres o apellidos"
+                value={filters.nombres}
+                onChange={(e) => setFilters({...filters, nombres: e.target.value})}
+                placeholder="Buscar por nombres"
+              />
+            </div>
+
+            <div className="usuarios-filter-group">
+              <label>👥 Apellidos</label>
+              <input
+                type="text"
+                value={filters.apellidos}
+                onChange={(e) => setFilters({...filters, apellidos: e.target.value})}
+                placeholder="Buscar por apellidos"
               />
             </div>
 
@@ -1179,28 +1189,6 @@ const Usuarios: React.FC = () => {
                         >
                           🗑️
                         </button>
-                        {user.estado === 'activo' && (
-                          <button
-                            className="btn-action"
-                            onClick={() => {
-                              if (!canEditUser(user)) {
-                                show({
-                                  title: 'No permitido',
-                                  message: 'No tienes permisos para cambiar correo a este usuario.',
-                                  type: 'error',
-                                });
-                                return;
-                              }
-                              setUserToChangeEmail(user);
-                              setOpenChangeEmail(true);
-                            }}
-                            disabled={!canEditUser(user)}
-                            title={canEditUser(user) ? 'Cambiar correo' : 'No tienes permisos'}
-                            style={{ color: '#ec4899' }}
-                          >
-                            📧
-                          </button>
-                        )}
                       </div>
                     </td>
                   </tr>
@@ -1330,18 +1318,6 @@ const Usuarios: React.FC = () => {
           setDeletingUser(null);
         }}
         onSubmit={handleConfirmDelete}
-      />
-
-      <ChangeEmailModal
-        isOpen={openChangeEmail}
-        user={userToChangeEmail}
-        onClose={() => {
-          setOpenChangeEmail(false);
-          setUserToChangeEmail(null);
-        }}
-        onSuccess={() => {
-          refetch();
-        }}
       />
 
       {estadoTooltip &&

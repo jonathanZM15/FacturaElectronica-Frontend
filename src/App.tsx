@@ -5,6 +5,7 @@ import Login from './pages/Auth/Login';
 import PasswordRecovery from './pages/Auth/PasswordRecovery';
 import CambiarPassword from './pages/Auth/cambiarPassword';
 import VerifyEmail from './pages/Auth/VerifyEmail';
+import ConfirmEmailChange from './pages/Auth/ConfirmEmailChange';
 import ChangePassword from './pages/Auth/ChangePassword';
 import { auth } from './services/api';
 import { UserProvider, useUser } from './contexts/userContext';
@@ -45,6 +46,7 @@ function App() {
               <Route path="/PasswordRecovery" element={<PasswordRecovery/>} />
               <Route path="/cambiarPassword" element={<CambiarPassword />} />
               <Route path="/verify-email" element={<VerifyEmail />} />
+              <Route path="/confirm-email-change" element={<ConfirmEmailChange />} />
               <Route path="/change-password" element={<ChangePassword />} />
 
               {/* Protegidas con layout (Navbar + contenido dinámico) */}
