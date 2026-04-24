@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import { useNotification } from '../../contexts/NotificationContext';
 import { usuariosApi } from '../../services/usuariosApi';
 
 interface Props {
@@ -10,11 +11,11 @@ interface Props {
 }
 
 const ChangeEmailModal: React.FC<Props> = ({ isOpen, user, onClose, onSuccess }) => {
+  const { show } = useNotification();
   const [newEmail, setNewEmail] = useState('');
   const [confirmEmail, setConfirmEmail] = useState('');
   const [errors, setErrors] = useState<{ newEmail?: string; confirmEmail?: string; general?: string }>({});
   const [loading, setLoading] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
 
   const validateEmails = (): boolean => {
     const newErrors: typeof errors = {};
@@ -54,22 +55,17 @@ const ChangeEmailModal: React.FC<Props> = ({ isOpen, user, onClose, onSuccess })
 
     setLoading(true);
     try {
-      // Llamar al nuevo endpoint de solicitud de cambio de email
       await usuariosApi.requestEmailChange(user.id, newEmail.trim());
-
-      setSuccessMessage('✅ ¡Correos enviados exitosamente!\n\nSe han enviado correos de confirmación a:\n📧 ' + user.email + ' → Notificación del cambio\n📧 ' + newEmail.trim() + ' → Link para confirmar (válido 48h)\n\nRevisa tu bandeja de entrada y confirma desde el nuevo correo.');
-      
-      // Limpiar formulario
+      show({
+        title: '✅ Cambio de Correo',
+        message: `Se enviaron los correos de confirmación a ${user.email} y ${newEmail.trim()}.`,
+        type: 'success',
+      });
       setNewEmail('');
       setConfirmEmail('');
       setErrors({});
-
-      // Cerrar después de 4 segundos
-      setTimeout(() => {
-        onClose();
-        setSuccessMessage('');
-        onSuccess();
-      }, 4000);
+      setLoading(false);
+      onSuccess();
     } catch (error: any) {
       setLoading(false);
       const errorMessage = error?.response?.data?.message || error?.message || 'Error al cambiar el correo';
@@ -81,7 +77,6 @@ const ChangeEmailModal: React.FC<Props> = ({ isOpen, user, onClose, onSuccess })
     setNewEmail('');
     setConfirmEmail('');
     setErrors({});
-    setSuccessMessage('');
     onClose();
   };
 
@@ -117,17 +112,6 @@ const ChangeEmailModal: React.FC<Props> = ({ isOpen, user, onClose, onSuccess })
                 <p style={{ margin: '0 0 5px 0', fontSize: '11px', color: '#4f46e5', fontWeight: '700', letterSpacing: '0.3px', textTransform: 'uppercase' }}>👤 {user.nombres || 'Usuario'}</p>
                 <p style={{ margin: 0, fontSize: '12px', color: '#475569', display: 'flex', alignItems: 'center', gap: '4px' }}><span>📧</span>{user.email}</p>
               </div>
-
-              {/* Mensaje de éxito */}
-              {successMessage && (
-                <div style={{ marginBottom: '12px', padding: '12px 14px', backgroundColor: 'linear-gradient(135deg, rgba(34, 197, 94, 0.08) 0%, rgba(74, 222, 128, 0.08) 100%)', borderRadius: '8px', borderLeft: '3px solid #22c55e', animation: 'slideIn 0.3s ease-out' }}>
-                  <div style={{ margin: 0, fontSize: '12px', color: '#166534', fontWeight: '500', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
-                    {successMessage.split('\n').map((line, idx) => (
-                      <div key={idx}>{line}</div>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               {/* Error general */}
               {errors.general && (

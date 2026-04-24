@@ -500,6 +500,7 @@ const UsuarioFormModal: React.FC<Props> = ({
         message: notif.message, 
         type: 'success' 
       });
+      onClose();
 
     } catch (error: any) {
       const errorMsg = error.response?.data?.message || 'Error al reenviar el correo';
@@ -534,6 +535,7 @@ const UsuarioFormModal: React.FC<Props> = ({
       };
 
       await onSubmit(dataToSubmit);
+      onClose();
     } finally {
       setLoading(false);
     }
@@ -897,7 +899,7 @@ const UsuarioFormModal: React.FC<Props> = ({
             user={initialData}
             onSuccess={() => {
               setShowChangeEmailModal(false);
-              // Aquí podríamos refrescar los datos del usuario si es necesario
+              onClose();
             }}
           />
         </div>
