@@ -45,4 +45,10 @@ export const emisores = {
   create: (payload: Record<string, any>) => api.post('/api/emisores', payload),
 };
 
+export const facturacion = {
+  emitir: (formData: FormData) => api.post('/api/facturacion/emitir', formData),
+  estado: (comprobanteId: number) => api.get(`/api/facturacion/comprobantes/${comprobanteId}`),
+  reintentar: (comprobanteId: number) => api.post(`/api/facturacion/comprobantes/${comprobanteId}/reintentar`),
+};
+
 export default api;

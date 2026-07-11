@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { facturacion } from '../../services/api';
 
 interface Resultado {
   tipo: 'exito' | 'error';
@@ -10,7 +11,12 @@ const PruebaEmisionComprobante: React.FC = () => {
   const [firmaArchivo, setFirmaArchivo] = useState<File | null>(null);
   const [password, setPassword] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
+  const [comprobanteId, setComprobanteId] = useState<number | null>(null);
+  const [consultaId, setConsultaId] = useState<string>('');
+  const [consultaLoading, setConsultaLoading] = useState<boolean>(false);
+  const [consultaResultado, setConsultaResultado] = useState<Resultado | null>(null);
   const [resultado, setResultado] = useState<Resultado | null>(null);
+  const pollerRef = useRef<number | null>(null);
 
   const payloadPrueba = {
     emisor_id: 1,
@@ -56,25 +62,103 @@ const PruebaEmisionComprobante: React.FC = () => {
     formData.append('payload', JSON.stringify(payloadPrueba));
 
     try {
-      // Usa el servicio base de Axios si existe, o fetch
-      const response = await fetch('http://localhost:8000/api/facturacion/emitir', {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await response.json();
-
-      if (response.ok || response.status === 202) {
-        setResultado({ tipo: 'exito', mensaje: 'Petición enviada correctamente.', data });
-      } else {
-        setResultado({ tipo: 'error', mensaje: 'Error de validación del servidor.', data });
-      }
+      const response = await facturacion.emitir(formData);
+      setResultado({ tipo: 'exito', mensaje: 'Petición enviada correctamente.', data: response.data });
+      setComprobanteId(response.data?.comprobante_id ?? null);
     } catch (error) {
       console.error("Error al enviar petición:", error);
-      setResultado({ tipo: 'error', mensaje: 'Error de conexión con el backend.' });
+      const axiosError = error as any;
+      const backendMessage = axiosError?.response?.data?.message || axiosError?.response?.data?.error || 'Error de conexión con el backend.';
+      const backendErrors = axiosError?.response?.data?.errors;
+
+      setResultado({
+        tipo: 'error',
+        mensaje: backendMessage,
+        data: backendErrors || axiosError?.response?.data || null,
+      });
     } finally {
       setLoading(false);
     }
   };
+
+  const handleConsultar = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const id = Number(consultaId);
+    if (!id || id <= 0) {
+      setConsultaResultado({ tipo: 'error', mensaje: 'Ingresa un ID de comprobante valido.' });
+      return;
+    }
+
+    setConsultaLoading(true);
+    setConsultaResultado(null);
+
+    try {
+      const response = await facturacion.estado(id);
+      setConsultaResultado({
+        tipo: 'exito',
+        mensaje: `Estado SRI: ${response.data?.estado_sri ?? 'DESCONOCIDO'}`,
+        data: response.data,
+      });
+    } catch (error) {
+      const axiosError = error as any;
+      const backendMessage = axiosError?.response?.data?.message || axiosError?.response?.data?.error || 'No se pudo consultar el comprobante.';
+      const backendErrors = axiosError?.response?.data?.errors;
+
+      setConsultaResultado({
+        tipo: 'error',
+        mensaje: backendMessage,
+        data: backendErrors || axiosError?.response?.data || null,
+      });
+    } finally {
+      setConsultaLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!comprobanteId) {
+      return;
+    }
+
+    let stopped = false;
+
+    const fetchEstado = async () => {
+      try {
+        const response = await facturacion.estado(comprobanteId);
+        if (stopped) {
+          return;
+        }
+
+        setResultado({
+          tipo: 'exito',
+          mensaje: `Estado SRI: ${response.data?.estado_sri ?? 'DESCONOCIDO'}`,
+          data: response.data,
+        });
+
+        if (['AUTORIZADO', 'NO_AUTORIZADO', 'DEVUELTA'].includes(response.data?.estado_sri)) {
+          if (pollerRef.current) {
+            window.clearInterval(pollerRef.current);
+            pollerRef.current = null;
+          }
+        }
+      } catch (error) {
+        if (!stopped) {
+          setResultado((current) => current ?? { tipo: 'error', mensaje: 'No se pudo consultar el estado.' });
+        }
+      }
+    };
+
+    fetchEstado();
+    pollerRef.current = window.setInterval(fetchEstado, 4000);
+
+    return () => {
+      stopped = true;
+      if (pollerRef.current) {
+        window.clearInterval(pollerRef.current);
+        pollerRef.current = null;
+      }
+    };
+  }, [comprobanteId]);
 
   return (
     <div className="p-6 bg-white rounded-lg shadow-sm">
@@ -95,6 +179,39 @@ const PruebaEmisionComprobante: React.FC = () => {
           {loading ? 'Enviando a Cola...' : 'Emitir Factura de Prueba al SRI'}
         </button>
       </form>
+
+      <div className="mt-8 border-t pt-6 max-w-xl">
+        <h3 className="text-lg font-semibold text-gray-800 mb-3">Consulta rápida de comprobante</h3>
+        <p className="text-sm text-gray-500 mb-4">Ingresa el ID de un comprobante ya creado para ver si quedó en BORRADOR, RECIBIDA, AUTORIZADO, DEVUELTA u otro estado.</p>
+        <form onSubmit={handleConsultar} className="flex gap-3 items-end flex-wrap">
+          <div className="flex-1 min-w-[220px]">
+            <label className="block text-sm font-medium text-gray-700 mb-1">ID del comprobante</label>
+            <input
+              type="number"
+              min="1"
+              value={consultaId}
+              onChange={(e) => setConsultaId(e.target.value)}
+              className="w-full px-3 py-2 border rounded-md"
+              placeholder="Ej: 11"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={consultaLoading}
+            className={`px-4 py-2 rounded-md text-white font-medium ${consultaLoading ? 'bg-indigo-400 cursor-not-allowed' : 'bg-gray-800 hover:bg-gray-900'}`}
+          >
+            {consultaLoading ? 'Consultando...' : 'Consultar estado'}
+          </button>
+        </form>
+      </div>
+
+      {consultaResultado && (
+        <div className={`mt-6 p-4 rounded-md ${consultaResultado.tipo === 'exito' ? 'bg-blue-50 border-blue-200' : 'bg-red-50 border-red-200'}`}>
+          <h3 className={`font-bold ${consultaResultado.tipo === 'exito' ? 'text-blue-800' : 'text-red-800'}`}>{consultaResultado.mensaje}</h3>
+          <pre className="mt-2 text-xs overflow-auto max-h-40 bg-white p-2 rounded border">{JSON.stringify(consultaResultado.data, null, 2)}</pre>
+        </div>
+      )}
+
       {resultado && (
         <div className={`mt-6 p-4 rounded-md ${resultado.tipo === 'exito' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
           <h3 className={`font-bold ${resultado.tipo === 'exito' ? 'text-green-800' : 'text-red-800'}`}>{resultado.mensaje}</h3>
