@@ -23,7 +23,7 @@ const PruebaEmisionComprobante: React.FC = () => {
     establecimiento_id: 1,
     punto_emision_id: 1,
     cliente: {
-      tipo_identificacion: "07",
+      tipo_identificacion: "CONSUMIDOR_FINAL",
       identificacion: "9999999999999",
       razon_social: "CONSUMIDOR FINAL",
       direccion: "Ecuador",
@@ -56,10 +56,19 @@ const PruebaEmisionComprobante: React.FC = () => {
     setLoading(true);
     setResultado(null);
 
+    const claveNormalizada = password.trim();
+
     const formData = new FormData();
-    formData.append('firma', firmaArchivo);
-    formData.append('password', password);
+    formData.append('firma', firmaArchivo, firmaArchivo.name);
+    formData.append('password', claveNormalizada);
     formData.append('payload', JSON.stringify(payloadPrueba));
+
+    console.debug('[P12] Enviando certificado al backend:', {
+      nombre: firmaArchivo.name,
+      tamanio: firmaArchivo.size,
+      tipo: firmaArchivo.type,
+      longitudClave: claveNormalizada.length,
+    });
 
     try {
       const response = await facturacion.emitir(formData);
@@ -135,7 +144,7 @@ const PruebaEmisionComprobante: React.FC = () => {
           data: response.data,
         });
 
-        if (['AUTORIZADO', 'NO_AUTORIZADO', 'DEVUELTA'].includes(response.data?.estado_sri)) {
+        if (['AUTORIZADO', 'NO_AUTORIZADO', 'DEVUELTA', 'ERROR_FIRMA', 'ERROR_SISTEMA'].includes(response.data?.estado_sri)) {
           if (pollerRef.current) {
             window.clearInterval(pollerRef.current);
             pollerRef.current = null;

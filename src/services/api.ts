@@ -46,7 +46,16 @@ export const emisores = {
 };
 
 export const facturacion = {
-  emitir: (formData: FormData) => api.post('/api/facturacion/emitir', formData),
+  emitir: (formData: FormData) =>
+    api.post('/api/facturacion/emitir', formData, {
+      // Axios debe calcular multipart/form-data con boundary; no fijar Content-Type manualmente.
+      transformRequest: [(data, headers) => {
+        if (data instanceof FormData && headers) {
+          delete headers['Content-Type'];
+        }
+        return data;
+      }],
+    }),
   estado: (comprobanteId: number) => api.get(`/api/facturacion/comprobantes/${comprobanteId}`),
   reintentar: (comprobanteId: number) => api.post(`/api/facturacion/comprobantes/${comprobanteId}/reintentar`),
 };
