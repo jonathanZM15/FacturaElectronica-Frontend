@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import './Navbar.css';
 import logo from '../../assets/maximofactura.png';
-// static header: no dynamic logo or user controls
 import { useSidebar } from '../../contexts/SidebarContext';
 import { useUser } from '../../contexts/userContext';
-import { useNavigate } from 'react-router-dom';
 import ConfirmDialog from '../ConfirmDialog/ConfirmDialog';
 
 const Navbar: React.FC = () => {
@@ -116,6 +114,48 @@ const Navbar: React.FC = () => {
                 <span className="label">Retenciones</span>
               </NavLink>
             </li>
+          )}
+
+          {/* Inventario: Admin, Distribuidor, Emisor y Gerente */}
+          {user && (user.role === 'administrador' || user.role === 'distribuidor' || user.role === 'emisor' || user.role === 'gerente') && (
+            <>
+              <li className="nav-item">
+                <NavLink to="/inventario/bodegas" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} data-tooltip="Bodegas">
+                  <span className="icon">🏬</span>
+                  <span className="label">Bodegas</span>
+                </NavLink>
+              </li>
+              <li className="nav-item">
+                  <NavLink to="/inventario/categorias" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} data-tooltip="Categorías">
+                      <span className="icon">🏷️</span>
+                      <span className="label">Categorías</span>
+                  </NavLink>
+              </li>
+              <li className="nav-item">
+                <NavLink to="/inventario/productos" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} data-tooltip="Productos">
+                  <span className="icon">📦</span>
+                  <span className="label">Productos</span>
+                </NavLink>
+              </li>
+              <li className="nav-item">
+                <NavLink to="/inventario/movimientos" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} data-tooltip="Movimientos">
+                  <span className="icon">🔄</span>
+                  <span className="label">Movimientos</span>
+                </NavLink>
+              </li>
+              <li className="nav-item">
+                <NavLink to="/inventario/kardex" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} data-tooltip="Kardex">
+                  <span className="icon">📑</span>
+                  <span className="label">Kardex</span>
+                </NavLink>
+              </li>
+              <li className="nav-item">
+                <NavLink to="/inventario/stock-parametros" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} data-tooltip="Stock Parámetros">
+                  <span className="icon">⚙️</span>
+                  <span className="label">Stock Parámetros</span>
+                </NavLink>
+              </li>
+            </>
           )}
 
           {/* Prueba Emisión: solo Admin */}

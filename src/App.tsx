@@ -25,6 +25,13 @@ import TiposRetencion from './pages/TiposRetencion/TiposRetencion';
 import PruebaEmisionComprobante from './pages/PruebaEmision/PruebaEmision';
 import Blank from './pages/Dashboard/Blank';
 
+import BodegasPage from './pages/Inventario/BodegasPage';
+import ProductosPage from './pages/Inventario/ProductosPage';
+import MovimientosPage from './pages/Inventario/MovimientosPage';
+import KardexPage from './pages/Inventario/KardexPage';
+import CategoriasPage from './pages/Inventario/CategoriasPage';
+import StockParametrosPage from './pages/Inventario/StockParametrosPage';
+
 const ChangePasswordAuthed: React.FC = () => {
   const { logout } = useUser();
   const handleSubmit = async (newPassword: string) => {
@@ -78,6 +85,14 @@ function App() {
                 
                 {/* Tipos de Retención */}
                 <Route path="/retenciones" element={<TiposRetencion />} />
+
+                {/* Inventario */}
+                <Route path="/inventario/bodegas" element={<BodegasPage />} />
+                <Route path="/inventario/productos" element={<ProductosPage />} />
+                <Route path="/inventario/movimientos" element={<MovimientosPage />} />
+                <Route path="/inventario/kardex" element={<KardexPage />} />
+                <Route path="/inventario/categorias" element={<CategoriasPage />} />
+                <Route path="/inventario/stock-parametros" element={<StockParametrosPage />} />
 
                 {/* Prueba Emisión */}
                 <Route path="/prueba-emision" element={<PruebaEmisionComprobante />} />
