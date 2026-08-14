@@ -185,7 +185,7 @@ const ResultCard: React.FC<{ resultado: Resultado; label: string }> = ({ resulta
                       <EstadoBadge estado={log.estado} />
                     </div>
                     <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>{log.mensaje}</div>
-                    {log.detalles?.map((det, i) => (
+                    {(Array.isArray(log.detalles) ? log.detalles : (typeof log.detalles === 'string' ? (()=>{ try { return JSON.parse(log.detalles) } catch(e) { return [] } })() : [])).map((det: any, i: number) => (
                       <div key={i} style={{ marginTop: 6, background: '#fff5f5', border: '1px solid #fca5a5', borderRadius: 8, padding: '6px 10px' }}>
                         <span style={{ fontSize: 11, fontWeight: 700, color: '#dc2626' }}>[{det.identificador}] {det.mensaje}</span>
                         {det.informacion_adicional && <div style={{ fontSize: 11, color: '#b91c1c', marginTop: 2 }}>{det.informacion_adicional}</div>}
@@ -301,7 +301,7 @@ const PruebaEmisionComprobante: React.FC = () => {
     detalles: [{
       descripcion:     'Licencia de Software Anual',
       cantidad:        1.0,
-      precio_unitario: 100.0,
+      precio_unitario: 0.10,
       descuento:       0.0,
       impuesto:        { tarifa: 15.0, tipo: 'IVA' },
     }],
