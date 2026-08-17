@@ -382,17 +382,12 @@ const PruebaEmisionComprobante: React.FC = () => {
       <div style={{ position: 'relative', zIndex: 1, maxWidth: 700, margin: '0 auto' }}>
 
         {/* Header */}
-        <div style={{ marginBottom: 28, textAlign: 'center' }}>
-          <div style={{ fontSize: 36, marginBottom: 6 }}>🧾</div>
-          <h1 style={{
-            margin: 0, fontSize: 26, fontWeight: 800,
-            background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-          }}>
-            Prueba de Emisión SRI
+        <div style={{ marginBottom: 32, textAlign: 'center' }}>
+          <h1 style={{ margin: '0 0 8px', fontSize: 28, fontWeight: 800, color: '#1e1b4b', letterSpacing: '-0.02em' }}>
+            Emisión de Comprobante
           </h1>
           <p style={{ margin: '6px 0 0', fontSize: 13, color: '#64748b' }}>
-            Selecciona el emisor, sube tu firma digital y envía una factura al SRI en ambiente de pruebas.
+            Selecciona el emisor, sube tu firma digital y envía una factura al SRI. El ambiente dependerá de la configuración del emisor.
           </p>
         </div>
 
@@ -423,30 +418,53 @@ const PruebaEmisionComprobante: React.FC = () => {
 
             {/* Info del emisor seleccionado */}
             {emisorSel && (
-              <div style={{
-                background: 'rgba(238,242,255,0.6)', border: '1px solid rgba(199,210,254,0.8)',
-                borderRadius: 12, padding: '12px 16px', display: 'flex', flexWrap: 'wrap', gap: 16,
-              }}>
-                <div>
-                  <div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1 }}>RUC</div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#1e1b4b' }}>{emisorSel.ruc}</div>
+              <>
+                <div style={{
+                  background: 'rgba(238,242,255,0.6)', border: '1px solid rgba(199,210,254,0.8)',
+                  borderRadius: 12, padding: '12px 16px', display: 'flex', flexWrap: 'wrap', gap: 16,
+                }}>
+                  <div>
+                    <div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1 }}>RUC</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#1e1b4b' }}>{emisorSel.ruc}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1 }}>Razón Social</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#1e1b4b' }}>{emisorSel.razon_social}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1 }}>Ambiente</div>
+                    <span style={{
+                      fontSize: 12, fontWeight: 600, padding: '2px 10px', borderRadius: 99,
+                      background: emisorSel.ambiente === 'PRUEBAS' ? '#dbeafe' : '#dcfce7',
+                      color: emisorSel.ambiente === 'PRUEBAS' ? '#1e40af' : '#166534',
+                      border: `1px solid ${emisorSel.ambiente === 'PRUEBAS' ? '#93c5fd' : '#86efac'}`,
+                    }}>
+                      {emisorSel.ambiente === 'PRUEBAS' ? '🧪 PRUEBAS' : '🟢 PRODUCCIÓN'}
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  <div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1 }}>Razón Social</div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#1e1b4b' }}>{emisorSel.razon_social}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1 }}>Ambiente</div>
-                  <span style={{
-                    fontSize: 12, fontWeight: 600, padding: '2px 10px', borderRadius: 99,
-                    background: emisorSel.ambiente === 'PRUEBAS' ? '#dbeafe' : '#dcfce7',
-                    color: emisorSel.ambiente === 'PRUEBAS' ? '#1e40af' : '#166534',
-                    border: `1px solid ${emisorSel.ambiente === 'PRUEBAS' ? '#93c5fd' : '#86efac'}`,
+
+                {emisorSel.ambiente === 'PRODUCCION' && (
+                  <div style={{
+                    width: '100%',
+                    marginTop: 4,
+                    padding: '12px 16px',
+                    borderRadius: 8,
+                    background: '#fffbeb',
+                    border: '1px solid #fde68a',
+                    color: '#92400e',
+                    fontSize: 13,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8
                   }}>
-                    {emisorSel.ambiente === 'PRUEBAS' ? '🧪 PRUEBAS' : '🟢 PRODUCCIÓN'}
-                  </span>
-                </div>
-              </div>
+                    <span style={{ fontSize: 16 }}>⚠️</span>
+                    <div>
+                      <strong>Atención:</strong> El emisor está configurado en ambiente de PRODUCCIÓN. El comprobante emitido tendrá <strong>validez legal y fiscal</strong> ante el SRI.
+                    </div>
+                  </div>
+                )}
+              </>
             )}
 
             {/* Establecimiento */}
@@ -541,18 +559,59 @@ const PruebaEmisionComprobante: React.FC = () => {
             {/* Resumen antes de enviar */}
             {canSubmit && (
               <div style={{
-                background: 'rgba(238,242,255,0.5)', border: '1px solid rgba(199,210,254,0.7)',
-                borderRadius: 12, padding: '10px 14px', marginBottom: 16,
-                fontSize: 12, color: '#4338ca',
+                background: 'rgba(255,255,255,0.8)', border: '1px solid #cbd5e1',
+                borderRadius: 12, padding: '16px', marginBottom: 16,
+                fontSize: 13, color: '#334155', boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
               }}>
-                <strong>📋 Se emitirá con:</strong>{' '}
-                <strong>{emisorSel?.razon_social}</strong> (RUC: {emisorSel?.ruc}) ·
-                Establec. #{establecimientoSel?.codigo} · Punto #{puntoSel?.codigo} · Archivo: {firmaArchivo?.name}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, color: '#1e293b', fontWeight: 700 }}>
+                  <span style={{ fontSize: 18 }}>🧾</span> Detalle de la factura a emitir
+                </div>
+                
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', marginBottom: 12 }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid #e2e8f0', color: '#64748b', fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                      <th style={{ paddingBottom: 6, fontWeight: 600 }}>Descripción</th>
+                      <th style={{ paddingBottom: 6, fontWeight: 600, textAlign: 'center' }}>Cant.</th>
+                      <th style={{ paddingBottom: 6, fontWeight: 600, textAlign: 'right' }}>P.Unit</th>
+                      <th style={{ paddingBottom: 6, fontWeight: 600, textAlign: 'right' }}>Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td style={{ paddingTop: 8, fontWeight: 500 }}>Licencia de Software Anual</td>
+                      <td style={{ paddingTop: 8, textAlign: 'center' }}>1</td>
+                      <td style={{ paddingTop: 8, textAlign: 'right' }}>$0.10</td>
+                      <td style={{ paddingTop: 8, textAlign: 'right', fontWeight: 600 }}>$0.10</td>
+                    </tr>
+                  </tbody>
+                </table>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end', borderTop: '1px solid #e2e8f0', paddingTop: 10 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', width: '200px', color: '#64748b' }}>
+                    <span>Subtotal 15%:</span>
+                    <strong>$0.10</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', width: '200px', color: '#64748b' }}>
+                    <span>IVA (15%):</span>
+                    <strong>$0.02</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', width: '200px', color: '#1e293b', fontSize: 15, marginTop: 4 }}>
+                    <span style={{ fontWeight: 700 }}>TOTAL:</span>
+                    <strong style={{ color: '#059669' }}>$0.12</strong>
+                  </div>
+                </div>
+
+                <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid #f1f5f9', fontSize: 11, color: '#64748b', textAlign: 'center' }}>
+                  A nombre de <strong>CONSUMIDOR FINAL</strong> (9999999999999) <br/>
+                  <span style={{ color: '#4338ca', display: 'inline-block', marginTop: 4 }}>
+                    Se emitirá usando la firma: <strong>{firmaArchivo?.name}</strong>
+                  </span>
+                </div>
               </div>
             )}
 
             <PrimaryBtn type="submit" disabled={!canSubmit} style={{ width: '100%', fontSize: 15, padding: '13px' }}>
-              {loading ? '⏳  Procesando...' : '🚀  Emitir Factura de Prueba al SRI'}
+              {loading ? '⏳  Procesando...' : '🚀  Emitir Factura al SRI'}
             </PrimaryBtn>
           </form>
         </GlassCard>
