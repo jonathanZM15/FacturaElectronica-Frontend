@@ -123,17 +123,56 @@ export const ProductForm: React.FC<ProductFormProps> = ({ emisorId, onSuccess })
         setSuccess('');
 
         try {
+            // Validaciones de campos requeridos por JS para no bloquear tabs ocultas
+            if (!producto.codigo || !producto.codigo.trim()) {
+                setError('El código principal del producto es obligatorio.');
+                setActiveTab(1);
+                setLoading(false);
+                return;
+            }
+            if (!producto.nombre || !producto.nombre.trim()) {
+                setError('El nombre del producto es obligatorio.');
+                setActiveTab(1);
+                setLoading(false);
+                return;
+            }
+            if (producto.precio_1 === undefined || producto.precio_1 === null || producto.precio_1 < 0) {
+                setError('El Precio 1 es obligatorio y no puede ser negativo.');
+                setActiveTab(2);
+                setLoading(false);
+                return;
+            }
+
             const payload: any = { ...producto };
             
-            if (showStockTab) {
+            // Stock inicial es opcional: solo se procesa si se seleccionó una bodega destino
+            if (showStockTab && stockInicial.bodega_destino_id) {
                 const stockPayload: StockInicialPayload = { bodega_destino_id: stockInicial.bodega_destino_id };
                 
                 if (producto.tipo_control_inventario === TipoControlInventario.CANTIDAD) {
+                    if (!stockInicial.cantidad || stockInicial.cantidad <= 0) {
+                        setError('Debe ingresar una cantidad mayor a 0 para el stock inicial en la bodega seleccionada.');
+                        setActiveTab(6);
+                        setLoading(false);
+                        return;
+                    }
                     stockPayload.cantidad = stockInicial.cantidad;
                     stockPayload.costo_unitario = stockInicial.costo_unitario;
                 } else if (producto.tipo_control_inventario === TipoControlInventario.LOTE) {
+                    if (lotes.length === 0) {
+                        setError('Debe registrar al menos un lote para el stock inicial en la bodega seleccionada.');
+                        setActiveTab(6);
+                        setLoading(false);
+                        return;
+                    }
                     stockPayload.lotes = lotes;
                 } else if (producto.tipo_control_inventario === TipoControlInventario.SERIE) {
+                    if (series.length === 0) {
+                        setError('Debe registrar al menos una serie para el stock inicial en la bodega seleccionada.');
+                        setActiveTab(6);
+                        setLoading(false);
+                        return;
+                    }
                     stockPayload.series = series;
                     stockPayload.cantidad = series.length;
                 }
@@ -270,7 +309,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ emisorId, onSuccess })
                     ))}
                 </div>
 
-                <form onSubmit={handleSubmit} style={{ padding: '32px' }}>
+                <form noValidate onSubmit={handleSubmit} style={{ padding: '32px' }}>
                     {/* 1. Datos Generales */}
                     <div style={{ display: activeTab === 1 ? 'block' : 'none' }}>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
@@ -534,8 +573,8 @@ export const ProductForm: React.FC<ProductFormProps> = ({ emisorId, onSuccess })
 
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px', marginBottom: '24px' }}>
                                 <div>
-                                    <label style={labelStyle}>Bodega para el Stock <span style={{ color: '#ef4444' }}>*</span></label>
-                                    <select required={showStockTab} value={stockInicial.bodega_destino_id || ''} onChange={e => setStockInicial(p => ({ ...p, bodega_destino_id: Number(e.target.value) }))} style={inputStyle}>
+                                    <label style={labelStyle}>Bodega para el Stock</label>
+                                    <select value={stockInicial.bodega_destino_id || ''} onChange={e => setStockInicial(p => ({ ...p, bodega_destino_id: Number(e.target.value) }))} style={inputStyle}>
                                         <option value="">Seleccione dónde guardar...</option>
                                         {bodegas.map(b => <option key={b.id} value={b.id}>{b.nombre} ({b.tipo})</option>)}
                                     </select>
@@ -544,8 +583,8 @@ export const ProductForm: React.FC<ProductFormProps> = ({ emisorId, onSuccess })
                                 {producto.tipo_control_inventario === TipoControlInventario.CANTIDAD && (
                                     <>
                                         <div>
-                                            <label style={labelStyle}>Cantidad que Ingresa <span style={{ color: '#ef4444' }}>*</span></label>
-                                            <input type="number" required min="0.000001" step="0.000001" value={stockInicial.cantidad || ''} onChange={e => setStockInicial(p => ({ ...p, cantidad: Number(e.target.value) }))} style={inputStyle} onFocus={(e) => { e.target.style.borderColor = '#6366f1'; e.target.style.boxShadow = '0 0 0 4px rgba(99, 102, 241, 0.1)'; }} onBlur={(e) => { e.target.style.borderColor = '#cbd5e1'; e.target.style.boxShadow = 'inset 0 1px 2px rgba(0,0,0,0.02)'; }} />
+                                            <label style={labelStyle}>Cantidad que Ingresa</label>
+                                            <input type="number" min="0.000001" step="0.000001" value={stockInicial.cantidad || ''} onChange={e => setStockInicial(p => ({ ...p, cantidad: Number(e.target.value) }))} style={inputStyle} onFocus={(e) => { e.target.style.borderColor = '#6366f1'; e.target.style.boxShadow = '0 0 0 4px rgba(99, 102, 241, 0.1)'; }} onBlur={(e) => { e.target.style.borderColor = '#cbd5e1'; e.target.style.boxShadow = 'inset 0 1px 2px rgba(0,0,0,0.02)'; }} />
                                         </div>
                                         <div>
                                             <label style={labelStyle}>Costo Unitario Promedio (Opcional)</label>

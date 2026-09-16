@@ -8,7 +8,7 @@ const ITEMS_PER_PAGE = 10;
 
 export default function CategoriasPage() {
     const { user } = useUser();
-    const emisorId = (user as any)?.emisor_id || 1;
+    const emisorId = (user as any)?.emisor_id || 6;
     
     const [categorias, setCategorias] = useState<Categoria[]>([]);
     const [loadingTable, setLoadingTable] = useState(true);

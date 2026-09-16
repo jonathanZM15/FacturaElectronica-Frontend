@@ -111,6 +111,37 @@ export enum TipoMovimientoInventario {
     MERMA = 'MERMA'
 }
 
+export interface KardexItem {
+    id: number;
+    fecha_hora: string;
+    producto_id: number;
+    bodega_id: number;
+    tipo_movimiento: string;
+    documento_origen_tipo: string;
+    documento_origen_id: number;
+    numero_documento: string;
+    entrada: string | number;
+    salida: string | number;
+    saldo: string | number;
+    usuario_id?: number;
+    producto?: {
+        id: number;
+        codigo: string;
+        nombre: string;
+    };
+    bodega?: {
+        id: number;
+        codigo: string;
+        nombre: string;
+        establecimiento_id?: number;
+        establecimiento?: {
+            id: number;
+            codigo: string;
+            nombre: string;
+        };
+    };
+}
+
 export interface MovimientoInventarioDetalle {
     id: number;
     movimiento_id: number;
@@ -160,18 +191,34 @@ export interface StockParametro {
     bodega?: { id: number; nombre: string; tipo: TipoBodega };
 }
 
+export interface DetalleLotePayload {
+    numero_lote: string;
+    cantidad: number;
+}
+
+export interface DetalleSeriePayload {
+    numero_serie: string;
+}
+
+export interface ItemDetalleMovimientoPayload {
+    producto_id: number;
+    cantidad: number;
+    lotes?: DetalleLotePayload[];
+    series?: DetalleSeriePayload[];
+}
+
 export interface TransferenciaPayload {
     bodega_origen_id: number;
     bodega_destino_id: number;
-    observacion?: string;
-    detalles: { producto_id: number; cantidad: number }[];
+    observacion: string;
+    detalles: ItemDetalleMovimientoPayload[];
 }
 
 export interface AjustePayload {
     bodega_id: number;
     tipo: 'AJUSTE_POSITIVO' | 'AJUSTE_NEGATIVO';
     observacion: string;
-    detalles: { producto_id: number; cantidad: number }[];
+    detalles: ItemDetalleMovimientoPayload[];
 }
 
 export interface Categoria {

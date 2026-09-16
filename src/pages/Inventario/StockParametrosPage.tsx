@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from '../../contexts/userContext';
 import { getBodegas, getProductos, getStockParametros, saveStockParametro, deleteStockParametro } from '../../services/inventoryService';
-import { Bodega, Producto, TipoBodega, BaseComparacionStock, StockParametro } from '../../types/inventory';
-import { createPortal } from 'react-dom';
+import { Bodega, Producto, BaseComparacionStock, StockParametro } from '../../types/inventory';
 
 export default function StockParametrosPage() {
     const { user } = useUser();
-    const emisorId = (user as any)?.emisor_id || 1;
+    const emisorId = (user as any)?.emisor_id || 6;
 
     const [parametros, setParametros] = useState<StockParametro[]>([]);
     const [productos, setProductos] = useState<Producto[]>([]);
@@ -45,12 +44,15 @@ export default function StockParametrosPage() {
                 getProductos(emisorId!),
                 getBodegas(emisorId!)
             ]);
-            setParametros(paramsData);
-            setProductos(prodData);
-            setBodegas(bodData);
+            setParametros(Array.isArray(paramsData) ? paramsData : (paramsData as any)?.data || []);
+            setProductos(Array.isArray(prodData) ? prodData : (prodData as any)?.data || []);
+            setBodegas(Array.isArray(bodData) ? bodData : (bodData as any)?.data || []);
         } catch (err: any) {
-            console.error(err);
+            console.error('Error en loadData de StockParametrosPage:', err);
             setError('Error al cargar los datos.');
+            setParametros([]);
+            setProductos([]);
+            setBodegas([]);
         } finally {
             setLoading(false);
         }
@@ -145,32 +147,26 @@ export default function StockParametrosPage() {
         }
     };
 
-    const editParam = (p: StockParametro) => {
-        setProductoId(p.producto_id.toString());
-        setBodegaId(p.bodega_id.toString());
-        setStockMinimo(p.stock_minimo !== undefined && p.stock_minimo !== null ? p.stock_minimo.toString() : '');
-        setStockMaximo(p.stock_maximo !== undefined && p.stock_maximo !== null ? p.stock_maximo.toString() : '');
-        setBaseComparacion(p.base_comparacion);
-        setActivo(p.activo);
-        setObservacion(p.observacion || '');
-        setIsFormOpen(true);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-
     const getEstadoStock = (p: StockParametro) => {
-        const stock = p.base_comparacion === BaseComparacionStock.FISICO ? p.stock_fisico : p.stock_disponible;
-        if (p.stock_minimo !== undefined && p.stock_minimo !== null && stock < p.stock_minimo) {
+        if (!p) return { label: 'Normal', color: '#166534', bg: '#dcfce7', border: '#bbf7d0' };
+        const stockRaw = p.base_comparacion === BaseComparacionStock.DISPONIBLE ? p.stock_disponible : p.stock_fisico;
+        const stock = parseFloat(String(stockRaw || 0));
+        const min = (p.stock_minimo !== undefined && p.stock_minimo !== null && p.stock_minimo !== ('' as any)) ? parseFloat(String(p.stock_minimo)) : null;
+        const max = (p.stock_maximo !== undefined && p.stock_maximo !== null && p.stock_maximo !== ('' as any)) ? parseFloat(String(p.stock_maximo)) : null;
+
+        if (min !== null && !isNaN(min) && stock < min) {
             return { label: 'Stock Bajo', color: '#b91c1c', bg: '#fee2e2', border: '#fecaca' };
         }
-        if (p.stock_maximo !== undefined && p.stock_maximo !== null && stock > p.stock_maximo) {
+        if (max !== null && !isNaN(max) && stock > max) {
             return { label: 'Sobrestock', color: '#9a3412', bg: '#ffedd5', border: '#fed7aa' };
         }
         return { label: 'Normal', color: '#166534', bg: '#dcfce7', border: '#bbf7d0' };
     };
 
     const formatNumber = (num: any) => {
-        if (num === null || num === undefined) return '—';
-        return Number(num).toString();
+        if (num === null || num === undefined || num === '') return '—';
+        const parsed = Number(num);
+        return isNaN(parsed) ? '—' : parsed.toString();
     };
 
     if (loading) {
@@ -371,7 +367,7 @@ export default function StockParametrosPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {parametros.length === 0 ? (
+                            {(!parametros || parametros.length === 0) ? (
                                 <tr>
                                     <td colSpan={8} style={{ padding: '60px 32px', textAlign: 'center', color: '#94a3b8' }}>
                                         <div style={{ fontSize: '3rem', marginBottom: '12px' }}>📊</div>
@@ -380,39 +376,41 @@ export default function StockParametrosPage() {
                                     </td>
                                 </tr>
                             ) : (
-                                parametros.slice((currentPage - 1) * pageSize, currentPage * pageSize).map((p, idx) => {
+                                (parametros || []).slice((currentPage - 1) * pageSize, currentPage * pageSize).map((p, idx) => {
                                     const estado = getEstadoStock(p);
-                                    const actual = p.base_comparacion === BaseComparacionStock.FISICO ? p.stock_fisico : p.stock_disponible;
+                                    const actual = p?.base_comparacion === BaseComparacionStock.FISICO ? p?.stock_fisico : p?.stock_disponible;
                                     
                                     return (
                                         <tr 
-                                            key={p.id} 
-                                            style={{ borderBottom: idx < parametros.length - 1 ? '1px solid #f1f5f9' : 'none', backgroundColor: !p.activo ? '#f8fafc' : 'white', transition: 'background-color 0.2s ease' }}
-                                            onMouseEnter={(e) => { if (p.activo) e.currentTarget.style.backgroundColor = '#f8fafc'; }}
-                                            onMouseLeave={(e) => { if (p.activo) e.currentTarget.style.backgroundColor = 'white'; }}
+                                            key={p?.id || idx} 
+                                            style={{ borderBottom: idx < parametros.length - 1 ? '1px solid #f1f5f9' : 'none', backgroundColor: !p?.activo ? '#f8fafc' : 'white', transition: 'background-color 0.2s ease' }}
+                                            onMouseEnter={(e) => { if (p?.activo) e.currentTarget.style.backgroundColor = '#f8fafc'; }}
+                                            onMouseLeave={(e) => { if (p?.activo) e.currentTarget.style.backgroundColor = 'white'; }}
                                         >
                                             <td style={{ padding: '16px 24px', whiteSpace: 'nowrap' }}>
-                                                <div style={{ fontWeight: 600, color: !p.activo ? '#94a3b8' : '#0f172a', fontSize: '0.95rem' }}>{p.producto?.nombre}</div>
-                                                <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2px' }}>Cód: {p.producto?.codigo}</div>
+                                                <div style={{ fontWeight: 600, color: !p?.activo ? '#94a3b8' : '#0f172a', fontSize: '0.95rem' }}>{p?.producto?.nombre || `Producto #${p?.producto_id || '—'}`}</div>
+                                                <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2px' }}>{p?.producto?.codigo ? `Cód: ${p?.producto?.codigo}` : '—'}</div>
                                             </td>
                                             <td style={{ padding: '16px 24px', whiteSpace: 'nowrap' }}>
-                                                <div style={{ fontWeight: 500, color: !p.activo ? '#94a3b8' : '#334155', fontSize: '0.9rem' }}>{p.bodega?.nombre}</div>
-                                                <div style={{ fontSize: '0.75rem', backgroundColor: '#e2e8f0', color: '#475569', padding: '2px 8px', borderRadius: '12px', display: 'inline-block', marginTop: '4px', fontWeight: 600 }}>{p.bodega?.tipo}</div>
+                                                <div style={{ fontWeight: 500, color: !p?.activo ? '#94a3b8' : '#334155', fontSize: '0.9rem' }}>{p?.bodega?.nombre || `Bodega #${p?.bodega_id || '—'}`}</div>
+                                                {p?.bodega?.tipo && (
+                                                    <div style={{ fontSize: '0.75rem', backgroundColor: '#e2e8f0', color: '#475569', padding: '2px 8px', borderRadius: '12px', display: 'inline-block', marginTop: '4px', fontWeight: 600 }}>{p.bodega.tipo}</div>
+                                                )}
                                             </td>
-                                            <td style={{ padding: '16px 24px', color: !p.activo ? '#94a3b8' : '#475569', fontSize: '0.95rem', fontWeight: 500, textAlign: 'center', whiteSpace: 'nowrap' }}>
-                                                {formatNumber(p.stock_minimo)}
+                                            <td style={{ padding: '16px 24px', color: !p?.activo ? '#94a3b8' : '#475569', fontSize: '0.95rem', fontWeight: 500, textAlign: 'center', whiteSpace: 'nowrap' }}>
+                                                {formatNumber(p?.stock_minimo)}
                                             </td>
-                                            <td style={{ padding: '16px 24px', color: !p.activo ? '#94a3b8' : '#475569', fontSize: '0.95rem', fontWeight: 500, textAlign: 'center', whiteSpace: 'nowrap' }}>
-                                                {formatNumber(p.stock_maximo)}
+                                            <td style={{ padding: '16px 24px', color: !p?.activo ? '#94a3b8' : '#475569', fontSize: '0.95rem', fontWeight: 500, textAlign: 'center', whiteSpace: 'nowrap' }}>
+                                                {formatNumber(p?.stock_maximo)}
                                             </td>
                                             <td style={{ padding: '16px 24px', textAlign: 'center', whiteSpace: 'nowrap' }}>
-                                                <div style={{ fontWeight: 700, color: !p.activo ? '#94a3b8' : '#0f172a', fontSize: '1.05rem' }}>{formatNumber(actual)}</div>
+                                                <div style={{ fontWeight: 700, color: !p?.activo ? '#94a3b8' : '#0f172a', fontSize: '1.05rem' }}>{formatNumber(actual)}</div>
                                                 <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>
-                                                    {p.base_comparacion === BaseComparacionStock.FISICO ? 'Físico' : 'Disponible'}
+                                                    {p?.base_comparacion === BaseComparacionStock.FISICO ? 'Físico' : 'Disponible'}
                                                 </div>
                                             </td>
                                             <td style={{ padding: '16px 24px', textAlign: 'center', whiteSpace: 'nowrap' }}>
-                                                {p.activo ? (
+                                                {p?.activo ? (
                                                     <span style={{ backgroundColor: estado.bg, color: estado.color, border: `1px solid ${estado.border}`, padding: '6px 12px', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 700, whiteSpace: 'nowrap' }}>
                                                         {estado.label}
                                                     </span>
@@ -422,8 +420,8 @@ export default function StockParametrosPage() {
                                                     </span>
                                                 )}
                                             </td>
-                                            <td style={{ padding: '16px 24px', color: !p.activo ? '#94a3b8' : '#64748b', fontSize: '0.85rem', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                {p.observacion || '—'}
+                                            <td style={{ padding: '16px 24px', color: !p?.activo ? '#94a3b8' : '#64748b', fontSize: '0.85rem', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                {p?.observacion || '—'}
                                             </td>
                                             <td style={{ padding: '16px 24px', textAlign: 'center', whiteSpace: 'nowrap' }}>
                                                 <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>

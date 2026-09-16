@@ -5,7 +5,10 @@ const BASE_INVENTORY_URL = '/api/emisores';
 
 export const getBodegas = async (emisorId: string | number): Promise<Bodega[]> => {
     const response = await api.get(`${BASE_INVENTORY_URL}/${emisorId}/bodegas`);
-    return response.data.data;
+    const d = response.data;
+    if (Array.isArray(d)) return d;
+    if (Array.isArray(d?.data)) return d.data;
+    return [];
 };
 
 export const createBodega = async (emisorId: string | number, data: Partial<Bodega>): Promise<Bodega> => {
@@ -25,7 +28,10 @@ export const deleteBodega = async (emisorId: string | number, id: number | strin
 
 export const getProductos = async (emisorId: string | number): Promise<Producto[]> => {
     const response = await api.get(`${BASE_INVENTORY_URL}/${emisorId}/productos`);
-    return response.data.data;
+    const d = response.data;
+    if (Array.isArray(d)) return d;
+    if (Array.isArray(d?.data)) return d.data;
+    return [];
 };
 
 export const createProducto = async (emisorId: string | number, data: Partial<Producto>): Promise<Producto> => {
@@ -40,12 +46,48 @@ export const getStockDisponible = async (emisorId: string | number, productoId: 
 
 export const transferirStock = async (emisorId: string | number, payload: any) => {
     const response = await api.post(`${BASE_INVENTORY_URL}/${emisorId}/movimientos/transferir`, payload);
-    return response.data.data;
+    return response.data;
 };
 
 export const ajustarStock = async (emisorId: string | number, payload: any) => {
     const response = await api.post(`${BASE_INVENTORY_URL}/${emisorId}/movimientos/ajustar`, payload);
-    return response.data.data;
+    return response.data;
+};
+
+export const inventarioInicial = async (emisorId: string | number, payload: any) => {
+    const response = await api.post(`${BASE_INVENTORY_URL}/${emisorId}/movimientos/inventario-inicial`, payload);
+    return response.data;
+};
+
+export const reacondicionarStock = async (emisorId: string | number, payload: any) => {
+    const response = await api.post(`${BASE_INVENTORY_URL}/${emisorId}/movimientos/reacondicionar`, payload);
+    return response.data;
+};
+
+export const despacharSucursal = async (emisorId: string | number, payload: any) => {
+    const response = await api.post(`${BASE_INVENTORY_URL}/${emisorId}/movimientos/despachar-sucursal`, payload);
+    return response.data;
+};
+
+export const getDespachos = async (emisorId: string | number, page: number = 1, filters?: any) => {
+    const params = { page, ...filters };
+    const response = await api.get(`${BASE_INVENTORY_URL}/${emisorId}/movimientos/despachar-sucursal`, { params });
+    return response.data;
+};
+
+export const getDespachoDetail = async (emisorId: string | number, movimientoId: number | string) => {
+    const response = await api.get(`${BASE_INVENTORY_URL}/${emisorId}/movimientos/despachar-sucursal/${movimientoId}`);
+    return response.data;
+};
+
+export const descargarSucursal = async (emisorId: string | number, movimientoId: number | string, observacion: string) => {
+    const response = await api.post(`${BASE_INVENTORY_URL}/${emisorId}/movimientos/despachar-sucursal/${movimientoId}/descargar`, { observacion });
+    return response.data;
+};
+
+export const recibirSucursal = async (emisorId: string | number, movimientoId: number | string, payload: any) => {
+    const response = await api.post(`${BASE_INVENTORY_URL}/${emisorId}/movimientos/despachar-sucursal/${movimientoId}/recibir`, payload);
+    return response.data;
 };
 
 export const getKardex = async (emisorId: string | number, page: number = 1, filters?: any) => {
@@ -54,9 +96,27 @@ export const getKardex = async (emisorId: string | number, page: number = 1, fil
     return response.data;
 };
 
+export const getExistenciasConsolidado = async (emisorId: string | number, params?: any) => {
+    const response = await api.get(`${BASE_INVENTORY_URL}/${emisorId}/existencias`, { params });
+    return response.data;
+};
+
+export const getExistenciasLotes = async (emisorId: string | number, params?: any) => {
+    const response = await api.get(`${BASE_INVENTORY_URL}/${emisorId}/existencias/lotes`, { params });
+    return response.data;
+};
+
+export const getExistenciasSeries = async (emisorId: string | number, params?: any) => {
+    const response = await api.get(`${BASE_INVENTORY_URL}/${emisorId}/existencias/series`, { params });
+    return response.data;
+};
+
 export const getCategorias = async (emisorId: string | number) => {
     const response = await api.get(`${BASE_INVENTORY_URL}/${emisorId}/categorias`);
-    return response.data.data;
+    const d = response.data;
+    if (Array.isArray(d)) return d;
+    if (Array.isArray(d?.data)) return d.data;
+    return [];
 };
 
 export const createCategoria = async (emisorId: string | number, data: { nombre: string; descripcion?: string; estado?: boolean; color?: string }) => {
@@ -76,7 +136,10 @@ export const deleteCategoria = async (emisorId: string | number, id: number) => 
 
 export const getStockParametros = async (emisorId: string | number) => {
     const response = await api.get(`${BASE_INVENTORY_URL}/${emisorId}/stock-parametros`);
-    return response.data.data;
+    const d = response.data;
+    if (Array.isArray(d)) return d;
+    if (Array.isArray(d?.data)) return d.data;
+    return [];
 };
 
 export const saveStockParametro = async (emisorId: string | number, data: any) => {

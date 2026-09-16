@@ -31,6 +31,8 @@ import MovimientosPage from './pages/Inventario/MovimientosPage';
 import KardexPage from './pages/Inventario/KardexPage';
 import CategoriasPage from './pages/Inventario/CategoriasPage';
 import StockParametrosPage from './pages/Inventario/StockParametrosPage';
+import DespachosSucursalPage from './pages/Inventario/DespachosSucursalPage';
+import ExistenciasPage from './pages/Inventario/ExistenciasPage';
 
 const ChangePasswordAuthed: React.FC = () => {
   const { logout } = useUser();
@@ -90,6 +92,8 @@ function App() {
                 <Route path="/inventario/bodegas" element={<BodegasPage />} />
                 <Route path="/inventario/productos" element={<ProductosPage />} />
                 <Route path="/inventario/movimientos" element={<MovimientosPage />} />
+                <Route path="/inventario/despachos" element={<DespachosSucursalPage />} />
+                <Route path="/inventario/existencias" element={<ExistenciasPage />} />
                 <Route path="/inventario/kardex" element={<KardexPage />} />
                 <Route path="/inventario/categorias" element={<CategoriasPage />} />
                 <Route path="/inventario/stock-parametros" element={<StockParametrosPage />} />

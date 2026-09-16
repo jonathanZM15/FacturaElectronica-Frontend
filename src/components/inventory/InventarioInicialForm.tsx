@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Bodega, Producto, AjustePayload, TipoProducto, TipoControlInventario } from '../../types/inventory';
-import { getBodegas, getProductos, ajustarStock, getExistenciasLotes, getExistenciasSeries } from '../../services/inventoryService';
+import { Bodega, Producto, TipoProducto, TipoControlInventario } from '../../types/inventory';
+import { getBodegas, getProductos, inventarioInicial } from '../../services/inventoryService';
 
 interface Props {
     emisorId: number | string;
@@ -23,7 +23,7 @@ interface DetalleItem {
     series: SerieItem[];
 }
 
-export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
+export const InventarioInicialForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
     const [bodegas, setBodegas] = useState<Bodega[]>([]);
     const [productos, setProductos] = useState<Producto[]>([]);
     const [loadingData, setLoadingData] = useState(true);
@@ -32,15 +32,10 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
     const [success, setSuccess] = useState('');
 
     const [bodegaId, setBodegaId] = useState<number | ''>('');
-    const [tipo, setTipo] = useState<'AJUSTE_POSITIVO' | 'AJUSTE_NEGATIVO'>('AJUSTE_POSITIVO');
     const [observacion, setObservacion] = useState('');
     const [detalles, setDetalles] = useState<DetalleItem[]>([
         { producto_id: '', cantidad: 1, lotes: [{ numero_lote: '', cantidad: 1 }], series: [{ numero_serie: '' }] }
     ]);
-
-    // Existencias disponibles en la bodega para sugerir en AJUSTE_NEGATIVO
-    const [lotesDisponibles, setLotesDisponibles] = useState<Record<number, any[]>>({});
-    const [seriesDisponibles, setSeriesDisponibles] = useState<Record<number, any[]>>({});
 
     const loadFormData = async () => {
         setLoadingData(true);
@@ -54,7 +49,7 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
             setBodegas(bodegasArr);
             setProductos(prodsArr.filter((p: any) => !p.tipo || p.tipo === TipoProducto.FISICO || p.tipo === 'FISICO'));
         } catch (err) {
-            console.error('Error cargando bodegas/productos en AjusteForm:', err);
+            console.error('Error cargando datos en InventarioInicialForm:', err);
         } finally {
             setLoadingData(false);
         }
@@ -63,29 +58,6 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
     useEffect(() => {
         loadFormData();
     }, [emisorId]);
-
-    // Cargar existencias de lotes o series si es ajuste negativo y hay bodega seleccionada
-    const fetchExistenciasProducto = async (prodId: number) => {
-        if (!bodegaId || tipo !== 'AJUSTE_NEGATIVO') return;
-        const prod = productos.find(p => p.id === prodId);
-        if (!prod) return;
-
-        if (prod.tipo_control_inventario === TipoControlInventario.LOTE) {
-            try {
-                const res = await getExistenciasLotes(emisorId, { producto_id: prodId, bodega_id: bodegaId, solo_con_stock: 1 });
-                setLotesDisponibles(prev => ({ ...prev, [prodId]: res.data || [] }));
-            } catch (err) {
-                console.error('Error cargando lotes disponibles:', err);
-            }
-        } else if (prod.tipo_control_inventario === TipoControlInventario.SERIE) {
-            try {
-                const res = await getExistenciasSeries(emisorId, { producto_id: prodId, bodega_id: bodegaId, estado: 'DISPONIBLE' });
-                setSeriesDisponibles(prev => ({ ...prev, [prodId]: res.data || [] }));
-            } catch (err) {
-                console.error('Error cargando series disponibles:', err);
-            }
-        }
-    };
 
     const handleProductoChange = (index: number, prodId: number | '') => {
         const newDetalles = [...detalles];
@@ -97,12 +69,10 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
 
             if (tipoControl === TipoControlInventario.LOTE) {
                 newDetalles[index].lotes = [{ numero_lote: '', cantidad: newDetalles[index].cantidad || 1 }];
-                fetchExistenciasProducto(prodId);
             } else if (tipoControl === TipoControlInventario.SERIE) {
                 const cant = Math.max(1, Math.round(newDetalles[index].cantidad || 1));
                 newDetalles[index].cantidad = cant;
                 newDetalles[index].series = Array.from({ length: cant }, () => ({ numero_serie: '' }));
-                fetchExistenciasProducto(prodId);
             }
         }
 
@@ -117,7 +87,6 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
         const prod = productos.find(p => p.id === prodId);
 
         if (prod?.tipo_control_inventario === TipoControlInventario.LOTE) {
-            // Si solo hay un lote, ajustar automáticamente su cantidad
             if (newDetalles[index].lotes.length === 1) {
                 newDetalles[index].lotes[0].cantidad = nuevaCantidad;
             }
@@ -137,7 +106,7 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
         setDetalles(newDetalles);
     };
 
-    // Manejo de Lotes
+    // Lotes
     const addLoteRow = (detalleIndex: number) => {
         const newDetalles = [...detalles];
         const sumaActual = newDetalles[detalleIndex].lotes.reduce((acc, l) => acc + (Number(l.cantidad) || 0), 0);
@@ -161,7 +130,7 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
         setDetalles(newDetalles);
     };
 
-    // Manejo de Series
+    // Series
     const addSerieRow = (detalleIndex: number) => {
         const newDetalles = [...detalles];
         newDetalles[detalleIndex].series.push({ numero_serie: '' });
@@ -200,7 +169,7 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
         setSuccess('');
         
         if (!bodegaId) {
-            setError('Debe seleccionar una bodega');
+            setError('Debe seleccionar la bodega destino');
             return;
         }
 
@@ -210,7 +179,6 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
             return;
         }
 
-        // Validación estricta en UI de Lotes y Series
         for (let i = 0; i < validDetalles.length; i++) {
             const d = validDetalles[i];
             const prod = productos.find(p => p.id === d.producto_id);
@@ -224,7 +192,7 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
                 }
                 const sumaLotes = d.lotes.reduce((acc, l) => acc + (parseFloat(String(l.cantidad)) || 0), 0);
                 if (Math.abs(sumaLotes - d.cantidad) > 0.000001) {
-                    setError(`La suma de las cantidades de los lotes (${sumaLotes}) no coincide con la cantidad total (${d.cantidad}) para el producto ${nombreProd}.`);
+                    setError(`La suma de los lotes (${sumaLotes}) no coincide con la cantidad (${d.cantidad}) en ${nombreProd}.`);
                     return;
                 }
                 for (const l of d.lotes) {
@@ -233,7 +201,7 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
                         return;
                     }
                     if (l.cantidad <= 0) {
-                        setError(`La cantidad del lote ${l.numero_lote} debe ser mayor a 0 en ${nombreProd}.`);
+                        setError(`La cantidad del lote ${l.numero_lote} debe ser mayor a 0.`);
                         return;
                     }
                 }
@@ -247,7 +215,7 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
                 }
                 const setSeries = new Set(seriesValidas.map(s => s.numero_serie.trim()));
                 if (setSeries.size !== seriesValidas.length) {
-                    setError(`Existen números de serie duplicados en la lista de ${nombreProd}.`);
+                    setError(`Existen números de serie duplicados en ${nombreProd}.`);
                     return;
                 }
             }
@@ -255,10 +223,9 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
 
         setLoading(true);
         try {
-            const payload: AjustePayload = {
-                bodega_id: bodegaId,
-                tipo,
-                observacion,
+            const payload = {
+                bodega_id: Number(bodegaId),
+                observacion: observacion.trim(),
                 detalles: validDetalles.map(d => {
                     const prod = productos.find(p => p.id === d.producto_id);
                     const tipoControl = prod?.tipo_control_inventario;
@@ -283,9 +250,9 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
                 })
             };
 
-            const res = await ajustarStock(emisorId, payload);
+            const res = await inventarioInicial(emisorId, payload);
             const movNumero = res?.data?.numero || res?.movimiento || res?.data?.movimiento || '';
-            setSuccess(`Ajuste ${movNumero ? movNumero + ' ' : ''}ejecutado correctamente.`);
+            setSuccess(`Inventario inicial ${movNumero ? movNumero + ' ' : ''}registrado exitosamente.`);
             setBodegaId('');
             setObservacion('');
             setDetalles([{ producto_id: '', cantidad: 1, lotes: [{ numero_lote: '', cantidad: 1 }], series: [{ numero_serie: '' }] }]);
@@ -293,7 +260,7 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
             if (onSuccess) onSuccess();
             setTimeout(() => setSuccess(''), 5000);
         } catch (err: any) {
-            setError(err.response?.data?.error || err.response?.data?.message || 'Error en el ajuste');
+            setError(err.response?.data?.error || err.response?.data?.message || 'Error registrando inventario inicial');
         } finally {
             setLoading(false);
         }
@@ -302,11 +269,11 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
     return (
         <div style={{ backgroundColor: 'white', borderRadius: '20px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.03)', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
             <div style={{ padding: '20px 32px', backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '32px', height: '32px', backgroundColor: '#fff7ed', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ea580c', boxShadow: 'inset 0 0 0 1px #ffedd5' }}>
-                    ⚙️
+                <div style={{ width: '32px', height: '32px', backgroundColor: '#eff6ff', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563eb', boxShadow: 'inset 0 0 0 1px #bfdbfe' }}>
+                    📥
                 </div>
                 <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>
-                    Ajuste Manual de Inventario (MOV-09 / MOV-10)
+                    Registro de Inventario Inicial (MOV-01)
                 </h2>
             </div>
             
@@ -323,93 +290,60 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
                 )}
                 
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                    <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
-                        <div style={{ flex: '1 1 300px' }}>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '8px' }}>
-                                Tipo de Ajuste <span style={{ color: '#ef4444' }}>*</span>
-                            </label>
-                            <select 
-                                required 
-                                value={tipo} 
-                                onChange={e => {
-                                    setTipo(e.target.value as any);
-                                    // Limpiar existencias cacheadas al cambiar de tipo
-                                    setLotesDisponibles({});
-                                    setSeriesDisponibles({});
-                                }} 
-                                style={{ width: '100%', padding: '12px 16px', border: '1px solid #cbd5e1', borderRadius: '12px', fontSize: '0.95rem', outline: 'none', backgroundColor: 'white', color: '#0f172a' }}
-                            >
-                                <option value="AJUSTE_POSITIVO">📈 Ajuste Positivo (Entrada al inventario)</option>
-                                <option value="AJUSTE_NEGATIVO">📉 Ajuste Negativo (Salida por desmedro/merma)</option>
-                            </select>
-                        </div>
-
-                        <div style={{ flex: '1 1 300px' }}>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '8px' }}>
-                                Bodega Afectada <span style={{ color: '#ef4444' }}>*</span>
-                            </label>
-                            <select 
-                                required 
-                                value={bodegaId} 
-                                onChange={e => {
-                                    const bId = Number(e.target.value) || '';
-                                    setBodegaId(bId);
-                                    // Refrescar existencias para items seleccionados
-                                    detalles.forEach(d => { if (d.producto_id) fetchExistenciasProducto(Number(d.producto_id)); });
-                                }} 
-                                style={{ width: '100%', padding: '12px 16px', border: '1px solid #cbd5e1', borderRadius: '12px', fontSize: '0.95rem', outline: 'none', backgroundColor: 'white', color: '#0f172a' }}
-                            >
-                                <option value="">Seleccione bodega...</option>
-                                {bodegas.map(b => (
-                                    <option key={b.id} value={b.id}>{b.nombre} ({b.tipo})</option>
-                                ))}
-                            </select>
-                        </div>
+                    <div>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '8px' }}>
+                            Bodega Destino de Carga Inicial <span style={{ color: '#ef4444' }}>*</span>
+                        </label>
+                        <select 
+                            required 
+                            value={bodegaId} 
+                            onChange={e => setBodegaId(Number(e.target.value) || '')} 
+                            style={{ width: '100%', padding: '12px 16px', border: '1px solid #cbd5e1', borderRadius: '12px', fontSize: '0.95rem', outline: 'none', backgroundColor: 'white', color: '#0f172a' }}
+                        >
+                            <option value="">Seleccione bodega destino...</option>
+                            {bodegas.map(b => (
+                                <option key={b.id} value={b.id}>{b.nombre} ({b.tipo})</option>
+                            ))}
+                        </select>
                     </div>
 
                     <div>
                         <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '8px' }}>
-                            Justificación Obligatoria <span style={{ color: '#ef4444' }}>*</span>
+                            Observación / Justificación
                         </label>
                         <textarea 
-                            required
                             rows={2} 
                             value={observacion} 
                             onChange={e => setObservacion(e.target.value)} 
                             style={{ width: '100%', padding: '12px 16px', border: '1px solid #cbd5e1', borderRadius: '12px', fontSize: '0.95rem', outline: 'none', backgroundColor: 'white', color: '#0f172a', boxSizing: 'border-box' }}
-                            placeholder="Ej. Conteo físico de auditoría / Mercancía rota en almacén..."
+                            placeholder="Ej. Carga inicial del balance de apertura / Migración de sistema..."
                         />
                     </div>
 
                     {/* Detalle de Productos */}
                     <div style={{ backgroundColor: '#f8fafc', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
                         <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            📦 Productos a Ajustar
+                            📦 Productos a Ingresar
                         </h3>
                         
                         {productos.length === 0 && !loadingData && (
                             <div style={{ marginBottom: '16px', padding: '12px 16px', backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', fontSize: '0.85rem', color: '#92400e', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <span>⚠️ No se encontraron productos cargados para este emisor.</span>
-                                <button type="button" onClick={loadFormData} style={{ background: '#f59e0b', color: 'white', border: 'none', borderRadius: '8px', padding: '6px 12px', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}>
+                                <button type="button" onClick={loadFormData} style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', padding: '6px 12px', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}>
                                     🔄 Recargar Productos
                                 </button>
                             </div>
                         )}
-
+                        
                         {detalles.map((detalle, index) => {
                             const prod = productos.find(p => p.id === detalle.producto_id);
                             const tipoControl = prod?.tipo_control_inventario || TipoControlInventario.CANTIDAD;
 
-                            // Cálculos de validación en vivo para LOTE
                             const sumaLotes = detalle.lotes.reduce((acc, l) => acc + (parseFloat(String(l.cantidad)) || 0), 0);
                             const lotesCuadran = Math.abs(sumaLotes - detalle.cantidad) < 0.000001;
 
-                            // Cálculos de validación en vivo para SERIE
                             const seriesLlenas = detalle.series.filter(s => s.numero_serie.trim() !== '').length;
                             const seriesCuadran = seriesLlenas === Math.round(detalle.cantidad);
-
-                            const lotesOptions = (prod?.id && lotesDisponibles[prod.id]) || [];
-                            const seriesOptions = (prod?.id && seriesDisponibles[prod.id]) || [];
 
                             return (
                                 <div key={index} style={{ backgroundColor: 'white', padding: '16px 20px', borderRadius: '14px', border: '1px solid #e2e8f0', marginBottom: '16px', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
@@ -473,7 +407,7 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
                                         </button>
                                     </div>
 
-                                    {/* SUB-SECCIÓN: CONTROL POR LOTE */}
+                                    {/* LOTE */}
                                     {tipoControl === TipoControlInventario.LOTE && (
                                         <div style={{ marginTop: '16px', padding: '16px', backgroundColor: '#fffbeb', borderRadius: '12px', border: '1px solid #fde68a' }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
@@ -494,21 +428,11 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
                                                     <div style={{ flex: '1 1 200px' }}>
                                                         <input 
                                                             type="text" 
-                                                            placeholder="Nº Lote (ej. LOTE-2026)" 
+                                                            placeholder="Nº Lote (ej. LOTE-001)" 
                                                             value={lote.numero_lote} 
                                                             onChange={e => updateLoteRow(index, lIdx, 'numero_lote', e.target.value)} 
-                                                            list={`lotes-list-${index}`}
                                                             style={{ width: '100%', padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.85rem', boxSizing: 'border-box' }} 
                                                         />
-                                                        {lotesOptions.length > 0 && (
-                                                            <datalist id={`lotes-list-${index}`}>
-                                                                {lotesOptions.map((lo: any, loIdx: number) => (
-                                                                    <option key={loIdx} value={lo.lote?.numero_lote}>
-                                                                        Stock disp: {lo.stock_disponible}
-                                                                    </option>
-                                                                ))}
-                                                            </datalist>
-                                                        )}
                                                     </div>
                                                     <div style={{ width: '120px' }}>
                                                         <input 
@@ -543,7 +467,7 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
                                         </div>
                                     )}
 
-                                    {/* SUB-SECCIÓN: CONTROL POR SERIE */}
+                                    {/* SERIE */}
                                     {tipoControl === TipoControlInventario.SERIE && (
                                         <div style={{ marginTop: '16px', padding: '16px', backgroundColor: '#f5f3ff', borderRadius: '12px', border: '1px solid #ddd6fe' }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
@@ -558,33 +482,6 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
                                                     {seriesCuadran ? '✅ Todas las series asignadas' : `⚠️ Faltan ${Math.max(0, Math.round(detalle.cantidad) - seriesLlenas)}`}
                                                 </span>
                                             </div>
-
-                                            {/* Si hay series disponibles en bodega (ajuste negativo), mostrarlas para seleccionar rápidamente */}
-                                            {seriesOptions.length > 0 && (
-                                                <div style={{ marginBottom: '10px', fontSize: '0.75rem', color: '#6d28d9' }}>
-                                                    <strong>Sugerencias en bodega: </strong>
-                                                    {seriesOptions.slice(0, 10).map((so: any, soIdx: number) => (
-                                                        <button 
-                                                            key={soIdx} 
-                                                            type="button" 
-                                                            onClick={() => {
-                                                                const emptyIdx = detalle.series.findIndex(s => !s.numero_serie.trim());
-                                                                if (emptyIdx !== -1) {
-                                                                    updateSerieRow(index, emptyIdx, so.numero_serie);
-                                                                } else {
-                                                                    const newDetalles = [...detalles];
-                                                                    newDetalles[index].series.push({ numero_serie: so.numero_serie });
-                                                                    newDetalles[index].cantidad = newDetalles[index].series.length;
-                                                                    setDetalles(newDetalles);
-                                                                }
-                                                            }}
-                                                            style={{ margin: '2px 4px', padding: '2px 6px', backgroundColor: '#ede9fe', border: '1px solid #c4b5fd', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}
-                                                        >
-                                                            +{so.numero_serie}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            )}
 
                                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '8px', marginBottom: '10px' }}>
                                                 {detalle.series.map((serie, sIdx) => (
@@ -650,11 +547,10 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
                             type="submit" 
                             disabled={loading} 
                             style={{
-                                backgroundColor: tipo === 'AJUSTE_POSITIVO' ? '#10b981' : '#f97316', 
-                                color: 'white', padding: '14px 32px', borderRadius: '12px', border: 'none', fontWeight: 600, fontSize: '0.95rem', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1, display: 'flex', alignItems: 'center', gap: '8px', boxShadow: `0 4px 12px ${tipo === 'AJUSTE_POSITIVO' ? 'rgba(16, 185, 129, 0.25)' : 'rgba(249, 115, 22, 0.25)'}`, transition: 'all 0.2s'
+                                backgroundColor: '#2563eb', color: 'white', padding: '14px 32px', borderRadius: '12px', border: 'none', fontWeight: 600, fontSize: '0.95rem', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1, display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)', transition: 'all 0.2s'
                             }}
                         >
-                            {loading ? 'Procesando...' : 'Ejecutar Ajuste'}
+                            {loading ? 'Procesando...' : 'Cargar Inventario Inicial'}
                         </button>
                     </div>
                 </form>
