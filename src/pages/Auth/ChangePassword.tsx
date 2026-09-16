@@ -30,7 +30,15 @@ const ChangePassword: React.FC = () => {
   useEffect(() => {
     if (!token) {
       setErrors({ general: 'Token de verificación no válido. Por favor, revisa el enlace que recibiste por correo.' });
+      return;
     }
+
+    // ─── REDIRECCIÓN A APP MÓVIL (Deep Link) ───
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (isMobile && token) {
+      window.location.href = `facturatesis://change-password?token=${token}`;
+    }
+    // ───────────────────────────────────────────
   }, [token]);
 
   useEffect(() => {
