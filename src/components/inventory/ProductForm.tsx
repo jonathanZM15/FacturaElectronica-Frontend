@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
     Producto, TipoProducto, TipoControlInventario, TipoEntrega, 
-    TipoBodegaSalida, StockInicialPayload, StockInicialLote, StockInicialSerie, Bodega, Categoria 
+    TipoBodegaSalida, Bodega, Categoria 
 } from '../../types/inventory';
 import { createProducto, updateProducto, deleteProducto, getBodegas, getCategorias, getProductos } from '../../services/inventoryService';
-import { LoteFields } from './LoteFields';
-import { SerieFields } from './SerieFields';
 
 interface ProductFormProps {
     emisorId: number | string;
@@ -45,10 +43,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({ emisorId, onSuccess })
         permite_venta: true, permite_compra: true, uso_interno: false, permite_exhibicion: true,
         seleccionable_venta_suspendida: false, requiere_preparacion: false, seleccion_avanzada_bodega_salida: false, permite_devolucion: true,
     });
-
-    const [stockInicial, setStockInicial] = useState<StockInicialPayload>({});
-    const [lotes, setLotes] = useState<StockInicialLote[]>([]);
-    const [series, setSeries] = useState<StockInicialSerie[]>([]);
 
     const handleUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -108,11 +102,9 @@ export const ProductForm: React.FC<ProductFormProps> = ({ emisorId, onSuccess })
     useEffect(() => {
         if (producto.tipo === TipoProducto.SERVICIO) {
             setProducto(prev => ({ ...prev, tipo_control_inventario: TipoControlInventario.SIN_CONTROL }));
-            if (activeTab === 6) setActiveTab(1);
+            // Servicio
         }
-    }, [producto.tipo, activeTab]);
-
-    const showStockTab = producto.tipo === TipoProducto.FISICO && producto.tipo_control_inventario !== TipoControlInventario.SIN_CONTROL;
+    }, [producto.tipo]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -144,41 +136,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({ emisorId, onSuccess })
             }
 
             const payload: any = { ...producto };
-            
-            // Stock inicial es opcional: solo se procesa si se seleccionó una bodega destino
-            if (showStockTab && stockInicial.bodega_destino_id) {
-                const stockPayload: StockInicialPayload = { bodega_destino_id: stockInicial.bodega_destino_id };
-                
-                if (producto.tipo_control_inventario === TipoControlInventario.CANTIDAD) {
-                    if (!stockInicial.cantidad || stockInicial.cantidad <= 0) {
-                        setError('Debe ingresar una cantidad mayor a 0 para el stock inicial en la bodega seleccionada.');
-                        setActiveTab(6);
-                        setLoading(false);
-                        return;
-                    }
-                    stockPayload.cantidad = stockInicial.cantidad;
-                    stockPayload.costo_unitario = stockInicial.costo_unitario;
-                } else if (producto.tipo_control_inventario === TipoControlInventario.LOTE) {
-                    if (lotes.length === 0) {
-                        setError('Debe registrar al menos un lote para el stock inicial en la bodega seleccionada.');
-                        setActiveTab(6);
-                        setLoading(false);
-                        return;
-                    }
-                    stockPayload.lotes = lotes;
-                } else if (producto.tipo_control_inventario === TipoControlInventario.SERIE) {
-                    if (series.length === 0) {
-                        setError('Debe registrar al menos una serie para el stock inicial en la bodega seleccionada.');
-                        setActiveTab(6);
-                        setLoading(false);
-                        return;
-                    }
-                    stockPayload.series = series;
-                    stockPayload.cantidad = series.length;
-                }
-                payload.stock_inicial = stockPayload;
-            }
-
             const nuevoProducto = await createProducto(emisorId, payload as Producto);
             setSuccess('Producto guardado exitosamente.');
             
@@ -189,9 +146,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({ emisorId, onSuccess })
                 permite_venta: true, permite_compra: true, uso_interno: false, permite_exhibicion: true,
                 seleccionable_venta_suspendida: false, requiere_preparacion: false, seleccion_avanzada_bodega_salida: false, permite_devolucion: true,
             });
-            setStockInicial({});
-            setLotes([]);
-            setSeries([]);
             setActiveTab(1);
             
             loadProductos();
@@ -215,7 +169,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({ emisorId, onSuccess })
         { id: 4, label: 'Configuración', icon: '⚙️' }, 
         { id: 5, label: 'Comercial', icon: '🤝' },
     ];
-    if (showStockTab) tabs.push({ id: 6, label: 'Stock Inicial', icon: '📦' });
 
     // Common input styles for consistency
     const inputStyle = {
@@ -559,57 +512,6 @@ export const ProductForm: React.FC<ProductFormProps> = ({ emisorId, onSuccess })
                             )}
                         </div>
                     </div>
-
-                    {/* 6. Stock Inicial */}
-                    {showStockTab && (
-                        <div style={{ display: activeTab === 6 ? 'block' : 'none' }}>
-                            <div style={{ backgroundColor: '#eef2ff', padding: '20px', borderRadius: '16px', border: '1px solid #c7d2fe', marginBottom: '24px', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-                                <div style={{ fontSize: '1.5rem', marginTop: '2px' }}>📦</div>
-                                <div>
-                                    <h3 style={{ margin: '0 0 4px 0', color: '#312e81', fontSize: '1.05rem', fontWeight: 700 }}>Asignación Inicial de Inventario</h3>
-                                    <p style={{ margin: 0, color: '#4338ca', fontSize: '0.9rem' }}>Puedes asignar existencias ahora para que el producto ya nazca con stock. Esto generará automáticamente el movimiento contable inicial.</p>
-                                </div>
-                            </div>
-
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px', marginBottom: '24px' }}>
-                                <div>
-                                    <label style={labelStyle}>Bodega para el Stock</label>
-                                    <select value={stockInicial.bodega_destino_id || ''} onChange={e => setStockInicial(p => ({ ...p, bodega_destino_id: Number(e.target.value) }))} style={inputStyle}>
-                                        <option value="">Seleccione dónde guardar...</option>
-                                        {bodegas.map(b => <option key={b.id} value={b.id}>{b.nombre} ({b.tipo})</option>)}
-                                    </select>
-                                </div>
-
-                                {producto.tipo_control_inventario === TipoControlInventario.CANTIDAD && (
-                                    <>
-                                        <div>
-                                            <label style={labelStyle}>Cantidad que Ingresa</label>
-                                            <input type="number" min="0.000001" step="0.000001" value={stockInicial.cantidad || ''} onChange={e => setStockInicial(p => ({ ...p, cantidad: Number(e.target.value) }))} style={inputStyle} onFocus={(e) => { e.target.style.borderColor = '#6366f1'; e.target.style.boxShadow = '0 0 0 4px rgba(99, 102, 241, 0.1)'; }} onBlur={(e) => { e.target.style.borderColor = '#cbd5e1'; e.target.style.boxShadow = 'inset 0 1px 2px rgba(0,0,0,0.02)'; }} />
-                                        </div>
-                                        <div>
-                                            <label style={labelStyle}>Costo Unitario Promedio (Opcional)</label>
-                                            <div style={{ position: 'relative' }}>
-                                                <span style={{ position: 'absolute', left: '16px', top: '12px', color: '#64748b', fontWeight: 600 }}>$</span>
-                                                <input type="number" step="0.000001" value={stockInicial.costo_unitario || ''} onChange={e => setStockInicial(p => ({ ...p, costo_unitario: e.target.value ? Number(e.target.value) : undefined }))} style={{...inputStyle, paddingLeft: '32px'}} placeholder="Costo de compra" onFocus={(e) => { e.target.style.borderColor = '#6366f1'; e.target.style.boxShadow = '0 0 0 4px rgba(99, 102, 241, 0.1)'; }} onBlur={(e) => { e.target.style.borderColor = '#cbd5e1'; e.target.style.boxShadow = 'inset 0 1px 2px rgba(0,0,0,0.02)'; }} />
-                                            </div>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-
-                            {producto.tipo_control_inventario === TipoControlInventario.LOTE && (
-                                <div style={{ padding: '24px', backgroundColor: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-                                    <LoteFields lotes={lotes} onChange={setLotes} />
-                                </div>
-                            )}
-
-                            {producto.tipo_control_inventario === TipoControlInventario.SERIE && (
-                                <div style={{ padding: '24px', backgroundColor: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-                                    <SerieFields series={series} onChange={setSeries} />
-                                </div>
-                            )}
-                        </div>
-                    )}
 
                     <div style={{ marginTop: '40px', paddingTop: '24px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end' }}>
                         <button

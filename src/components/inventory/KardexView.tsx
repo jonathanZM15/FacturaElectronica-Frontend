@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { getKardex, getProductos, getBodegas } from '../../services/inventoryService';
-import { KardexItem, Producto, Bodega } from '../../types/inventory';
+import { getKardex, getProductos, getBodegas, getMotivosMovimiento } from '../../services/inventoryService';
+import { KardexItem, Producto, Bodega, MotivoMovimiento } from '../../types/inventory';
 
 interface Props {
     emisorId: number | string;
@@ -10,6 +10,7 @@ export const KardexView: React.FC<Props> = ({ emisorId }) => {
     const [historial, setHistorial] = useState<KardexItem[]>([]);
     const [productos, setProductos] = useState<Producto[]>([]);
     const [bodegas, setBodegas] = useState<Bodega[]>([]);
+    const [motivos, setMotivos] = useState<MotivoMovimiento[]>([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
@@ -20,6 +21,7 @@ export const KardexView: React.FC<Props> = ({ emisorId }) => {
     const [filtroProductoId, setFiltroProductoId] = useState<string>('');
     const [filtroBodegaId, setFiltroBodegaId] = useState<string>('');
     const [filtroTipo, setFiltroTipo] = useState<string>('');
+    const [filtroMotivoId, setFiltroMotivoId] = useState<string>('');
     const [filtroFechaInicio, setFiltroFechaInicio] = useState<string>('');
     const [filtroFechaFin, setFiltroFechaFin] = useState<string>('');
 
@@ -27,6 +29,7 @@ export const KardexView: React.FC<Props> = ({ emisorId }) => {
     useEffect(() => {
         getProductos(emisorId).then(setProductos).catch(console.error);
         getBodegas(emisorId).then(setBodegas).catch(console.error);
+        getMotivosMovimiento(emisorId).then(setMotivos).catch(console.error);
     }, [emisorId]);
 
     const loadKardex = useCallback(async (showRefreshAnimation = false) => {
@@ -38,6 +41,7 @@ export const KardexView: React.FC<Props> = ({ emisorId }) => {
             if (filtroProductoId) filters.producto_id = filtroProductoId;
             if (filtroBodegaId) filters.bodega_id = filtroBodegaId;
             if (filtroTipo) filters.tipo_movimiento = filtroTipo;
+            if (filtroMotivoId) filters.motivo_id = filtroMotivoId;
             if (filtroFechaInicio) filters.fecha_inicio = filtroFechaInicio;
             if (filtroFechaFin) filters.fecha_fin = filtroFechaFin;
 
@@ -51,7 +55,7 @@ export const KardexView: React.FC<Props> = ({ emisorId }) => {
             setLoading(false);
             setIsRefreshing(false);
         }
-    }, [emisorId, page, filtroProductoId, filtroBodegaId, filtroTipo, filtroFechaInicio, filtroFechaFin]);
+    }, [emisorId, page, filtroProductoId, filtroBodegaId, filtroTipo, filtroMotivoId, filtroFechaInicio, filtroFechaFin]);
 
     useEffect(() => {
         loadKardex();
@@ -61,6 +65,7 @@ export const KardexView: React.FC<Props> = ({ emisorId }) => {
         setFiltroProductoId('');
         setFiltroBodegaId('');
         setFiltroTipo('');
+        setFiltroMotivoId('');
         setFiltroFechaInicio('');
         setFiltroFechaFin('');
         setPage(1);
@@ -195,6 +200,24 @@ export const KardexView: React.FC<Props> = ({ emisorId }) => {
                     </div>
 
                     <div>
+                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#64748b', marginBottom: '6px' }}>Motivo</label>
+                        <select
+                            value={filtroMotivoId}
+                            onChange={e => { setFiltroMotivoId(e.target.value); setPage(1); }}
+                            style={{ width: '100%', padding: '9px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.85rem', backgroundColor: 'white' }}
+                        >
+                            <option value="">Todos los motivos</option>
+                            {motivos
+                                .filter(m => !filtroTipo || m.tipo_movimiento === filtroTipo)
+                                .map(m => (
+                                    <option key={m.id} value={m.id}>
+                                        [{m.codigo}] {m.descripcion}
+                                    </option>
+                                ))}
+                        </select>
+                    </div>
+
+                    <div>
                         <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#64748b', marginBottom: '6px' }}>Desde</label>
                         <input
                             type="date"
@@ -239,30 +262,32 @@ export const KardexView: React.FC<Props> = ({ emisorId }) => {
                 </div>
 
                 <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '1100px' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '1200px' }}>
                         <thead>
                             <tr style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
                                 <th style={{ padding: '14px 18px', fontSize: '0.8rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Fecha y Hora</th>
                                 <th style={{ padding: '14px 18px', fontSize: '0.8rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Tipo Movimiento</th>
+                                <th style={{ padding: '14px 18px', fontSize: '0.8rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Motivo</th>
                                 <th style={{ padding: '14px 18px', fontSize: '0.8rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Documento</th>
                                 <th style={{ padding: '14px 18px', fontSize: '0.8rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Producto</th>
                                 <th style={{ padding: '14px 18px', fontSize: '0.8rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Bodega</th>
                                 <th style={{ padding: '14px 18px', fontSize: '0.8rem', fontWeight: 700, color: '#15803d', textTransform: 'uppercase', letterSpacing: '0.04em', textAlign: 'right' }}>Entrada (+)</th>
                                 <th style={{ padding: '14px 18px', fontSize: '0.8rem', fontWeight: 700, color: '#b91c1c', textTransform: 'uppercase', letterSpacing: '0.04em', textAlign: 'right' }}>Salida (-)</th>
+                                <th style={{ padding: '14px 18px', fontSize: '0.8rem', fontWeight: 700, color: '#4f46e5', textTransform: 'uppercase', letterSpacing: '0.04em', textAlign: 'right' }}>Costo Total</th>
                                 <th style={{ padding: '14px 18px', fontSize: '0.8rem', fontWeight: 700, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.04em', textAlign: 'right' }}>Saldo</th>
                             </tr>
                         </thead>
                         <tbody>
                             {loading && !isRefreshing ? (
                                 <tr>
-                                    <td colSpan={8} style={{ padding: '50px 24px', textAlign: 'center', color: '#94a3b8' }}>
+                                    <td colSpan={10} style={{ padding: '50px 24px', textAlign: 'center', color: '#94a3b8' }}>
                                         <div style={{ display: 'inline-block', width: '28px', height: '28px', border: '3px solid #e2e8f0', borderTopColor: '#4f46e5', borderRadius: '50%', animation: 'spin 0.8s linear infinite', marginBottom: '10px' }}></div>
                                         <div style={{ fontSize: '0.9rem', fontWeight: 500 }}>Cargando registros del Kardex...</div>
                                     </td>
                                 </tr>
                             ) : historial.length === 0 ? (
                                 <tr>
-                                    <td colSpan={8} style={{ padding: '50px 24px', textAlign: 'center', color: '#94a3b8' }}>
+                                    <td colSpan={10} style={{ padding: '50px 24px', textAlign: 'center', color: '#94a3b8' }}>
                                         <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>📄</div>
                                         <div style={{ fontWeight: 600, color: '#475569', fontSize: '1rem' }}>No se encontraron registros de Kardex</div>
                                         <div style={{ fontSize: '0.85rem', marginTop: '4px' }}>Intenta ajustando los filtros de búsqueda</div>
@@ -272,7 +297,16 @@ export const KardexView: React.FC<Props> = ({ emisorId }) => {
                                 historial.map((item, idx) => {
                                     const cantEntrada = parseFloat(String(item.entrada || 0));
                                     const cantSalida = parseFloat(String(item.salida || 0));
+                                    const cant = cantEntrada > 0 ? cantEntrada : cantSalida;
                                     const fecha = item.fecha_hora ? new Date(item.fecha_hora).toLocaleString('es-EC', { dateStyle: 'short', timeStyle: 'medium' }) : '—';
+                                    
+                                    const det = item.registro_operativo?.detalles?.find(d => Number(d.producto_id) === Number(item.producto_id));
+                                    let costoTotal: number | null = null;
+                                    if (det?.costo_total !== undefined && det.costo_total !== null && Number(det.costo_total) > 0) {
+                                        costoTotal = Number(det.costo_total);
+                                    } else if (det?.costo_unitario !== undefined && det.costo_unitario !== null && Number(det.costo_unitario) > 0) {
+                                        costoTotal = cant * Number(det.costo_unitario);
+                                    }
 
                                     return (
                                         <tr
@@ -284,6 +318,22 @@ export const KardexView: React.FC<Props> = ({ emisorId }) => {
                                             </td>
                                             <td style={{ padding: '14px 18px' }}>
                                                 {renderBadge(item.tipo_movimiento)}
+                                            </td>
+                                            <td style={{ padding: '14px 18px', fontSize: '0.85rem' }}>
+                                                {item.registro_operativo?.motivo ? (
+                                                    <span 
+                                                        title={`[${item.registro_operativo.motivo.codigo}] ${item.registro_operativo.motivo.descripcion}`}
+                                                        style={{ 
+                                                            backgroundColor: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', 
+                                                            padding: '3px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600,
+                                                            display: 'inline-block', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+                                                        }}
+                                                    >
+                                                        [{item.registro_operativo.motivo.codigo}] {item.registro_operativo.motivo.descripcion}
+                                                    </span>
+                                                ) : (
+                                                    <span style={{ color: '#94a3b8' }}>—</span>
+                                                )}
                                             </td>
                                             <td style={{ padding: '14px 18px', color: '#334155', fontSize: '0.85rem' }}>
                                                 <span style={{ fontWeight: 700, color: '#0f172a' }}>{item.numero_documento || '—'}</span>
@@ -308,6 +358,9 @@ export const KardexView: React.FC<Props> = ({ emisorId }) => {
                                             </td>
                                             <td style={{ padding: '14px 18px', color: cantSalida > 0 ? '#b91c1c' : '#94a3b8', fontSize: '0.9rem', fontWeight: cantSalida > 0 ? 700 : 400, textAlign: 'right' }}>
                                                 {cantSalida > 0 ? `-${formatNumber(item.salida)}` : '—'}
+                                            </td>
+                                            <td style={{ padding: '14px 18px', color: costoTotal ? '#0f172a' : '#94a3b8', fontSize: '0.85rem', fontWeight: costoTotal ? 700 : 400, textAlign: 'right' }}>
+                                                {costoTotal ? `$ ${costoTotal.toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
                                             </td>
                                             <td style={{ padding: '14px 18px', color: '#0f172a', fontSize: '0.95rem', fontWeight: 800, textAlign: 'right' }}>
                                                 {formatNumber(item.saldo)}

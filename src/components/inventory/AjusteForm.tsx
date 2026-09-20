@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Bodega, Producto, AjustePayload, TipoProducto, TipoControlInventario } from '../../types/inventory';
-import { getBodegas, getProductos, ajustarStock, getExistenciasLotes, getExistenciasSeries } from '../../services/inventoryService';
+import { Bodega, Producto, AjustePayload, TipoProducto, TipoControlInventario, MotivoMovimiento } from '../../types/inventory';
+import { getBodegas, getProductos, ajustarStock, getExistenciasLotes, getExistenciasSeries, getStockEnBodega } from '../../services/inventoryService';
+import { MotivoSelect } from './MotivoSelect';
 
 interface Props {
     emisorId: number | string;
@@ -19,6 +20,8 @@ interface SerieItem {
 interface DetalleItem {
     producto_id: number | '';
     cantidad: number;
+    costo_unitario?: number | '';
+    stock_actual?: number;
     lotes: LoteItem[];
     series: SerieItem[];
 }
@@ -33,9 +36,11 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
 
     const [bodegaId, setBodegaId] = useState<number | ''>('');
     const [tipo, setTipo] = useState<'AJUSTE_POSITIVO' | 'AJUSTE_NEGATIVO'>('AJUSTE_POSITIVO');
+    const [motivoId, setMotivoId] = useState<number | ''>('');
+    const [selectedMotivoObj, setSelectedMotivoObj] = useState<MotivoMovimiento | undefined>(undefined);
     const [observacion, setObservacion] = useState('');
     const [detalles, setDetalles] = useState<DetalleItem[]>([
-        { producto_id: '', cantidad: 1, lotes: [{ numero_lote: '', cantidad: 1 }], series: [{ numero_serie: '' }] }
+        { producto_id: '', cantidad: 1, costo_unitario: '', lotes: [{ numero_lote: '', cantidad: 1 }], series: [{ numero_serie: '' }] }
     ]);
 
     // Existencias disponibles en la bodega para sugerir en AJUSTE_NEGATIVO
@@ -95,6 +100,18 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
             const prod = productos.find(p => p.id === prodId);
             const tipoControl = prod?.tipo_control_inventario;
 
+            if (bodegaId) {
+                getStockEnBodega(emisorId, bodegaId, prodId).then(stock => {
+                    setDetalles(curr => {
+                        const next = [...curr];
+                        if (next[index] && next[index].producto_id === prodId) {
+                            next[index] = { ...next[index], stock_actual: stock };
+                        }
+                        return next;
+                    });
+                }).catch(() => {});
+            }
+
             if (tipoControl === TipoControlInventario.LOTE) {
                 newDetalles[index].lotes = [{ numero_lote: '', cantidad: newDetalles[index].cantidad || 1 }];
                 fetchExistenciasProducto(prodId);
@@ -104,6 +121,8 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
                 newDetalles[index].series = Array.from({ length: cant }, () => ({ numero_serie: '' }));
                 fetchExistenciasProducto(prodId);
             }
+        } else {
+            newDetalles[index].stock_actual = undefined;
         }
 
         setDetalles(newDetalles);
@@ -204,6 +223,17 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
             return;
         }
 
+        if (!motivoId) {
+            setError('El motivo del movimiento es obligatorio.');
+            return;
+        }
+
+        const isOtro = selectedMotivoObj?.codigo?.endsWith('-99');
+        if (isOtro && !observacion.trim()) {
+            setError(`La observación general es obligatoria cuando el motivo seleccionado es Otro (${selectedMotivoObj?.codigo}).`);
+            return;
+        }
+
         const validDetalles = detalles.filter(d => d.producto_id !== '' && d.cantidad > 0);
         if (validDetalles.length === 0) {
             setError('Debe agregar al menos un producto válido');
@@ -256,8 +286,9 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
         setLoading(true);
         try {
             const payload: AjustePayload = {
-                bodega_id: bodegaId,
+                bodega_id: Number(bodegaId),
                 tipo,
+                motivo_id: Number(motivoId),
                 observacion,
                 detalles: validDetalles.map(d => {
                     const prod = productos.find(p => p.id === d.producto_id);
@@ -265,7 +296,8 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
 
                     const item: any = {
                         producto_id: Number(d.producto_id),
-                        cantidad: Number(d.cantidad)
+                        cantidad: Number(d.cantidad),
+                        costo_unitario: d.costo_unitario !== '' && d.costo_unitario !== undefined ? Number(d.costo_unitario) : 0
                     };
 
                     if (tipoControl === TipoControlInventario.LOTE) {
@@ -287,8 +319,10 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
             const movNumero = res?.data?.numero || res?.movimiento || res?.data?.movimiento || '';
             setSuccess(`Ajuste ${movNumero ? movNumero + ' ' : ''}ejecutado correctamente.`);
             setBodegaId('');
+            setMotivoId('');
+            setSelectedMotivoObj(undefined);
             setObservacion('');
-            setDetalles([{ producto_id: '', cantidad: 1, lotes: [{ numero_lote: '', cantidad: 1 }], series: [{ numero_serie: '' }] }]);
+            setDetalles([{ producto_id: '', cantidad: 1, costo_unitario: '', lotes: [{ numero_lote: '', cantidad: 1 }], series: [{ numero_serie: '' }] }]);
             
             if (onSuccess) onSuccess();
             setTimeout(() => setSuccess(''), 5000);
@@ -324,7 +358,7 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
                 
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                     <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
-                        <div style={{ flex: '1 1 300px' }}>
+                        <div style={{ flex: '1 1 250px' }}>
                             <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '8px' }}>
                                 Tipo de Ajuste <span style={{ color: '#ef4444' }}>*</span>
                             </label>
@@ -333,6 +367,8 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
                                 value={tipo} 
                                 onChange={e => {
                                     setTipo(e.target.value as any);
+                                    setMotivoId('');
+                                    setSelectedMotivoObj(undefined);
                                     // Limpiar existencias cacheadas al cambiar de tipo
                                     setLotesDisponibles({});
                                     setSeriesDisponibles({});
@@ -344,27 +380,53 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
                             </select>
                         </div>
 
-                        <div style={{ flex: '1 1 300px' }}>
+                        <div style={{ flex: '1 1 250px' }}>
                             <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '8px' }}>
                                 Bodega Afectada <span style={{ color: '#ef4444' }}>*</span>
+                                {loadingData && <span style={{ fontSize: '0.75rem', color: '#6366f1', fontWeight: 400 }}>(cargando...)</span>}
                             </label>
                             <select 
                                 required 
+                                disabled={loadingData}
                                 value={bodegaId} 
-                                onChange={e => {
+                                onChange={async e => {
                                     const bId = Number(e.target.value) || '';
                                     setBodegaId(bId);
-                                    // Refrescar existencias para items seleccionados
-                                    detalles.forEach(d => { if (d.producto_id) fetchExistenciasProducto(Number(d.producto_id)); });
+                                    if (bId) {
+                                        const updated = await Promise.all(detalles.map(async d => {
+                                            if (d.producto_id) {
+                                                fetchExistenciasProducto(Number(d.producto_id));
+                                                const stock = await getStockEnBodega(emisorId, bId, Number(d.producto_id)).catch(() => 0);
+                                                return { ...d, stock_actual: stock };
+                                            }
+                                            return d;
+                                        }));
+                                        setDetalles(updated);
+                                    } else {
+                                        setDetalles(prev => prev.map(d => ({ ...d, stock_actual: undefined })));
+                                    }
                                 }} 
-                                style={{ width: '100%', padding: '12px 16px', border: '1px solid #cbd5e1', borderRadius: '12px', fontSize: '0.95rem', outline: 'none', backgroundColor: 'white', color: '#0f172a' }}
+                                style={{ width: '100%', padding: '12px 16px', border: '1px solid #cbd5e1', borderRadius: '12px', fontSize: '0.95rem', outline: 'none', backgroundColor: loadingData ? '#f1f5f9' : 'white', color: '#0f172a', cursor: loadingData ? 'wait' : 'pointer' }}
                             >
-                                <option value="">Seleccione bodega...</option>
-                                {bodegas.map(b => (
+                                <option value="">{loadingData ? '⏳ Cargando bodegas...' : 'Seleccione bodega...'}</option>
+                                {!loadingData && bodegas.map(b => (
                                     <option key={b.id} value={b.id}>{b.nombre} ({b.tipo})</option>
                                 ))}
                             </select>
                         </div>
+
+                        <MotivoSelect
+                            emisorId={emisorId}
+                            tipoMovimiento={tipo === 'AJUSTE_POSITIVO' ? 'MOV_09_AJUSTE_POSITIVO' : 'MOV_10_AJUSTE_NEGATIVO'}
+                            value={motivoId}
+                            onChange={(val, mot) => {
+                                setMotivoId(val);
+                                setSelectedMotivoObj(mot);
+                            }}
+                            required
+                            label={tipo === 'AJUSTE_POSITIVO' ? 'Motivo Ajuste Positivo (MOV-09)' : 'Motivo Ajuste Negativo (MOV-10)'}
+                            containerStyle={{ flex: '1 1 300px' }}
+                        />
                     </div>
 
                     <div>
@@ -435,9 +497,24 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
                                             </select>
                                         </div>
 
-                                        <div style={{ width: '140px' }}>
+                                        {/* COLUMNA 1: STOCK ACTUAL */}
+                                        <div style={{ width: '120px' }}>
                                             <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
-                                                Cantidad Total
+                                                Stock Actual
+                                            </label>
+                                            <input 
+                                                type="text" 
+                                                readOnly 
+                                                value={detalle.producto_id && bodegaId ? (detalle.stock_actual !== undefined ? Number(detalle.stock_actual).toFixed(2) : '...') : '—'} 
+                                                title="Stock físico disponible actualmente en la bodega seleccionada"
+                                                style={{ width: '100%', padding: '10px 14px', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '0.9rem', outline: 'none', backgroundColor: '#f8fafc', color: '#475569', fontWeight: 600, textAlign: 'right', boxSizing: 'border-box' }} 
+                                            />
+                                        </div>
+
+                                        {/* COLUMNA 2: CANTIDAD AJUSTADA */}
+                                        <div style={{ width: '130px' }}>
+                                            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
+                                                Cant. Ajustada
                                             </label>
                                             <input 
                                                 type="number" 
@@ -447,6 +524,69 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
                                                 value={detalle.cantidad} 
                                                 onChange={e => handleCantidadChange(index, parseFloat(e.target.value) || 0)} 
                                                 style={{ width: '100%', padding: '10px 14px', border: '1px solid #cbd5e1', borderRadius: '10px', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' }} 
+                                            />
+                                        </div>
+
+                                        {/* COLUMNA 3: STOCK RESULTANTE PROYECTADO */}
+                                        {(() => {
+                                            const stockAct = detalle.stock_actual ?? 0;
+                                            const cant = Number(detalle.cantidad) || 0;
+                                            const proyectado = tipo === 'AJUSTE_POSITIVO' ? stockAct + cant : stockAct - cant;
+                                            const esNegativoInvalido = tipo === 'AJUSTE_NEGATIVO' && proyectado < -0.000001;
+
+                                            return (
+                                                <div style={{ width: '130px' }}>
+                                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
+                                                        Stock Resultante
+                                                    </label>
+                                                    <input 
+                                                        type="text" 
+                                                        readOnly 
+                                                        value={detalle.producto_id && bodegaId ? proyectado.toFixed(2) : '—'} 
+                                                        title={esNegativoInvalido ? '¡Advertencia! El stock resultante sería negativo' : 'Stock proyectado tras el ajuste'}
+                                                        style={{ 
+                                                            width: '100%', padding: '10px 14px', 
+                                                            border: `1px solid ${esNegativoInvalido ? '#fca5a5' : '#e2e8f0'}`, 
+                                                            borderRadius: '10px', fontSize: '0.9rem', outline: 'none', 
+                                                            backgroundColor: esNegativoInvalido ? '#fef2f2' : '#f8fafc', 
+                                                            color: esNegativoInvalido ? '#b91c1c' : (proyectado > 0 ? '#15803d' : '#475569'), 
+                                                            fontWeight: 700, textAlign: 'right', boxSizing: 'border-box' 
+                                                        }} 
+                                                    />
+                                                </div>
+                                            );
+                                        })()}
+
+                                        {/* COSTO UNITARIO */}
+                                        <div style={{ width: '130px' }}>
+                                            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
+                                                Costo Unitario ($)
+                                            </label>
+                                            <input 
+                                                type="number" 
+                                                min="0" 
+                                                step="0.000001" 
+                                                placeholder="0.00"
+                                                value={detalle.costo_unitario ?? ''} 
+                                                onChange={e => {
+                                                    const newDetalles = [...detalles];
+                                                    newDetalles[index].costo_unitario = e.target.value === '' ? '' : parseFloat(e.target.value);
+                                                    setDetalles(newDetalles);
+                                                }} 
+                                                style={{ width: '100%', padding: '10px 14px', border: '1px solid #cbd5e1', borderRadius: '10px', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' }} 
+                                            />
+                                        </div>
+
+                                        {/* SUBTOTAL CALCULADO */}
+                                        <div style={{ width: '120px' }}>
+                                            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
+                                                Subtotal ($)
+                                            </label>
+                                            <input 
+                                                type="text" 
+                                                readOnly 
+                                                value={`$ ${((Number(detalle.cantidad) || 0) * (Number(detalle.costo_unitario) || 0)).toFixed(2)}`} 
+                                                style={{ width: '100%', padding: '10px 14px', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '0.9rem', outline: 'none', backgroundColor: '#f8fafc', color: '#0f172a', fontWeight: 700, textAlign: 'right', boxSizing: 'border-box' }} 
                                             />
                                         </div>
 
@@ -643,6 +783,29 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
                         >
                             + Añadir Producto
                         </button>
+                    </div>
+
+                    {/* Barra de Resumen Acumulado */}
+                    <div style={{ padding: '16px 24px', backgroundColor: '#f8fafc', borderRadius: '14px', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                        <div style={{ display: 'flex', gap: '28px', alignItems: 'center' }}>
+                            <div>
+                                <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', textTransform: 'uppercase', fontWeight: 700 }}>Ítems</span>
+                                <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>{detalles.filter(d => d.producto_id !== '').length}</span>
+                            </div>
+                            <div style={{ width: '1px', height: '32px', backgroundColor: '#e2e8f0' }} />
+                            <div>
+                                <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', textTransform: 'uppercase', fontWeight: 700 }}>Total Unidades</span>
+                                <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>
+                                    {detalles.reduce((acc, d) => acc + (Number(d.cantidad) || 0), 0).toLocaleString('es-EC', { minimumFractionDigits: 0, maximumFractionDigits: 4 })}
+                                </span>
+                            </div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                            <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', textTransform: 'uppercase', fontWeight: 700 }}>Costo Total Acumulado</span>
+                            <span style={{ fontSize: '1.35rem', fontWeight: 800, color: tipo === 'AJUSTE_POSITIVO' ? '#15803d' : '#ea580c' }}>
+                                $ {detalles.reduce((acc, d) => acc + ((Number(d.cantidad) || 0) * (Number(d.costo_unitario) || 0)), 0).toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                        </div>
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>

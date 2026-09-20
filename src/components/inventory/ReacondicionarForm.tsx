@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Bodega, Producto, TipoBodega, TipoProducto, TipoControlInventario } from '../../types/inventory';
+import { Bodega, Producto, TipoBodega, TipoProducto, TipoControlInventario, MotivoMovimiento } from '../../types/inventory';
 import { getBodegas, getProductos, reacondicionarStock, getExistenciasLotes, getExistenciasSeries } from '../../services/inventoryService';
+import { MotivoSelect } from './MotivoSelect';
 
 interface Props {
     emisorId: number | string;
@@ -19,6 +20,7 @@ interface SerieItem {
 interface DetalleItem {
     producto_id: number | '';
     cantidad: number;
+    costo_unitario?: number | '';
     lotes: LoteItem[];
     series: SerieItem[];
 }
@@ -33,9 +35,11 @@ export const ReacondicionarForm: React.FC<Props> = ({ emisorId, onSuccess }) => 
 
     const [origenId, setOrigenId] = useState<number | ''>('');
     const [destinoId, setDestinoId] = useState<number | ''>('');
+    const [motivoId, setMotivoId] = useState<number | ''>('');
+    const [selectedMotivoObj, setSelectedMotivoObj] = useState<MotivoMovimiento | undefined>(undefined);
     const [observacion, setObservacion] = useState('');
     const [detalles, setDetalles] = useState<DetalleItem[]>([
-        { producto_id: '', cantidad: 1, lotes: [{ numero_lote: '', cantidad: 1 }], series: [{ numero_serie: '' }] }
+        { producto_id: '', cantidad: 1, costo_unitario: '', lotes: [{ numero_lote: '', cantidad: 1 }], series: [{ numero_serie: '' }] }
     ]);
 
     const [lotesDisponibles, setLotesDisponibles] = useState<Record<number, any[]>>({});
@@ -202,6 +206,18 @@ export const ReacondicionarForm: React.FC<Props> = ({ emisorId, onSuccess }) => 
             setError('Debe seleccionar la bodega origen (MERMAS) y la bodega destino');
             return;
         }
+
+        if (!motivoId) {
+            setError('El motivo del movimiento es obligatorio para Reacondicionamiento desde mermas (MOV-12).');
+            return;
+        }
+
+        const isOtro = selectedMotivoObj?.codigo === 'REC-99';
+        if (isOtro && !observacion.trim()) {
+            setError('La observación general es obligatoria cuando el motivo seleccionado es Otro (REC-99).');
+            return;
+        }
+
         if (!observacion.trim()) {
             setError('La justificación técnica del reacondicionamiento es obligatoria');
             return;
@@ -260,6 +276,7 @@ export const ReacondicionarForm: React.FC<Props> = ({ emisorId, onSuccess }) => 
             const payload = {
                 bodega_origen_id: Number(origenId),
                 bodega_destino_id: Number(destinoId),
+                motivo_id: Number(motivoId),
                 observacion: observacion.trim(),
                 detalles: validDetalles.map(d => {
                     const prod = productos.find(p => p.id === d.producto_id);
@@ -267,7 +284,8 @@ export const ReacondicionarForm: React.FC<Props> = ({ emisorId, onSuccess }) => 
 
                     const item: any = {
                         producto_id: Number(d.producto_id),
-                        cantidad: Number(d.cantidad)
+                        cantidad: Number(d.cantidad),
+                        costo_unitario: d.costo_unitario !== '' && d.costo_unitario !== undefined ? Number(d.costo_unitario) : 0
                     };
 
                     if (tipoControl === TipoControlInventario.LOTE) {
@@ -290,8 +308,10 @@ export const ReacondicionarForm: React.FC<Props> = ({ emisorId, onSuccess }) => 
             setSuccess(`Reacondicionamiento ${movNumero ? movNumero + ' ' : ''}ejecutado exitosamente.`);
             setOrigenId('');
             setDestinoId('');
+            setMotivoId('');
+            setSelectedMotivoObj(undefined);
             setObservacion('');
-            setDetalles([{ producto_id: '', cantidad: 1, lotes: [{ numero_lote: '', cantidad: 1 }], series: [{ numero_serie: '' }] }]);
+            setDetalles([{ producto_id: '', cantidad: 1, costo_unitario: '', lotes: [{ numero_lote: '', cantidad: 1 }], series: [{ numero_serie: '' }] }]);
             
             if (onSuccess) onSuccess();
             setTimeout(() => setSuccess(''), 5000);
@@ -330,19 +350,21 @@ export const ReacondicionarForm: React.FC<Props> = ({ emisorId, onSuccess }) => 
                         <div style={{ flex: '1 1 300px' }}>
                             <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '8px' }}>
                                 Bodega Origen (Estrictamente MERMAS) <span style={{ color: '#ef4444' }}>*</span>
+                                {loadingData && <span style={{ fontSize: '0.75rem', color: '#6366f1', fontWeight: 400 }}>(cargando...)</span>}
                             </label>
                             <select 
                                 required 
+                                disabled={loadingData}
                                 value={origenId} 
                                 onChange={e => handleOrigenChange(Number(e.target.value) || '')} 
-                                style={{ width: '100%', padding: '12px 16px', border: '1px solid #cbd5e1', borderRadius: '12px', fontSize: '0.95rem', outline: 'none', backgroundColor: 'white', color: '#0f172a' }}
+                                style={{ width: '100%', padding: '12px 16px', border: '1px solid #cbd5e1', borderRadius: '12px', fontSize: '0.95rem', outline: 'none', backgroundColor: loadingData ? '#f1f5f9' : 'white', color: '#0f172a', cursor: loadingData ? 'wait' : 'pointer' }}
                             >
-                                <option value="">Seleccione bodega de mermas...</option>
-                                {bodegasMermas.map(b => (
+                                <option value="">{loadingData ? '⏳ Cargando bodegas...' : 'Seleccione bodega de mermas...'}</option>
+                                {!loadingData && bodegasMermas.map(b => (
                                     <option key={b.id} value={b.id}>{b.nombre} ({b.tipo})</option>
                                 ))}
                             </select>
-                            {bodegasMermas.length === 0 && (
+                            {!loadingData && bodegasMermas.length === 0 && (
                                 <div style={{ fontSize: '0.8rem', color: '#dc2626', marginTop: '4px' }}>
                                     No hay bodegas de tipo MERMAS configuradas para este emisor.
                                 </div>
@@ -352,18 +374,34 @@ export const ReacondicionarForm: React.FC<Props> = ({ emisorId, onSuccess }) => 
                         <div style={{ flex: '1 1 300px' }}>
                             <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '8px' }}>
                                 Bodega Destino Reintegrada <span style={{ color: '#ef4444' }}>*</span>
+                                {loadingData && <span style={{ fontSize: '0.75rem', color: '#6366f1', fontWeight: 400 }}>(cargando...)</span>}
                             </label>
                             <select 
                                 required 
+                                disabled={loadingData}
                                 value={destinoId} 
                                 onChange={e => setDestinoId(Number(e.target.value) || '')} 
-                                style={{ width: '100%', padding: '12px 16px', border: '1px solid #cbd5e1', borderRadius: '12px', fontSize: '0.95rem', outline: 'none', backgroundColor: 'white', color: '#0f172a' }}
+                                style={{ width: '100%', padding: '12px 16px', border: '1px solid #cbd5e1', borderRadius: '12px', fontSize: '0.95rem', outline: 'none', backgroundColor: loadingData ? '#f1f5f9' : 'white', color: '#0f172a', cursor: loadingData ? 'wait' : 'pointer' }}
                             >
-                                <option value="">Seleccione bodega de destino apta...</option>
-                                {bodegasNormales.map(b => (
+                                <option value="">{loadingData ? '⏳ Cargando bodegas...' : 'Seleccione bodega de destino apta...'}</option>
+                                {!loadingData && bodegasNormales.map(b => (
                                     <option key={b.id} value={b.id}>{b.nombre} ({b.tipo})</option>
                                 ))}
                             </select>
+                        </div>
+
+                        <div style={{ flex: '1 1 300px' }}>
+                            <MotivoSelect
+                                emisorId={emisorId}
+                                tipoMovimiento="MOV_12_REACONDICIONAMIENTO_MERMAS"
+                                value={motivoId}
+                                onChange={(id, motivo) => {
+                                    setMotivoId(id);
+                                    setSelectedMotivoObj(motivo);
+                                }}
+                                required
+                                label="Motivo de Reacondicionamiento (MOV-12)"
+                            />
                         </div>
                     </div>
 
@@ -445,6 +483,38 @@ export const ReacondicionarForm: React.FC<Props> = ({ emisorId, onSuccess }) => 
                                                 value={detalle.cantidad} 
                                                 onChange={e => handleCantidadChange(index, parseFloat(e.target.value) || 0)} 
                                                 style={{ width: '100%', padding: '10px 14px', border: '1px solid #cbd5e1', borderRadius: '10px', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' }} 
+                                            />
+                                        </div>
+
+                                        <div style={{ width: '140px' }}>
+                                            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
+                                                Costo Unitario ($)
+                                            </label>
+                                            <input 
+                                                type="number" 
+                                                min="0" 
+                                                step="0.0001" 
+                                                placeholder="0.0000"
+                                                value={detalle.costo_unitario ?? ''} 
+                                                onChange={e => {
+                                                    const val = e.target.value;
+                                                    const newDetalles = [...detalles];
+                                                    newDetalles[index].costo_unitario = val === '' ? '' : parseFloat(val);
+                                                    setDetalles(newDetalles);
+                                                }} 
+                                                style={{ width: '100%', padding: '10px 14px', border: '1px solid #cbd5e1', borderRadius: '10px', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' }} 
+                                            />
+                                        </div>
+
+                                        <div style={{ width: '130px' }}>
+                                            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
+                                                Subtotal ($)
+                                            </label>
+                                            <input 
+                                                type="text" 
+                                                readOnly 
+                                                value={`$ ${((Number(detalle.cantidad) || 0) * (Number(detalle.costo_unitario) || 0)).toFixed(2)}`} 
+                                                style={{ width: '100%', padding: '10px 14px', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '0.9rem', outline: 'none', backgroundColor: '#f8fafc', color: '#0f172a', fontWeight: 700, textAlign: 'right', boxSizing: 'border-box' }} 
                                             />
                                         </div>
 
@@ -646,6 +716,29 @@ export const ReacondicionarForm: React.FC<Props> = ({ emisorId, onSuccess }) => 
                         >
                             + Añadir Producto
                         </button>
+                    </div>
+
+                    {/* Barra de Resumen Acumulado */}
+                    <div style={{ padding: '16px 24px', backgroundColor: '#f8fafc', borderRadius: '14px', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                        <div style={{ display: 'flex', gap: '28px', alignItems: 'center' }}>
+                            <div>
+                                <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', textTransform: 'uppercase', fontWeight: 700 }}>Ítems</span>
+                                <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>{detalles.filter(d => d.producto_id !== '').length}</span>
+                            </div>
+                            <div style={{ width: '1px', height: '32px', backgroundColor: '#e2e8f0' }} />
+                            <div>
+                                <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', textTransform: 'uppercase', fontWeight: 700 }}>Total Unidades</span>
+                                <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>
+                                    {detalles.reduce((acc, d) => acc + (Number(d.cantidad) || 0), 0).toLocaleString('es-EC', { minimumFractionDigits: 0, maximumFractionDigits: 4 })}
+                                </span>
+                            </div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                            <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', textTransform: 'uppercase', fontWeight: 700 }}>Costo Total Acumulado</span>
+                            <span style={{ fontSize: '1.35rem', fontWeight: 800, color: '#d97706' }}>
+                                $ {detalles.reduce((acc, d) => acc + ((Number(d.cantidad) || 0) * (Number(d.costo_unitario) || 0)), 0).toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                        </div>
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>

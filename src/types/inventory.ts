@@ -140,6 +140,25 @@ export interface KardexItem {
             nombre: string;
         };
     };
+    registro_operativo?: {
+        id: number;
+        numero: string;
+        motivo_id?: number;
+        observacion?: string;
+        motivo?: {
+            id: number;
+            codigo: string;
+            descripcion: string;
+            tipo_movimiento: string;
+        };
+        detalles?: Array<{
+            id: number;
+            registro_operativo_id: number;
+            producto_id: number;
+            costo_unitario?: number | string;
+            costo_total?: number | string;
+        }>;
+    };
 }
 
 export interface MovimientoInventarioDetalle {
@@ -200,9 +219,21 @@ export interface DetalleSeriePayload {
     numero_serie: string;
 }
 
+export interface MotivoMovimiento {
+    id: number;
+    emisor_id: number;
+    tipo_movimiento: string;
+    codigo: string;
+    descripcion: string;
+    requiere_observacion?: boolean;
+    estado?: boolean;
+}
+
 export interface ItemDetalleMovimientoPayload {
     producto_id: number;
     cantidad: number;
+    costo_unitario?: number;
+    observacion_detalle?: string;
     lotes?: DetalleLotePayload[];
     series?: DetalleSeriePayload[];
 }
@@ -210,6 +241,7 @@ export interface ItemDetalleMovimientoPayload {
 export interface TransferenciaPayload {
     bodega_origen_id: number;
     bodega_destino_id: number;
+    motivo_id?: number | '';
     observacion: string;
     detalles: ItemDetalleMovimientoPayload[];
 }
@@ -217,7 +249,15 @@ export interface TransferenciaPayload {
 export interface AjustePayload {
     bodega_id: number;
     tipo: 'AJUSTE_POSITIVO' | 'AJUSTE_NEGATIVO';
+    motivo_id: number | '';
     observacion: string;
+    detalles: ItemDetalleMovimientoPayload[];
+}
+
+export interface InventarioInicialPayload {
+    bodega_id: number;
+    motivo_id: number | '';
+    observacion?: string;
     detalles: ItemDetalleMovimientoPayload[];
 }
 

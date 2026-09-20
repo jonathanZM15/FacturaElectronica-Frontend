@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useUser } from '../../contexts/userContext';
-import { Bodega, Producto, TipoBodega, TipoProducto, TipoControlInventario } from '../../types/inventory';
+import { Bodega, Producto, TipoBodega, TipoProducto, TipoControlInventario, MotivoMovimiento } from '../../types/inventory';
+import { MotivoSelect } from '../../components/inventory/MotivoSelect';
 import { 
     getBodegas, 
     getProductos, 
@@ -24,6 +25,7 @@ interface SerieDespacho {
 interface DetalleDespacho {
     producto_id: number | '';
     cantidad: number;
+    costo_unitario?: number | '';
     lotes: LoteDespacho[];
     series: SerieDespacho[];
 }
@@ -42,9 +44,11 @@ export default function DespachosSucursalPage() {
     // --- ESTADOS SUB-PANTALLA 1: DESPACHAR ---
     const [origenId, setOrigenId] = useState<number | ''>('');
     const [destinoId, setDestinoId] = useState<number | ''>('');
+    const [motivoId, setMotivoId] = useState<number | ''>('');
+    const [selectedMotivoObj, setSelectedMotivoObj] = useState<MotivoMovimiento | undefined>(undefined);
     const [observacionDespacho, setObservacionDespacho] = useState('');
     const [detallesDespacho, setDetallesDespacho] = useState<DetalleDespacho[]>([
-        { producto_id: '', cantidad: 1, lotes: [{ numero_lote: '', cantidad: 1 }], series: [{ numero_serie: '' }] }
+        { producto_id: '', cantidad: 1, costo_unitario: '', lotes: [{ numero_lote: '', cantidad: 1 }], series: [{ numero_serie: '' }] }
     ]);
     const [lotesDisponibles, setLotesDisponibles] = useState<Record<number, any[]>>({});
     const [seriesDisponibles, setSeriesDisponibles] = useState<Record<number, any[]>>({});
@@ -142,6 +146,11 @@ export default function DespachosSucursalPage() {
             return;
         }
 
+        if (selectedMotivoObj?.codigo === 'TRS-99' && !observacionDespacho.trim()) {
+            setError('La observación es obligatoria cuando el motivo seleccionado es Otro (TRS-99).');
+            return;
+        }
+
         if (!observacionDespacho.trim()) {
             setError('La observación es obligatoria');
             return;
@@ -155,13 +164,17 @@ export default function DespachosSucursalPage() {
 
         setLoading(true);
         try {
-            const payload = {
+            const payload: any = {
                 bodega_origen_id: Number(origenId),
                 bodega_destino_id: Number(destinoId),
                 observacion: observacionDespacho.trim(),
                 detalles: validDetalles.map(d => {
                     const prod = productos.find(p => p.id === d.producto_id);
-                    const item: any = { producto_id: Number(d.producto_id), cantidad: Number(d.cantidad) };
+                    const item: any = { 
+                        producto_id: Number(d.producto_id), 
+                        cantidad: Number(d.cantidad),
+                        costo_unitario: d.costo_unitario !== '' && d.costo_unitario !== undefined ? Number(d.costo_unitario) : 0
+                    };
                     if (prod?.tipo_control_inventario === TipoControlInventario.LOTE) {
                         item.lotes = d.lotes.map(l => ({ numero_lote: l.numero_lote.trim(), cantidad: Number(l.cantidad) }));
                     } else if (prod?.tipo_control_inventario === TipoControlInventario.SERIE) {
@@ -171,12 +184,18 @@ export default function DespachosSucursalPage() {
                 })
             };
 
+            if (motivoId) {
+                payload.motivo_id = Number(motivoId);
+            }
+
             const res = await despacharSucursal(emisorId, payload);
             setSuccess(`Despacho ${res.movimiento_numero || ''} registrado con éxito. Estado: PENDIENTE DE DESCARGA.`);
             setOrigenId('');
             setDestinoId('');
+            setMotivoId('');
+            setSelectedMotivoObj(undefined);
             setObservacionDespacho('');
-            setDetallesDespacho([{ producto_id: '', cantidad: 1, lotes: [{ numero_lote: '', cantidad: 1 }], series: [{ numero_serie: '' }] }]);
+            setDetallesDespacho([{ producto_id: '', cantidad: 1, costo_unitario: '', lotes: [{ numero_lote: '', cantidad: 1 }], series: [{ numero_serie: '' }] }]);
             loadEnvios();
             setActiveTab('transito');
             setTimeout(() => setSuccess(''), 5000);
@@ -442,6 +461,20 @@ export default function DespachosSucursalPage() {
                                     ))}
                                 </select>
                             </div>
+
+                            <div style={{ flex: '1 1 300px' }}>
+                                <MotivoSelect
+                                    emisorId={emisorId}
+                                    tipoMovimiento="MOV_07_TRANSFERENCIA_SUCURSALES"
+                                    value={motivoId}
+                                    onChange={(id, motivo) => {
+                                        setMotivoId(id);
+                                        setSelectedMotivoObj(motivo);
+                                    }}
+                                    required={false}
+                                    label="Motivo de Despacho (MOV-07, Opcional)"
+                                />
+                            </div>
                         </div>
 
                         <div>
@@ -504,8 +537,35 @@ export default function DespachosSucursalPage() {
                                                         const newD = [...detallesDespacho];
                                                         newD[index].cantidad = parseFloat(e.target.value) || 0;
                                                         setDetallesDespacho(newD);
-                                                    }}
+                                                    }} 
                                                     style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                                                />
+                                            </div>
+
+                                            <div style={{ width: '130px' }}>
+                                                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#64748b' }}>Costo Unitario ($)</label>
+                                                <input 
+                                                    type="number" 
+                                                    min="0" 
+                                                    step="0.000001" 
+                                                    placeholder="0.00" 
+                                                    value={det.costo_unitario ?? ''} 
+                                                    onChange={e => {
+                                                        const newD = [...detallesDespacho];
+                                                        newD[index].costo_unitario = e.target.value === '' ? '' : parseFloat(e.target.value);
+                                                        setDetallesDespacho(newD);
+                                                    }} 
+                                                    style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                                                />
+                                            </div>
+
+                                            <div style={{ width: '120px' }}>
+                                                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#64748b' }}>Subtotal ($)</label>
+                                                <input 
+                                                    type="text" 
+                                                    readOnly 
+                                                    value={`$ ${((Number(det.cantidad) || 0) * (Number(det.costo_unitario) || 0)).toFixed(2)}`} 
+                                                    style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.85rem', backgroundColor: '#f8fafc', color: '#0f172a', fontWeight: 700, textAlign: 'right', boxSizing: 'border-box' }}
                                                 />
                                             </div>
 
@@ -619,11 +679,34 @@ export default function DespachosSucursalPage() {
                             })}
                             <button 
                                 type="button" 
-                                onClick={() => setDetallesDespacho([...detallesDespacho, { producto_id: '', cantidad: 1, lotes: [{ numero_lote: '', cantidad: 1 }], series: [{ numero_serie: '' }] }])}
+                                onClick={() => setDetallesDespacho([...detallesDespacho, { producto_id: '', cantidad: 1, costo_unitario: '', lotes: [{ numero_lote: '', cantidad: 1 }], series: [{ numero_serie: '' }] }])}
                                 style={{ padding: '8px 14px', borderRadius: '8px', border: '1px dashed #4f46e5', backgroundColor: 'white', color: '#4f46e5', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}
                             >
                                 + Añadir Producto
                             </button>
+                        </div>
+
+                        {/* Barra de Resumen Acumulado */}
+                        <div style={{ padding: '16px 24px', backgroundColor: '#f8fafc', borderRadius: '14px', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                            <div style={{ display: 'flex', gap: '28px', alignItems: 'center' }}>
+                                <div>
+                                    <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', textTransform: 'uppercase', fontWeight: 700 }}>Ítems</span>
+                                    <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>{detallesDespacho.filter(d => d.producto_id !== '').length}</span>
+                                </div>
+                                <div style={{ width: '1px', height: '32px', backgroundColor: '#e2e8f0' }} />
+                                <div>
+                                    <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', textTransform: 'uppercase', fontWeight: 700 }}>Total Unidades</span>
+                                    <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>
+                                        {detallesDespacho.reduce((acc, d) => acc + (Number(d.cantidad) || 0), 0).toLocaleString('es-EC', { minimumFractionDigits: 0, maximumFractionDigits: 4 })}
+                                    </span>
+                                </div>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                                <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', textTransform: 'uppercase', fontWeight: 700 }}>Costo Total Acumulado</span>
+                                <span style={{ fontSize: '1.35rem', fontWeight: 800, color: '#4f46e5' }}>
+                                    $ {detallesDespacho.reduce((acc, d) => acc + ((Number(d.cantidad) || 0) * (Number(d.costo_unitario) || 0)), 0).toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </span>
+                            </div>
                         </div>
 
                         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>

@@ -116,15 +116,17 @@ export default function MovimientosPage() {
                     <div style={{ textAlign: 'center', padding: '20px', color: '#64748b' }}>No hay movimientos recientes.</div>
                 ) : (
                     <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '700px' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '900px' }}>
                             <thead>
                                 <tr style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
                                     <th style={{ padding: '12px 16px', color: '#475569', fontWeight: 600, fontSize: '0.8rem', textTransform: 'uppercase' }}>Fecha</th>
                                     <th style={{ padding: '12px 16px', color: '#475569', fontWeight: 600, fontSize: '0.8rem', textTransform: 'uppercase' }}>Tipo</th>
+                                    <th style={{ padding: '12px 16px', color: '#475569', fontWeight: 600, fontSize: '0.8rem', textTransform: 'uppercase' }}>Motivo</th>
                                     <th style={{ padding: '12px 16px', color: '#475569', fontWeight: 600, fontSize: '0.8rem', textTransform: 'uppercase' }}>Documento</th>
                                     <th style={{ padding: '12px 16px', color: '#475569', fontWeight: 600, fontSize: '0.8rem', textTransform: 'uppercase' }}>Producto</th>
                                     <th style={{ padding: '12px 16px', color: '#475569', fontWeight: 600, fontSize: '0.8rem', textTransform: 'uppercase' }}>Bodega</th>
                                     <th style={{ padding: '12px 16px', color: '#475569', fontWeight: 600, fontSize: '0.8rem', textTransform: 'uppercase', textAlign: 'right' }}>Entrada / Salida</th>
+                                    <th style={{ padding: '12px 16px', color: '#475569', fontWeight: 600, fontSize: '0.8rem', textTransform: 'uppercase', textAlign: 'right' }}>Costo Total</th>
                                     <th style={{ padding: '12px 16px', color: '#475569', fontWeight: 600, fontSize: '0.8rem', textTransform: 'uppercase', textAlign: 'right' }}>Saldo</th>
                                 </tr>
                             </thead>
@@ -133,6 +135,16 @@ export default function MovimientosPage() {
                                     const fecha = k.fecha_hora ? new Date(k.fecha_hora).toLocaleString('es-EC', { dateStyle: 'short', timeStyle: 'short' }) : '—';
                                     const cantEntrada = parseFloat(String(k.entrada || 0));
                                     const cantSalida = parseFloat(String(k.salida || 0));
+                                    const cant = cantEntrada > 0 ? cantEntrada : cantSalida;
+
+                                    const det = k.registro_operativo?.detalles?.find((d: any) => Number(d.producto_id) === Number(k.producto_id));
+                                    let costoTotal: number | null = null;
+                                    if (det?.costo_total !== undefined && det.costo_total !== null && Number(det.costo_total) > 0) {
+                                        costoTotal = Number(det.costo_total);
+                                    } else if (det?.costo_unitario !== undefined && det.costo_unitario !== null && Number(det.costo_unitario) > 0) {
+                                        costoTotal = cant * Number(det.costo_unitario);
+                                    }
+
                                     return (
                                         <tr key={k.id || i} style={{ borderBottom: '1px solid #f1f5f9' }}>
                                             <td style={{ padding: '14px 16px', color: '#0f172a', fontSize: '0.85rem' }}>{fecha}</td>
@@ -148,11 +160,30 @@ export default function MovimientosPage() {
                                                     {String(k.tipo_movimiento || '').replace(/^MOV_\d+_/i, '').replace(/_/g, ' ')}
                                                 </span>
                                             </td>
+                                            <td style={{ padding: '14px 16px', fontSize: '0.85rem' }}>
+                                                {k.registro_operativo?.motivo ? (
+                                                    <span 
+                                                        title={`[${k.registro_operativo.motivo.codigo}] ${k.registro_operativo.motivo.descripcion}`}
+                                                        style={{ 
+                                                            backgroundColor: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', 
+                                                            padding: '3px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600,
+                                                            display: 'inline-block', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+                                                        }}
+                                                    >
+                                                        [{k.registro_operativo.motivo.codigo}] {k.registro_operativo.motivo.descripcion}
+                                                    </span>
+                                                ) : (
+                                                    <span style={{ color: '#94a3b8' }}>—</span>
+                                                )}
+                                            </td>
                                             <td style={{ padding: '14px 16px', color: '#0f172a', fontSize: '0.85rem', fontWeight: 600 }}>{k.numero_documento || '—'}</td>
                                             <td style={{ padding: '14px 16px', color: '#0f172a', fontSize: '0.85rem' }}>{k.producto?.nombre || '—'}</td>
                                             <td style={{ padding: '14px 16px', color: '#475569', fontSize: '0.85rem' }}>{k.bodega?.nombre || '—'}</td>
                                             <td style={{ padding: '14px 16px', fontSize: '0.85rem', textAlign: 'right', fontWeight: 600, color: cantEntrada > 0 ? '#15803d' : (cantSalida > 0 ? '#b91c1c' : '#64748b') }}>
                                                 {cantEntrada > 0 ? `+${cantEntrada}` : (cantSalida > 0 ? `-${cantSalida}` : '0')}
+                                            </td>
+                                            <td style={{ padding: '14px 16px', color: costoTotal ? '#0f172a' : '#94a3b8', fontSize: '0.85rem', fontWeight: costoTotal ? 700 : 400, textAlign: 'right' }}>
+                                                {costoTotal ? `$ ${costoTotal.toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
                                             </td>
                                             <td style={{ padding: '14px 16px', color: '#0f172a', fontSize: '0.85rem', fontWeight: 700, textAlign: 'right' }}>
                                                 {parseFloat(String(k.saldo || 0)).toFixed(2)}
