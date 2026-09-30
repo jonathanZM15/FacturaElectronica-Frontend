@@ -282,7 +282,14 @@ const PruebaEmisionComprobante: React.FC = () => {
 
   const [emisorSelId, setEmisorSelId]           = useState<string>('');
   const [establecimientoSelId, setEstablecimientoSelId] = useState<string>('');
+
   const [puntoSelId, setPuntoSelId]             = useState<string>('');
+
+  // Detalles dinamicos
+  const [detalleDesc, setDetalleDesc] = useState('Licencia de Software Anual');
+  const [detalleCant, setDetalleCant] = useState<number>(1.0);
+  const [detallePrecio, setDetallePrecio] = useState<number>(0.10);
+
 
   const [loadingEmisores, setLoadingEmisores]             = useState(true);
   const [loadingEstablecimientos, setLoadingEstablecimientos] = useState(false);
@@ -610,15 +617,53 @@ const PruebaEmisionComprobante: React.FC = () => {
             </div>
 
             {/* Resumen antes de enviar */}
-            {canSubmit && (
-              <div style={{
-                background: 'rgba(255,255,255,0.8)', border: '1px solid #cbd5e1',
-                borderRadius: 12, padding: '16px', marginBottom: 16,
-                fontSize: 13, color: '#334155', boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, color: '#1e293b', fontWeight: 700 }}>
-                  <span style={{ fontSize: 18 }}>🧾</span> Detalle de la factura a emitir
+            {canSubmit && (<>
+                <div style={{
+                  background: 'rgba(255,255,255,0.8)', border: '1px solid #cbd5e1',
+                  borderRadius: 12, padding: '16px', marginBottom: 16,
+                  fontSize: 13, color: '#334155', boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, color: '#1e293b', fontWeight: 700 }}>
+                    <span style={{ fontSize: 18 }}>✏️</span> Editar detalle (Prueba Dinámica)
+                  </div>
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    <div style={{ flex: 2, minWidth: 200 }}>
+                      <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4, fontWeight: 600 }}>Descripción</div>
+                      <StyledInput 
+                        value={detalleDesc} 
+                        onChange={e => setDetalleDesc(e.target.value)} 
+                        style={{ padding: '8px', fontSize: '13px' }}
+                      />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 80 }}>
+                      <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4, fontWeight: 600 }}>Cantidad</div>
+                      <StyledInput 
+                        type="number" step="1" 
+                        value={detalleCant} 
+                        onChange={e => setDetalleCant(Number(e.target.value))} 
+                        style={{ padding: '8px', fontSize: '13px' }}
+                      />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 80 }}>
+                      <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4, fontWeight: 600 }}>Precio Unit.</div>
+                      <StyledInput 
+                        type="number" step="0.01" 
+                        value={detallePrecio} 
+                        onChange={e => setDetallePrecio(Number(e.target.value))} 
+                        style={{ padding: '8px', fontSize: '13px' }}
+                      />
+                    </div>
+                  </div>
                 </div>
+
+                <div style={{
+                  background: 'rgba(255,255,255,0.8)', border: '1px solid #cbd5e1',
+                  borderRadius: 12, padding: '16px', marginBottom: 16,
+                  fontSize: 13, color: '#334155', boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, color: '#1e293b', fontWeight: 700 }}>
+                    <span style={{ fontSize: 18 }}>🧾</span> Detalle de la factura a emitir
+                  </div>
                 
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', marginBottom: 12 }}>
                   <thead>
@@ -631,26 +676,26 @@ const PruebaEmisionComprobante: React.FC = () => {
                   </thead>
                   <tbody>
                     <tr>
-                      <td style={{ paddingTop: 8, fontWeight: 500 }}>Licencia de Software Anual</td>
-                      <td style={{ paddingTop: 8, textAlign: 'center' }}>1</td>
-                      <td style={{ paddingTop: 8, textAlign: 'right' }}>$0.10</td>
-                      <td style={{ paddingTop: 8, textAlign: 'right', fontWeight: 600 }}>$0.10</td>
-                    </tr>
+                        <td style={{ paddingTop: 8, fontWeight: 500 }}>{detalleDesc}</td>
+                        <td style={{ paddingTop: 8, textAlign: 'center' }}>{detalleCant}</td>
+                        <td style={{ paddingTop: 8, textAlign: 'right' }}>${detallePrecio.toFixed(2)}</td>
+                        <td style={{ paddingTop: 8, textAlign: 'right', fontWeight: 600 }}>${(detalleCant * detallePrecio).toFixed(2)}</td>
+                      </tr>
                   </tbody>
                 </table>
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end', borderTop: '1px solid #e2e8f0', paddingTop: 10 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', width: '200px', color: '#64748b' }}>
                     <span>Subtotal 15%:</span>
-                    <strong>$0.10</strong>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', width: '200px', color: '#64748b' }}>
-                    <span>IVA (15%):</span>
-                    <strong>$0.02</strong>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', width: '200px', color: '#1e293b', fontSize: 15, marginTop: 4 }}>
-                    <span style={{ fontWeight: 700 }}>TOTAL:</span>
-                    <strong style={{ color: '#059669' }}>$0.12</strong>
+                      <strong>${(detalleCant * detallePrecio).toFixed(2)}</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', width: '200px', color: '#64748b' }}>
+                      <span>IVA (15%):</span>
+                      <strong>${(detalleCant * detallePrecio * 0.15).toFixed(2)}</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', width: '200px', color: '#1e293b', fontSize: 15, marginTop: 4 }}>
+                      <span style={{ fontWeight: 700 }}>TOTAL:</span>
+                      <strong style={{ color: '#059669' }}>${(detalleCant * detallePrecio * 1.15).toFixed(2)}</strong>
                   </div>
                 </div>
 
@@ -661,6 +706,7 @@ const PruebaEmisionComprobante: React.FC = () => {
                   </span>
                 </div>
               </div>
+              </>
             )}
 
             <PrimaryBtn type="submit" disabled={!canSubmit} style={{ width: '100%', fontSize: 15, padding: '13px' }}>
