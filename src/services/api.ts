@@ -58,6 +58,8 @@ export const facturacion = {
     }),
   estado: (comprobanteId: number) => api.get(`/api/facturacion/comprobantes/${comprobanteId}`),
   reintentar: (comprobanteId: number) => api.post(`/api/facturacion/comprobantes/${comprobanteId}/reintentar`),
+  downloadPdf: (comprobanteId: number) => api.get(`/api/facturacion/comprobantes/${comprobanteId}/pdf`, { responseType: 'blob' }),
+  downloadXml: (comprobanteId: number) => api.get(`/api/facturacion/comprobantes/${comprobanteId}/xml`, { responseType: 'blob' }),
 };
 
 export default api;

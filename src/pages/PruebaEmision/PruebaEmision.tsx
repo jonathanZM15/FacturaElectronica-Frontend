@@ -137,6 +137,47 @@ const FieldCell: React.FC<{ label: string; value: React.ReactNode }> = ({ label,
 const ResultCard: React.FC<{ resultado: Resultado; label: string }> = ({ resultado, label }) => {
   const d: ComprobanteData | null = resultado.data;
   const isComp = d && typeof d === 'object' && 'comprobante_id' in d;
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [downloadingXml, setDownloadingXml] = useState(false);
+
+  const handleDownloadPdf = async () => {
+    if (!d || !d.comprobante_id) return;
+    try {
+      setDownloadingPdf(true);
+      const res = await facturacion.downloadPdf(d.comprobante_id);
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${d.clave_acceso}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (e) {
+      alert('Error descargando PDF');
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
+  const handleDownloadXml = async () => {
+    if (!d || !d.comprobante_id) return;
+    try {
+      setDownloadingXml(true);
+      const res = await facturacion.downloadXml(d.comprobante_id);
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/xml' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${d.clave_acceso}.xml`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (e) {
+      alert('Error descargando XML');
+    } finally {
+      setDownloadingXml(false);
+    }
+  };
+
   return (
     <GlassCard style={{ marginTop: 16 }}>
       <div style={{ fontSize: 11, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>{label}</div>
@@ -144,7 +185,19 @@ const ResultCard: React.FC<{ resultado: Resultado; label: string }> = ({ resulta
         <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: resultado.tipo === 'error' ? '#dc2626' : '#1e293b' }}>
           {resultado.mensaje}
         </h3>
-        {isComp && <EstadoBadge estado={d.estado_sri} />}
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          {isComp && d.estado_sri === 'AUTORIZADO' && (
+            <>
+              <SecondaryBtn onClick={handleDownloadPdf} disabled={downloadingPdf} style={{ padding: '6px 12px', fontSize: 12 }}>
+                {downloadingPdf ? 'Descargando...' : '📄 PDF'}
+              </SecondaryBtn>
+              <SecondaryBtn onClick={handleDownloadXml} disabled={downloadingXml} style={{ padding: '6px 12px', fontSize: 12 }}>
+                {downloadingXml ? 'Descargando...' : '📄 XML'}
+              </SecondaryBtn>
+            </>
+          )}
+          {isComp && <EstadoBadge estado={d.estado_sri} />}
+        </div>
       </div>
       {isComp ? (
         <>
