@@ -186,7 +186,7 @@ export default function MovimientosPage() {
                                                 {costoTotal ? `$ ${costoTotal.toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
                                             </td>
                                             <td style={{ padding: '14px 16px', color: '#0f172a', fontSize: '0.85rem', fontWeight: 700, textAlign: 'right' }}>
-                                                {parseFloat(String(k.saldo || 0)).toFixed(2)}
+                                                {parseFloat(String(k.saldo || 0)).toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                             </td>
                                         </tr>
                                     );

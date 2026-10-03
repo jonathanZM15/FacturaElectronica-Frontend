@@ -564,7 +564,7 @@ export default function DespachosSucursalPage() {
                                                 <input 
                                                     type="text" 
                                                     readOnly 
-                                                    value={`$ ${((Number(det.cantidad) || 0) * (Number(det.costo_unitario) || 0)).toFixed(2)}`} 
+                                                    value={`$ ${((Number(det.cantidad) || 0) * (Number(det.costo_unitario) || 0)).toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} 
                                                     style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.85rem', backgroundColor: '#f8fafc', color: '#0f172a', fontWeight: 700, textAlign: 'right', boxSizing: 'border-box' }}
                                                 />
                                             </div>

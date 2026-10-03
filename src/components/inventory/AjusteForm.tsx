@@ -505,7 +505,7 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
                                             <input 
                                                 type="text" 
                                                 readOnly 
-                                                value={detalle.producto_id && bodegaId ? (detalle.stock_actual !== undefined ? Number(detalle.stock_actual).toFixed(2) : '...') : '—'} 
+                                                value={detalle.producto_id && bodegaId ? (detalle.stock_actual !== undefined ? Number(detalle.stock_actual).toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 4 }) : '...') : '—'} 
                                                 title="Stock físico disponible actualmente en la bodega seleccionada"
                                                 style={{ width: '100%', padding: '10px 14px', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '0.9rem', outline: 'none', backgroundColor: '#f8fafc', color: '#475569', fontWeight: 600, textAlign: 'right', boxSizing: 'border-box' }} 
                                             />
@@ -542,7 +542,7 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
                                                     <input 
                                                         type="text" 
                                                         readOnly 
-                                                        value={detalle.producto_id && bodegaId ? proyectado.toFixed(2) : '—'} 
+                                                        value={detalle.producto_id && bodegaId ? proyectado.toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 4 }) : '—'} 
                                                         title={esNegativoInvalido ? '¡Advertencia! El stock resultante sería negativo' : 'Stock proyectado tras el ajuste'}
                                                         style={{ 
                                                             width: '100%', padding: '10px 14px', 
@@ -585,7 +585,7 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
                                             <input 
                                                 type="text" 
                                                 readOnly 
-                                                value={`$ ${((Number(detalle.cantidad) || 0) * (Number(detalle.costo_unitario) || 0)).toFixed(2)}`} 
+                                                value={`$ ${((Number(detalle.cantidad) || 0) * (Number(detalle.costo_unitario) || 0)).toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} 
                                                 style={{ width: '100%', padding: '10px 14px', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '0.9rem', outline: 'none', backgroundColor: '#f8fafc', color: '#0f172a', fontWeight: 700, textAlign: 'right', boxSizing: 'border-box' }} 
                                             />
                                         </div>
