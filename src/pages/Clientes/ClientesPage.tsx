@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { clientesApi, Cliente } from '../../services/clientesApi';
 import { emisoresApi } from '../../services/emisoresApi';
 
-const ClientesPage: React.FC = () => {
+const ClientesPage: React.FC<{isEmbedded?: boolean}> = ({ isEmbedded }) => {
   const [emisores, setEmisores] = useState<any[]>([]);
   const [emisorId, setEmisorId] = useState<string>('');
   
@@ -84,11 +84,11 @@ const ClientesPage: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto', fontFamily: 'Inter, sans-serif' }}>
+    <div style={isEmbedded ? {} : { padding: '24px', maxWidth: '1200px', margin: '0 auto', fontFamily: 'Inter, sans-serif' }}>
       <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <h1 style={{ fontSize: '24px', margin: '0 0 8px 0', color: '#1e293b' }}>Directorio de Clientes</h1>
-          <p style={{ margin: 0, color: '#64748b' }}>Gestiona los clientes asociados a la empresa para facturación.</p>
+        <div style={{ display: isEmbedded ? "none" : "block" }}>
+          <h1 style={{ fontSize: "24px", margin: "0 0 8px 0", color: "#1e293b" }}>Directorio</h1>
+          <p style={{ margin: 0, color: "#64748b" }}>Gestión.</p>
         </div>
         
         <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
