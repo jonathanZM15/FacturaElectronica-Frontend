@@ -1,79 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import styled from 'styled-components';
 import api from '../../services/api';
-import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
-
-// Reusing styled components from other emission pages
-const PageContainer = styled.div`
-  padding: 24px;
-  max-width: 1200px;
-  margin: 0 auto;
-  font-family: 'Inter', -apple-system, sans-serif;
-`;
-
-const PageHeader = styled.div`
-  margin-bottom: 32px;
-  h1 { font-size: 24px; color: #1e293b; margin: 0 0 8px 0; font-weight: 700; }
-  p { color: #64748b; margin: 0; font-size: 15px; }
-`;
-
-const FormGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
-  margin-bottom: 24px;
-`;
-
-const FormGroup = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  label { font-size: 14px; font-weight: 600; color: #475569; }
-  input, select {
-    padding: 10px 12px;
-    border: 1px solid #cbd5e1;
-    border-radius: 8px;
-    font-size: 14px;
-    outline: none;
-    transition: all 0.2s;
-    &:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
-  }
-`;
-
-const SectionTitle = styled.h3`
-  font-size: 16px;
-  font-weight: 600;
-  color: #1e293b;
-  margin: 0 0 16px 0;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #e2e8f0;
-`;
-
-const GlassCard = styled.div`
-  background: white;
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.025);
-  margin-bottom: 24px;
-  border: 1px solid #e2e8f0;
-`;
-
-const PrimaryBtn = styled.button`
-  background: #3b82f6; color: white;
-  padding: 12px 24px; border: none; border-radius: 8px;
-  font-size: 15px; font-weight: 600; cursor: pointer;
-  transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center;
-  &:hover:not(:disabled) { background: #2563eb; transform: translateY(-1px); }
-  &:disabled { opacity: 0.6; cursor: not-allowed; }
-`;
-
-const Table = styled.table`
-  width: 100%; border-collapse: collapse; margin-bottom: 16px;
-  th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
-  th { font-weight: 600; color: #475569; background: #f8fafc; }
-  td input { width: 100%; padding: 6px 8px; border: 1px solid #cbd5e1; border-radius: 6px; }
-`;
 
 interface DetalleGR {
   id: string;
@@ -267,65 +193,65 @@ const GuiaRemisionPage: React.FC = () => {
   };
 
   return (
-    <PageContainer>
-      <PageHeader>
-        <h1>Guía de Remisión</h1>
-        <p>Emite guías de remisión electrónicas (código 06) para el transporte de mercadería.</p>
-      </PageHeader>
+    <div style={{ padding: "24px", maxWidth: "1200px", margin: "0 auto", fontFamily: "Inter, -apple-system, sans-serif" }}>
+      <div style={{ marginBottom: "32px" }}>
+        <h1 style={{ fontSize: "24px", color: "#1e293b", margin: "0 0 8px 0", fontWeight: 700 }}>Guía de Remisión</h1>
+        <p style={{ color: "#64748b", margin: 0, fontSize: "15px" }}>Emite guías de remisión electrónicas (código 06) para el transporte de mercadería.</p>
+      </div>
 
       <form onSubmit={handleSubmit}>
-        <GlassCard>
-          <SectionTitle>1. Configuración de Emisión</SectionTitle>
-          <FormGrid>
-            <FormGroup>
-              <label>Emisor</label>
-              <select value={emisorId} onChange={e => setEmisorId(e.target.value)}>
+        <div style={{ background: "white", borderRadius: "16px", padding: "24px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)", marginBottom: "24px", border: "1px solid #e2e8f0" }}>
+          <h3 style={{ fontSize: "16px", fontWeight: 600, color: "#1e293b", margin: "0 0 16px 0", paddingBottom: "12px", borderBottom: "1px solid #e2e8f0" }}>1. Configuración de Emisión</h3>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px", marginBottom: "24px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <label style={{ fontSize: "14px", fontWeight: 600, color: "#475569" }}>Emisor</label>
+              <select style={{ padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "8px", fontSize: "14px", width: "100%", boxSizing: "border-box" }} value={emisorId} onChange={e => setEmisorId(e.target.value)}>
                 {emisores.map(e => <option key={e.id} value={e.id}>{e.razon_social}</option>)}
               </select>
-            </FormGroup>
-            <FormGroup>
-              <label>Establecimiento</label>
-              <select value={estabId} onChange={e => setEstabId(e.target.value)}>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <label style={{ fontSize: "14px", fontWeight: 600, color: "#475569" }}>Establecimiento</label>
+              <select style={{ padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "8px", fontSize: "14px", width: "100%", boxSizing: "border-box" }} value={estabId} onChange={e => setEstabId(e.target.value)}>
                 {establecimientos.map(e => <option key={e.id} value={e.id}>{e.nombre} - {e.codigo}</option>)}
               </select>
-            </FormGroup>
-            <FormGroup>
-              <label>Punto de Emisión</label>
-              <select value={puntoId} onChange={e => setPuntoId(e.target.value)}>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <label style={{ fontSize: "14px", fontWeight: 600, color: "#475569" }}>Punto de Emisión</label>
+              <select style={{ padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "8px", fontSize: "14px", width: "100%", boxSizing: "border-box" }} value={puntoId} onChange={e => setPuntoId(e.target.value)}>
                 {puntos.map(e => <option key={e.id} value={e.id}>{e.nombre} - {e.codigo}</option>)}
               </select>
-            </FormGroup>
-          </FormGrid>
-          <FormGrid>
-            <FormGroup>
-              <label>Firma Electrónica (.p12)</label>
-              <input type="file" accept=".p12,.pfx" onChange={e => setFirma(e.target.files?.[0] || null)} required />
-            </FormGroup>
-            <FormGroup>
-              <label>Contraseña de la firma</label>
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)} required />
-            </FormGroup>
-          </FormGrid>
-        </GlassCard>
+            </div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px", marginBottom: "24px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <label style={{ fontSize: "14px", fontWeight: 600, color: "#475569" }}>Firma Electrónica (.p12)</label>
+              <input style={{ padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "8px", fontSize: "14px", width: "100%", boxSizing: "border-box" }} type="file" accept=".p12,.pfx" onChange={e => setFirma(e.target.files?.[0] || null)} required />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <label style={{ fontSize: "14px", fontWeight: 600, color: "#475569" }}>Contraseña de la firma</label>
+              <input style={{ padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "8px", fontSize: "14px", width: "100%", boxSizing: "border-box" }} type="password" value={password} onChange={e => setPassword(e.target.value)} required />
+            </div>
+          </div>
+        </div>
 
-        <GlassCard>
-          <SectionTitle>2. Datos del Transporte y Traslado</SectionTitle>
-          <FormGrid>
-            <FormGroup>
-              <label>Identificación Transportista</label>
-              <input value={guiaData.transportista_identificacion} onChange={e => setGuiaData({...guiaData, transportista_identificacion: e.target.value})} placeholder="RUC/Cédula" required />
-            </FormGroup>
-            <FormGroup>
-              <label>Razón Social Transportista</label>
-              <input value={guiaData.transportista_nombre} onChange={e => setGuiaData({...guiaData, transportista_nombre: e.target.value})} placeholder="Nombre del chofer o empresa" required />
-            </FormGroup>
-            <FormGroup>
-              <label>Placa del Vehículo</label>
-              <input value={guiaData.placa_vehiculo} onChange={e => setGuiaData({...guiaData, placa_vehiculo: e.target.value})} placeholder="ABC-1234" required />
-            </FormGroup>
-            <FormGroup>
-              <label>Motivo del Traslado</label>
-              <select value={guiaData.motivo_traslado} onChange={e => setGuiaData({...guiaData, motivo_traslado: e.target.value})}>
+        <div style={{ background: "white", borderRadius: "16px", padding: "24px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)", marginBottom: "24px", border: "1px solid #e2e8f0" }}>
+          <h3 style={{ fontSize: "16px", fontWeight: 600, color: "#1e293b", margin: "0 0 16px 0", paddingBottom: "12px", borderBottom: "1px solid #e2e8f0" }}>2. Datos del Transporte y Traslado</h3>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px", marginBottom: "24px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <label style={{ fontSize: "14px", fontWeight: 600, color: "#475569" }}>Identificación Transportista</label>
+              <input style={{ padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "8px", fontSize: "14px", width: "100%", boxSizing: "border-box" }} value={guiaData.transportista_identificacion} onChange={e => setGuiaData({...guiaData, transportista_identificacion: e.target.value})} placeholder="RUC/Cédula" required />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <label style={{ fontSize: "14px", fontWeight: 600, color: "#475569" }}>Razón Social Transportista</label>
+              <input style={{ padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "8px", fontSize: "14px", width: "100%", boxSizing: "border-box" }} value={guiaData.transportista_nombre} onChange={e => setGuiaData({...guiaData, transportista_nombre: e.target.value})} placeholder="Nombre del chofer o empresa" required />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <label style={{ fontSize: "14px", fontWeight: 600, color: "#475569" }}>Placa del Vehículo</label>
+              <input style={{ padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "8px", fontSize: "14px", width: "100%", boxSizing: "border-box" }} value={guiaData.placa_vehiculo} onChange={e => setGuiaData({...guiaData, placa_vehiculo: e.target.value})} placeholder="ABC-1234" required />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <label style={{ fontSize: "14px", fontWeight: 600, color: "#475569" }}>Motivo del Traslado</label>
+              <select style={{ padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "8px", fontSize: "14px", width: "100%", boxSizing: "border-box" }} value={guiaData.motivo_traslado} onChange={e => setGuiaData({...guiaData, motivo_traslado: e.target.value})}>
                 <option value="VENTA">Venta</option>
                 <option value="TRASLADO ENTRE ESTABLECIMIENTOS DE LA MISMA EMPRESA">Traslado entre sucursales</option>
                 <option value="DEVOLUCION">Devolución</option>
@@ -334,63 +260,63 @@ const GuiaRemisionPage: React.FC = () => {
                 <option value="EXPORTACION">Exportación</option>
                 <option value="OTROS">Otros</option>
               </select>
-            </FormGroup>
-            <FormGroup>
-              <label>Fecha Inicio Transporte</label>
-              <input type="date" value={guiaData.fecha_inicio_transporte} onChange={e => setGuiaData({...guiaData, fecha_inicio_transporte: e.target.value})} required />
-            </FormGroup>
-            <FormGroup>
-              <label>Fecha Fin Transporte</label>
-              <input type="date" value={guiaData.fecha_fin_transporte} onChange={e => setGuiaData({...guiaData, fecha_fin_transporte: e.target.value})} required />
-            </FormGroup>
-            <FormGroup>
-              <label>Dirección de Partida</label>
-              <input value={guiaData.direccion_partida} onChange={e => setGuiaData({...guiaData, direccion_partida: e.target.value})} placeholder="Lugar de salida" required />
-            </FormGroup>
-            <FormGroup>
-              <label>Ruta (Opcional)</label>
-              <input value={guiaData.ruta} onChange={e => setGuiaData({...guiaData, ruta: e.target.value})} placeholder="Ruta planificada" />
-            </FormGroup>
-          </FormGrid>
-        </GlassCard>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <label style={{ fontSize: "14px", fontWeight: 600, color: "#475569" }}>Fecha Inicio Transporte</label>
+              <input style={{ padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "8px", fontSize: "14px", width: "100%", boxSizing: "border-box" }} type="date" value={guiaData.fecha_inicio_transporte} onChange={e => setGuiaData({...guiaData, fecha_inicio_transporte: e.target.value})} required />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <label style={{ fontSize: "14px", fontWeight: 600, color: "#475569" }}>Fecha Fin Transporte</label>
+              <input style={{ padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "8px", fontSize: "14px", width: "100%", boxSizing: "border-box" }} type="date" value={guiaData.fecha_fin_transporte} onChange={e => setGuiaData({...guiaData, fecha_fin_transporte: e.target.value})} required />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <label style={{ fontSize: "14px", fontWeight: 600, color: "#475569" }}>Dirección de Partida</label>
+              <input style={{ padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "8px", fontSize: "14px", width: "100%", boxSizing: "border-box" }} value={guiaData.direccion_partida} onChange={e => setGuiaData({...guiaData, direccion_partida: e.target.value})} placeholder="Lugar de salida" required />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <label style={{ fontSize: "14px", fontWeight: 600, color: "#475569" }}>Ruta (Opcional)</label>
+              <input style={{ padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "8px", fontSize: "14px", width: "100%", boxSizing: "border-box" }} value={guiaData.ruta} onChange={e => setGuiaData({...guiaData, ruta: e.target.value})} placeholder="Ruta planificada" />
+            </div>
+          </div>
+        </div>
 
-        <GlassCard>
-          <SectionTitle>3. Destinatario</SectionTitle>
-          <FormGrid>
-            <FormGroup>
-              <label>Tipo ID</label>
-              <select value={cliente.tipo_identificacion} onChange={e => setCliente({...cliente, tipo_identificacion: e.target.value})}>
+        <div style={{ background: "white", borderRadius: "16px", padding: "24px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)", marginBottom: "24px", border: "1px solid #e2e8f0" }}>
+          <h3 style={{ fontSize: "16px", fontWeight: 600, color: "#1e293b", margin: "0 0 16px 0", paddingBottom: "12px", borderBottom: "1px solid #e2e8f0" }}>3. Destinatario</h3>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px", marginBottom: "24px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <label style={{ fontSize: "14px", fontWeight: 600, color: "#475569" }}>Tipo ID</label>
+              <select style={{ padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "8px", fontSize: "14px", width: "100%", boxSizing: "border-box" }} value={cliente.tipo_identificacion} onChange={e => setCliente({...cliente, tipo_identificacion: e.target.value})}>
                 <option value="RUC">RUC</option>
                 <option value="CEDULA">Cédula</option>
                 <option value="PASAPORTE">Pasaporte</option>
                 <option value="CONSUMIDOR_FINAL">Consumidor Final</option>
               </select>
-            </FormGroup>
-            <FormGroup>
-              <label>Identificación</label>
-              <input value={cliente.identificacion} onChange={e => setCliente({...cliente, identificacion: e.target.value})} placeholder="RUC/Cédula destinatario" required />
-            </FormGroup>
-            <FormGroup>
-              <label>Razón Social (Nombre)</label>
-              <input value={cliente.razon_social} onChange={e => setCliente({...cliente, razon_social: e.target.value})} required />
-            </FormGroup>
-            <FormGroup>
-              <label>Dirección Destino</label>
-              <input value={cliente.direccion} onChange={e => {
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <label style={{ fontSize: "14px", fontWeight: 600, color: "#475569" }}>Identificación</label>
+              <input style={{ padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "8px", fontSize: "14px", width: "100%", boxSizing: "border-box" }} value={cliente.identificacion} onChange={e => setCliente({...cliente, identificacion: e.target.value})} placeholder="RUC/Cédula destinatario" required />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <label style={{ fontSize: "14px", fontWeight: 600, color: "#475569" }}>Razón Social (Nombre)</label>
+              <input style={{ padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "8px", fontSize: "14px", width: "100%", boxSizing: "border-box" }} value={cliente.razon_social} onChange={e => setCliente({...cliente, razon_social: e.target.value})} required />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <label style={{ fontSize: "14px", fontWeight: 600, color: "#475569" }}>Dirección Destino</label>
+              <input style={{ padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "8px", fontSize: "14px", width: "100%", boxSizing: "border-box" }} value={cliente.direccion} onChange={e => {
                   setCliente({...cliente, direccion: e.target.value});
                   setGuiaData({...guiaData, direccion_destino: e.target.value});
               }} required />
-            </FormGroup>
-            <FormGroup>
-              <label>Email (Opcional)</label>
-              <input type="email" value={cliente.email} onChange={e => setCliente({...cliente, email: e.target.value})} />
-            </FormGroup>
-          </FormGrid>
-        </GlassCard>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <label style={{ fontSize: "14px", fontWeight: 600, color: "#475569" }}>Email (Opcional)</label>
+              <input style={{ padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "8px", fontSize: "14px", width: "100%", boxSizing: "border-box" }} type="email" value={cliente.email} onChange={e => setCliente({...cliente, email: e.target.value})} />
+            </div>
+          </div>
+        </div>
 
-        <GlassCard>
-          <SectionTitle>4. Mercadería a Transportar</SectionTitle>
-          <Table>
+        <div style={{ background: "white", borderRadius: "16px", padding: "24px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)", marginBottom: "24px", border: "1px solid #e2e8f0" }}>
+          <h3 style={{ fontSize: "16px", fontWeight: 600, color: "#1e293b", margin: "0 0 16px 0", paddingBottom: "12px", borderBottom: "1px solid #e2e8f0" }}>4. Mercadería a Transportar</h3>
+          <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "16px" }}>
             <thead>
               <tr>
                 <th style={{ width: '15%' }}>Código</th>
@@ -402,30 +328,30 @@ const GuiaRemisionPage: React.FC = () => {
             <tbody>
               {detalles.map(d => (
                 <tr key={d.id}>
-                  <td><input value={d.producto_id} onChange={e => updateRow(d.id, 'producto_id', e.target.value)} placeholder="001" /></td>
-                  <td><input value={d.descripcion} onChange={e => updateRow(d.id, 'descripcion', e.target.value)} required placeholder="Sacos de cemento..." /></td>
-                  <td><input type="number" step="0.01" value={d.cantidad} onChange={e => updateRow(d.id, 'cantidad', e.target.value)} required /></td>
-                  <td>
+                  <td style={{ padding: "12px", textAlign: "left", borderBottom: "1px solid #e2e8f0", fontSize: "14px" }}><input style={{ padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "8px", fontSize: "14px", width: "100%", boxSizing: "border-box" }} value={d.producto_id} onChange={e => updateRow(d.id, 'producto_id', e.target.value)} placeholder="001" /></td>
+                  <td style={{ padding: "12px", textAlign: "left", borderBottom: "1px solid #e2e8f0", fontSize: "14px" }}><input style={{ padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "8px", fontSize: "14px", width: "100%", boxSizing: "border-box" }} value={d.descripcion} onChange={e => updateRow(d.id, 'descripcion', e.target.value)} required placeholder="Sacos de cemento..." /></td>
+                  <td style={{ padding: "12px", textAlign: "left", borderBottom: "1px solid #e2e8f0", fontSize: "14px" }}><input style={{ padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "8px", fontSize: "14px", width: "100%", boxSizing: "border-box" }} type="number" step="0.01" value={d.cantidad} onChange={e => updateRow(d.id, 'cantidad', e.target.value)} required /></td>
+                  <td style={{ padding: "12px", textAlign: "left", borderBottom: "1px solid #e2e8f0", fontSize: "14px" }}>
                     <button type="button" onClick={() => removeRow(d.id)} style={{ color: 'red', border: 'none', background: 'none', cursor: 'pointer', padding: '6px' }}>❌ Quitar</button>
                   </td>
                 </tr>
               ))}
             </tbody>
-          </Table>
+          </table>
           <button type="button" onClick={addRow} style={{ padding: '8px 16px', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: 'pointer' }}>➕ Agregar ítem</button>
-        </GlassCard>
+        </div>
 
         <div style={{ textAlign: 'right', marginBottom: 24 }}>
-          <PrimaryBtn type="submit" disabled={loading}>
+          <button style={{ background: "#3b82f6", color: "white", padding: "12px 24px", border: "none", borderRadius: "8px", fontSize: "15px", fontWeight: 600, cursor: "pointer" }} type="submit" disabled={loading}>
             {loading ? '⏳ Procesando...' : '🚀 Emitir Guía de Remisión'}
-          </PrimaryBtn>
+          </button>
         </div>
       </form>
 
       {/* Resultados */}
       {estadoSRI && (
-        <GlassCard>
-          <SectionTitle>Resultado SRI</SectionTitle>
+        <div style={{ background: "white", borderRadius: "16px", padding: "24px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)", marginBottom: "24px", border: "1px solid #e2e8f0" }}>
+          <h3 style={{ fontSize: "16px", fontWeight: 600, color: "#1e293b", margin: "0 0 16px 0", paddingBottom: "12px", borderBottom: "1px solid #e2e8f0" }}>Resultado SRI</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ padding: '16px', borderRadius: 8, background: estadoSRI.estado_sri === 'AUTORIZADO' ? '#dcfce7' : '#fef2f2', color: estadoSRI.estado_sri === 'AUTORIZADO' ? '#166534' : '#991b1b' }}>
               <strong>Estado:</strong> {estadoSRI.estado_sri}
@@ -443,10 +369,10 @@ const GuiaRemisionPage: React.FC = () => {
               </pre>
             )}
           </div>
-        </GlassCard>
+        </div>
       )}
 
-    </PageContainer>
+    </div>
   );
 };
 
