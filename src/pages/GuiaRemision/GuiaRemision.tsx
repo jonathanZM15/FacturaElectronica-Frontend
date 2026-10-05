@@ -71,13 +71,13 @@ const GuiaRemisionPage: React.FC = () => {
   }, [emisorId]);
 
   useEffect(() => {
-    if (!estabId) return;
-    puntosEmisionApi.list(Number(estabId)).then(r => {
+    if (!estabId || !emisorId) return;
+    puntosEmisionApi.list(Number(emisorId), Number(estabId)).then(r => {
       const data = r.data?.data ?? r.data ?? [];
       setPuntos(data);
       if (data.length > 0) setPuntoId(data[0].id.toString());
-    });
-  }, [estabId]);
+    }).catch(e => console.error("Error loading puntos", e));
+  }, [estabId, emisorId]);
 
   const addRow = () => {
     setDetalles([...detalles, { id: Math.random().toString(), producto_id: '001', descripcion: '', cantidad: '1' }]);
