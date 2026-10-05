@@ -60,6 +60,12 @@ export const facturacion = {
   reintentar: (comprobanteId: number) => api.post(`/api/facturacion/comprobantes/${comprobanteId}/reintentar`),
   downloadPdf: (comprobanteId: number) => api.get(`/api/facturacion/comprobantes/${comprobanteId}/pdf`, { responseType: 'blob' }),
   downloadXml: (comprobanteId: number) => api.get(`/api/facturacion/comprobantes/${comprobanteId}/xml`, { responseType: 'blob' }),
+  emitirNotaCredito: (formData: FormData) =>
+    api.post('/api/facturacion/emitir-nota-credito', formData, {
+      transformRequest: [(data: any, headers: any) => { delete headers['Content-Type']; return data; }],
+    }),
+  listarComprobantes: (params: { tipo?: string; estado?: string; emisor_id?: string | number }) =>
+    api.get('/api/facturacion/comprobantes', { params }),
 };
 
 export default api;

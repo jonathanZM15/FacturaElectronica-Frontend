@@ -183,6 +183,18 @@ const Navbar: React.FC = () => {
               </NavLink>
             </li>
           )}
+
+          {/* Emisión de Comprobantes */}
+          <li className="nav-item">
+            <NavLink
+              to="/nota-credito"
+              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+              data-tooltip="Nota de Crédito"
+            >
+              <span className="icon">🧾</span>
+              <span className="label">Nota de Crédito</span>
+            </NavLink>
+          </li>
         </ul>
       </nav>
 
