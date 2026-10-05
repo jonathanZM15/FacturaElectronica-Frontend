@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import ClientesPage from '../Clientes/ClientesPage';
 import ProveedoresPage from '../Proveedores/ProveedoresPage';
+import TransportistasPage from '../Transportistas/TransportistasPage';
 
 const DirectorioPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'clientes' | 'proveedores'>('clientes');
+  const [activeTab, setActiveTab] = useState<'clientes' | 'proveedores' | 'transportistas'>('clientes');
 
   return (
     <div style={{ padding: '32px 24px', maxWidth: '1200px', margin: '0 auto', fontFamily: 'Inter, -apple-system, sans-serif' }}>
@@ -57,11 +58,33 @@ const DirectorioPage: React.FC = () => {
           >
             <span style={{ fontSize: '16px' }}>🏢</span> Proveedores
           </button>
+          <button
+            onClick={() => setActiveTab('transportistas')}
+            style={{
+              padding: '8px 20px',
+              background: activeTab === 'transportistas' ? 'white' : 'transparent',
+              border: 'none',
+              borderRadius: '8px',
+              color: activeTab === 'transportistas' ? '#2563eb' : '#64748b',
+              fontWeight: 600,
+              fontSize: '14px',
+              cursor: 'pointer',
+              boxShadow: activeTab === 'transportistas' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
+            <span style={{ fontSize: '16px' }}>🚚</span> Transportistas
+          </button>
         </div>
       </div>
 
       <div style={{ margin: '0 -24px' }}>
-        {activeTab === 'clientes' ? <ClientesPage isEmbedded /> : <ProveedoresPage isEmbedded />}
+        {activeTab === 'clientes' && <ClientesPage isEmbedded />}
+        {activeTab === 'proveedores' && <ProveedoresPage isEmbedded />}
+        {activeTab === 'transportistas' && <TransportistasPage isEmbedded />}
       </div>
     </div>
   );
