@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { emisoresApi } from '../../services/emisoresApi';
 import { proveedoresApi, Proveedor } from '../../services/proveedoresApi';
-import { productosApi, Producto } from '../../services/productosApi';
+import { getProductos } from '../../services/inventoryService';
+import { Producto } from '../../types/inventory';
 
 interface CompraFormProps {
   tipoIngreso: 'FACTURA_PROVEEDOR' | 'LIQUIDACION_COMPRA' | 'SIN_COMPROBANTE';
@@ -60,8 +61,8 @@ const CompraForm: React.FC<CompraFormProps> = ({ tipoIngreso }) => {
     });
 
     // Load Productos
-    productosApi.list(emisorId, '').then(res => {
-      setProductos(res.data?.data ?? res.data ?? []);
+    getProductos(emisorId).then(res => {
+      setProductos(res);
     });
     
   }, [emisorId]);
