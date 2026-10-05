@@ -28,6 +28,7 @@ import NotaDebitoPage from './pages/NotaDebito/NotaDebito';
 import GuiaRemisionPage from './pages/GuiaRemision/GuiaRemision';
 import DirectorioPage from './pages/Directorio/DirectorioPage';
 import IngresoComprasPage from './pages/Compras/IngresoComprasPage';
+import HistorialComprasPage from './pages/Compras/HistorialComprasPage';
 import Blank from './pages/Dashboard/Blank';
 
 import BodegasPage from './pages/Inventario/BodegasPage';
@@ -116,6 +117,7 @@ function App() {
 
                 {/* Compras */}
                 <Route path="/ingreso-compras" element={<IngresoComprasPage />} />
+                <Route path="/historial-compras" element={<HistorialComprasPage />} />
                 
                 {/* Compatibilidad: redirige /Navbar a /emisores */}
                 <Route path="/Navbar" element={<Navigate to="/emisores" replace />} />

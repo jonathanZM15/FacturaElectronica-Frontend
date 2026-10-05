@@ -226,6 +226,16 @@ const Navbar: React.FC = () => {
               <span className="label">Ingreso de Compras</span>
             </NavLink>
           </li>
+          <li className="nav-item">
+            <NavLink
+              to="/historial-compras"
+              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+              data-tooltip="Historial de Compras"
+            >
+              <span className="icon">🕒</span>
+              <span className="label">Historial de Compras</span>
+            </NavLink>
+          </li>
 
           <li className="nav-title">ENTIDADES</li>
           <li className="nav-item">
