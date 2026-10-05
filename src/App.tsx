@@ -27,6 +27,7 @@ import NotaCreditoPage from './pages/NotaCredito/NotaCredito';
 import NotaDebitoPage from './pages/NotaDebito/NotaDebito';
 import GuiaRemisionPage from './pages/GuiaRemision/GuiaRemision';
 import DirectorioPage from './pages/Directorio/DirectorioPage';
+import IngresoComprasPage from './pages/Compras/IngresoComprasPage';
 import Blank from './pages/Dashboard/Blank';
 
 import BodegasPage from './pages/Inventario/BodegasPage';
@@ -112,6 +113,9 @@ function App() {
 
                 {/* Directorio */}
                 <Route path="/directorio" element={<DirectorioPage />} />
+
+                {/* Compras */}
+                <Route path="/ingreso-compras" element={<IngresoComprasPage />} />
                 
                 {/* Compatibilidad: redirige /Navbar a /emisores */}
                 <Route path="/Navbar" element={<Navigate to="/emisores" replace />} />
