@@ -96,6 +96,17 @@ export default function MovimientosPage() {
                 >
                     🛠️ Reacondicionar Mermas
                 </button>
+                <button
+                    onClick={() => setActiveTab('mermas')}
+                    style={{
+                        padding: '10px 20px', borderRadius: '10px', fontSize: '0.9rem', fontWeight: 600, border: 'none', cursor: 'pointer', transition: 'all 0.2s',
+                        backgroundColor: activeTab === 'mermas' ? 'white' : 'transparent',
+                        color: activeTab === 'mermas' ? '#dc2626' : '#64748b',
+                        boxShadow: activeTab === 'mermas' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none'
+                    }}
+                >
+                    🗑️ Envío a Mermas
+                </button>
             </div>
             
             <div>
