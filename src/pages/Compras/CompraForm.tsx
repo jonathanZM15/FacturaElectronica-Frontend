@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { emisoresApi } from '../../services/emisoresApi';
+import { establecimientosApi } from '../../services/establecimientosApi';
 import { proveedoresApi, Proveedor } from '../../services/proveedoresApi';
 import { getProductos } from '../../services/inventoryService';
 import { Producto } from '../../types/inventory';
@@ -49,7 +50,7 @@ const CompraForm: React.FC<CompraFormProps> = ({ tipoIngreso }) => {
     if (!emisorId) return;
     
     // Load Establecimientos
-    emisoresApi.getEstablecimientos(emisorId).then(res => {
+    establecimientosApi.list(emisorId).then(res => {
       const data = res.data?.data ?? res.data ?? [];
       setEstablecimientos(data);
       if (data.length > 0) setEstablecimientoId(data[0].id.toString());
