@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
+import { emisoresApi } from '../../services/emisoresApi';
+import { establecimientosApi } from '../../services/establecimientosApi';
+import { puntosEmisionApi } from '../../services/puntosEmisionApi';
 
 interface DetalleGR {
   id: string;
@@ -51,40 +54,30 @@ const GuiaRemisionPage: React.FC = () => {
   const [estadoSRI, setEstadoSRI] = useState<any>(null);
 
   useEffect(() => {
-    cargarEmisores();
+    emisoresApi.list().then(r => {
+      const data = r.data?.data ?? r.data ?? [];
+      setEmisores(data);
+      if (data.length > 0) setEmisorId(data[0].id.toString());
+    });
   }, []);
-
-  const cargarEmisores = async () => {
-    try {
-      const res = await api.get('/api/emisores');
-      setEmisores(res.data);
-      if (res.data.length > 0) setEmisorId(res.data[0].id.toString());
-    } catch (e) {
-      console.error(e);
-    }
-  };
 
   useEffect(() => {
     if (!emisorId) return;
-    const emisor = emisores.find(e => e.id.toString() === emisorId);
-    if (emisor?.establecimientos) {
-      setEstablecimientos(emisor.establecimientos);
-      if (emisor.establecimientos.length > 0) {
-        setEstabId(emisor.establecimientos[0].id.toString());
-      }
-    }
-  }, [emisorId, emisores]);
+    establecimientosApi.list(Number(emisorId)).then(r => {
+      const data = r.data?.data ?? r.data ?? [];
+      setEstablecimientos(data);
+      if (data.length > 0) setEstabId(data[0].id.toString());
+    });
+  }, [emisorId]);
 
   useEffect(() => {
     if (!estabId) return;
-    const estab = establecimientos.find(e => e.id.toString() === estabId);
-    if (estab?.puntos_emision) {
-      setPuntos(estab.puntos_emision);
-      if (estab.puntos_emision.length > 0) {
-        setPuntoId(estab.puntos_emision[0].id.toString());
-      }
-    }
-  }, [estabId, establecimientos]);
+    puntosEmisionApi.list(Number(estabId)).then(r => {
+      const data = r.data?.data ?? r.data ?? [];
+      setPuntos(data);
+      if (data.length > 0) setPuntoId(data[0].id.toString());
+    });
+  }, [estabId]);
 
   const addRow = () => {
     setDetalles([...detalles, { id: Math.random().toString(), producto_id: '001', descripcion: '', cantidad: '1' }]);
