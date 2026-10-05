@@ -359,16 +359,12 @@ export const EnvioMermasForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
                                 onChange={e => handleOrigenChange(Number(e.target.value) || '')} 
                                 style={{ width: '100%', padding: '12px 16px', border: '1px solid #cbd5e1', borderRadius: '12px', fontSize: '0.95rem', outline: 'none', backgroundColor: loadingData ? '#f1f5f9' : 'white', color: '#0f172a', cursor: loadingData ? 'wait' : 'pointer' }}
                             >
-                                <option value="">{loadingData ? '⏳ Cargando bodegas...' : 'Seleccione bodega de mermas...'}</option>
-                                {!loadingData && bodegasOperativas.map(b => (
+                                <option value="">{loadingData ? '⏳ Cargando bodegas...' : 'Seleccione bodega origen...'}</option>
+                                {!loadingData && bodegasNormales.map(b => (
                                     <option key={b.id} value={b.id}>{b.nombre} ({b.tipo})</option>
                                 ))}
                             </select>
-                            {!loadingData && bodegasMermas.length === 0 && (
-                                <div style={{ fontSize: '0.8rem', color: '#dc2626', marginTop: '4px' }}>
-                                    No hay bodegas de tipo MERMAS configuradas para este emisor.
-                                </div>
-                            )}
+
                         </div>
 
                         <div style={{ flex: '1 1 300px' }}>
@@ -383,17 +379,22 @@ export const EnvioMermasForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
                                 onChange={e => setDestinoId(Number(e.target.value) || '')} 
                                 style={{ width: '100%', padding: '12px 16px', border: '1px solid #cbd5e1', borderRadius: '12px', fontSize: '0.95rem', outline: 'none', backgroundColor: loadingData ? '#f1f5f9' : 'white', color: '#0f172a', cursor: loadingData ? 'wait' : 'pointer' }}
                             >
-                                <option value="">{loadingData ? '⏳ Cargando bodegas...' : 'Seleccione bodega de destino apta...'}</option>
-                                {!loadingData && bodegasNormales.map(b => (
+                                <option value="">{loadingData ? '⏳ Cargando bodegas...' : 'Seleccione bodega de mermas...'}</option>
+                                {!loadingData && bodegasMermas.map(b => (
                                     <option key={b.id} value={b.id}>{b.nombre} ({b.tipo})</option>
                                 ))}
                             </select>
+                            {!loadingData && bodegasMermas.length === 0 && (
+                                <div style={{ fontSize: '0.8rem', color: '#dc2626', marginTop: '4px' }}>
+                                    No hay bodegas de tipo MERMAS configuradas para este emisor.
+                                </div>
+                            )}
                         </div>
 
                         <div style={{ flex: '1 1 300px' }}>
                             <MotivoSelect
                                 emisorId={emisorId}
-                                tipoMovimiento="MOV_12_REACONDICIONAMIENTO_MERMAS"
+                                tipoMovimiento="MOV_11_ENVIO_MERMAS"
                                 value={motivoId}
                                 onChange={(id, motivo) => {
                                     setMotivoId(id);
