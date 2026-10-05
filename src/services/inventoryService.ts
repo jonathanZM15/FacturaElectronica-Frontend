@@ -225,3 +225,8 @@ export const getMotivosMovimiento = async (emisorId: string | number, tipoMovimi
     motivosCache[key] = { data: result, timestamp: now };
     return result;
 };
+
+export const enviarMermas = async (emisorId: string | number, payload: any) => {
+    const response = await api.post(${BASE_INVENTORY_URL}//movimientos/mermas, payload);
+    return response.data;
+};

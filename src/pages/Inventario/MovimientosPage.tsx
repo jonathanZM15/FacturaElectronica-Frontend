@@ -4,12 +4,13 @@ import { TransferenciaForm } from '../../components/inventory/TransferenciaForm'
 import { AjusteForm } from '../../components/inventory/AjusteForm';
 import { InventarioInicialForm } from '../../components/inventory/InventarioInicialForm';
 import { ReacondicionarForm } from '../../components/inventory/ReacondicionarForm';
+import { EnvioMermasForm } from '../../components/inventory/EnvioMermasForm';
 import { useUser } from '../../contexts/userContext';
 
 export default function MovimientosPage() {
     const { user } = useUser();
     const emisorId = (user as any)?.emisor_id || 6;
-    const [activeTab, setActiveTab] = useState<'transferencia' | 'ajuste' | 'inicial' | 'reacondicionar'>('transferencia');
+    const [activeTab, setActiveTab] = useState<'transferencia' | 'ajuste' | 'inicial' | 'reacondicionar' | 'mermas'>('transferencia');
     const [recentKardex, setRecentKardex] = useState<any[]>([]);
     const [loadingKardex, setLoadingKardex] = useState(true);
 
@@ -102,6 +103,7 @@ export default function MovimientosPage() {
                 {activeTab === 'ajuste' && <AjusteForm emisorId={emisorId} onSuccess={loadRecentKardex} />}
                 {activeTab === 'inicial' && <InventarioInicialForm emisorId={emisorId} onSuccess={loadRecentKardex} />}
                 {activeTab === 'reacondicionar' && <ReacondicionarForm emisorId={emisorId} onSuccess={loadRecentKardex} />}
+                        {activeTab === 'mermas' && <EnvioMermasForm emisorId={emisorId} onSuccess={loadRecentKardex} />}
             </div>
 
             {/* Historial Reciente */}
