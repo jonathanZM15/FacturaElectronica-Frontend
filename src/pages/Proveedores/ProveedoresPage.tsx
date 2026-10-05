@@ -1,8 +1,8 @@
-import React, {{ useState, useEffect }} from 'react';
-import {{ proveedoresApi, Proveedor }} from '../../services/proveedoresApi';
-import {{ emisoresApi }} from '../../services/emisoresApi';
+import React, { useState, useEffect } from 'react';
+import { proveedoresApi, Proveedor } from '../../services/proveedoresApi';
+import { emisoresApi } from '../../services/emisoresApi';
 
-const ProveedoresPage: React.FC<{{isEmbedded?: boolean}}> = ({{ isEmbedded }) => {{
+const ProveedoresPage: React.FC<{isEmbedded?: boolean}> = ({ isEmbedded }) => {
   const [emisores, setEmisores] = useState<any[]>([]);
   const [emisorId, setEmisorId] = useState<string>('');
   
@@ -12,97 +12,97 @@ const ProveedoresPage: React.FC<{{isEmbedded?: boolean}}> = ({{ isEmbedded }) =>
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [currentItem, setCurrentItem] = useState<Partial<Proveedor>>({{}});
+  const [currentItem, setCurrentItem] = useState<Partial<Proveedor>>({});
 
-  useEffect(() => {{
-    emisoresApi.list().then(r => {{
+  useEffect(() => {
+    emisoresApi.list().then(r => {
       const data = r.data?.data ?? r.data ?? [];
       setEmisores(data);
       if (data.length > 0) setEmisorId(data[0].id.toString());
-    }});
-  }}, []);
+    });
+  }, []);
 
-  useEffect(() => {{
+  useEffect(() => {
     if (emisorId) fetchItems();
-  }}, [emisorId]);
+  }, [emisorId]);
 
-  const fetchItems = async (q = search) => {{
+  const fetchItems = async (q = search) => {
     if (!emisorId) return;
     setLoading(true);
-    try {{
+    try {
       const res = await proveedoresApi.list(emisorId, 1, q);
       setItems(res.data?.data ?? []);
-    }} catch (e) {{
+    } catch (e) {
       console.error(e);
-    }} finally {{
+    } finally {
       setLoading(false);
-    }}
-  }};
+    }
+  };
 
-  const handleSearch = (e: React.FormEvent) => {{
+  const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     fetchItems(search);
-  }};
+  };
 
-  const openModal = (item?: Proveedor) => {{
-    setCurrentItem(item || {{
+  const openModal = (item?: Proveedor) => {
+    setCurrentItem(item || {
       tipo_identificacion: 'CEDULA',
       identificacion: '',
       razon_social: '',
       direccion: '',
       email: '',
       telefono: ''
-    }});
+    });
     setIsModalOpen(true);
-  }};
+  };
 
-  const saveItem = async (e: React.FormEvent) => {{
+  const saveItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!emisorId) return;
     
-    try {{
-      if (currentItem.id) {{
+    try {
+      if (currentItem.id) {
         await proveedoresApi.update(emisorId, currentItem.id, currentItem);
-      }} else {{
+      } else {
         await proveedoresApi.create(emisorId, currentItem);
-      }}
+      }
       setIsModalOpen(false);
       fetchItems();
-    }} catch (e: any) {{
+    } catch (e: any) {
       alert("Error al guardar: " + (e.response?.data?.message || e.message));
-    }}
-  }};
+    }
+  };
 
-  const deleteItem = async (id: number) => {{
+  const deleteItem = async (id: number) => {
     if (!emisorId || !window.confirm("¿Seguro que deseas eliminar este registro?")) return;
-    try {{
+    try {
       await proveedoresApi.delete(emisorId, id);
       fetchItems();
-    }} catch (e) {{
+    } catch (e) {
       alert("Error al eliminar");
-    }}
-  }};
+    }
+  };
 
   return (
-    <div style={{ ...(isEmbedded ? {{ padding: '0 24px' }} : {{ padding: '32px 24px', maxWidth: '1200px', margin: '0 auto' }}), fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ ...(isEmbedded ? { padding: '0 24px' } : { padding: '32px 24px', maxWidth: '1200px', margin: '0 auto' }), fontFamily: 'Inter, sans-serif' }}>
       
-      {{!isEmbedded && (
+      {!isEmbedded && (
         <div style={{ marginBottom: '24px' }}>
           <h1 style={{ fontSize: '24px', margin: '0 0 8px 0', color: '#1e293b' }}>Proveedores</h1>
-          <p style={{ margin: 0, color: '#64748b' }}>Gestión individual de proveedores.</p>
+          <p style={{ margin: 0, color: '#64748b' }}>Gestión individual.</p>
         </div>
-      )}}
+      )}
 
       <div style={{ background: 'white', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
         
         {/* Controls Toolbar */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', marginBottom: '20px', flexWrap: 'wrap' }}>
-          <form onSubmit={{handleSearch}} style={{ display: 'flex', gap: '8px', flex: 1, minWidth: '300px' }}>
+          <form onSubmit={handleSearch} style={{ display: 'flex', gap: '8px', flex: 1, minWidth: '300px' }}>
             <div style={{ position: 'relative', flex: 1 }}>
               <input 
                 placeholder="Buscar por cédula, RUC o nombre..." 
-                value={{search}}
-                onChange={{e => setSearch(e.target.value)}}
+                value={search}
+                onChange={e => setSearch(e.target.value)}
                 style={{ width: '100%', padding: '10px 16px 10px 40px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box', fontSize: '14px' }}
               />
               <span style={{ position: 'absolute', left: '14px', top: '10px', color: '#94a3b8' }}>🔍</span>
@@ -114,14 +114,14 @@ const ProveedoresPage: React.FC<{{isEmbedded?: boolean}}> = ({{ isEmbedded }) =>
 
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
             <select 
-              value={{emisorId}} 
-              onChange={{e => setEmisorId(e.target.value)}}
+              value={emisorId} 
+              onChange={e => setEmisorId(e.target.value)}
               style={{ padding: '10px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: '#f8fafc', color: '#334155', fontWeight: 500, outline: 'none' }}
             >
-              {{emisores.map(e => <option key={{e.id}} value={{e.id}}>{{e.razon_social}}</option>)}}
+              {emisores.map(e => <option key={e.id} value={e.id}>{e.razon_social}</option>)}
             </select>
             <button 
-              onClick={{\() => openModal()}}
+              onClick={() => openModal()}
               style={{ background: '#3b82f6', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 4px rgba(59, 130, 246, 0.3)' }}
             >
               <span>➕</span> Nuevo
@@ -141,49 +141,49 @@ const ProveedoresPage: React.FC<{{isEmbedded?: boolean}}> = ({{ isEmbedded }) =>
               </tr>
             </thead>
             <tbody>
-              {{loading ? (
-                <tr><td colSpan={{4}} style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>Cargando datos...</td></tr>
+              {loading ? (
+                <tr><td colSpan={4} style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>Cargando datos...</td></tr>
               ) : items.length === 0 ? (
-                <tr><td colSpan={{4}} style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>No hay registros para mostrar.</td></tr>
+                <tr><td colSpan={4} style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>No hay registros para mostrar.</td></tr>
               ) : (
                 items.map(item => (
-                  <tr key={{item.id}} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  <tr key={item.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                     <td style={{ padding: '16px' }}>
-                      <div style={{ fontWeight: 600, color: '#334155' }}>{{item.identificacion}}</div>
-                      <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>{{item.tipo_identificacion}}</div>
+                      <div style={{ fontWeight: 600, color: '#334155' }}>{item.identificacion}</div>
+                      <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>{item.tipo_identificacion}</div>
                     </td>
                     <td style={{ padding: '16px', fontWeight: 500, color: '#0f172a' }}>
-                      {{item.razon_social}}
-                      {{item.nombre_comercial && <div style={{fontSize: '12px', color: '#64748b', marginTop: '2px', fontWeight: 400}}>{{item.nombre_comercial}}</div>}}
+                      {item.razon_social}
+                      {item.nombre_comercial && <div style={{fontSize: '12px', color: '#64748b', marginTop: '2px', fontWeight: 400}}>{item.nombre_comercial}</div>}
                     </td>
                     <td style={{ padding: '16px' }}>
-                      <div style={{ fontSize: '14px', color: '#475569' }}>📞 {{item.telefono || 'N/A'}}</div>
-                      <div style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>✉️ {{item.email || 'N/A'}}</div>
+                      <div style={{ fontSize: '14px', color: '#475569' }}>📞 {item.telefono || 'N/A'}</div>
+                      <div style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>✉️ {item.email || 'N/A'}</div>
                     </td>
                     <td style={{ padding: '16px', textAlign: 'right' }}>
-                      <button onClick={{\() => openModal(item)}} style={{ marginRight: '8px', padding: '8px', background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: '6px', cursor: 'pointer', transition: 'background 0.2s' }}>✏️</button>
-                      <button onClick={{\() => deleteItem(item.id)}} style={{ padding: '8px', background: '#fef2f2', color: '#dc2626', border: 'none', borderRadius: '6px', cursor: 'pointer', transition: 'background 0.2s' }}>🗑️</button>
+                      <button onClick={() => openModal(item)} style={{ marginRight: '8px', padding: '8px', background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: '6px', cursor: 'pointer', transition: 'background 0.2s' }}>✏️</button>
+                      <button onClick={() => deleteItem(item.id)} style={{ padding: '8px', background: '#fef2f2', color: '#dc2626', border: 'none', borderRadius: '6px', cursor: 'pointer', transition: 'background 0.2s' }}>🗑️</button>
                     </td>
                   </tr>
                 ))
-              )}}
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {{isModalOpen && (
+      {isModalOpen && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
           <div style={{ background: 'white', padding: '32px', borderRadius: '20px', width: '100%', maxWidth: '540px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
-            <h2 style={{ margin: '0 0 24px 0', fontSize: '22px', color: '#0f172a' }}>{{currentItem.id ? `Editar ${title[:-1]}` : `Nuevo ${title[:-1]}`}}</h2>
+            <h2 style={{ margin: '0 0 24px 0', fontSize: '22px', color: '#0f172a' }}>{currentItem.id ? `Editar Proveedor` : `Nuevo Proveedor`}</h2>
             
-            <form onSubmit={{saveItem}} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <form onSubmit={saveItem} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div style={{ display: 'flex', gap: '16px' }}>
                 <div style={{ flex: 1 }}>
                   <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 600, color: '#475569' }}>Tipo ID</label>
                   <select 
-                    value={{currentItem.tipo_identificacion}} 
-                    onChange={{e => setCurrentItem({{...currentItem, tipo_identificacion: e.target.value}})}}
+                    value={currentItem.tipo_identificacion} 
+                    onChange={e => setCurrentItem({...currentItem, tipo_identificacion: e.target.value})}
                     style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none' }}
                   >
                     <option value="CEDULA">Cédula</option>
@@ -196,8 +196,8 @@ const ProveedoresPage: React.FC<{{isEmbedded?: boolean}}> = ({{ isEmbedded }) =>
                   <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 600, color: '#475569' }}>Identificación</label>
                   <input 
                     required
-                    value={{currentItem.identificacion}} 
-                    onChange={{e => setCurrentItem({{...currentItem, identificacion: e.target.value}})}}
+                    value={currentItem.identificacion} 
+                    onChange={e => setCurrentItem({...currentItem, identificacion: e.target.value})}
                     style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box', outline: 'none' }}
                   />
                 </div>
@@ -207,8 +207,8 @@ const ProveedoresPage: React.FC<{{isEmbedded?: boolean}}> = ({{ isEmbedded }) =>
                 <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 600, color: '#475569' }}>Razón Social (Nombre)</label>
                 <input 
                   required
-                  value={{currentItem.razon_social}} 
-                  onChange={{e => setCurrentItem({{...currentItem, razon_social: e.target.value}})}}
+                  value={currentItem.razon_social} 
+                  onChange={e => setCurrentItem({...currentItem, razon_social: e.target.value})}
                   style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box', outline: 'none' }}
                 />
               </div>
@@ -216,8 +216,8 @@ const ProveedoresPage: React.FC<{{isEmbedded?: boolean}}> = ({{ isEmbedded }) =>
               <div>
                 <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 600, color: '#475569' }}>Dirección</label>
                 <input 
-                  value={{currentItem.direccion || ''}} 
-                  onChange={{e => setCurrentItem({{...currentItem, direccion: e.target.value}})}}
+                  value={currentItem.direccion || ''} 
+                  onChange={e => setCurrentItem({...currentItem, direccion: e.target.value})}
                   style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box', outline: 'none' }}
                 />
               </div>
@@ -226,8 +226,8 @@ const ProveedoresPage: React.FC<{{isEmbedded?: boolean}}> = ({{ isEmbedded }) =>
                 <div style={{ flex: 1 }}>
                   <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 600, color: '#475569' }}>Teléfono</label>
                   <input 
-                    value={{currentItem.telefono || ''}} 
-                    onChange={{e => setCurrentItem({{...currentItem, telefono: e.target.value}})}}
+                    value={currentItem.telefono || ''} 
+                    onChange={e => setCurrentItem({...currentItem, telefono: e.target.value})}
                     style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box', outline: 'none' }}
                   />
                 </div>
@@ -235,23 +235,23 @@ const ProveedoresPage: React.FC<{{isEmbedded?: boolean}}> = ({{ isEmbedded }) =>
                   <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 600, color: '#475569' }}>Email</label>
                   <input 
                     type="email"
-                    value={{currentItem.email || ''}} 
-                    onChange={{e => setCurrentItem({{...currentItem, email: e.target.value}})}}
+                    value={currentItem.email || ''} 
+                    onChange={e => setCurrentItem({...currentItem, email: e.target.value})}
                     style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box', outline: 'none' }}
                   />
                 </div>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '16px' }}>
-                <button type="button" onClick={{\() => setIsModalOpen(false)}} style={{ padding: '12px 24px', border: 'none', background: '#f1f5f9', color: '#475569', fontWeight: 600, borderRadius: '8px', cursor: 'pointer' }}>Cancelar</button>
+                <button type="button" onClick={() => setIsModalOpen(false)} style={{ padding: '12px 24px', border: 'none', background: '#f1f5f9', color: '#475569', fontWeight: 600, borderRadius: '8px', cursor: 'pointer' }}>Cancelar</button>
                 <button type="submit" style={{ padding: '12px 24px', background: '#3b82f6', color: 'white', fontWeight: 600, border: 'none', borderRadius: '8px', cursor: 'pointer', boxShadow: '0 2px 4px rgba(59, 130, 246, 0.3)' }}>Guardar Registro</button>
               </div>
             </form>
           </div>
         </div>
-      )}}
+      )}
     </div>
   );
-}};
+};
 
 export default ProveedoresPage;
