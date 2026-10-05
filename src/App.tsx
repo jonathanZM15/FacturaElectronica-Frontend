@@ -25,6 +25,7 @@ import TiposRetencion from './pages/TiposRetencion/TiposRetencion';
 import PruebaEmisionComprobante from './pages/PruebaEmision/PruebaEmision';
 import NotaCreditoPage from './pages/NotaCredito/NotaCredito';
 import NotaDebitoPage from './pages/NotaDebito/NotaDebito';
+import GuiaRemisionPage from './pages/GuiaRemision/GuiaRemision';
 import Blank from './pages/Dashboard/Blank';
 
 import BodegasPage from './pages/Inventario/BodegasPage';
@@ -106,6 +107,7 @@ function App() {
                 {/* Módulo Emisión de Comprobantes */}
                 <Route path="/nota-credito" element={<NotaCreditoPage />} />
                 <Route path="/nota-debito" element={<NotaDebitoPage />} />
+                <Route path="/guia-remision" element={<GuiaRemisionPage />} />
                 
                 {/* Compatibilidad: redirige /Navbar a /emisores */}
                 <Route path="/Navbar" element={<Navigate to="/emisores" replace />} />

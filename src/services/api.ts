@@ -64,6 +64,14 @@ export const facturacion = {
     api.post('/api/facturacion/emitir-nota-credito', formData, {
       transformRequest: [(data: any, headers: any) => { delete headers['Content-Type']; return data; }],
     }),
+  emitirNotaDebito: (formData: FormData) =>
+    api.post('/api/facturacion/emitir-nota-debito', formData, {
+      transformRequest: [(data: any, headers: any) => { delete headers['Content-Type']; return data; }],
+    }),
+  emitirGuiaRemision: (formData: FormData) =>
+    api.post('/api/facturacion/emitir-guia-remision', formData, {
+      transformRequest: [(data: any, headers: any) => { delete headers['Content-Type']; return data; }],
+    }),
   listarComprobantes: (params: { tipo?: string; estado?: string; emisor_id?: string | number }) =>
     api.get('/api/facturacion/comprobantes', { params }),
 };

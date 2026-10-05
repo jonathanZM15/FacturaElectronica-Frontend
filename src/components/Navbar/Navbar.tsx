@@ -187,6 +187,16 @@ const Navbar: React.FC = () => {
           {/* Emisión de Comprobantes */}
           <li className="nav-item">
             <NavLink
+              to="/guia-remision"
+              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+              data-tooltip="Guía de Remisión"
+            >
+              <span className="icon">🚚</span>
+              <span className="label">Guía de Remisión</span>
+            </NavLink>
+          </li>
+          <li className="nav-item">
+            <NavLink
               to="/nota-credito"
               className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
               data-tooltip="Nota de Crédito"
