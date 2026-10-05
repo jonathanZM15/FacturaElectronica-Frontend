@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { proveedorsApi, Proveedor } from '../../services/proveedorsApi';
+import { proveedoresApi, Proveedor } from '../../services/proveedoresApi';
 import { emisoresApi } from '../../services/emisoresApi';
 
-const ProveedorsPage: React.FC = () => {
+const ProveedoresPage: React.FC = () => {
   const [emisores, setEmisores] = useState<any[]>([]);
   const [emisorId, setEmisorId] = useState<string>('');
   
@@ -30,7 +30,7 @@ const ProveedorsPage: React.FC = () => {
     if (!emisorId) return;
     setLoading(true);
     try {
-      const res = await proveedorsApi.list(emisorId, 1, q);
+      const res = await proveedoresApi.list(emisorId, 1, q);
       setProveedors(res.data?.data ?? []);
     } catch (e) {
       console.error(e);
@@ -62,9 +62,9 @@ const ProveedorsPage: React.FC = () => {
     
     try {
       if (currentProveedor.id) {
-        await proveedorsApi.update(emisorId, currentProveedor.id, currentProveedor);
+        await proveedoresApi.update(emisorId, currentProveedor.id, currentProveedor);
       } else {
-        await proveedorsApi.create(emisorId, currentProveedor);
+        await proveedoresApi.create(emisorId, currentProveedor);
       }
       setIsModalOpen(false);
       fetchProveedors();
@@ -76,7 +76,7 @@ const ProveedorsPage: React.FC = () => {
   const deleteProveedor = async (id: number) => {
     if (!emisorId || !window.confirm("¿Seguro que deseas eliminar este proveedor?")) return;
     try {
-      await proveedorsApi.delete(emisorId, id);
+      await proveedoresApi.delete(emisorId, id);
       fetchProveedors();
     } catch (e) {
       alert("Error al eliminar proveedor");
@@ -235,4 +235,4 @@ const ProveedorsPage: React.FC = () => {
   );
 };
 
-export default ProveedorsPage;
+export default ProveedoresPage;
