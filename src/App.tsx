@@ -26,6 +26,8 @@ import PruebaEmisionComprobante from './pages/PruebaEmision/PruebaEmision';
 import NotaCreditoPage from './pages/NotaCredito/NotaCredito';
 import NotaDebitoPage from './pages/NotaDebito/NotaDebito';
 import GuiaRemisionPage from './pages/GuiaRemision/GuiaRemision';
+import ClientesPage from './pages/Clientes/ClientesPage';
+import ProveedoresPage from './pages/Proveedores/ProveedoresPage';
 import Blank from './pages/Dashboard/Blank';
 
 import BodegasPage from './pages/Inventario/BodegasPage';
@@ -108,6 +110,10 @@ function App() {
                 <Route path="/nota-credito" element={<NotaCreditoPage />} />
                 <Route path="/nota-debito" element={<NotaDebitoPage />} />
                 <Route path="/guia-remision" element={<GuiaRemisionPage />} />
+
+                {/* Directorio */}
+                <Route path="/clientes" element={<ClientesPage />} />
+                <Route path="/proveedores" element={<ProveedoresPage />} />
                 
                 {/* Compatibilidad: redirige /Navbar a /emisores */}
                 <Route path="/Navbar" element={<Navigate to="/emisores" replace />} />
