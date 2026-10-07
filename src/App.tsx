@@ -39,6 +39,7 @@ import CategoriasPage from './pages/Inventario/CategoriasPage';
 import StockParametrosPage from './pages/Inventario/StockParametrosPage';
 import DespachosSucursalPage from './pages/Inventario/DespachosSucursalPage';
 import ExistenciasPage from './pages/Inventario/ExistenciasPage';
+import ClientesPage from './pages/Clientes/ClientesPage';
 
 const ChangePasswordAuthed: React.FC = () => {
   const { logout } = useUser();
@@ -103,6 +104,10 @@ function App() {
                 <Route path="/inventario/kardex" element={<KardexPage />} />
                 <Route path="/inventario/categorias" element={<CategoriasPage />} />
                 <Route path="/inventario/stock-parametros" element={<StockParametrosPage />} />
+                
+                {/* Clientes */}
+                <Route path="/clientes" element={<ClientesPage />} />
+                <Route path="/inventario/clientes" element={<ClientesPage />} />
 
                 {/* Prueba Emisión */}
                 <Route path="/prueba-emision" element={<PruebaEmisionComprobante />} />

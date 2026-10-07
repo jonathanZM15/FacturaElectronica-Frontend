@@ -76,4 +76,19 @@ export const facturacion = {
     api.get('/api/facturacion/comprobantes', { params }),
 };
 
+export const clientesService = {
+  list: (emisorId: number | string, params?: Record<string, any>) =>
+    api.get(`/api/emisores/${emisorId}/clientes`, { params }),
+  buscar: (emisorId: number | string, identificacion: string) =>
+    api.get(`/api/emisores/${emisorId}/clientes/buscar`, { params: { identificacion } }),
+  get: (emisorId: number | string, id: number) =>
+    api.get(`/api/emisores/${emisorId}/clientes/${id}`),
+  create: (emisorId: number | string, data: any) =>
+    api.post(`/api/emisores/${emisorId}/clientes`, data),
+  update: (emisorId: number | string, id: number, data: any) =>
+    api.put(`/api/emisores/${emisorId}/clientes/${id}`, data),
+  delete: (emisorId: number | string, id: number) =>
+    api.delete(`/api/emisores/${emisorId}/clientes/${id}`),
+};
+
 export default api;

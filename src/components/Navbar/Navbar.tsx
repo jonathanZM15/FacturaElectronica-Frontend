@@ -167,6 +167,12 @@ const Navbar: React.FC = () => {
                   <span className="label">Stock Parámetros</span>
                 </NavLink>
               </li>
+              <li className="nav-item">
+                <NavLink to="/clientes" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} data-tooltip="Clientes">
+                  <span className="icon">👥</span>
+                  <span className="label">Clientes</span>
+                </NavLink>
+              </li>
             </>
           )}
 
