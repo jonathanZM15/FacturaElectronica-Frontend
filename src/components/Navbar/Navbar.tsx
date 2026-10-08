@@ -221,7 +221,9 @@ const Navbar: React.FC = () => {
               <span className="label">Nota de Débito</span>
             </NavLink>
           </li>
-                    <li className="nav-title">POS / VENTAS</li>
+                    {user && (user.role === 'emisor' || user.role === 'gerente' || user.role === 'cajero') && (
+            <>
+              <li className="nav-title">POS / VENTAS</li>
           <li className="nav-item">
             <NavLink
               to="/pos"
@@ -232,6 +234,8 @@ const Navbar: React.FC = () => {
               <span className="label">Punto de Venta</span>
             </NavLink>
           </li>
+            </>
+          )}
           
           
           <li className="nav-title">COMPRAS</li>
