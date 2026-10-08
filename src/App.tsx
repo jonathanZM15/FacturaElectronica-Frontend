@@ -29,6 +29,8 @@ import GuiaRemisionPage from './pages/GuiaRemision/GuiaRemision';
 import DirectorioPage from './pages/Directorio/DirectorioPage';
 import IngresoComprasPage from './pages/Compras/IngresoComprasPage';
 import HistorialComprasPage from './pages/Compras/HistorialComprasPage';
+import PosPage from './pages/POS/PosPage';
+import CajasPage from './pages/POS/CajasPage';
 import Blank from './pages/Dashboard/Blank';
 
 import BodegasPage from './pages/Inventario/BodegasPage';
@@ -119,6 +121,10 @@ function App() {
 
                 {/* Directorio */}
                 <Route path="/directorio" element={<DirectorioPage />} />
+
+                                {/* POS */}
+                <Route path="/pos" element={<PosPage />} />
+                <Route path="/cajas" element={<CajasPage />} />
 
                 {/* Compras */}
                 <Route path="/ingreso-compras" element={<IngresoComprasPage />} />
