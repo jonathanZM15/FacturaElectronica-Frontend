@@ -28,7 +28,7 @@ export default function CajasPage() {
         try {
             setLoading(true);
             const estRes = await establecimientosApi.list(emisorId);
-            setEstablecimientos(estRes);
+            setEstablecimientos(estRes.data?.data || estRes.data || []);
             const cRes = await posApi.getCajas(emisorId);
             setCajas(cRes);
         } catch (error) {
