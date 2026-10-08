@@ -123,6 +123,62 @@ export default function PosPage() {
 
     const cartTotal = cart.reduce((acc, item) => acc + (item.precio_unitario * item.qty), 0);
 
+    const handleCobroConfirm = async (cobroData: any, firmaFile: File, firmaPassword: string) => {
+        try {
+            setLoading(true);
+            const payload = {
+                emisor_id: emisorId,
+                establecimiento_id: activeTurno?.puntoEmision?.establecimiento_id || 1,
+                punto_emision_id: activeTurno?.punto_emision_id,
+                pos_turno_id: activeTurno?.id,
+                cliente: {
+                    tipo_identificacion: cobroData.cliente.identificacion === '9999999999999' ? '07' : (cobroData.cliente.identificacion.length === 13 ? '04' : '05'),
+                    identificacion: cobroData.cliente.identificacion,
+                    razon_social: cobroData.cliente.razon_social || cobroData.cliente.nombre,
+                    direccion: cobroData.cliente.direccion || 'S/N',
+                    email: cobroData.cliente.email || 'consumidor@final.com',
+                    telefono: cobroData.cliente.telefono || '9999999999'
+                },
+                detalles: cart.map(item => ({
+                    producto_id: item.producto_id,
+                    descripcion: item.nombre,
+                    cantidad: item.qty,
+                    precio_unitario: item.precio_unitario,
+                    descuento: 0,
+                    impuesto: {
+                        tipo_impuesto_id: item.tipo_impuesto_id || 1
+                    }
+                })),
+                pagos: [
+                    {
+                        forma_pago: cobroData.formaPago,
+                        total: cartTotal
+                    }
+                ],
+                informacion_adicional: [
+                    { nombre: 'Cajero', valor: 'Turno POS ' + activeTurno?.id }
+                ]
+            };
+
+            const fd = new FormData();
+            fd.append('firma', firmaFile, firmaFile.name);
+            fd.append('password', firmaPassword);
+            fd.append('payload', JSON.stringify(payload));
+
+            const res = await facturacion.emitir(fd);
+            alert(`Factura Emitida Correctamente!
+Estado: ${res.data?.estado_sri || 'Recibida'}`);
+            setShowCobroModal(false);
+            setCart([]);
+            loadPosData();
+        } catch (error: any) {
+            console.error(error);
+            alert('Error al emitir factura: ' + (error.response?.data?.message || error.message));
+        } finally {
+            setLoading(false);
+        }
+    };
+
     if (loading) {
         return <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>Cargando POS...</div>;
     }
