@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from '../../contexts/userContext';
-import { posApi, PosTurno, Caja } from '../../services/posApi';
+import { posApi, PosTurno } from '../../services/posApi';
 import { getProductos } from '../../services/inventoryService';
+import { establecimientosApi } from '../../services/establecimientosApi';
 
 export default function PosPage() {
     const { user } = useUser();
     const emisorId = (user as any)?.emisor_id || 6;
 
     const [activeTurno, setActiveTurno] = useState<PosTurno | null>(null);
-    const [cajas, setCajas] = useState<Caja[]>([]);
+    const [puntosEmision, setPuntosEmision] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     // Apertura state
-    const [cajaId, setCajaId] = useState('');
+    const [puntoEmisionId, setPuntoEmisionId] = useState('');
     const [saldoInicial, setSaldoInicial] = useState('0.00');
 
     // POS state
@@ -33,8 +34,19 @@ export default function PosPage() {
                 loadPosData();
             } else {
                 setActiveTurno(null);
-                const cRes = await posApi.getCajas(emisorId);
-                setCajas(cRes.filter(c => c.activa));
+                const estRes = await establecimientosApi.list(emisorId);
+                const establecimientos = estRes.data?.data || estRes.data || [];
+                
+                // Extraer todos los puntos de emision de todos los establecimientos
+                const todosPuntos = establecimientos.flatMap((est: any) => 
+                    (est.puntos_emision || []).map((pe: any) => ({
+                        ...pe,
+                        establecimiento_codigo: est.codigo,
+                        establecimiento_nombre: est.nombre_comercial || est.nombre
+                    }))
+                ).filter((pe: any) => pe.activo !== false);
+
+                setPuntosEmision(todosPuntos);
             }
         } catch (error) {
             console.error('Error checking turno:', error);
@@ -56,7 +68,7 @@ export default function PosPage() {
         e.preventDefault();
         try {
             await posApi.aperturarTurno(emisorId, {
-                caja_id: Number(cajaId),
+                punto_emision_id: Number(puntoEmisionId),
                 saldo_inicial: Number(saldoInicial)
             });
             checkActiveTurno();
@@ -109,21 +121,21 @@ export default function PosPage() {
                     <div style={{ textAlign: 'center', marginBottom: '32px' }}>
                         <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🏪</div>
                         <h2 style={{ margin: '0 0 8px 0', color: '#0f172a' }}>Apertura de Caja</h2>
-                        <p style={{ margin: 0, color: '#64748b', fontSize: '0.95rem' }}>Debes abrir un turno para poder vender en el POS</p>
+                        <p style={{ margin: 0, color: '#64748b', fontSize: '0.95rem' }}>Debes abrir un turno en un Punto de Emisión para vender</p>
                     </div>
 
                     <form onSubmit={handleApertura}>
                         <div style={{ marginBottom: '20px' }}>
-                            <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 600, color: '#334155' }}>Seleccionar Caja</label>
+                            <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 600, color: '#334155' }}>Seleccionar Punto de Venta</label>
                             <select 
                                 required
-                                value={cajaId}
-                                onChange={e => setCajaId(e.target.value)}
+                                value={puntoEmisionId}
+                                onChange={e => setPuntoEmisionId(e.target.value)}
                                 style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '0.95rem' }}
                             >
-                                <option value="">-- Seleccione una caja --</option>
-                                {cajas.map(c => (
-                                    <option key={c.id} value={c.id}>{c.nombre} (Est. {c.establecimiento?.codigo})</option>
+                                <option value="">-- Seleccione Punto de Emisión --</option>
+                                {puntosEmision.map(pe => (
+                                    <option key={pe.id} value={pe.id}>{pe.establecimiento_codigo}-{pe.codigo} ({pe.establecimiento_nombre})</option>
                                 ))}
                             </select>
                         </div>
@@ -160,7 +172,7 @@ export default function PosPage() {
                         </div>
                         <div>
                             <h2 style={{ margin: 0, fontSize: '1.2rem', color: '#0f172a' }}>Punto de Venta</h2>
-                            <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>Caja: {activeTurno.caja?.nombre} | Usuario: {activeTurno.usuario_id}</p>
+                            <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>Caja/Punto: {activeTurno.puntoEmision?.codigo} | Cajero: {activeTurno.usuario_id}</p>
                         </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

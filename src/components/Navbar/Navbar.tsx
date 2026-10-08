@@ -232,16 +232,7 @@ const Navbar: React.FC = () => {
               <span className="label">Punto de Venta</span>
             </NavLink>
           </li>
-          <li className="nav-item">
-            <NavLink
-              to="/cajas"
-              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-              data-tooltip="Gestión de Cajas"
-            >
-              <span className="icon">💵</span>
-              <span className="label">Gestión de Cajas</span>
-            </NavLink>
-          </li>
+          
           
           <li className="nav-title">COMPRAS</li>
           <li className="nav-item">
