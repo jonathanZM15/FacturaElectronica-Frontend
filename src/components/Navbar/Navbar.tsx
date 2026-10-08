@@ -190,8 +190,11 @@ const Navbar: React.FC = () => {
             </li>
           )}
 
-          {/* Emisión de Comprobantes */}
-          <li className="nav-item">
+          {/* Emisión de Comprobantes: Solo Emisor, Gerente o Cajero */}
+          {user && (user.role === 'emisor' || user.role === 'gerente' || user.role === 'cajero') && (
+            <>
+              <li className="nav-title">EMISIÓN DE COMPROBANTES</li>
+              <li className="nav-item">
             <NavLink
               to="/guia-remision"
               className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
