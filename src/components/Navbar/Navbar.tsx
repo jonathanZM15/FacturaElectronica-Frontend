@@ -195,35 +195,47 @@ const Navbar: React.FC = () => {
             <>
               <li className="nav-title">EMISIÓN DE COMPROBANTES</li>
               <li className="nav-item">
-            <NavLink
-              to="/guia-remision"
-              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-              data-tooltip="Guía de Remisión"
-            >
-              <span className="icon">🚚</span>
-              <span className="label">Guía de Remisión</span>
-            </NavLink>
-          </li>
-          <li className="nav-item">
-            <NavLink
-              to="/nota-credito"
-              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-              data-tooltip="Nota de Crédito"
-            >
-              <span className="icon">🧾</span>
-              <span className="label">Nota de Crédito</span>
-            </NavLink>
-          </li>
-          <li className="nav-item">
-            <NavLink
-              to="/nota-debito"
-              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-              data-tooltip="Nota de Débito"
-            >
-              <span className="icon">📑</span>
-              <span className="label">Nota de Débito</span>
-            </NavLink>
-          </li>
+                <NavLink
+                  to="/guia-remision"
+                  className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                  data-tooltip="Guía de Remisión"
+                >
+                  <span className="icon">🚚</span>
+                  <span className="label">Guía de Remisión</span>
+                </NavLink>
+              </li>
+              <li className="nav-item">
+                <NavLink
+                  to="/nota-credito"
+                  className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                  data-tooltip="Nota de Crédito"
+                >
+                  <span className="icon">🧾</span>
+                  <span className="label">Nota de Crédito</span>
+                </NavLink>
+              </li>
+              <li className="nav-item">
+                <NavLink
+                  to="/nota-debito"
+                  className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                  data-tooltip="Nota de Débito"
+                >
+                  <span className="icon">📑</span>
+                  <span className="label">Nota de Débito</span>
+                </NavLink>
+              </li>
+              <li className="nav-item">
+                <NavLink
+                  to="/liquidaciones-compra"
+                  className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                  data-tooltip="Liquidación de Compra"
+                >
+                  <span className="icon">🛍️</span>
+                  <span className="label">Liquidación de Compra</span>
+                </NavLink>
+              </li>
+            </>
+          )}
                     {user && (user.role === 'emisor' || user.role === 'gerente' || user.role === 'cajero') && (
             <>
               <li className="nav-title">POS / VENTAS</li>
