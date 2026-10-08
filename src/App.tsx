@@ -24,6 +24,7 @@ import TiposImpuesto from './pages/TiposImpuesto/TiposImpuesto';
 import TiposRetencion from './pages/TiposRetencion/TiposRetencion';
 import PruebaEmisionComprobante from './pages/PruebaEmision/PruebaEmision';
 import NotaCreditoPage from './pages/NotaCredito/NotaCredito';
+import LiquidacionesCompraPage from './pages/LiquidacionesCompra/LiquidacionesCompraPage';
 import NotaDebitoPage from './pages/NotaDebito/NotaDebito';
 import GuiaRemisionPage from './pages/GuiaRemision/GuiaRemision';
 import DirectorioPage from './pages/Directorio/DirectorioPage';
@@ -116,6 +117,7 @@ function App() {
 
                 {/* Módulo Emisión de Comprobantes */}
                 <Route path="/nota-credito" element={<NotaCreditoPage />} />
+                <Route path="/liquidaciones-compra" element={<LiquidacionesCompraPage />} />
                 <Route path="/nota-debito" element={<NotaDebitoPage />} />
                 <Route path="/guia-remision" element={<GuiaRemisionPage />} />
 
