@@ -44,8 +44,9 @@ export default function PosPage() {
                         establecimiento_codigo: est.codigo,
                         establecimiento_nombre: est.nombre_comercial || est.nombre
                     }))
-                ).filter((pe: any) => pe.activo !== false);
-
+                ).filter((pe: any) => pe.estado === 'ACTIVO' || pe.estado === 'activo');
+                
+                console.log("Puntos cargados:", todosPuntos);
                 setPuntosEmision(todosPuntos);
             }
         } catch (error) {
