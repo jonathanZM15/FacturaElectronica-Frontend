@@ -3,6 +3,9 @@ import { useUser } from '../../contexts/userContext';
 import { posApi, PosTurno } from '../../services/posApi';
 import { getProductos } from '../../services/inventoryService';
 import { establecimientosApi } from '../../services/establecimientosApi';
+import CobroModal from './components/CobroModal';
+import { facturacion } from '../../services/api';
+
 
 export default function PosPage() {
     const { user } = useUser();
@@ -16,10 +19,13 @@ export default function PosPage() {
     const [puntoEmisionId, setPuntoEmisionId] = useState('');
     const [saldoInicial, setSaldoInicial] = useState('0.00');
 
+
     // POS state
     const [productos, setProductos] = useState<any[]>([]);
     const [cart, setCart] = useState<any[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
+    const [showCobroModal, setShowCobroModal] = useState(false);
+
 
     useEffect(() => {
         checkActiveTurno();
@@ -264,8 +270,17 @@ export default function PosPage() {
                     >
                         Cobrar
                     </button>
-                </div>
-            </div>
-        </div>
+  
+              </div>
+          </div>
+          
+          <CobroModal 
+              isOpen={showCobroModal}
+              onClose={() => setShowCobroModal(false)}
+              onConfirm={handleCobroConfirm}
+              total={cartTotal}
+              emisorId={emisorId}
+          />
+      </div>
     );
 }
