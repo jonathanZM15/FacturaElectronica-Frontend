@@ -28,13 +28,19 @@ export default function PosPage() {
     const checkActiveTurno = async () => {
         try {
             setLoading(true);
+            console.log("Fetching active turno for emisor:", emisorId);
             const turno = await posApi.getActiveTurno(emisorId);
+            console.log("Turno response:", turno);
+            
             if (turno) {
                 setActiveTurno(turno);
                 loadPosData();
             } else {
                 setActiveTurno(null);
+                console.log("Fetching establecimientos...");
                 const estRes = await establecimientosApi.list(emisorId);
+                console.log("Establecimientos response:", estRes);
+                
                 const establecimientos = estRes.data?.data || estRes.data || [];
                 
                 // Extraer todos los puntos de emision de todos los establecimientos
