@@ -1,11 +1,4 @@
-import os
-
-folder_path = r"C:\Users\CompuStore\Desktop\dos sistemas\tesis\FacturaElectronica-Frontend\src\pages\LiquidacionesCompra"
-os.makedirs(folder_path, exist_ok=True)
-
-file_path = os.path.join(folder_path, "LiquidacionesCompraPage.tsx")
-
-content = """import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { emisoresApi } from '../../services/emisoresApi';
 import { establecimientosApi } from '../../services/establecimientosApi';
 import { puntosEmisionApi } from '../../services/puntosEmisionApi';
@@ -270,7 +263,7 @@ const LiquidacionesCompraPage: React.FC = () => {
                             <input type="password" placeholder="Contraseña de firma" value={passwordFirma} onChange={e => setPasswordFirma(e.target.value)} style={inputStyleDark} />
                         </div>
                         <button onClick={handleEmitir} disabled={loading} style={btnStyleAction}>
-                            {loading ? <><Loader2 className="animate-spin" /> Procesando SRI...</> : 'Emitir Liquidación'}
+                            {loading ? <><Loader2 className="animate-spin" style={{marginRight: '8px'}} /> Procesando SRI...</> : 'Emitir Liquidación'}
                         </button>
                     </div>
 
@@ -305,7 +298,3 @@ const btnStyleAction: React.CSSProperties = {
 };
 
 export default LiquidacionesCompraPage;
-"""
-
-with open(file_path, 'w', encoding='utf-8') as f:
-    f.write(content)
