@@ -1,6 +1,6 @@
 import api from './api';
 
-const BASE_URL = '/emisores';
+const BASE_URL = '/api/emisores';
 
 export interface PosTurno {
     id: number;
