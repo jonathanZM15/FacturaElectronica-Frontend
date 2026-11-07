@@ -116,9 +116,10 @@ const Navbar: React.FC = () => {
             </li>
           )}
 
-          {/* Inventario: Admin, Distribuidor, Emisor y Gerente */}
-          {user && (user.role === 'administrador' || user.role === 'distribuidor' || user.role === 'emisor' || user.role === 'gerente') && (
+          {/* Inventario: Emisor y Gerente */}
+          {user && (user.role === 'emisor' || user.role === 'gerente') && (
             <>
+              <li className="nav-title">INVENTARIO</li>
               <li className="nav-item">
                 <NavLink to="/inventario/bodegas" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} data-tooltip="Bodegas">
                   <span className="icon">🏬</span>

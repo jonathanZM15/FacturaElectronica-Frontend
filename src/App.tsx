@@ -98,15 +98,15 @@ function App() {
                 {/* Tipos de Retención: solo Administrador */}
                 <Route path="/retenciones" element={<RoleRoute allowedRoles={['administrador']}><TiposRetencion /></RoleRoute>} />
 
-                {/* Inventario: Admin, Distribuidor, Emisor y Gerente */}
-                <Route path="/inventario/bodegas" element={<RoleRoute allowedRoles={['administrador', 'distribuidor', 'emisor', 'gerente']}><BodegasPage /></RoleRoute>} />
-                <Route path="/inventario/productos" element={<RoleRoute allowedRoles={['administrador', 'distribuidor', 'emisor', 'gerente']}><ProductosPage /></RoleRoute>} />
-                <Route path="/inventario/movimientos" element={<RoleRoute allowedRoles={['administrador', 'distribuidor', 'emisor', 'gerente']}><MovimientosPage /></RoleRoute>} />
-                <Route path="/inventario/despachos" element={<RoleRoute allowedRoles={['administrador', 'distribuidor', 'emisor', 'gerente']}><DespachosSucursalPage /></RoleRoute>} />
-                <Route path="/inventario/existencias" element={<RoleRoute allowedRoles={['administrador', 'distribuidor', 'emisor', 'gerente']}><ExistenciasPage /></RoleRoute>} />
-                <Route path="/inventario/kardex" element={<RoleRoute allowedRoles={['administrador', 'distribuidor', 'emisor', 'gerente']}><KardexPage /></RoleRoute>} />
-                <Route path="/inventario/categorias" element={<RoleRoute allowedRoles={['administrador', 'distribuidor', 'emisor', 'gerente']}><CategoriasPage /></RoleRoute>} />
-                <Route path="/inventario/stock-parametros" element={<RoleRoute allowedRoles={['administrador', 'distribuidor', 'emisor', 'gerente']}><StockParametrosPage /></RoleRoute>} />
+                {/* Inventario: Emisor y Gerente */}
+                <Route path="/inventario/bodegas" element={<RoleRoute allowedRoles={['emisor', 'gerente']}><BodegasPage /></RoleRoute>} />
+                <Route path="/inventario/productos" element={<RoleRoute allowedRoles={['emisor', 'gerente']}><ProductosPage /></RoleRoute>} />
+                <Route path="/inventario/movimientos" element={<RoleRoute allowedRoles={['emisor', 'gerente']}><MovimientosPage /></RoleRoute>} />
+                <Route path="/inventario/despachos" element={<RoleRoute allowedRoles={['emisor', 'gerente']}><DespachosSucursalPage /></RoleRoute>} />
+                <Route path="/inventario/existencias" element={<RoleRoute allowedRoles={['emisor', 'gerente']}><ExistenciasPage /></RoleRoute>} />
+                <Route path="/inventario/kardex" element={<RoleRoute allowedRoles={['emisor', 'gerente']}><KardexPage /></RoleRoute>} />
+                <Route path="/inventario/categorias" element={<RoleRoute allowedRoles={['emisor', 'gerente']}><CategoriasPage /></RoleRoute>} />
+                <Route path="/inventario/stock-parametros" element={<RoleRoute allowedRoles={['emisor', 'gerente']}><StockParametrosPage /></RoleRoute>} />
                 
                 {/* Clientes: Emisor, Gerente y Cajero */}
                 <Route path="/clientes" element={<RoleRoute allowedRoles={['emisor', 'gerente', 'cajero']}><ClientesPage /></RoleRoute>} />
