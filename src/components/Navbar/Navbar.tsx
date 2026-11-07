@@ -177,19 +177,7 @@ const Navbar: React.FC = () => {
             </>
           )}
 
-          {/* Prueba Emisión: solo Admin */}
-          {user && user.role === 'administrador' && (
-            <li className="nav-item">
-              <NavLink
-                to="/prueba-emision"
-                className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-                data-tooltip="Prueba Emisión"
-              >
-                <span className="icon">🧪</span>
-                <span className="label">Prueba Emisión</span>
-              </NavLink>
-            </li>
-          )}
+
 
           {/* Emisión de Comprobantes: Solo Emisor, Gerente o Cajero */}
           {user && (user.role === 'emisor' || user.role === 'gerente' || user.role === 'cajero') && (

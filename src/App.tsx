@@ -112,8 +112,7 @@ function App() {
                 <Route path="/clientes" element={<RoleRoute allowedRoles={['emisor', 'gerente', 'cajero']}><ClientesPage /></RoleRoute>} />
                 <Route path="/inventario/clientes" element={<RoleRoute allowedRoles={['emisor', 'gerente', 'cajero']}><ClientesPage /></RoleRoute>} />
 
-                {/* Prueba Emisión: solo Administrador */}
-                <Route path="/prueba-emision" element={<RoleRoute allowedRoles={['administrador']}><PruebaEmisionComprobante /></RoleRoute>} />
+
 
                 {/* Módulo Emisión de Comprobantes: Emisor, Gerente y Cajero */}
                 <Route path="/nota-credito" element={<RoleRoute allowedRoles={['emisor', 'gerente', 'cajero']}><NotaCreditoPage /></RoleRoute>} />
