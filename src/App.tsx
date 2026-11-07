@@ -77,66 +77,65 @@ function App() {
                   </ProtectedRoute>
                 }
               >
-                {/* Ruta inicial autenticada */}
-                <Route path="/emisores" element={<Emisores />} />
-                <Route path="/emisores/:id" element={<EmisorInfo />} />
-                <Route path="/emisores/:id/establecimientos" element={<EmisorInfo />} />
-                <Route path="/emisores/:id/usuarios" element={<EmisorInfo />} />
-                <Route path="/emisores/:id/suscripciones" element={<EmisorInfo />} />
-                <Route path="/emisores/:id/establecimientos/:estId" element={<EstablecimientoEditInfo />} />
-                <Route path="/emisores/:id/establecimientos/:estId/puntos/:puntoId" element={<PuntoEmisionInfo />} />
+                {/* Ruta inicial autenticada: Admin, Distribuidor, Emisor y Gerente */}
+                <Route path="/emisores" element={<RoleRoute allowedRoles={['administrador', 'distribuidor', 'emisor', 'gerente']}><Emisores /></RoleRoute>} />
+                <Route path="/emisores/:id" element={<RoleRoute allowedRoles={['administrador', 'distribuidor', 'emisor', 'gerente']}><EmisorInfo /></RoleRoute>} />
+                <Route path="/emisores/:id/establecimientos" element={<RoleRoute allowedRoles={['administrador', 'distribuidor', 'emisor', 'gerente']}><EmisorInfo /></RoleRoute>} />
+                <Route path="/emisores/:id/usuarios" element={<RoleRoute allowedRoles={['administrador', 'distribuidor', 'emisor', 'gerente']}><EmisorInfo /></RoleRoute>} />
+                <Route path="/emisores/:id/suscripciones" element={<RoleRoute allowedRoles={['administrador', 'distribuidor', 'emisor', 'gerente']}><EmisorInfo /></RoleRoute>} />
+                <Route path="/emisores/:id/establecimientos/:estId" element={<RoleRoute allowedRoles={['administrador', 'distribuidor', 'emisor', 'gerente']}><EstablecimientoEditInfo /></RoleRoute>} />
+                <Route path="/emisores/:id/establecimientos/:estId/puntos/:puntoId" element={<RoleRoute allowedRoles={['administrador', 'distribuidor', 'emisor', 'gerente']}><PuntoEmisionInfo /></RoleRoute>} />
                 
-                {/* Usuarios */}
-                <Route path="/usuarios" element={<Usuarios />} />
+                {/* Usuarios: Admin y Distribuidor */}
+                <Route path="/usuarios" element={<RoleRoute allowedRoles={['administrador', 'distribuidor']}><Usuarios /></RoleRoute>} />
                 
-                {/* Planes */}
-                <Route path="/planes" element={<Planes />} />
+                {/* Planes: solo Administrador */}
+                <Route path="/planes" element={<RoleRoute allowedRoles={['administrador']}><Planes /></RoleRoute>} />
                 
-                {/* Tipos de Impuesto */}
-                <Route path="/impuestos" element={<TiposImpuesto />} />
+                {/* Tipos de Impuesto: solo Administrador */}
+                <Route path="/impuestos" element={<RoleRoute allowedRoles={['administrador']}><TiposImpuesto /></RoleRoute>} />
                 
-                {/* Tipos de Retención */}
-                <Route path="/retenciones" element={<TiposRetencion />} />
+                {/* Tipos de Retención: solo Administrador */}
+                <Route path="/retenciones" element={<RoleRoute allowedRoles={['administrador']}><TiposRetencion /></RoleRoute>} />
 
-                {/* Inventario */}
-                <Route path="/inventario/bodegas" element={<BodegasPage />} />
-                <Route path="/inventario/productos" element={<ProductosPage />} />
-                <Route path="/inventario/movimientos" element={<MovimientosPage />} />
-                <Route path="/inventario/despachos" element={<DespachosSucursalPage />} />
-                <Route path="/inventario/existencias" element={<ExistenciasPage />} />
-                <Route path="/inventario/kardex" element={<KardexPage />} />
-                <Route path="/inventario/categorias" element={<CategoriasPage />} />
-                <Route path="/inventario/stock-parametros" element={<StockParametrosPage />} />
+                {/* Inventario: Admin, Distribuidor, Emisor y Gerente */}
+                <Route path="/inventario/bodegas" element={<RoleRoute allowedRoles={['administrador', 'distribuidor', 'emisor', 'gerente']}><BodegasPage /></RoleRoute>} />
+                <Route path="/inventario/productos" element={<RoleRoute allowedRoles={['administrador', 'distribuidor', 'emisor', 'gerente']}><ProductosPage /></RoleRoute>} />
+                <Route path="/inventario/movimientos" element={<RoleRoute allowedRoles={['administrador', 'distribuidor', 'emisor', 'gerente']}><MovimientosPage /></RoleRoute>} />
+                <Route path="/inventario/despachos" element={<RoleRoute allowedRoles={['administrador', 'distribuidor', 'emisor', 'gerente']}><DespachosSucursalPage /></RoleRoute>} />
+                <Route path="/inventario/existencias" element={<RoleRoute allowedRoles={['administrador', 'distribuidor', 'emisor', 'gerente']}><ExistenciasPage /></RoleRoute>} />
+                <Route path="/inventario/kardex" element={<RoleRoute allowedRoles={['administrador', 'distribuidor', 'emisor', 'gerente']}><KardexPage /></RoleRoute>} />
+                <Route path="/inventario/categorias" element={<RoleRoute allowedRoles={['administrador', 'distribuidor', 'emisor', 'gerente']}><CategoriasPage /></RoleRoute>} />
+                <Route path="/inventario/stock-parametros" element={<RoleRoute allowedRoles={['administrador', 'distribuidor', 'emisor', 'gerente']}><StockParametrosPage /></RoleRoute>} />
                 
-                {/* Clientes */}
-                <Route path="/clientes" element={<ClientesPage />} />
-                <Route path="/inventario/clientes" element={<ClientesPage />} />
+                {/* Clientes: Emisor, Gerente y Cajero */}
+                <Route path="/clientes" element={<RoleRoute allowedRoles={['emisor', 'gerente', 'cajero']}><ClientesPage /></RoleRoute>} />
+                <Route path="/inventario/clientes" element={<RoleRoute allowedRoles={['emisor', 'gerente', 'cajero']}><ClientesPage /></RoleRoute>} />
 
-                {/* Prueba Emisión */}
-                <Route path="/prueba-emision" element={<PruebaEmisionComprobante />} />
+                {/* Prueba Emisión: solo Administrador */}
+                <Route path="/prueba-emision" element={<RoleRoute allowedRoles={['administrador']}><PruebaEmisionComprobante /></RoleRoute>} />
 
-                {/* Módulo Emisión de Comprobantes */}
-                <Route path="/nota-credito" element={<NotaCreditoPage />} />
-                <Route path="/liquidaciones-compra" element={<LiquidacionesCompraPage />} />
-                <Route path="/nota-debito" element={<NotaDebitoPage />} />
-                <Route path="/guia-remision" element={<GuiaRemisionPage />} />
+                {/* Módulo Emisión de Comprobantes: Emisor, Gerente y Cajero */}
+                <Route path="/nota-credito" element={<RoleRoute allowedRoles={['emisor', 'gerente', 'cajero']}><NotaCreditoPage /></RoleRoute>} />
+                <Route path="/liquidaciones-compra" element={<RoleRoute allowedRoles={['emisor', 'gerente', 'cajero']}><LiquidacionesCompraPage /></RoleRoute>} />
+                <Route path="/nota-debito" element={<RoleRoute allowedRoles={['emisor', 'gerente', 'cajero']}><NotaDebitoPage /></RoleRoute>} />
+                <Route path="/guia-remision" element={<RoleRoute allowedRoles={['emisor', 'gerente', 'cajero']}><GuiaRemisionPage /></RoleRoute>} />
 
-                {/* Directorio */}
-                <Route path="/directorio" element={<DirectorioPage />} />
+                {/* Directorio: Emisor, Gerente y Cajero */}
+                <Route path="/directorio" element={<RoleRoute allowedRoles={['emisor', 'gerente', 'cajero']}><DirectorioPage /></RoleRoute>} />
 
-                                {/* POS */}
-                <Route path="/pos" element={<PosPage />} />
-                
+                {/* POS / Ventas: Emisor, Gerente y Cajero */}
+                <Route path="/pos" element={<RoleRoute allowedRoles={['emisor', 'gerente', 'cajero']}><PosPage /></RoleRoute>} />
 
-                {/* Compras */}
-                <Route path="/ingreso-compras" element={<IngresoComprasPage />} />
-                <Route path="/historial-compras" element={<HistorialComprasPage />} />
+                {/* Compras: Emisor y Gerente */}
+                <Route path="/ingreso-compras" element={<RoleRoute allowedRoles={['emisor', 'gerente']}><IngresoComprasPage /></RoleRoute>} />
+                <Route path="/historial-compras" element={<RoleRoute allowedRoles={['emisor', 'gerente']}><HistorialComprasPage /></RoleRoute>} />
                 
                 {/* Compatibilidad: redirige /Navbar a /emisores */}
                 <Route path="/Navbar" element={<Navigate to="/emisores" replace />} />
 
-                {/* Secciones en blanco por ahora */}
-                <Route path="/dashboard" element={<Blank />} />
+                {/* Dashboard: solo Administrador */}
+                <Route path="/dashboard" element={<RoleRoute allowedRoles={['administrador']}><Blank /></RoleRoute>} />
               </Route>
 
               <Route path="*" element={<Navigate to="/" replace />} />
@@ -154,5 +153,21 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   const { user, loading } = useUser();
   if (loading) return <div>Loading...</div>;
   if (!user) return <Navigate to="/" replace />;
+  return <>{children}</>;
+};
+
+const RoleRoute: React.FC<{ allowedRoles: string[]; children: React.ReactNode }> = ({ allowedRoles, children }) => {
+  const { user, loading } = useUser();
+  if (loading) return <div>Loading...</div>;
+  if (!user) return <Navigate to="/login" replace />;
+
+  const userRole = typeof user.role === 'string' ? user.role : (user.role as any)?.value;
+  if (!allowedRoles.includes(userRole)) {
+    if (userRole === 'administrador') return <Navigate to="/dashboard" replace />;
+    if (userRole === 'distribuidor') return <Navigate to="/emisores" replace />;
+    if (userRole === 'cajero') return <Navigate to="/pos" replace />;
+    return <Navigate to="/emisores" replace />;
+  }
+
   return <>{children}</>;
 };

@@ -253,39 +253,49 @@ const Navbar: React.FC = () => {
           )}
           
           
-          <li className="nav-title">COMPRAS</li>
-          <li className="nav-item">
-            <NavLink
-              to="/ingreso-compras"
-              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-              data-tooltip="Ingreso de Compras"
-            >
-              <span className="icon">🛒</span>
-              <span className="label">Ingreso de Compras</span>
-            </NavLink>
-          </li>
-          <li className="nav-item">
-            <NavLink
-              to="/historial-compras"
-              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-              data-tooltip="Historial de Compras"
-            >
-              <span className="icon">🕒</span>
-              <span className="label">Historial de Compras</span>
-            </NavLink>
-          </li>
+          {/* Compras: Emisor y Gerente */}
+          {user && (user.role === 'emisor' || user.role === 'gerente') && (
+            <>
+              <li className="nav-title">COMPRAS</li>
+              <li className="nav-item">
+                <NavLink
+                  to="/ingreso-compras"
+                  className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                  data-tooltip="Ingreso de Compras"
+                >
+                  <span className="icon">🛒</span>
+                  <span className="label">Ingreso de Compras</span>
+                </NavLink>
+              </li>
+              <li className="nav-item">
+                <NavLink
+                  to="/historial-compras"
+                  className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                  data-tooltip="Historial de Compras"
+                >
+                  <span className="icon">🕒</span>
+                  <span className="label">Historial de Compras</span>
+                </NavLink>
+              </li>
+            </>
+          )}
 
-          <li className="nav-title">ENTIDADES</li>
-          <li className="nav-item">
-            <NavLink
-              to="/directorio"
-              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-              data-tooltip="Directorio"
-            >
-              <span className="icon">📇</span>
-              <span className="label">Directorio</span>
-            </NavLink>
-          </li>
+          {/* Entidades: Emisor, Gerente y Cajero */}
+          {user && (user.role === 'emisor' || user.role === 'gerente' || user.role === 'cajero') && (
+            <>
+              <li className="nav-title">ENTIDADES</li>
+              <li className="nav-item">
+                <NavLink
+                  to="/directorio"
+                  className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                  data-tooltip="Directorio"
+                >
+                  <span className="icon">📇</span>
+                  <span className="label">Directorio</span>
+                </NavLink>
+              </li>
+            </>
+          )}
         </ul>
       </nav>
 
