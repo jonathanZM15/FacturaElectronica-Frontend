@@ -22,6 +22,34 @@ export default function CobroModal({ isOpen, onClose, onConfirm, total, emisorId
 
   const esMayor50 = total > 50.00;
 
+  const handleClienteNotFound = (idToInit: string) => {
+    if (idToInit === '9999999999999') {
+      if (esMayor50) {
+        setMessage('Por disposición del SRI, en facturas superiores a $50.00 no se admite Consumidor Final.');
+        return;
+      }
+      setCliente({
+        identificacion: idToInit,
+        tipo_identificacion: 'CONSUMIDOR_FINAL',
+        razon_social: 'CONSUMIDOR FINAL',
+        direccion: 'S/N',
+        email: 'consumidor@final.com',
+        telefono: '',
+      });
+    } else {
+      const guessedTipo = idToInit.length === 13 ? 'RUC' : (idToInit.length === 10 ? 'CEDULA' : 'PASAPORTE');
+      setCliente({
+        identificacion: idToInit,
+        tipo_identificacion: guessedTipo,
+        razon_social: '',
+        direccion: '',
+        email: '',
+        telefono: '',
+      });
+      setMessage('Cliente no registrado previamente. Completa sus datos fiscales para guardarlo al confirmar.');
+    }
+  };
+
   const buscar = async (id: string) => {
     const current = ++requestId.current;
     const cleanId = id.trim();
@@ -40,44 +68,24 @@ export default function CobroModal({ isOpen, onClose, onConfirm, total, emisorId
     try {
       const res = await clientesService.buscar(emisorId, cleanId);
       if (current === requestId.current) {
-        const found = res.data.data;
-        if (esMayor50 && (found.tipo_identificacion === 'CONSUMIDOR_FINAL' || found.identificacion === '9999999999999')) {
-          setMessage('Por disposición del SRI, en facturas superiores a $50.00 no se admite Consumidor Final.');
-          setCliente({});
+        const found = res.data?.data;
+        if (found) {
+          if (esMayor50 && (found.tipo_identificacion === 'CONSUMIDOR_FINAL' || found.identificacion === '9999999999999')) {
+            setMessage('Por disposición del SRI, en facturas superiores a $50.00 no se admite Consumidor Final.');
+            setCliente({});
+          } else {
+            setCliente(found);
+          }
         } else {
-          setCliente(found);
+          handleClienteNotFound(cleanId);
         }
       }
     } catch (error: any) {
       if (current !== requestId.current) return;
-      if (error.response?.status !== 404) {
-        setMessage('No se pudo consultar el cliente. Reintenta la búsqueda.');
-        return;
-      }
-      if (cleanId === '9999999999999') {
-        if (esMayor50) {
-          setMessage('Por disposición del SRI, en facturas superiores a $50.00 no se admite Consumidor Final.');
-          return;
-        }
-        setCliente({
-          identificacion: cleanId,
-          tipo_identificacion: 'CONSUMIDOR_FINAL',
-          razon_social: 'CONSUMIDOR FINAL',
-          direccion: 'S/N',
-          email: 'consumidor@final.com',
-          telefono: '',
-        });
+      if (error.response?.status === 404) {
+        handleClienteNotFound(cleanId);
       } else {
-        const guessedTipo = cleanId.length === 13 ? 'RUC' : (cleanId.length === 10 ? 'CEDULA' : 'PASAPORTE');
-        setCliente({
-          identificacion: cleanId,
-          tipo_identificacion: guessedTipo,
-          razon_social: '',
-          direccion: '',
-          email: '',
-          telefono: '',
-        });
-        setMessage('Cliente no registrado previamente. Completa sus datos fiscales para guardarlo al confirmar.');
+        setMessage(error.response?.data?.message || 'No se pudo consultar el cliente. Reintenta la búsqueda.');
       }
     } finally {
       if (current === requestId.current) setSearching(false);
@@ -183,7 +191,7 @@ export default function CobroModal({ isOpen, onClose, onConfirm, total, emisorId
               Buscar cliente
             </button>
             {searching && <p>Buscando cliente…</p>}
-            {message && <p role="status" style={{ color: message.includes('obligatorio') || message.includes('SRI') || message.includes('no') ? '#b91c1c' : 'inherit' }}>{message}</p>}
+            {message && <p role="status" style={{ color: message.includes('obligatorio') || message.includes('SRI') || message.includes('no se') ? '#b91c1c' : 'inherit' }}>{message}</p>}
 
             {cliente.identificacion && (
               <>
