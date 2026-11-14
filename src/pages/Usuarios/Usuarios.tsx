@@ -881,34 +881,6 @@ const Usuarios: React.FC = () => {
           <p className="usuarios-header-subtitle">Administra los usuarios del sistema de facturación</p>
         </div>
         <div className="header-actions">
-          <button
-            type="button"
-            className="btn-actualizar-usuarios"
-            onClick={async () => {
-              await Promise.all([
-                refetchUsuarios({ forceFresh: true }),
-                refetchUsuariosStats({ forceFresh: true }),
-              ]);
-            }}
-            title="Refrescar lista de usuarios"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '9px 16px',
-              borderRadius: '8px',
-              border: '1px solid #CBD5E1',
-              backgroundColor: '#FFFFFF',
-              color: '#334155',
-              fontSize: '13px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              marginRight: '10px',
-              transition: 'all 0.2s',
-            }}
-          >
-            <span>🔄</span> Refrescar
-          </button>
           {canCreateFromUsuarios && (
             <button
               className="btn-nuevo"
