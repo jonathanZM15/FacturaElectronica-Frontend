@@ -69,6 +69,7 @@ export const facturacion = {
     }),
   estado: (comprobanteId: number) => api.get(`/api/facturacion/comprobantes/${comprobanteId}`),
   reintentar: (comprobanteId: number) => api.post(`/api/facturacion/comprobantes/${comprobanteId}/reintentar`),
+  corregirFiscal: (comprobanteId: number, data: any) => api.post(`/api/facturacion/comprobantes/${comprobanteId}/corregir-fiscal`, data),
   downloadPdf: (comprobanteId: number) => api.get(`/api/facturacion/comprobantes/${comprobanteId}/pdf`, { responseType: 'blob' }),
   downloadXml: (comprobanteId: number) => api.get(`/api/facturacion/comprobantes/${comprobanteId}/xml`, { responseType: 'blob' }),
   emitirLiquidacionCompra: (formData: FormData) => api.post('/api/facturacion/emitir-liquidacion-compra', formData),

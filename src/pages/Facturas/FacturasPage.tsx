@@ -18,6 +18,55 @@ export default function FacturasPage() {
   const [busy, setBusy] = useState(false);
   const [detail, setDetail] = useState<any>(null);
   const [message, setMessage] = useState('');
+  const [correctingRow, setCorrectingRow] = useState<any>(null);
+  const [clientForm, setClientForm] = useState({
+    tipo_identificacion: '05',
+    identificacion: '',
+    razon_social: '',
+    direccion: '',
+    email: '',
+    telefono: '',
+    motivo_correccion: '',
+  });
+
+  const openCorrection = (row: any) => {
+    setCorrectingRow(row);
+    setClientForm({
+      tipo_identificacion: row.cliente_tipo_identificacion || '05',
+      identificacion: row.cliente_identificacion || '',
+      razon_social: row.cliente_razon_social || '',
+      direccion: row.cliente_direccion || '',
+      email: row.cliente_email || '',
+      telefono: row.cliente_telefono || '',
+      motivo_correccion: '',
+    });
+  };
+
+  const handleApplyCorrection = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!correctingRow) return;
+    setBusy(true); setError(''); setMessage('');
+    try {
+      const res = await facturacion.corregirFiscal(correctingRow.id, {
+        cliente: {
+          tipo_identificacion: clientForm.tipo_identificacion,
+          identificacion: clientForm.identificacion,
+          razon_social: clientForm.razon_social,
+          direccion: clientForm.direccion,
+          email: clientForm.email,
+          telefono: clientForm.telefono || null,
+        },
+        motivo_correccion: clientForm.motivo_correccion,
+      });
+      setMessage(res.data.message || 'Comprobante corregido fiscalmente y reprogramado.');
+      setCorrectingRow(null);
+      await load();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'No se pudo aplicar la corrección fiscal.');
+    } finally {
+      setBusy(false);
+    }
+  };
   const load = useCallback(async () => {
     setBusy(true); setError('');
     try {
@@ -46,10 +95,99 @@ export default function FacturasPage() {
         <button onClick={async () => { try { setDetail((await facturacion.estado(row.id)).data); } catch { setError('No se pudo consultar el estado.'); } }}>Ver estado</button>
         {row.estado_sri === 'AUTORIZADO' && <><button onClick={() => download(row, 'pdf')}>PDF</button><button onClick={() => download(row, 'xml')}>XML</button></>}
         {can(user, 'comprobantes.retry') && ['BORRADOR', 'ERROR_ENVIO', 'ERROR_FIRMA', 'ERROR_AUTORIZACION', 'ERROR_SISTEMA'].includes(row.estado_sri) && <button disabled={busy} onClick={async () => { setBusy(true); try { const res = await facturacion.reintentar(row.id); setMessage(res.data.message); await load(); } catch (e: any) { setError(e.response?.data?.message || 'No se pudo programar el reintento.'); } finally { setBusy(false); } }}>Reintentar procesamiento</button>}
+        {can(user, 'comprobantes.retry') && ['DEVUELTA', 'NO_AUTORIZADO'].includes(row.estado_sri) && <button disabled={busy} onClick={() => openCorrection(row)} style={{ backgroundColor: '#c2410c', borderColor: '#c2410c' }}>Corregir datos fiscales</button>}
       </div></td></tr>)}
       {!rows.length && <tr><td colSpan={6}>{busy ? 'Consultando…' : 'Sin resultados para los filtros seleccionados.'}</td></tr>}
     </tbody></table></div>
     <div className="v1-actions"><button disabled={busy || page <= 1} onClick={() => setPage(p => p - 1)}>Anterior</button><span>Página {page} de {pages}</span><button disabled={busy || page >= pages} onClick={() => setPage(p => p + 1)}>Siguiente</button></div>
     {detail && <section className="v1-card"><div className="v1-actions"><h2>Estado del comprobante {detail.comprobante_id}</h2><button onClick={() => setDetail(null)}>Cerrar detalle</button></div><p>Estado SRI: <strong>{detail.estado_sri}</strong></p><p style={{ overflowWrap: 'anywhere' }}>Clave de acceso: {detail.clave_acceso || 'Pendiente de generación'}</p><p>Autorización: {detail.numero_autorizacion || 'No confirmada'}</p>{detail.ultimo_error_sri && <p className="v1-notice v1-error">{detail.ultimo_error_sri}</p>}<ul>{(detail.logs || []).map((log: any) => <li key={log.id}>{log.created_at} · {log.estado}: {log.mensaje}</li>)}</ul></section>}
+    {correctingRow && (
+      <div className="v1-dialog-backdrop">
+        <div className="v1-dialog">
+          <h2>Corregir datos fiscales · Factura {correctingRow.numero_documento}</h2>
+          <p className="v1-notice">
+            <strong>Normativa SRI (P06):</strong> Esta corrección fiscal permite regenerar la factura devuelta o no autorizada <strong>sin duplicar cobros ni generar movimientos de inventario</strong>.
+          </p>
+          {correctingRow.ultimo_error_sri && (
+            <p className="v1-notice v1-error">
+              <strong>Motivo SRI previo:</strong> {correctingRow.ultimo_error_sri}
+            </p>
+          )}
+          <form onSubmit={handleApplyCorrection}>
+            <label>
+              Tipo de identificación
+              <select
+                value={clientForm.tipo_identificacion}
+                onChange={e => setClientForm({ ...clientForm, tipo_identificacion: e.target.value })}
+              >
+                <option value="05">Cédula</option>
+                <option value="04">RUC</option>
+                <option value="06">Pasaporte</option>
+                <option value="07">Consumidor Final</option>
+                <option value="08">Identificación del Exterior</option>
+              </select>
+            </label>
+            <label>
+              Número de identificación
+              <input
+                value={clientForm.identificacion}
+                onChange={e => setClientForm({ ...clientForm, identificacion: e.target.value })}
+                required
+              />
+            </label>
+            <label>
+              Razón Social / Nombres completos
+              <input
+                value={clientForm.razon_social}
+                onChange={e => setClientForm({ ...clientForm, razon_social: e.target.value })}
+                required
+              />
+            </label>
+            <label>
+              Dirección
+              <input
+                value={clientForm.direccion}
+                onChange={e => setClientForm({ ...clientForm, direccion: e.target.value })}
+                required
+              />
+            </label>
+            <label>
+              Correo electrónico
+              <input
+                type="email"
+                value={clientForm.email}
+                onChange={e => setClientForm({ ...clientForm, email: e.target.value })}
+                required
+              />
+            </label>
+            <label>
+              Teléfono (opcional)
+              <input
+                value={clientForm.telefono}
+                onChange={e => setClientForm({ ...clientForm, telefono: e.target.value })}
+              />
+            </label>
+            <label>
+              Motivo de la corrección (Auditoría)
+              <input
+                value={clientForm.motivo_correccion}
+                onChange={e => setClientForm({ ...clientForm, motivo_correccion: e.target.value })}
+                placeholder="Ej: Corrección de razón social por error tipográfico"
+                required
+                minLength={5}
+              />
+            </label>
+            <div className="v1-actions" style={{ marginTop: '20px', justifyContent: 'flex-end' }}>
+              <button type="button" className="v1-secondary" onClick={() => setCorrectingRow(null)} disabled={busy}>
+                Cancelar
+              </button>
+              <button type="submit" disabled={busy}>
+                {busy ? 'Aplicando...' : 'Aplicar corrección y reprocesar'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )}
   </div>;
 }
