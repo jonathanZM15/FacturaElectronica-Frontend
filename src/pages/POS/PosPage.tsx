@@ -12,6 +12,15 @@ export default function PosPage() {
   const { user } = useUser();
   const emisorId = String(user?.emisor_id || '');
   const pendingKey = `pos-pending:${emisorId}:${user?.id}`;
+  const savePending = (data: any) => {
+    try { localStorage.setItem(pendingKey, JSON.stringify(data)); } catch {
+      try { sessionStorage.setItem(pendingKey, JSON.stringify(data)); } catch {}
+    }
+  };
+  const clearPending = () => {
+    try { localStorage.removeItem(pendingKey); } catch {}
+    try { sessionStorage.removeItem(pendingKey); } catch {}
+  };
   const [turno, setTurno] = useState<PosTurno | null>(null);
   const [points, setPoints] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
@@ -27,7 +36,13 @@ export default function PosPage() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [showCobro, setShowCobro] = useState(false);
-  const [pending, setPending] = useState<any>(() => { try { return JSON.parse(sessionStorage.getItem(pendingKey) || 'null'); } catch { return null; } });
+  const [pending, setPending] = useState<any>(() => {
+    try {
+      return JSON.parse(localStorage.getItem(pendingKey) || sessionStorage.getItem(pendingKey) || 'null');
+    } catch {
+      return null;
+    }
+  });
   const sending = useRef(false);
   const point = (turno as any)?.punto_emision || turno?.puntoEmision;
   const availableWarehouses = warehouses.filter(w => Number(w.establecimiento_id) === Number(point?.establecimiento_id) && w.permite_venta && ['VENTA', 'ALMACEN'].includes(w.tipo));
@@ -59,7 +74,7 @@ export default function PosPage() {
     try {
       const res = await api.get(`/api/facturacion/operaciones/${opId}`);
       if (res.data?.encontrada) {
-        sessionStorage.removeItem(pendingKey);
+        clearPending();
         setPending(null);
         setCart([]);
         setShowCobro(false);
@@ -80,11 +95,11 @@ export default function PosPage() {
   const send = async (payload: any) => {
     if (sending.current) return;
     sending.current = true; setBusy(true); setError(''); setMessage('');
-    setPending(payload); sessionStorage.setItem(pendingKey, JSON.stringify(payload));
+    setPending(payload); savePending(payload);
     try {
       const form = new FormData(); form.append('payload', JSON.stringify(payload));
       const res = await facturacion.emitir(form);
-      sessionStorage.removeItem(pendingKey); setPending(null); setCart([]); setShowCobro(false);
+      clearPending(); setPending(null); setCart([]); setShowCobro(false);
       const repetidaMsg = res.data?.repetida ? ' (Operación previa recuperada sin duplicar)' : '';
       setMessage(`Venta confirmada${repetidaMsg}. Comprobante ${res.data.secuencial_formateado}. Estado SRI: ${res.data.estado_sri}. La autorización se consulta en Facturas.`);
       await load();
@@ -93,10 +108,10 @@ export default function PosPage() {
       const details = Object.values(e.response?.data?.errors || {}).flat().join(' ');
       setError(details || e.response?.data?.message || 'No se pudo confirmar la respuesta. Reintenta el mismo envío para evitar duplicados.');
       // P13: Solo descartar la operación si fue rechazo previo al registro en base de datos (HTTP 422).
-      // Ante 401 (sesión expirada), 403 o pérdida de conexión de red, CONSERVAR la operación y datos en sessionStorage
+      // Ante 401 (sesión expirada), 403 o pérdida de conexión de red, CONSERVAR la operación y datos en localStorage
       // para permitir reintentar con el mismo operacion_id una vez recuperada la sesión o red.
       if (status === 422) {
-        sessionStorage.removeItem(pendingKey);
+        clearPending();
         setPending(null);
       } else {
         setShowCobro(false);
