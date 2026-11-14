@@ -187,8 +187,21 @@ const EmisorFormModal: React.FC<Props> = (props) => {
         case 'contribuyente_especial':
           if (val !== 'SI' && val !== 'NO') return 'Indique si es contribuyente especial';
           return null;
+        case 'numero_resolucion_contribuyente_especial':
+          if (v.contribuyente_especial === 'SI') {
+            const trimmed = (val || '').toString().trim();
+            if (!trimmed) return 'Ingrese el número de resolución (3 a 13 caracteres)';
+            if (trimmed.length < 3 || trimmed.length > 13) return 'Debe tener entre 3 y 13 caracteres (norma SRI)';
+          }
+          return null;
         case 'agente_retencion':
           if (val !== 'SI' && val !== 'NO') return 'Indique si es agente de retención';
+          return null;
+        case 'numero_resolucion_agente_retencion':
+          if (v.agente_retencion === 'SI') {
+            const trimmed = (val || '').toString().trim();
+            if (!trimmed) return 'Ingrese el número de resolución de agente de retención';
+          }
           return null;
         case 'tipo_persona':
           if (!val) return 'Seleccione Tipo de Persona';
@@ -273,6 +286,16 @@ const EmisorFormModal: React.FC<Props> = (props) => {
     if (!v.ambiente) return false;
     if (!v.tipo_emision) return false;
 
+    // Resoluciones requeridas por SRI
+    if (v.contribuyente_especial === 'SI') {
+      const numRes = (v.numero_resolucion_contribuyente_especial || '').toString().trim();
+      if (!numRes || numRes.length < 3 || numRes.length > 13) return false;
+    }
+    if (v.agente_retencion === 'SI') {
+      const numAgente = (v.numero_resolucion_agente_retencion || '').toString().trim();
+      if (!numAgente) return false;
+    }
+
     // logo is optional; if provided, validate format and orientation
     if (logoFile && !/\.jpe?g$|\.png$/i.test(logoFile.name)) { setLogoError('Formato no permitido. Use .jpg, .jpeg o .png'); return false; }
     if (logoFile && (logoFile as any).__orientationInvalid) { setLogoError('El logo debe ser horizontal (ancho mayor que alto)'); return false; }
@@ -292,6 +315,14 @@ const EmisorFormModal: React.FC<Props> = (props) => {
     // correo_remitente optional for form validity
     if (v.correo_remitente && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.correo_remitente)) return false;
     if (!v.ambiente || !v.tipo_emision) return false;
+    if (v.contribuyente_especial === 'SI') {
+      const numRes = (v.numero_resolucion_contribuyente_especial || '').toString().trim();
+      if (!numRes || numRes.length < 3 || numRes.length > 13) return false;
+    }
+    if (v.agente_retencion === 'SI') {
+      const numAgente = (v.numero_resolucion_agente_retencion || '').toString().trim();
+      if (!numAgente) return false;
+    }
     if (rucError || rucDuplicateError || checkingRuc) return false;
     // Logo is now optional - will use default if not provided, but validate if selected
     if (logoFile && !/\.jpe?g$|\.png$/i.test(logoFile.name)) return false;
@@ -585,13 +616,14 @@ const EmisorFormModal: React.FC<Props> = (props) => {
                 <div style={{display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px'}}>
                   <label style={{display: 'flex', flexDirection: 'column', gap: '4px'}}>
                     <span style={{fontWeight: 600, fontSize: '14px', color: '#374151'}}>Número de Resolución – Contribuyente Especial</span>
-                    <span style={{fontSize: '12px', color: '#6b7280'}}>Opcional</span>
+                    <span style={{fontSize: '12px', color: '#2563eb'}}>Requerido por SRI (3 a 13 caracteres)</span>
                     <input 
                       type="text"
                       value={v.numero_resolucion_contribuyente_especial || ''} 
                       onChange={e => onChange('numero_resolucion_contribuyente_especial', e.target.value)}
                       onBlur={() => setTouchedFields(prev => new Set(prev).add('numero_resolucion_contribuyente_especial'))}
-                      placeholder="Ej: RES-01-2024"
+                      placeholder="Ej: 00123"
+                      className={validateFieldRealTime('numero_resolucion_contribuyente_especial') ? 'error-input' : ''}
                       style={{
                         padding: '10px 12px',
                         border: '1px solid #d1d5db',
@@ -601,6 +633,9 @@ const EmisorFormModal: React.FC<Props> = (props) => {
                       }}
                     />
                   </label>
+                  {validateFieldRealTime('numero_resolucion_contribuyente_especial') && (
+                    <span className="err">{validateFieldRealTime('numero_resolucion_contribuyente_especial')}</span>
+                  )}
                 </div>
               )}
 
@@ -609,13 +644,14 @@ const EmisorFormModal: React.FC<Props> = (props) => {
                 <div style={{display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px'}}>
                   <label style={{display: 'flex', flexDirection: 'column', gap: '4px'}}>
                     <span style={{fontWeight: 600, fontSize: '14px', color: '#374151'}}>Número de Resolución – Agente de Retención</span>
-                    <span style={{fontSize: '12px', color: '#6b7280'}}>Opcional</span>
+                    <span style={{fontSize: '12px', color: '#16a34a'}}>Requerido si es Agente de Retención</span>
                     <input 
                       type="text"
                       value={v.numero_resolucion_agente_retencion || ''} 
                       onChange={e => onChange('numero_resolucion_agente_retencion', e.target.value)}
                       onBlur={() => setTouchedFields(prev => new Set(prev).add('numero_resolucion_agente_retencion'))}
-                      placeholder="Ej: RES-02-2024"
+                      placeholder="Ej: NAC-DNCRASC20-00000001"
+                      className={validateFieldRealTime('numero_resolucion_agente_retencion') ? 'error-input' : ''}
                       style={{
                         padding: '10px 12px',
                         border: '1px solid #d1d5db',
@@ -625,6 +661,9 @@ const EmisorFormModal: React.FC<Props> = (props) => {
                       }}
                     />
                   </label>
+                  {validateFieldRealTime('numero_resolucion_agente_retencion') && (
+                    <span className="err">{validateFieldRealTime('numero_resolucion_agente_retencion')}</span>
+                  )}
                 </div>
               )}
             </div>
