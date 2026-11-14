@@ -8,6 +8,7 @@ interface UseRealtimeResourceOptions<T> {
   interval?: number;
   enabled?: boolean;
   useCacheOnMount?: boolean;
+  revalidateOnFocus?: boolean;
 }
 
 interface FetchControlOptions {
@@ -24,7 +25,15 @@ interface UseRealtimeResourceResult<T> {
 }
 
 export function useRealtimeResource<T>(options: UseRealtimeResourceOptions<T>): UseRealtimeResourceResult<T> {
-  const { cacheKey, fetcher, ttl, interval = 15000, enabled = true, useCacheOnMount = true } = options;
+  const {
+    cacheKey,
+    fetcher,
+    ttl,
+    interval = 0,
+    enabled = true,
+    useCacheOnMount = true,
+    revalidateOnFocus = false,
+  } = options;
 
   const [data, setData] = React.useState<T | null>(null);
   const [loading, setLoading] = React.useState<boolean>(true);
@@ -88,6 +97,7 @@ export function useRealtimeResource<T>(options: UseRealtimeResourceOptions<T>): 
 
     performFetch({ forceFresh: false });
 
+    // Only set up polling timer if interval is explicitly greater than 0
     if (interval === null || interval === undefined || interval <= 0) {
       return;
     }
@@ -102,24 +112,27 @@ export function useRealtimeResource<T>(options: UseRealtimeResourceOptions<T>): 
   }, [performFetch, enabled, interval]);
 
   React.useEffect(() => {
-    const revalidateOnFocus = () => {
+    // Only revalidate on window focus if explicitly enabled
+    if (!revalidateOnFocus) return;
+
+    const revalidate = () => {
       performFetch({ forceFresh: true, silent: true });
     };
 
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        revalidateOnFocus();
+        revalidate();
       }
     };
 
-    window.addEventListener('focus', revalidateOnFocus);
+    window.addEventListener('focus', revalidate);
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
-      window.removeEventListener('focus', revalidateOnFocus);
+      window.removeEventListener('focus', revalidate);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [performFetch]);
+  }, [performFetch, revalidateOnFocus]);
 
   const refetch = React.useCallback(
     async (options?: FetchControlOptions) => performFetch({ forceFresh: options?.forceFresh, silent: options?.silent }),
