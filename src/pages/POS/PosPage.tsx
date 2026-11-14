@@ -160,7 +160,7 @@ export default function PosPage() {
           <p>Cantidad: {item.qty} — Base ${(item.precio_unitario * item.qty).toFixed(2)}</p><button className="v1-secondary" onClick={() => setCart(items => items.filter(i => i.id !== item.id))}>Quitar {item.nombre}</button>
         </div>)}
         <p>Subtotal ${totals.subtotal.toFixed(2)} · IVA ${totals.iva.toFixed(2)}</p><p className="v1-total">Total ${totals.total.toFixed(2)}</p>
-        <button disabled={!configured || !cart.length || cart.some(i => !Number.isFinite(i.qty) || i.qty <= 0) || (cart.some(i => i.tipo === 'FISICO' && i.tipo_control_inventario !== 'SIN_CONTROL') && !warehouseId)} onClick={() => setShowCobro(true)}>Cobrar</button>
+        <button disabled={!cart.length || cart.some(i => !Number.isFinite(i.qty) || i.qty <= 0) || (cart.some(i => i.tipo === 'FISICO' && i.tipo_control_inventario !== 'SIN_CONTROL') && !warehouseId)} onClick={() => setShowCobro(true)}>Cobrar</button>
       </section></div></fieldset>
     </>}
     <CobroModal isOpen={showCobro} busy={busy} onClose={() => setShowCobro(false)} total={totals.total} emisorId={emisorId} onConfirm={async data => {
