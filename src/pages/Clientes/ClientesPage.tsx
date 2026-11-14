@@ -4,71 +4,9 @@ import { useUser } from '../../contexts/userContext';
 import { clientesService } from '../../services/api';
 import { Cliente, ClienteFormData, TipoIdentificacion } from '../../types/cliente';
 
+import { validateCedulaEcuador as validarCedulaEcuador, validateRucEcuador as validarRucEcuador } from '../../helpers/validateRuc';
+
 const ITEMS_PER_PAGE = 20;
-
-// Validadores del SRI / Registro Civil en frontend para feedback visual en tiempo real
-function validarCedulaEcuador(cedula: string): boolean {
-  const digits = cedula.replace(/\D/g, '');
-  if (digits.length !== 10) return false;
-  const prov = parseInt(digits.substring(0, 2), 10);
-  if ((prov < 1 || prov > 24) && prov !== 30) return false;
-  const third = parseInt(digits.charAt(2), 10);
-  if (third >= 6) return false;
-
-  const coef = [2, 1, 2, 1, 2, 1, 2, 1, 2];
-  let sum = 0;
-  for (let i = 0; i < 9; i++) {
-    let val = parseInt(digits.charAt(i), 10) * coef[i];
-    if (val >= 10) val -= 9;
-    sum += val;
-  }
-  const mod = sum % 10;
-  const checkDigit = mod === 0 ? 0 : 10 - mod;
-  return checkDigit === parseInt(digits.charAt(9), 10);
-}
-
-function validarRucEcuador(ruc: string): boolean {
-  const digits = ruc.replace(/\D/g, '');
-  if (digits.length !== 13) return false;
-  const prov = parseInt(digits.substring(0, 2), 10);
-  if ((prov < 1 || prov > 24) && prov !== 30) return false;
-
-  const third = parseInt(digits.charAt(2), 10);
-
-  // RUC Persona Natural
-  if (third < 6) {
-    if (!validarCedulaEcuador(digits.substring(0, 10))) return false;
-    return digits.substring(10, 13) === '001';
-  }
-
-  // RUC Sociedad Privada / Extranjeros
-  if (third === 9) {
-    if (digits.substring(10, 13) !== '001') return false;
-    const coef = [4, 3, 2, 7, 6, 5, 4, 3, 2];
-    let sum = 0;
-    for (let i = 0; i < 9; i++) {
-      sum += parseInt(digits.charAt(i), 10) * coef[i];
-    }
-    const mod = sum % 11;
-    const check = mod === 0 ? 0 : 11 - mod;
-    return check === parseInt(digits.charAt(9), 10);
-  }
-
-  // RUC Sociedad Pública
-  if (third === 6) {
-    if (digits.substring(9, 13) !== '0001') return false;
-    const coef = [3, 2, 7, 6, 5, 4, 3, 2];
-    let sum = 0;
-    for (let i = 0; i < 8; i++) {
-      sum += parseInt(digits.charAt(i), 10) * coef[i];
-    }
-    const mod = sum % 11;
-    const check = mod === 0 ? 0 : 11 - mod;
-    return check === parseInt(digits.charAt(8), 10);
-  }
-
-  return false;
-}
 
 export default function ClientesPage() {
   const { user } = useUser();

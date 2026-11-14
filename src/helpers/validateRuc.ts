@@ -1,152 +1,182 @@
 /**
- * Valida RUC según formato oficial del SRI Ecuador
- * 
- * Formatos válidos:
- * 1. Personas naturales ecuatorianas y extranjeros residentes:
- *    - [Cédula 10 dígitos] + 001
- *    - Tercer dígito: 0-5
- * 
- * 2. Sociedades privadas y extranjeros no residentes (sin cédula):
- *    - [Código provincia (2)] + 9 + [Dígitos consecutivos (7)] + 001
- *    - Tercer dígito: 9
- * 
- * 3. Sociedades públicas:
- *    - [Código provincia (2)] + [6 o 9] + [Dígitos consecutivos] + 0001
- *    - Tercer dígito: 6 o 9
+ * Valida identificación ecuatoriana (Cédula y RUC) según normativa oficial del SRI / Registro Civil
+ * y en concordancia exacta con App\Services\EcuadorIdentificationValidator en el Backend.
  */
-export function validateRucEcuador(input: string): boolean {
+
+export function validateCedulaEcuador(input: string): boolean {
   if (!input) return false;
-  
-  // Limpiar y validar solo dígitos
-  const ruc = input.replace(/\D/g, '');
-  
-  // Aceptamos cédula de 10 dígitos o RUC completo de 13 dígitos
-  if (ruc.length !== 10 && ruc.length !== 13) return false;
-  
-  // Validar código de provincia (01-24)
+  const cedula = input.replace(/\D/g, '');
+  if (cedula.length !== 10) return false;
+
+  const province = parseInt(cedula.substring(0, 2), 10);
+  if ((province < 1 || province > 24) && province !== 30) return false;
+
+  const thirdDigit = parseInt(cedula.charAt(2), 10);
+  if (thirdDigit >= 6) return false; // Persona natural: 0-5
+
+  const coeff = [2, 1, 2, 1, 2, 1, 2, 1, 2];
+  let sum = 0;
+  for (let i = 0; i < 9; i++) {
+    let v = parseInt(cedula.charAt(i), 10) * coeff[i];
+    if (v >= 10) v -= 9;
+    sum += v;
+  }
+
+  const mod = sum % 10;
+  const check = mod === 0 ? 0 : 10 - mod;
+  return check === parseInt(cedula.charAt(9), 10);
+}
+
+export function validateRucSociedadPrivada(ruc: string): boolean {
+  if (ruc.length !== 13) return false;
+  if (ruc.charAt(2) !== '9') return false;
+  if (ruc.substring(10, 13) !== '001') return false;
+
   const province = parseInt(ruc.substring(0, 2), 10);
-  if (province < 1 || province > 24) return false;
-  
+  if ((province < 1 || province > 24) && province !== 30) return false;
+
+  const coeff = [4, 3, 2, 7, 6, 5, 4, 3, 2];
+  let sum = 0;
+  for (let i = 0; i < 9; i++) {
+    sum += parseInt(ruc.charAt(i), 10) * coeff[i];
+  }
+
+  const mod = sum % 11;
+  const check = mod === 0 ? 0 : 11 - mod;
+  if (check === 10) return false;
+  const checkDigit = check === 11 ? 0 : check;
+
+  return checkDigit === parseInt(ruc.charAt(9), 10);
+}
+
+export function validateRucSociedadPublica(ruc: string): boolean {
+  if (ruc.length !== 13) return false;
+  if (ruc.charAt(2) !== '6') return false;
+  if (ruc.substring(9, 13) !== '0001') return false;
+
+  const province = parseInt(ruc.substring(0, 2), 10);
+  if ((province < 1 || province > 24) && province !== 30) return false;
+
+  const coeff = [3, 2, 7, 6, 5, 4, 3, 2];
+  let sum = 0;
+  for (let i = 0; i < 8; i++) {
+    sum += parseInt(ruc.charAt(i), 10) * coeff[i];
+  }
+
+  const mod = sum % 11;
+  const check = mod === 0 ? 0 : 11 - mod;
+  if (check === 10) return false;
+  const checkDigit = check === 11 ? 0 : check;
+
+  return checkDigit === parseInt(ruc.charAt(8), 10);
+}
+
+export function validateRucEcuador(input: string, allowCedula: boolean = false): boolean {
+  if (!input) return false;
+  const ruc = input.replace(/\D/g, '');
+
+  if (allowCedula && ruc.length === 10) {
+    return validateCedulaEcuador(ruc);
+  }
+
+  if (ruc.length !== 13) return false;
+
+  const province = parseInt(ruc.substring(0, 2), 10);
+  if ((province < 1 || province > 24) && province !== 30) return false;
+
   const thirdDigit = parseInt(ruc.charAt(2), 10);
-  
-  // Función para validar cédula (primeros 10 dígitos de persona natural)
-  const validateCedula = (cedula: string): boolean => {
-    if (cedula.length !== 10) return false;
-    
-    const tercerDigito = parseInt(cedula.charAt(2), 10);
-    if (tercerDigito > 5) return false; // Persona natural: 0-5
-    
-    const coeff = [2, 1, 2, 1, 2, 1, 2, 1, 2];
-    let sum = 0;
-    
-    for (let i = 0; i < 9; i++) {
-      let v = parseInt(cedula.charAt(i), 10) * coeff[i];
-      if (v >= 10) v -= 9;
-      sum += v;
-    }
-    
-    const mod = sum % 10;
-    const check = mod === 0 ? 0 : 10 - mod;
-    return check === parseInt(cedula.charAt(9), 10);
-  };
-  
-  // Función para validar RUC de sociedad privada (tercer dígito = 9)
-  const validatePrivateCompany = (r: string): boolean => {
-    if (r.length !== 13) return false;
-    
-    // Tercer dígito debe ser 9
-    if (r.charAt(2) !== '9') return false;
-    
-    // Los últimos 3 dígitos deben ser 001
-    if (r.substring(10) !== '001') return false;
-    
-    // Validación estructural sin verificar el dígito verificador
-    // El SRI puede aceptar RUCs válidos estructuralmente aunque fallen el check digit matemático
-    return true;
-  };
-  
-  // Función para validar RUC de sociedad pública (tercer dígito = 6 o 9)
-  const validatePublicCompany = (r: string): boolean => {
-    if (r.length !== 13) return false;
-    
-    // Tercer dígito debe ser 6 o 9
-    const tercerDigito = r.charAt(2);
-    if (tercerDigito !== '6' && tercerDigito !== '9') return false;
-    
-    // Los últimos 4 dígitos deben ser 0001
-    if (r.substring(9) !== '0001') return false;
-    
-    const coeff = [3, 2, 7, 6, 5, 4, 3, 2];
-    let sum = 0;
-    
-    for (let i = 0; i < 8; i++) {
-      sum += parseInt(r.charAt(i), 10) * coeff[i];
-    }
-    
-    const mod = sum % 11;
-    const check = mod === 0 ? 0 : 11 - mod;
-    
-    // Si el dígito verificador es 10, el RUC es inválido
-    if (check === 10) return false;
-    
-    return check === parseInt(r.charAt(8), 10);
-  };
-  
-  // Personas naturales ecuatorianas y extranjeros residentes (tercer dígito 0-5)
+
+  // Persona natural (tercer dígito 0-5)
   if (thirdDigit >= 0 && thirdDigit <= 5) {
-    // Los primeros 10 dígitos deben formar una cédula válida
-    const cedula = ruc.substring(0, 10);
-    if (!validateCedula(cedula)) return false;
-    // Si el usuario ingresó solo la cédula (10 dígitos), consideramos válido
-    if (ruc.length === 10) return true;
-    // Si es RUC completo de 13 dígitos, los últimos 3 dígitos deben ser 001
-    return ruc.substring(10) === '001';
+    if (!validateCedulaEcuador(ruc.substring(0, 10))) return false;
+    return ruc.substring(10, 13) === '001';
   }
-  
-  // Sociedades públicas (tercer dígito 6)
+
+  // Sociedad pública (tercer dígito 6)
   if (thirdDigit === 6) {
-    return validatePublicCompany(ruc);
+    return validateRucSociedadPublica(ruc);
   }
-  
-  // Sociedades privadas y extranjeros no residentes (tercer dígito 9)
+
+  // Sociedad privada / Extranjeros sin cédula (tercer dígito 9)
   if (thirdDigit === 9) {
-    // Verificar si es sociedad privada (termina en 001) o sociedad pública (termina en 0001)
-    if (ruc.substring(10) === '001') {
-      return validatePrivateCompany(ruc);
-    } else if (ruc.substring(9) === '0001') {
-      return validatePublicCompany(ruc);
-    }
-    return false;
+    return validateRucSociedadPrivada(ruc);
   }
-  
-  // Tercer dígito no válido (7, 8 no están permitidos)
+
   return false;
 }
 
-/**
- * Obtiene el tipo de RUC según el formato
- */
 export function getTipoRuc(ruc: string): string {
   if (!ruc) return 'Inválido';
   const cleaned = ruc.replace(/\D/g, '');
-  if (cleaned.length !== 10 && cleaned.length !== 13) return 'Inválido';
+  if (cleaned.length !== 13) return 'Inválido';
+
   const thirdDigit = parseInt(cleaned.charAt(2), 10);
-  
   if (thirdDigit >= 0 && thirdDigit <= 5) {
     return 'Persona Natural';
   }
-  
   if (thirdDigit === 6) {
     return 'Sociedad Pública';
   }
-  
   if (thirdDigit === 9) {
-    if (ruc.substring(10) === '001') {
-      return 'Sociedad Privada';
-    } else if (ruc.substring(9) === '0001') {
-      return 'Sociedad Pública';
-    }
+    return 'Sociedad Privada';
   }
-  
   return 'Inválido';
+}
+
+export function validateClientIdentification(
+  tipo: string,
+  id: string,
+  totalVenta?: number
+): { valid: boolean; message?: string } {
+  const cleanId = id.trim();
+  const normalizedTipo = tipo.toUpperCase().trim();
+
+  if (!cleanId) {
+    return { valid: false, message: 'La identificación es requerida.' };
+  }
+
+  if (normalizedTipo === 'CONSUMIDOR_FINAL' || cleanId === '9999999999999') {
+    if (cleanId !== '9999999999999') {
+      return { valid: false, message: 'Consumidor Final debe ser 9999999999999.' };
+    }
+    if (totalVenta !== undefined && totalVenta > 50.00) {
+      return {
+        valid: false,
+        message: 'Por disposición del SRI, en facturas superiores a $50.00 no se admite Consumidor Final. Debe identificar al cliente.',
+      };
+    }
+    return { valid: true };
+  }
+
+  if (normalizedTipo === 'CEDULA') {
+    if (cleanId.length !== 10) {
+      return { valid: false, message: `La cédula debe tener 10 dígitos (actual: ${cleanId.length}).` };
+    }
+    if (!validateCedulaEcuador(cleanId)) {
+      return { valid: false, message: 'Cédula no válida según algoritmo del Registro Civil.' };
+    }
+    return { valid: true };
+  }
+
+  if (normalizedTipo === 'RUC') {
+    if (cleanId.length !== 13) {
+      return { valid: false, message: `El RUC debe tener 13 dígitos (actual: ${cleanId.length}).` };
+    }
+    if (!validateRucEcuador(cleanId)) {
+      return { valid: false, message: 'RUC no válido según las reglas del SRI.' };
+    }
+    return { valid: true };
+  }
+
+  if (normalizedTipo === 'PASAPORTE' || normalizedTipo === 'IDENTIFICACION_EXTERIOR') {
+    if (cleanId.length > 13) {
+      return { valid: false, message: 'Máximo 13 caracteres para esta identificación.' };
+    }
+    if (!/^[A-Za-z0-9._-]+$/.test(cleanId)) {
+      return { valid: false, message: 'Caracteres no permitidos en el documento.' };
+    }
+    return { valid: true };
+  }
+
+  return { valid: false, message: `Tipo de identificación '${tipo}' no soportado.` };
 }

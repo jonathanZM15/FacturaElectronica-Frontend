@@ -32,6 +32,7 @@ export default function PosPage() {
   const point = (turno as any)?.punto_emision || turno?.puntoEmision;
   const availableWarehouses = warehouses.filter(w => Number(w.establecimiento_id) === Number(point?.establecimiento_id) && w.permite_venta && ['VENTA', 'ALMACEN'].includes(w.tipo));
   const totals = cartTotals(cart);
+
   const load = useCallback(async () => {
     if (!emisorId) { setLoading(false); return; }
     setLoading(true);
@@ -47,8 +48,35 @@ export default function PosPage() {
     } catch (e: any) { setError(e.response?.data?.message || 'No se pudo cargar el POS.'); }
     finally { setLoading(false); }
   }, [emisorId]);
+
   useEffect(() => { load(); }, [load]);
+
   const changeItem = (id: number, changes: any) => setCart(items => items.map(item => item.id === id ? { ...item, ...changes } : item));
+
+  const verificarOperacion = async (opId: string) => {
+    if (!opId || busy) return;
+    setBusy(true); setError(''); setMessage('');
+    try {
+      const res = await api.get(`/api/facturacion/operaciones/${opId}`);
+      if (res.data?.encontrada) {
+        sessionStorage.removeItem(pendingKey);
+        setPending(null);
+        setCart([]);
+        setShowCobro(false);
+        setMessage(`Operación recuperada con éxito. Comprobante ${res.data.secuencial_formateado}. Estado SRI: ${res.data.estado_sri}.`);
+        await load();
+      }
+    } catch (e: any) {
+      if (e.response?.status === 404) {
+        setMessage('La operación no figura en el sistema todavía. Puedes reintentar el envío con seguridad.');
+      } else {
+        setError(e.response?.data?.message || 'No se pudo consultar la operación en este momento.');
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const send = async (payload: any) => {
     if (sending.current) return;
     sending.current = true; setBusy(true); setError(''); setMessage('');
@@ -57,22 +85,42 @@ export default function PosPage() {
       const form = new FormData(); form.append('payload', JSON.stringify(payload));
       const res = await facturacion.emitir(form);
       sessionStorage.removeItem(pendingKey); setPending(null); setCart([]); setShowCobro(false);
-      setMessage(`Venta confirmada. Comprobante ${res.data.secuencial_formateado}. Estado SRI: ${res.data.estado_sri}. La autorización se consulta en Facturas.`);
+      const repetidaMsg = res.data?.repetida ? ' (Operación previa recuperada sin duplicar)' : '';
+      setMessage(`Venta confirmada${repetidaMsg}. Comprobante ${res.data.secuencial_formateado}. Estado SRI: ${res.data.estado_sri}. La autorización se consulta en Facturas.`);
       await load();
     } catch (e: any) {
       const status = e.response?.status;
       const details = Object.values(e.response?.data?.errors || {}).flat().join(' ');
       setError(details || e.response?.data?.message || 'No se pudo confirmar la respuesta. Reintenta el mismo envío para evitar duplicados.');
-      if (status && status >= 400 && status < 500) { sessionStorage.removeItem(pendingKey); setPending(null); }
-      else setShowCobro(false);
+      // P13: Solo descartar la operación si fue rechazo previo al registro en base de datos (HTTP 422).
+      // Ante 401 (sesión expirada), 403 o pérdida de conexión de red, CONSERVAR la operación y datos en sessionStorage
+      // para permitir reintentar con el mismo operacion_id una vez recuperada la sesión o red.
+      if (status === 422) {
+        sessionStorage.removeItem(pendingKey);
+        setPending(null);
+      } else {
+        setShowCobro(false);
+      }
     } finally { sending.current = false; setBusy(false); }
   };
+
   if (!emisorId) return <div className="v1-page"><p>No tienes una empresa asignada.</p></div>;
+
   return <div className="v1-page">
     <h1>Punto de venta</h1><p>Opera tu propio turno y confirma ventas de tu empresa.</p>
     {error && <div className="v1-notice v1-error" role="alert">{error}</div>}
     {message && <div className="v1-notice" role="status">{message}</div>}
-    {pending && !busy && <div className="v1-card"><h2>Envío pendiente de confirmación</h2><p>La respuesta anterior no se confirmó. Se conservará la misma operación al reintentar.</p><button onClick={() => send(pending)}>Reintentar el mismo envío</button> <Link to="/facturas">Consultar facturas</Link></div>}
+    {pending && !busy && (
+      <div className="v1-card" style={{ borderLeft: '4px solid #f59e0b', background: '#fffbeb', marginBottom: 16 }}>
+        <h2>Envío pendiente de confirmación</h2>
+        <p>La respuesta de la operación anterior no se pudo confirmar en su momento (posible interrupción de red o expiración de sesión). Se conserva la misma operación para garantizar que no haya ventas duplicadas.</p>
+        <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+          <button onClick={() => send(pending)}>Reintentar el mismo envío</button>
+          <button type="button" className="v1-secondary" onClick={() => verificarOperacion(pending.operacion_id)}>Verificar si ya se registró</button>
+          <Link to="/facturas" className="v1-button v1-secondary" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>Consultar facturas</Link>
+        </div>
+      </div>
+    )}
     {loading ? <p>Cargando…</p> : !turno ? <section className="v1-card" style={{ maxWidth: 480 }}><h2>Apertura de caja</h2>
       <form onSubmit={async e => {
         e.preventDefault(); if (busy) return; setBusy(true); setError('');
