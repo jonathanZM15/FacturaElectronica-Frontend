@@ -262,7 +262,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
   }, []);
 
   // HU: No se puede seleccionar establecimientos y puntos de emisor para el rol CAJERO creado por usuario de rol GERENTE
-  const disabledEmision = currentUser?.role === 'gerente' && role === 'cajero';
+  const disabledEmision = false; // Gerente puede asignar Cajero dentro de sus sucursales.
 
   const getPuntosForEstablecimiento = React.useCallback((estId: number) => {
     return puntosEmision

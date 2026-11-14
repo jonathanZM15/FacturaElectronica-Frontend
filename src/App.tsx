@@ -1,3 +1,6 @@
+import FacturasPage from './pages/Facturas/FacturasPage';
+import FirmaPage from './pages/Firma/FirmaPage';
+import ModuloPendiente from './pages/ModuloPendiente';
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
@@ -22,14 +25,6 @@ import Usuarios from './pages/Usuarios/Usuarios';
 import Planes from './pages/Planes/Planes';
 import TiposImpuesto from './pages/TiposImpuesto/TiposImpuesto';
 import TiposRetencion from './pages/TiposRetencion/TiposRetencion';
-import PruebaEmisionComprobante from './pages/PruebaEmision/PruebaEmision';
-import NotaCreditoPage from './pages/NotaCredito/NotaCredito';
-import LiquidacionesCompraPage from './pages/LiquidacionesCompra/LiquidacionesCompraPage';
-import NotaDebitoPage from './pages/NotaDebito/NotaDebito';
-import GuiaRemisionPage from './pages/GuiaRemision/GuiaRemision';
-import DirectorioPage from './pages/Directorio/DirectorioPage';
-import IngresoComprasPage from './pages/Compras/IngresoComprasPage';
-import HistorialComprasPage from './pages/Compras/HistorialComprasPage';
 import PosPage from './pages/POS/PosPage';
 
 import Blank from './pages/Dashboard/Blank';
@@ -40,7 +35,6 @@ import MovimientosPage from './pages/Inventario/MovimientosPage';
 import KardexPage from './pages/Inventario/KardexPage';
 import CategoriasPage from './pages/Inventario/CategoriasPage';
 import StockParametrosPage from './pages/Inventario/StockParametrosPage';
-import DespachosSucursalPage from './pages/Inventario/DespachosSucursalPage';
 import ExistenciasPage from './pages/Inventario/ExistenciasPage';
 import ClientesPage from './pages/Clientes/ClientesPage';
 
@@ -102,33 +96,35 @@ function App() {
                 <Route path="/inventario/bodegas" element={<RoleRoute allowedRoles={['emisor', 'gerente']}><BodegasPage /></RoleRoute>} />
                 <Route path="/inventario/productos" element={<RoleRoute allowedRoles={['emisor', 'gerente']}><ProductosPage /></RoleRoute>} />
                 <Route path="/inventario/movimientos" element={<RoleRoute allowedRoles={['emisor', 'gerente']}><MovimientosPage /></RoleRoute>} />
-                <Route path="/inventario/despachos" element={<RoleRoute allowedRoles={['emisor', 'gerente']}><DespachosSucursalPage /></RoleRoute>} />
+                <Route path="/inventario/despachos" element={<RoleRoute allowedRoles={['emisor', 'gerente']}><ModuloPendiente /></RoleRoute>} />
                 <Route path="/inventario/existencias" element={<RoleRoute allowedRoles={['emisor', 'gerente']}><ExistenciasPage /></RoleRoute>} />
                 <Route path="/inventario/kardex" element={<RoleRoute allowedRoles={['emisor', 'gerente']}><KardexPage /></RoleRoute>} />
-                <Route path="/inventario/categorias" element={<RoleRoute allowedRoles={['emisor', 'gerente']}><CategoriasPage /></RoleRoute>} />
+                <Route path="/inventario/categorias" element={<RoleRoute allowedRoles={['emisor']}><CategoriasPage /></RoleRoute>} />
                 <Route path="/inventario/stock-parametros" element={<RoleRoute allowedRoles={['emisor', 'gerente']}><StockParametrosPage /></RoleRoute>} />
                 
                 {/* Clientes: Emisor, Gerente y Cajero */}
-                <Route path="/clientes" element={<RoleRoute allowedRoles={['emisor', 'gerente', 'cajero']}><ClientesPage /></RoleRoute>} />
-                <Route path="/inventario/clientes" element={<RoleRoute allowedRoles={['emisor', 'gerente', 'cajero']}><ClientesPage /></RoleRoute>} />
+                <Route path="/clientes" element={<RoleRoute allowedRoles={['emisor', 'gerente']}><ClientesPage /></RoleRoute>} />
+                <Route path="/inventario/clientes" element={<RoleRoute allowedRoles={['emisor', 'gerente']}><ClientesPage /></RoleRoute>} />
 
 
 
                 {/* Módulo Emisión de Comprobantes: Emisor, Gerente y Cajero */}
-                <Route path="/nota-credito" element={<RoleRoute allowedRoles={['emisor', 'gerente', 'cajero']}><NotaCreditoPage /></RoleRoute>} />
-                <Route path="/liquidaciones-compra" element={<RoleRoute allowedRoles={['emisor', 'gerente', 'cajero']}><LiquidacionesCompraPage /></RoleRoute>} />
-                <Route path="/nota-debito" element={<RoleRoute allowedRoles={['emisor', 'gerente', 'cajero']}><NotaDebitoPage /></RoleRoute>} />
-                <Route path="/guia-remision" element={<RoleRoute allowedRoles={['emisor', 'gerente', 'cajero']}><GuiaRemisionPage /></RoleRoute>} />
+                <Route path="/nota-credito" element={<RoleRoute allowedRoles={['emisor', 'gerente', 'cajero']}><ModuloPendiente /></RoleRoute>} />
+                <Route path="/liquidaciones-compra" element={<RoleRoute allowedRoles={['emisor', 'gerente', 'cajero']}><ModuloPendiente /></RoleRoute>} />
+                <Route path="/nota-debito" element={<RoleRoute allowedRoles={['emisor', 'gerente', 'cajero']}><ModuloPendiente /></RoleRoute>} />
+                <Route path="/guia-remision" element={<RoleRoute allowedRoles={['emisor', 'gerente', 'cajero']}><ModuloPendiente /></RoleRoute>} />
 
                 {/* Directorio: Emisor, Gerente y Cajero */}
-                <Route path="/directorio" element={<RoleRoute allowedRoles={['emisor', 'gerente', 'cajero']}><DirectorioPage /></RoleRoute>} />
+                <Route path="/directorio" element={<RoleRoute allowedRoles={['emisor', 'gerente', 'cajero']}><ModuloPendiente /></RoleRoute>} />
 
                 {/* POS / Ventas: Emisor, Gerente y Cajero */}
-                <Route path="/pos" element={<RoleRoute allowedRoles={['emisor', 'gerente', 'cajero']}><PosPage /></RoleRoute>} />
+                <Route path="/facturas" element={<RoleRoute allowedRoles={['administrador', 'emisor', 'gerente', 'cajero']}><FacturasPage /></RoleRoute>} />
+                <Route path="/firma" element={<RoleRoute allowedRoles={['emisor']}><FirmaPage /></RoleRoute>} />
+                <Route path="/pos" element={<RoleRoute allowedRoles={['cajero']}><PosPage /></RoleRoute>} />
 
                 {/* Compras: Emisor y Gerente */}
-                <Route path="/ingreso-compras" element={<RoleRoute allowedRoles={['emisor', 'gerente']}><IngresoComprasPage /></RoleRoute>} />
-                <Route path="/historial-compras" element={<RoleRoute allowedRoles={['emisor', 'gerente']}><HistorialComprasPage /></RoleRoute>} />
+                <Route path="/ingreso-compras" element={<RoleRoute allowedRoles={['emisor', 'gerente']}><ModuloPendiente /></RoleRoute>} />
+                <Route path="/historial-compras" element={<RoleRoute allowedRoles={['emisor', 'gerente']}><ModuloPendiente /></RoleRoute>} />
                 
                 {/* Compatibilidad: redirige /Navbar a /emisores */}
                 <Route path="/Navbar" element={<Navigate to="/emisores" replace />} />

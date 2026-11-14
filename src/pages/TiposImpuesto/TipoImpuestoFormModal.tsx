@@ -100,10 +100,10 @@ const TipoImpuestoFormModal: React.FC<Props> = ({ tipoImpuesto, onClose, onSucce
       case 'codigo':
         if (!value.trim()) return 'El código es obligatorio.';
         if (!/^\d+$/.test(value)) return 'El código debe ser un número entero positivo.';
-        if (parseInt(value) < 1) return 'El código debe ser un número positivo.';
+        if (parseInt(value) < 0) return 'El código no puede ser negativo.';
         // Verificar duplicado
         try {
-          const response = await tiposImpuestoApi.checkCodigo(parseInt(value), tipoImpuesto?.id);
+          const response = await tiposImpuestoApi.checkCodigo(parseInt(value), tipoImpuesto?.id, ({ IVA: 2, ICE: 3, IRBPNR: 5 } as Record<string, number>)[formData.tipo_impuesto]);
           if (response.data.exists) return 'Ya existe un tipo de impuesto con este código.';
         } catch (e) {}
         break;
@@ -359,7 +359,7 @@ const TipoImpuestoFormModal: React.FC<Props> = ({ tipoImpuesto, onClose, onSucce
                   </label>
                   <input
                     type="number"
-                    min="1"
+                    min="0"
                     step="1"
                     value={formData.codigo}
                     onChange={(e) => handleChange('codigo', e.target.value)}

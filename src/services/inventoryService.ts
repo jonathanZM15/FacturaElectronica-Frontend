@@ -8,8 +8,10 @@ let bodegasCache: Record<string, { data: Bodega[]; timestamp: number }> = {};
 let productosCache: Record<string, { data: Producto[]; timestamp: number }> = {};
 let motivosCache: Record<string, { data: MotivoMovimiento[]; timestamp: number }> = {};
 const CACHE_TTL = 30000; // 30 segundos
+let inventoryGeneration = 0;
 
 export const invalidateInventoryCache = (emisorId?: string | number) => {
+    inventoryGeneration++;
     if (emisorId) {
         const key = String(emisorId);
         delete bodegasCache[key];
@@ -30,28 +32,29 @@ export const getBodegas = async (emisorId: string | number, forceRefresh = false
     if (!forceRefresh && bodegasCache[key] && (now - bodegasCache[key].timestamp < CACHE_TTL)) {
         return bodegasCache[key].data;
     }
+    const generation = inventoryGeneration;
     const response = await api.get(`${BASE_INVENTORY_URL}/${emisorId}/bodegas`);
     const d = response.data;
     const result = Array.isArray(d) ? d : (Array.isArray(d?.data) ? d.data : []);
-    bodegasCache[key] = { data: result, timestamp: now };
+    if (generation === inventoryGeneration) bodegasCache[key] = { data: result, timestamp: now };
     return result;
 };
 
 export const createBodega = async (emisorId: string | number, data: Partial<Bodega>): Promise<Bodega> => {
-    invalidateInventoryCache(emisorId);
     const response = await api.post(`${BASE_INVENTORY_URL}/${emisorId}/bodegas`, data);
+    invalidateInventoryCache(emisorId);
     return response.data.data;
 };
 
 export const updateBodega = async (emisorId: string | number, id: number | string, data: Partial<Bodega>): Promise<Bodega> => {
-    invalidateInventoryCache(emisorId);
     const response = await api.put(`${BASE_INVENTORY_URL}/${emisorId}/bodegas/${id}`, data);
+    invalidateInventoryCache(emisorId);
     return response.data.data;
 };
 
 export const deleteBodega = async (emisorId: string | number, id: number | string) => {
-    invalidateInventoryCache(emisorId);
     const response = await api.delete(`${BASE_INVENTORY_URL}/${emisorId}/bodegas/${id}`);
+    invalidateInventoryCache(emisorId);
     return response.data;
 };
 
@@ -61,15 +64,17 @@ export const getProductos = async (emisorId: string | number, forceRefresh = fal
     if (!forceRefresh && productosCache[key] && (now - productosCache[key].timestamp < CACHE_TTL)) {
         return productosCache[key].data;
     }
+    const generation = inventoryGeneration;
     const response = await api.get(`${BASE_INVENTORY_URL}/${emisorId}/productos`);
     const d = response.data;
     const result = Array.isArray(d) ? d : (Array.isArray(d?.data) ? d.data : []);
-    productosCache[key] = { data: result, timestamp: now };
+    if (generation === inventoryGeneration) productosCache[key] = { data: result, timestamp: now };
     return result;
 };
 
 export const createProducto = async (emisorId: string | number, data: Partial<Producto>): Promise<Producto> => {
     const response = await api.post(`${BASE_INVENTORY_URL}/${emisorId}/productos`, data);
+    invalidateInventoryCache(emisorId);
     return response.data.data;
 };
 
@@ -80,26 +85,31 @@ export const getStockDisponible = async (emisorId: string | number, productoId: 
 
 export const transferirStock = async (emisorId: string | number, payload: any) => {
     const response = await api.post(`${BASE_INVENTORY_URL}/${emisorId}/movimientos/transferir`, payload);
+    invalidateInventoryCache(emisorId);
     return response.data;
 };
 
 export const ajustarStock = async (emisorId: string | number, payload: any) => {
     const response = await api.post(`${BASE_INVENTORY_URL}/${emisorId}/movimientos/ajustar`, payload);
+    invalidateInventoryCache(emisorId);
     return response.data;
 };
 
 export const inventarioInicial = async (emisorId: string | number, payload: any) => {
     const response = await api.post(`${BASE_INVENTORY_URL}/${emisorId}/movimientos/inventario-inicial`, payload);
+    invalidateInventoryCache(emisorId);
     return response.data;
 };
 
 export const reacondicionarStock = async (emisorId: string | number, payload: any) => {
     const response = await api.post(`${BASE_INVENTORY_URL}/${emisorId}/movimientos/reacondicionar`, payload);
+    invalidateInventoryCache(emisorId);
     return response.data;
 };
 
 export const despacharSucursal = async (emisorId: string | number, payload: any) => {
     const response = await api.post(`${BASE_INVENTORY_URL}/${emisorId}/movimientos/despachar-sucursal`, payload);
+    invalidateInventoryCache(emisorId);
     return response.data;
 };
 
@@ -116,11 +126,13 @@ export const getDespachoDetail = async (emisorId: string | number, movimientoId:
 
 export const descargarSucursal = async (emisorId: string | number, movimientoId: number | string, observacion: string) => {
     const response = await api.post(`${BASE_INVENTORY_URL}/${emisorId}/movimientos/despachar-sucursal/${movimientoId}/descargar`, { observacion });
+    invalidateInventoryCache(emisorId);
     return response.data;
 };
 
 export const recibirSucursal = async (emisorId: string | number, movimientoId: number | string, payload: any) => {
     const response = await api.post(`${BASE_INVENTORY_URL}/${emisorId}/movimientos/despachar-sucursal/${movimientoId}/recibir`, payload);
+    invalidateInventoryCache(emisorId);
     return response.data;
 };
 
@@ -171,16 +183,19 @@ export const getCategorias = async (emisorId: string | number) => {
 
 export const createCategoria = async (emisorId: string | number, data: { nombre: string; descripcion?: string; estado?: boolean; color?: string }) => {
     const response = await api.post(`${BASE_INVENTORY_URL}/${emisorId}/categorias`, data);
+    invalidateInventoryCache(emisorId);
     return response.data.data;
 };
 
 export const updateCategoria = async (emisorId: string | number, id: number, data: { nombre: string; descripcion?: string; estado?: boolean; color?: string }) => {
     const response = await api.put(`${BASE_INVENTORY_URL}/${emisorId}/categorias/${id}`, data);
+    invalidateInventoryCache(emisorId);
     return response.data.data;
 };
 
 export const deleteCategoria = async (emisorId: string | number, id: number) => {
     const response = await api.delete(`${BASE_INVENTORY_URL}/${emisorId}/categorias/${id}`);
+    invalidateInventoryCache(emisorId);
     return response.data;
 };
 
@@ -194,21 +209,25 @@ export const getStockParametros = async (emisorId: string | number) => {
 
 export const saveStockParametro = async (emisorId: string | number, data: any) => {
     const response = await api.post(`${BASE_INVENTORY_URL}/${emisorId}/stock-parametros`, data);
+    invalidateInventoryCache(emisorId);
     return response.data.data;
 };
 
 export const deleteStockParametro = async (emisorId: string | number, id: number) => {
     const response = await api.delete(`${BASE_INVENTORY_URL}/${emisorId}/stock-parametros/${id}`);
+    invalidateInventoryCache(emisorId);
     return response.data;
 };
 
 export const updateProducto = async (emisorId: string | number, id: number | string, data: Partial<Producto>): Promise<Producto> => {
     const response = await api.put(`${BASE_INVENTORY_URL}/${emisorId}/productos/${id}`, data);
+    invalidateInventoryCache(emisorId);
     return response.data.data;
 };
 
 export const deleteProducto = async (emisorId: string | number, id: number | string) => {
     const response = await api.delete(`${BASE_INVENTORY_URL}/${emisorId}/productos/${id}`);
+    invalidateInventoryCache(emisorId);
     return response.data;
 };
 
@@ -219,14 +238,16 @@ export const getMotivosMovimiento = async (emisorId: string | number, tipoMovimi
         return motivosCache[key].data;
     }
     const params = tipoMovimiento ? { tipo_movimiento: tipoMovimiento } : {};
+    const generation = inventoryGeneration;
     const response = await api.get(`${BASE_INVENTORY_URL}/${emisorId}/motivos-movimiento`, { params });
     const d = response.data;
     const result = Array.isArray(d) ? d : (Array.isArray(d?.data) ? d.data : []);
-    motivosCache[key] = { data: result, timestamp: now };
+    if (generation === inventoryGeneration) motivosCache[key] = { data: result, timestamp: now };
     return result;
 };
 
 export const enviarMermas = async (emisorId: string | number, payload: any) => {
     const response = await api.post(`${BASE_INVENTORY_URL}/${emisorId}/movimientos/mermas`, payload);
+    invalidateInventoryCache(emisorId);
     return response.data;
 };

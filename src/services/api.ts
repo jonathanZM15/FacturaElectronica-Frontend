@@ -18,6 +18,13 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+api.interceptors.response.use(response => response, error => {
+  if (error.response?.status === 401 || error.response?.data?.code === 'ACCOUNT_INACTIVE') {
+    window.dispatchEvent(new Event('auth:expired'));
+  }
+  return Promise.reject(error);
+});
+
 export const auth = {
   login: (email: string, password: string) => api.post('/api/login', { email, password }),
   register: (name: string, email: string, password: string) => api.post('/api/register', { name, email, password }),
@@ -51,6 +58,7 @@ export const emisores = {
 export const facturacion = {
   emitir: (formData: FormData) =>
     api.post('/api/facturacion/emitir', formData, {
+      timeout: 30000,
       // Axios debe calcular multipart/form-data con boundary; no fijar Content-Type manualmente.
       transformRequest: [(data, headers) => {
         if (data instanceof FormData && headers) {
@@ -63,6 +71,7 @@ export const facturacion = {
   reintentar: (comprobanteId: number) => api.post(`/api/facturacion/comprobantes/${comprobanteId}/reintentar`),
   downloadPdf: (comprobanteId: number) => api.get(`/api/facturacion/comprobantes/${comprobanteId}/pdf`, { responseType: 'blob' }),
   downloadXml: (comprobanteId: number) => api.get(`/api/facturacion/comprobantes/${comprobanteId}/xml`, { responseType: 'blob' }),
+  emitirLiquidacionCompra: (formData: FormData) => api.post('/api/facturacion/emitir-liquidacion-compra', formData),
   emitirNotaCredito: (formData: FormData) =>
     api.post('/api/facturacion/emitir-nota-credito', formData, {
       transformRequest: [(data: any, headers: any) => { delete headers['Content-Type']; return data; }],
@@ -75,7 +84,7 @@ export const facturacion = {
     api.post('/api/facturacion/emitir-guia-remision', formData, {
       transformRequest: [(data: any, headers: any) => { delete headers['Content-Type']; return data; }],
     }),
-  listarComprobantes: (params: { tipo?: string; estado?: string; emisor_id?: string | number }) =>
+  listarComprobantes: (params: Record<string, any>) =>
     api.get('/api/facturacion/comprobantes', { params }),
 };
 

@@ -35,7 +35,10 @@ export interface Bodega {
     tipo: TipoBodega;
     creador?: {
         id: number;
-        name: string;
+        name?: string | null;
+        nombres?: string | null;
+        apellidos?: string | null;
+        username?: string | null;
     };
     created_at?: string;
     updated_at?: string;
@@ -76,6 +79,8 @@ export interface Producto {
     precio_por_defecto: number;
     
     tipo_iva: string;
+    tipo_impuesto_id?: number;
+    impuesto?: { id: number; codigo_impuesto: number; codigo_porcentaje: number; valor_tarifa: number };
     impuesto_ice: boolean;
     porcentaje_ice?: number;
     irbpnr?: number;

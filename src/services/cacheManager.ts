@@ -7,6 +7,7 @@ interface CacheEntry<T = unknown> {
 }
 
 const memoryCache = new Map<string, CacheEntry>();
+let cacheGeneration = 0;
 
 const getStorageKey = (key: string) => `${STORAGE_PREFIX}${key}`;
 
@@ -62,6 +63,8 @@ export const cacheManager = {
   },
 
   clearNamespace(namespace: string) {
+    cacheGeneration++;
+    Array.from(memoryCache.keys()).filter(key => key.startsWith(namespace)).forEach(key => memoryCache.delete(key));
     const prefix = getStorageKey(namespace);
     Object.keys(localStorage)
       .filter((storageKey) => storageKey.startsWith(prefix))
@@ -69,6 +72,7 @@ export const cacheManager = {
   },
 
   clearAll() {
+    cacheGeneration++;
     memoryCache.clear();
     Object.keys(localStorage)
       .filter((storageKey) => storageKey.startsWith(STORAGE_PREFIX))
@@ -96,7 +100,8 @@ export async function fetchWithCache<T>(
     }
   }
 
+  const generation = cacheGeneration;
   const freshValue = await fetcher();
-  cacheManager.set(cacheKey, freshValue, ttl);
+  if (generation === cacheGeneration) cacheManager.set(cacheKey, freshValue, ttl);
   return freshValue;
 }

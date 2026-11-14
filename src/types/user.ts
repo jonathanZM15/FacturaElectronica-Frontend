@@ -30,6 +30,7 @@ export interface User {
   role: 'administrador' | 'distribuidor' | 'emisor' | 'gerente' | 'cajero';
   estado?: 'nuevo' | 'activo' | 'pendiente_verificacion' | 'suspendido' | 'retirado';
   emisor_id?: number | string; // Para Emisor, Gerente, Cajero
+  permisos?: Record<string, boolean | string[]>;
   establecimientos_ids?: (number | string)[]; // Para Gerente, Cajero
   puntos_emision_ids?: (number | string)[]; // Para Gerente, Cajero
   

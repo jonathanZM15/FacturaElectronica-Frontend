@@ -15,7 +15,7 @@ export const LoteFields: React.FC<Props> = ({ lotes, onChange }) => {
         onChange(lotes.filter((_, i) => i !== index));
     };
 
-    const handleChange = (index: number, field: keyof StockInicialLote, value: string | number) => {
+    const handleChange = (index: number, field: keyof StockInicialLote, value: string | number | undefined) => {
         const newLotes = [...lotes];
         newLotes[index] = { ...newLotes[index], [field]: value };
         onChange(newLotes);

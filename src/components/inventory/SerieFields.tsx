@@ -15,7 +15,7 @@ export const SerieFields: React.FC<Props> = ({ series, onChange }) => {
         onChange(series.filter((_, i) => i !== index));
     };
 
-    const handleChange = (index: number, field: keyof StockInicialSerie, value: string | number) => {
+    const handleChange = (index: number, field: keyof StockInicialSerie, value: string | number | undefined) => {
         const newSeries = [...series];
         newSeries[index] = { ...newSeries[index], [field]: value };
         onChange(newSeries);

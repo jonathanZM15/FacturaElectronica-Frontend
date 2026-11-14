@@ -1,3 +1,6 @@
+import api from '../../services/api';
+import { useUser } from '../../contexts/userContext';
+import { can } from '../../utils/permissions';
 import React, { useState, useEffect } from 'react';
 import { 
     Producto, TipoProducto, TipoControlInventario, TipoEntrega, 
@@ -21,6 +24,10 @@ const ImagePreview = ({ src }: { src: string }) => {
 };
 
 export const ProductForm: React.FC<ProductFormProps> = ({ emisorId, onSuccess }) => {
+    const { user } = useUser();
+    const canWrite = can(user, 'catalogo.write');
+    const [taxOptions, setTaxOptions] = useState<any[]>([]);
+    useEffect(() => { api.get('/api/catalogos/impuestos').then(res => setTaxOptions(res.data.data || [])).catch(() => setError('No se pudo consultar el catálogo de impuestos.')); }, []);
     const [activeTab, setActiveTab] = useState(1);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -135,6 +142,8 @@ export const ProductForm: React.FC<ProductFormProps> = ({ emisorId, onSuccess })
                 return;
             }
 
+            if (!producto.tipo_impuesto_id) { setError('Selecciona un impuesto activo del catálogo.'); setActiveTab(3); setLoading(false); return; }
+
             const payload: any = { ...producto };
             const nuevoProducto = await createProducto(emisorId, payload as Producto);
             setSuccess('Producto guardado exitosamente.');
@@ -200,7 +209,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ emisorId, onSuccess })
                     </div>
                 </div>
                 
-                <button
+                {canWrite && (<button
                     type="button"
                     onClick={() => setIsFormOpen(!isFormOpen)}
                     style={{
@@ -224,10 +233,10 @@ export const ProductForm: React.FC<ProductFormProps> = ({ emisorId, onSuccess })
                     ) : (
                         <><span>Crear Nuevo Producto</span> <span style={{fontSize:'1.2rem'}}>➕</span></>
                     )}
-                </button>
+                </button>)}
             </div>
 
-            {isFormOpen && (<>
+            {canWrite && isFormOpen && (<>
             {error && (
                 <div style={{ marginBottom: '24px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', padding: '16px', fontSize: '0.95rem', color: '#b91c1c', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '12px', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
                     <span style={{ fontSize: '1.2rem' }}>⚠️</span> <strong>Error:</strong> {error}
@@ -250,7 +259,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ emisorId, onSuccess })
                             type="button" 
                             onClick={() => setActiveTab(tab.id)}
                             style={{
-                                padding: '10px 20px', borderRadius: '12px', fontSize: '0.9rem', fontWeight: 600, border: 'none', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '8px',
+                                padding: '10px 20px', borderRadius: '12px', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '8px',
                                 backgroundColor: activeTab === tab.id ? '#4f46e5' : 'white',
                                 color: activeTab === tab.id ? 'white' : '#64748b',
                                 boxShadow: activeTab === tab.id ? '0 4px 6px rgba(79, 70, 229, 0.2)' : '0 1px 2px rgba(0,0,0,0.05)',
@@ -364,7 +373,10 @@ export const ProductForm: React.FC<ProductFormProps> = ({ emisorId, onSuccess })
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
                             <div>
                                 <label style={labelStyle}>Porcentaje de IVA <span style={{ color: '#ef4444' }}>*</span></label>
-                                <input type="text" required value={producto.tipo_iva || ''} onChange={e => handleChange('tipo_iva', e.target.value)} style={inputStyle} placeholder="Ej. 12%, 15%, 0%" onFocus={(e) => { e.target.style.borderColor = '#6366f1'; e.target.style.boxShadow = '0 0 0 4px rgba(99, 102, 241, 0.1)'; }} onBlur={(e) => { e.target.style.borderColor = '#cbd5e1'; e.target.style.boxShadow = 'inset 0 1px 2px rgba(0,0,0,0.02)'; }} />
+                                <select aria-label="Impuesto IVA del producto" value={producto.tipo_impuesto_id || ''} onChange={e => {
+                                    const tax = taxOptions.find(t => t.id === Number(e.target.value));
+                                    setProducto(prev => ({ ...prev, tipo_impuesto_id: tax?.id, tipo_iva: tax ? `${tax.valor_tarifa}%` : '' }));
+                                }} style={inputStyle}><option value="">Seleccionar impuesto activo</option>{taxOptions.map(t => <option key={t.id} value={t.id}>{t.nombre} — {t.valor_tarifa}%</option>)}</select>
                             </div>
                             
                             <div style={{ padding: '16px', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -617,7 +629,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ emisorId, onSuccess })
                                             </td>
                                             <td style={{ padding: '16px 24px', textAlign: 'center' }}>
                                                 <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                                                    <button 
+                                                    {canWrite && (<button
                                                         type="button"
                                                         onClick={() => setEditModalProduct(prod)}
                                                         style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '4px', opacity: 0.7, transition: 'all 0.2s' }}
@@ -625,8 +637,8 @@ export const ProductForm: React.FC<ProductFormProps> = ({ emisorId, onSuccess })
                                                         onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.7'; e.currentTarget.style.transform = 'scale(1)'; }}
                                                     >
                                                         ✏️
-                                                    </button>
-                                                    <button 
+                                                    </button>)}
+                                                    {canWrite && (<button
                                                         type="button"
                                                         onClick={() => setDeleteModalProduct(prod)}
                                                         style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '4px', opacity: 0.7, transition: 'all 0.2s' }}
@@ -634,7 +646,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ emisorId, onSuccess })
                                                         onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.7'; e.currentTarget.style.transform = 'scale(1)'; }}
                                                     >
                                                         🗑️
-                                                    </button>
+                                                    </button>)}
                                                 </div>
                                             </td>
                                         </tr>

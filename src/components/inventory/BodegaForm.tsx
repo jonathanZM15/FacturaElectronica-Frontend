@@ -1,3 +1,5 @@
+import { useUser } from '../../contexts/userContext';
+import { can } from '../../utils/permissions';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { TipoBodega, Bodega } from '../../types/inventory';
@@ -26,6 +28,8 @@ const TIPO_OPTIONS = [
 ];
 
 export const BodegaForm: React.FC<BodegaFormProps> = ({ emisorId, onSuccess }) => {
+    const { user } = useUser();
+    const canWrite = can(user, 'catalogo.write');
     const [nombre, setNombre] = useState('');
     const [tipo, setTipo] = useState<TipoBodega>(TipoBodega.VENTA);
     const [loading, setLoading] = useState(false);
@@ -176,7 +180,7 @@ export const BodegaForm: React.FC<BodegaFormProps> = ({ emisorId, onSuccess }) =
         }
     };
 
-    const renderCustomSelect = (currentValue: TipoBodega, onSelect: (val: TipoBodega) => void, isOpen: boolean, setIsOpen: (val: boolean) => void, ref: React.RefObject<HTMLDivElement>) => {
+    const renderCustomSelect = (currentValue: TipoBodega, onSelect: (val: TipoBodega) => void, isOpen: boolean, setIsOpen: (val: boolean) => void, ref: React.RefObject<HTMLDivElement | null>) => {
         const selectedOption = TIPO_OPTIONS.find(o => o.value === currentValue) || TIPO_OPTIONS[0];
 
         return (
@@ -269,7 +273,7 @@ export const BodegaForm: React.FC<BodegaFormProps> = ({ emisorId, onSuccess }) =
             )}
 
             {/* Formulario Premium */}
-            <div style={{ backgroundColor: 'white', borderRadius: '20px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.03), 0 2px 4px -2px rgba(0,0,0,0.03)', border: '1px solid #e2e8f0', overflow: 'visible', marginBottom: '40px' }}>
+            {canWrite && (<div style={{ backgroundColor: 'white', borderRadius: '20px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.03), 0 2px 4px -2px rgba(0,0,0,0.03)', border: '1px solid #e2e8f0', overflow: 'visible', marginBottom: '40px' }}>
                 <div style={{ padding: '20px 32px', backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0', borderTopLeftRadius: '20px', borderTopRightRadius: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <div style={{ width: '32px', height: '32px', backgroundColor: '#e0e7ff', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4f46e5', boxShadow: 'inset 0 0 0 1px #c7d2fe' }}>
                         <svg style={{ width: '18px', height: '18px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
@@ -335,7 +339,7 @@ export const BodegaForm: React.FC<BodegaFormProps> = ({ emisorId, onSuccess }) =
                         )}
                     </button>
                 </form>
-            </div>
+            </div>)}
 
             {/* Tabla */}
             <div style={{ backgroundColor: 'white', borderRadius: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03)', border: '1px solid #f1f5f9', overflow: 'hidden' }}>
@@ -402,9 +406,9 @@ export const BodegaForm: React.FC<BodegaFormProps> = ({ emisorId, onSuccess }) =
                                             {bodega.creador ? (
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                                     <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>
-                                                        {bodega.creador.name.charAt(0).toUpperCase()}
+                                                        {(bodega.creador.nombres || bodega.creador.name || bodega.creador.username || 'U').charAt(0).toUpperCase()}
                                                     </div>
-                                                    <span style={{ fontWeight: 500 }}>{bodega.creador.name}</span>
+                                                    <span style={{ fontWeight: 500 }}>{[bodega.creador.nombres, bodega.creador.apellidos].filter(Boolean).join(' ') || bodega.creador.name || bodega.creador.username || 'Usuario'}</span>
                                                 </div>
                                             ) : (
                                                 <span style={{ color: '#94a3b8' }}>Sistema</span>
@@ -415,7 +419,7 @@ export const BodegaForm: React.FC<BodegaFormProps> = ({ emisorId, onSuccess }) =
                                         </td>
                                         <td style={{ padding: '16px 32px', textAlign: 'right' }}>
                                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                                                <button
+                                                {canWrite && (<button
                                                     onClick={() => openEditModal(bodega)}
                                                     style={{ backgroundColor: 'white', color: '#f97316', padding: '8px', borderRadius: '8px', border: '1px solid #fdba74', fontSize: '1rem', cursor: 'pointer', transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                                     onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#fff7ed'; }}
@@ -423,8 +427,8 @@ export const BodegaForm: React.FC<BodegaFormProps> = ({ emisorId, onSuccess }) =
                                                     title="Editar"
                                                 >
                                                     ✏️
-                                                </button>
-                                                <button
+                                                </button>)}
+                                                {canWrite && (<button
                                                     onClick={() => setDeleteModalBodega(bodega)}
                                                     style={{ backgroundColor: 'white', color: '#ef4444', padding: '8px', borderRadius: '8px', border: '1px solid #fca5a5', fontSize: '1rem', cursor: 'pointer', transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                                     onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#fef2f2'; }}
@@ -432,7 +436,7 @@ export const BodegaForm: React.FC<BodegaFormProps> = ({ emisorId, onSuccess }) =
                                                     title="Eliminar"
                                                 >
                                                     🗑️
-                                                </button>
+                                                </button>)}
                                             </div>
                                         </td>
                                     </tr>

@@ -1,3 +1,4 @@
+import { can } from '../../utils/permissions';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useUser } from '../../contexts/userContext';
 import { clientesService } from '../../services/api';
@@ -71,7 +72,7 @@ function validarRucEcuador(ruc: string): boolean {
 
 export default function ClientesPage() {
   const { user } = useUser();
-  const emisorId = (user as any)?.emisor_id || 6;
+  const emisorId = (user as any)?.emisor_id || '';
 
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(true);
@@ -282,7 +283,7 @@ export default function ClientesPage() {
             Administración de clientes para facturación electrónica (SRI) y ventas.
           </p>
         </div>
-        <button
+        {can(user, 'clientes.write') && (<button
           onClick={handleOpenCreate}
           style={{
             background: 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)',
@@ -297,7 +298,7 @@ export default function ClientesPage() {
           }}
         >
           + Nuevo Cliente
-        </button>
+        </button>)}
       </div>
 
       {/* Alertas */}
@@ -400,18 +401,18 @@ export default function ClientesPage() {
                     {cli.telefono || '—'}
                   </td>
                   <td style={{ padding: '12px 16px', textAlign: 'right' }}>
-                    <button
+                    {can(user, 'clientes.write') && (<button
                       onClick={() => handleOpenEdit(cli)}
                       style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '6px 10px', fontSize: '12px', fontWeight: 600, color: '#334155', cursor: 'pointer', marginRight: '6px' }}
                     >
                       Editar
-                    </button>
-                    <button
+                    </button>)}
+                    {can(user, 'clientes.delete') && (<button
                       onClick={() => setDeletingCliente(cli)}
                       style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '6px', padding: '6px 10px', fontSize: '12px', fontWeight: 600, color: '#dc2626', cursor: 'pointer' }}
                     >
                       Eliminar
-                    </button>
+                    </button>)}
                   </td>
                 </tr>
               ))

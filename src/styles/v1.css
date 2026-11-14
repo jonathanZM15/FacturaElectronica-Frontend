@@ -1,0 +1,29 @@
+.v1-page { padding: 28px; background: #f5f7fb; min-height: 80vh; color: #15243b; }
+.v1-page h1 { margin: 0 0 8px; font-size: 26px; }
+.v1-page h2 { font-size: 20px; margin: 0 0 16px; }
+.v1-page p { line-height: 1.5; }
+.v1-card { background: white; padding: 22px; border: 1px solid #dce3ef; border-radius: 12px; margin: 18px 0; }
+.v1-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 12px 0; }
+.v1-page label { display: block; margin: 12px 0; font-weight: 500; }
+.v1-page input:not([type=checkbox]), .v1-page select { padding: 10px; border: 1px solid #aebbd0; border-radius: 6px; box-sizing: border-box; max-width: 100%; }
+.v1-page label input:not([type=checkbox]), .v1-page label select { display: block; width: 100%; margin-top: 6px; }
+.v1-page button, .v1-page .v1-link { padding: 10px 14px; background: #315fc5; border: 1px solid #315fc5; border-radius: 6px; color: white; cursor: pointer; text-decoration: none; }
+.v1-page button:disabled { opacity: .5; cursor: default; }
+.v1-page .v1-secondary { background: white; color: #315fc5; }
+.v1-notice { padding: 14px; background: #edf3ff; border-left: 4px solid #315fc5; margin: 14px 0; }
+.v1-error { background: #fff1f0; border-left-color: #b02b25; color: #8c2522; }
+.v1-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 22px; }
+.v1-products { display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 10px; }
+.v1-products button { text-align: left; min-height: 90px; background: white; color: #15243b; border-color: #c7d4e8; }
+.v1-products small { display: block; margin-top: 8px; }
+.v1-cart-item { padding: 12px 0; border-bottom: 1px solid #e1e7f0; }
+.v1-stock-selection { padding: 12px; background: #f5f7fb; margin: 10px 0; }
+.v1-stock-selection input[type=number] { max-width: 140px; }
+.v1-total { font-size: 24px; font-weight: 700; }
+.v1-dialog-backdrop { position: fixed; inset: 0; background: #15243ba6; z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 16px; }
+.v1-dialog { width: 510px; max-width: 100%; max-height: 90vh; overflow: auto; background: white; padding: 24px; border-radius: 12px; box-sizing: border-box; }
+.v1-table-scroll { overflow-x: auto; }
+.v1-page table { width: 100%; border-collapse: collapse; background: white; }
+.v1-page th, .v1-page td { text-align: left; padding: 12px; border-bottom: 1px solid #dce3ef; }
+.v1-page th { background: #eaf0fb; color: #15243b; }
+@media (max-width: 850px) { .v1-grid { grid-template-columns: 1fr; } .v1-page { padding: 16px; } }

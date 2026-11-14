@@ -9,8 +9,8 @@ import { useUser } from '../../contexts/userContext';
 
 export default function MovimientosPage() {
     const { user } = useUser();
-    const emisorId = (user as any)?.emisor_id || 6;
-    const [activeTab, setActiveTab] = useState<'transferencia' | 'ajuste' | 'inicial' | 'reacondicionar' | 'mermas'>('transferencia');
+    const emisorId = (user as any)?.emisor_id || '';
+    const [activeTab, setActiveTab] = useState<'transferencia' | 'ajuste' | 'inicial' | 'reacondicionar' | 'mermas'>('ajuste');
     const [recentKardex, setRecentKardex] = useState<any[]>([]);
     const [loadingKardex, setLoadingKardex] = useState(true);
 
@@ -44,7 +44,7 @@ export default function MovimientosPage() {
                             Movimientos de Inventario
                         </h1>
                         <p style={{ margin: 0, color: '#64748b', fontSize: '0.95rem', fontWeight: 500 }}>
-                            Gestiona transferencias, ajustes, inventario inicial y reacondicionamiento
+                            Registra ajustes positivos, negativos e inventario inicial
                         </p>
                     </div>
                 </div>
@@ -52,17 +52,7 @@ export default function MovimientosPage() {
 
             {/* Tabs */}
             <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', backgroundColor: '#e2e8f0', padding: '6px', borderRadius: '14px', width: 'fit-content', flexWrap: 'wrap' }}>
-                <button
-                    onClick={() => setActiveTab('transferencia')}
-                    style={{
-                        padding: '10px 20px', borderRadius: '10px', fontSize: '0.9rem', fontWeight: 600, border: 'none', cursor: 'pointer', transition: 'all 0.2s',
-                        backgroundColor: activeTab === 'transferencia' ? 'white' : 'transparent',
-                        color: activeTab === 'transferencia' ? '#4f46e5' : '#64748b',
-                        boxShadow: activeTab === 'transferencia' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none'
-                    }}
-                >
-                    🔄 Transferencias
-                </button>
+
                 <button
                     onClick={() => setActiveTab('ajuste')}
                     style={{
@@ -85,28 +75,8 @@ export default function MovimientosPage() {
                 >
                     📥 Inventario Inicial
                 </button>
-                <button
-                    onClick={() => setActiveTab('reacondicionar')}
-                    style={{
-                        padding: '10px 20px', borderRadius: '10px', fontSize: '0.9rem', fontWeight: 600, border: 'none', cursor: 'pointer', transition: 'all 0.2s',
-                        backgroundColor: activeTab === 'reacondicionar' ? 'white' : 'transparent',
-                        color: activeTab === 'reacondicionar' ? '#d97706' : '#64748b',
-                        boxShadow: activeTab === 'reacondicionar' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none'
-                    }}
-                >
-                    🛠️ Reacondicionar Mermas
-                </button>
-                <button
-                    onClick={() => setActiveTab('mermas')}
-                    style={{
-                        padding: '10px 20px', borderRadius: '10px', fontSize: '0.9rem', fontWeight: 600, border: 'none', cursor: 'pointer', transition: 'all 0.2s',
-                        backgroundColor: activeTab === 'mermas' ? 'white' : 'transparent',
-                        color: activeTab === 'mermas' ? '#dc2626' : '#64748b',
-                        boxShadow: activeTab === 'mermas' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none'
-                    }}
-                >
-                    🗑️ Envío a Mermas
-                </button>
+
+
             </div>
             
             <div>

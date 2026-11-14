@@ -32,7 +32,7 @@ interface DetalleDespacho {
 
 export default function DespachosSucursalPage() {
     const { user } = useUser();
-    const emisorId = (user as any)?.emisor_id || 6;
+    const emisorId = (user as any)?.emisor_id || '';
 
     const [activeTab, setActiveTab] = useState<'despachar' | 'transito' | 'recibir'>('transito');
     const [bodegas, setBodegas] = useState<Bodega[]>([]);

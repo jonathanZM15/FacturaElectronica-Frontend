@@ -82,7 +82,7 @@ const DirectorioPage: React.FC = () => {
       </div>
 
       <div style={{ margin: '0 -24px' }}>
-        {activeTab === 'clientes' && <ClientesPage isEmbedded />}
+        {activeTab === 'clientes' && <ClientesPage />}
         {activeTab === 'proveedores' && <ProveedoresPage isEmbedded />}
         {activeTab === 'transportistas' && <TransportistasPage isEmbedded />}
       </div>

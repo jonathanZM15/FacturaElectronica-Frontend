@@ -11,7 +11,7 @@ import {
 
 export default function ExistenciasPage() {
     const { user } = useUser();
-    const emisorId = (user as any)?.emisor_id || 6;
+    const emisorId = (user as any)?.emisor_id || '';
 
     const [activeTab, setActiveTab] = useState<'consolidado' | 'lotes' | 'series'>('consolidado');
     const [bodegas, setBodegas] = useState<Bodega[]>([]);

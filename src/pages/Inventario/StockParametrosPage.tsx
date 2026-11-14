@@ -5,7 +5,7 @@ import { Bodega, Producto, BaseComparacionStock, StockParametro } from '../../ty
 
 export default function StockParametrosPage() {
     const { user } = useUser();
-    const emisorId = (user as any)?.emisor_id || 6;
+    const emisorId = (user as any)?.emisor_id || '';
 
     const [parametros, setParametros] = useState<StockParametro[]>([]);
     const [productos, setProductos] = useState<Producto[]>([]);

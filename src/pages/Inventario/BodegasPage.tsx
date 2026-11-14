@@ -4,7 +4,7 @@ import { useUser } from '../../contexts/userContext';
 
 export default function BodegasPage() {
     const { user } = useUser();
-    const emisorId = (user as any)?.emisor_id || 6;
+    const emisorId = (user as any)?.emisor_id || '';
     
     return <BodegaForm emisorId={emisorId} />;
 }

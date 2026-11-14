@@ -896,7 +896,7 @@ const UsuarioFormModal: React.FC<Props> = ({
           <ChangeEmailModal
             isOpen={showChangeEmailModal}
             onClose={() => setShowChangeEmailModal(false)}
-            user={initialData}
+            user={initialData?.id ? { id: String(initialData.id), email: initialData.email, nombres: initialData.nombres } : null}
             onSuccess={() => {
               setShowChangeEmailModal(false);
               onClose();

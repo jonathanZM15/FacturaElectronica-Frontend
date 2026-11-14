@@ -126,12 +126,13 @@ const Navbar: React.FC = () => {
                   <span className="label">Bodegas</span>
                 </NavLink>
               </li>
-              <li className="nav-item">
+              {user.role === 'emisor' && (<li className="nav-item">
                   <NavLink to="/inventario/categorias" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} data-tooltip="Categorías">
                       <span className="icon">🏷️</span>
                       <span className="label">Categorías</span>
                   </NavLink>
-              </li>
+              </li>)}
+
               <li className="nav-item">
                 <NavLink to="/inventario/productos" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} data-tooltip="Productos">
                   <span className="icon">📦</span>
@@ -142,12 +143,6 @@ const Navbar: React.FC = () => {
                 <NavLink to="/inventario/movimientos" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} data-tooltip="Movimientos">
                   <span className="icon">🔄</span>
                   <span className="label">Movimientos</span>
-                </NavLink>
-              </li>
-              <li className="nav-item">
-                <NavLink to="/inventario/despachos" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} data-tooltip="Despachos Sucursales">
-                  <span className="icon">🚚</span>
-                  <span className="label">Despachos Sucursales</span>
                 </NavLink>
               </li>
               <li className="nav-item">
@@ -179,111 +174,14 @@ const Navbar: React.FC = () => {
 
 
 
-          {/* Emisión de Comprobantes: Solo Emisor, Gerente o Cajero */}
-          {user && (user.role === 'emisor' || user.role === 'gerente' || user.role === 'cajero') && (
-            <>
-              <li className="nav-title">EMISIÓN DE COMPROBANTES</li>
-              <li className="nav-item">
-                <NavLink
-                  to="/guia-remision"
-                  className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-                  data-tooltip="Guía de Remisión"
-                >
-                  <span className="icon">🚚</span>
-                  <span className="label">Guía de Remisión</span>
-                </NavLink>
-              </li>
-              <li className="nav-item">
-                <NavLink
-                  to="/nota-credito"
-                  className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-                  data-tooltip="Nota de Crédito"
-                >
-                  <span className="icon">🧾</span>
-                  <span className="label">Nota de Crédito</span>
-                </NavLink>
-              </li>
-              <li className="nav-item">
-                <NavLink
-                  to="/nota-debito"
-                  className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-                  data-tooltip="Nota de Débito"
-                >
-                  <span className="icon">📑</span>
-                  <span className="label">Nota de Débito</span>
-                </NavLink>
-              </li>
-              <li className="nav-item">
-                <NavLink
-                  to="/liquidaciones-compra"
-                  className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-                  data-tooltip="Liquidación de Compra"
-                >
-                  <span className="icon">🛍️</span>
-                  <span className="label">Liquidación de Compra</span>
-                </NavLink>
-              </li>
-            </>
+          {user && ['administrador', 'emisor', 'gerente', 'cajero'].includes(user.role) && (
+            <li className="nav-item"><NavLink to="/facturas" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} data-tooltip="Facturas"><span className="icon">🧾</span><span className="label">Facturas</span></NavLink></li>
           )}
-                    {user && (user.role === 'emisor' || user.role === 'gerente' || user.role === 'cajero') && (
-            <>
-              <li className="nav-title">POS / VENTAS</li>
-          <li className="nav-item">
-            <NavLink
-              to="/pos"
-              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-              data-tooltip="Punto de Venta"
-            >
-              <span className="icon">🏪</span>
-              <span className="label">Punto de Venta</span>
-            </NavLink>
-          </li>
-            </>
+          {user?.role === 'cajero' && (
+            <li className="nav-item"><NavLink to="/pos" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} data-tooltip="Punto de Venta"><span className="icon">🏪</span><span className="label">Punto de Venta</span></NavLink></li>
           )}
-          
-          
-          {/* Compras: Emisor y Gerente */}
-          {user && (user.role === 'emisor' || user.role === 'gerente') && (
-            <>
-              <li className="nav-title">COMPRAS</li>
-              <li className="nav-item">
-                <NavLink
-                  to="/ingreso-compras"
-                  className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-                  data-tooltip="Ingreso de Compras"
-                >
-                  <span className="icon">🛒</span>
-                  <span className="label">Ingreso de Compras</span>
-                </NavLink>
-              </li>
-              <li className="nav-item">
-                <NavLink
-                  to="/historial-compras"
-                  className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-                  data-tooltip="Historial de Compras"
-                >
-                  <span className="icon">🕒</span>
-                  <span className="label">Historial de Compras</span>
-                </NavLink>
-              </li>
-            </>
-          )}
-
-          {/* Entidades: Emisor, Gerente y Cajero */}
-          {user && (user.role === 'emisor' || user.role === 'gerente' || user.role === 'cajero') && (
-            <>
-              <li className="nav-title">ENTIDADES</li>
-              <li className="nav-item">
-                <NavLink
-                  to="/directorio"
-                  className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-                  data-tooltip="Directorio"
-                >
-                  <span className="icon">📇</span>
-                  <span className="label">Directorio</span>
-                </NavLink>
-              </li>
-            </>
+          {user?.role === 'emisor' && (
+            <li className="nav-item"><NavLink to="/firma" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} data-tooltip="Firma electrónica"><span className="icon">🔐</span><span className="label">Firma electrónica</span></NavLink></li>
           )}
         </ul>
       </nav>

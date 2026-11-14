@@ -7,7 +7,7 @@ const CACHE_TTL = 20_000;
 
 export const emisoresApi = {
   // Accept flexible params to support dynamic filtering/sorting/pagination (con caché)
-  list(params: Record<string, any>) {
+  list(params: Record<string, any> = {}) {
     const key = `${CACHE_NS}:list:${JSON.stringify(params)}`;
     return fetchWithCache(key, async () => {
       const res = await api.get('/api/emisores', { params });

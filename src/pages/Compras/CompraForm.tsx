@@ -95,14 +95,14 @@ const CompraForm: React.FC<CompraFormProps> = ({ tipoIngreso }) => {
       const updated = { ...d, [field]: value };
       
       if (field === 'producto_id' && value) {
-        const prod = productos.find(p => p.id.toString() === value.toString());
+        const prod = productos.find(p => String(p.id ?? '') === value.toString());
         if (prod) {
-          updated.codigo_principal = prod.codigo_principal || '';
+          updated.codigo_principal = prod.codigo || '';
           updated.descripcion = prod.nombre;
           // By default, set the cost if we have one, otherwise 0
           updated.precio_unitario = 0; 
-          updated.codigo_porcentaje = prod.codigo_porcentaje_iva;
-          updated.tarifa = prod.codigo_porcentaje_iva === '2' ? 12 : (prod.codigo_porcentaje_iva === '4' ? 15 : 0);
+          updated.codigo_porcentaje = String(prod.impuesto?.codigo_porcentaje ?? '0');
+          updated.tarifa = String(prod.impuesto?.codigo_porcentaje ?? '0') === '2' ? 12 : (String(prod.impuesto?.codigo_porcentaje ?? '0') === '4' ? 15 : 0);
         }
       }
       return updated;

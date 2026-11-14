@@ -154,8 +154,9 @@ export const tiposImpuestoApi = {
   },
 
   // Verificar si un código ya existe
-  checkCodigo(codigo: number, excludeId?: number) {
+  checkCodigo(codigo: number, excludeId?: number, codigoImpuesto?: number) {
     const params: Record<string, any> = { codigo };
+    if (codigoImpuesto !== undefined) params.codigo_impuesto = codigoImpuesto;
     if (excludeId) params.exclude_id = excludeId;
     return api.get<{ exists: boolean }>('/api/tipos-impuesto/check-codigo', { params });
   },

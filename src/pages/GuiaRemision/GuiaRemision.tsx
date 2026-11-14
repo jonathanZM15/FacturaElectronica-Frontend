@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../../services/api';
+import api, { facturacion } from '../../services/api';
 import { emisoresApi } from '../../services/emisoresApi';
 import { establecimientosApi } from '../../services/establecimientosApi';
 import { puntosEmisionApi } from '../../services/puntosEmisionApi';
@@ -147,7 +147,7 @@ const GuiaRemisionPage: React.FC = () => {
     formData.append('payload', JSON.stringify(payload));
 
     try {
-      const res = await api.emitirGuiaRemision(formData);
+      const res = await facturacion.emitirGuiaRemision(formData);
       setResultado(res.data);
       pollEstado(res.data.comprobante_id);
     } catch (error: any) {

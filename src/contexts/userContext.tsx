@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../services/api';
+import { invalidateInventoryCache } from '../services/inventoryService';
+import { cacheManager } from '../services/cacheManager';
 import { User } from '../types/user';
 
 type UserContextType = {
@@ -19,12 +21,20 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const navigate = useNavigate();
 
   const clearAuth = () => {
+    invalidateInventoryCache();
+    cacheManager.clearAll();
     sessionStorage.removeItem('authToken');
     sessionStorage.removeItem('authUser');
     setUser(null);
   };
 
   // fetchMe removed; logic inlined in useEffect
+
+  useEffect(() => {
+    const expire = () => { clearAuth(); navigate('/'); };
+    window.addEventListener('auth:expired', expire);
+    return () => window.removeEventListener('auth:expired', expire);
+  }, [navigate]);
 
   useEffect(() => {
     const init = async () => {
@@ -49,13 +59,15 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     setLoading(true);
     try {
+      invalidateInventoryCache();
+      cacheManager.clearAll();
       const res = await auth.login(email, password);
       const { token, user: u } = res.data;
       if (token) {
         sessionStorage.setItem('authToken', token);
         sessionStorage.setItem('authUser', JSON.stringify(u));
         setUser(u);
-        navigate('/emisores'); // ← ir directo a Emisores
+        navigate(u.role === 'cajero' ? '/pos' : '/emisores');
       }
     } catch (error) {
       // Propagar el error para que el componente Login lo maneje
@@ -82,10 +94,13 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
-    clearAuth();
-    navigate('/');
-    // Fire-and-forget: invalidar token en backend sin bloquear la UI
-    auth.logout().catch(() => {});
+    try {
+      // El interceptor necesita el token todavía presente para revocarlo.
+      await auth.logout();
+    } finally {
+      clearAuth();
+      navigate('/');
+    }
   };
 
   return (

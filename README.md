@@ -42,7 +42,7 @@ Aplicación web SPA (Single Page Application) que proporciona una interfaz intui
 
 3. **Configurar la URL del API**
    
-   Crear archivo `.env` en la raíz del proyecto:
+   Copiar `.env.example` a `.env.local` en la raíz del proyecto y ajustar la URL del API. El archivo `.env.local` se conserva únicamente en el equipo y está excluido de Git:
    ```env
    REACT_APP_API_URL=http://localhost:8000/api
    ```
@@ -95,7 +95,6 @@ src/
 |---------|-------------|
 | `npm start` | Inicia el servidor de desarrollo |
 | `npm run build` | Genera build de producción |
-| `npm test` | Ejecuta los tests |
 | `npm run eject` | Expone la configuración de CRA |
 
 ## 🔧 Build para Producción

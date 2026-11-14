@@ -21,3 +21,14 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Configuracion local
+/.env
+/.env.*
+!/.env.example
+
+# Pruebas y scripts auxiliares locales
+/src/**/*.test.*
+/src/**/*.spec.*
+/src/setupTests.ts
+/*.py
