@@ -6,6 +6,8 @@ import { MotivoSelect } from './MotivoSelect';
 interface Props {
     emisorId: number | string;
     onSuccess?: () => void;
+    tipoInicial?: 'AJUSTE_POSITIVO' | 'AJUSTE_NEGATIVO';
+    onTipoChange?: (tipo: 'AJUSTE_POSITIVO' | 'AJUSTE_NEGATIVO') => void;
 }
 
 interface LoteItem {
@@ -26,7 +28,7 @@ interface DetalleItem {
     series: SerieItem[];
 }
 
-export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
+export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess, tipoInicial = 'AJUSTE_POSITIVO', onTipoChange }) => {
     const [bodegas, setBodegas] = useState<Bodega[]>([]);
     const [productos, setProductos] = useState<Producto[]>([]);
     const [loadingData, setLoadingData] = useState(true);
@@ -35,7 +37,7 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
     const [success, setSuccess] = useState('');
 
     const [bodegaId, setBodegaId] = useState<number | ''>('');
-    const [tipo, setTipo] = useState<'AJUSTE_POSITIVO' | 'AJUSTE_NEGATIVO'>('AJUSTE_POSITIVO');
+    const [tipo, setTipo] = useState<'AJUSTE_POSITIVO' | 'AJUSTE_NEGATIVO'>(tipoInicial);
     const [motivoId, setMotivoId] = useState<number | ''>('');
     const [selectedMotivoObj, setSelectedMotivoObj] = useState<MotivoMovimiento | undefined>(undefined);
     const [observacion, setObservacion] = useState('');
@@ -46,6 +48,23 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
     // Existencias disponibles en la bodega para sugerir en AJUSTE_NEGATIVO
     const [lotesDisponibles, setLotesDisponibles] = useState<Record<number, any[]>>({});
     const [seriesDisponibles, setSeriesDisponibles] = useState<Record<number, any[]>>({});
+
+    useEffect(() => {
+        setTipo(tipoInicial);
+        setMotivoId('');
+        setSelectedMotivoObj(undefined);
+        setLotesDisponibles({});
+        setSeriesDisponibles({});
+    }, [tipoInicial]);
+
+    const selectTipo = (next: 'AJUSTE_POSITIVO' | 'AJUSTE_NEGATIVO') => {
+        setTipo(next);
+        setMotivoId('');
+        setSelectedMotivoObj(undefined);
+        setLotesDisponibles({});
+        setSeriesDisponibles({});
+        onTipoChange?.(next);
+    };
 
     const loadFormData = useCallback(async () => {
         setLoadingData(true);
@@ -365,14 +384,7 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
                             <select 
                                 required 
                                 value={tipo} 
-                                onChange={e => {
-                                    setTipo(e.target.value as any);
-                                    setMotivoId('');
-                                    setSelectedMotivoObj(undefined);
-                                    // Limpiar existencias cacheadas al cambiar de tipo
-                                    setLotesDisponibles({});
-                                    setSeriesDisponibles({});
-                                }} 
+                                onChange={e => selectTipo(e.target.value as 'AJUSTE_POSITIVO' | 'AJUSTE_NEGATIVO')}
                                 style={{ width: '100%', padding: '12px 16px', border: '1px solid #cbd5e1', borderRadius: '12px', fontSize: '0.95rem', outline: 'none', backgroundColor: 'white', color: '#0f172a' }}
                             >
                                 <option value="AJUSTE_POSITIVO">📈 Ajuste Positivo (Entrada al inventario)</option>

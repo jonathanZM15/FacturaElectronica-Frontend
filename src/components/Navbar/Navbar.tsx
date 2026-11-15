@@ -1,21 +1,25 @@
-import React, { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import React, { useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './Navbar.css';
+import SidebarMenu from './SidebarMenu';
 import logo from '../../assets/maximofactura.png';
 import { useSidebar } from '../../contexts/SidebarContext';
 import { useUser } from '../../contexts/userContext';
 import ConfirmDialog from '../ConfirmDialog/ConfirmDialog';
 
 const Navbar: React.FC = () => {
-  const { menuOpen, toggleMenu } = useSidebar();
+  const { menuOpen, toggleMenu, setMenuOpen } = useSidebar();
   const { user, logout } = useUser();
   const navigate = useNavigate();
+  const menuToggle = useRef<HTMLButtonElement>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   return (
     <header className="navbar-container">
       <div className="navbar-left">
-        <button className="menu-toggle-btn" aria-label="Abrir Menú" onClick={toggleMenu}>
+        <button ref={menuToggle} type="button" className="menu-toggle-btn"
+          aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'} aria-expanded={menuOpen}
+          aria-controls="main-sidebar" onClick={toggleMenu}>
           <span className="hamburger" aria-hidden="true">
             <span></span>
             <span></span>
@@ -30,160 +34,17 @@ const Navbar: React.FC = () => {
         />
       </div>
 
-      <nav className={`sidebar ${menuOpen ? 'open' : ''}`}>
-        <ul className="nav-list">
-          {/* Dashboard Administrativo: solo Admin */}
-          {user && user.role === 'administrador' && (
-            <li className="nav-item">
-              <NavLink 
-                to="/dashboard" 
-                className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-                data-tooltip="Dashboard"
-              >
-                <span className="icon">📊</span>
-                <span className="label">Dashboard Administrativo</span>
-              </NavLink>
-            </li>
-          )}
-          
-          {/* Emisores: Admin, Distribuidor, Emisor y Gerente */}
-          {user && (user.role === 'administrador' || user.role === 'distribuidor' || user.role === 'emisor' || user.role === 'gerente') && (
-            <li className="nav-item">
-              <NavLink 
-                to="/emisores" 
-                className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-                data-tooltip="Emisores"
-              >
-                <span className="icon">🏢</span>
-                <span className="label">Emisores</span>
-              </NavLink>
-            </li>
-          )}
-          
-          {/* Usuarios: Administrador y Distribuidor */}
-          {user && (user.role === 'administrador' || user.role === 'distribuidor') && (
-            <li className="nav-item">
-              <NavLink 
-                to="/usuarios" 
-                className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-                data-tooltip="Usuarios"
-              >
-                <span className="icon">👥</span>
-                <span className="label">Usuarios</span>
-              </NavLink>
-            </li>
-          )}
-          
-          {/* Planes: solo Administrador */}
-          {user && user.role === 'administrador' && (
-            <li className="nav-item">
-              <NavLink 
-                to="/planes" 
-                className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-                data-tooltip="Planes"
-              >
-                <span className="icon">💎</span>
-                <span className="label">Planes</span>
-              </NavLink>
-            </li>
-          )}
-          
-          {/* Impuestos: solo Admin */}
-          {user && user.role === 'administrador' && (
-            <li className="nav-item">
-              <NavLink 
-                to="/impuestos" 
-                className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-                data-tooltip="Impuestos"
-              >
-                <span className="icon">🧾</span>
-                <span className="label">Impuestos</span>
-              </NavLink>
-            </li>
-          )}
-          
-          {/* Retenciones: solo Admin */}
-          {user && user.role === 'administrador' && (
-            <li className="nav-item">
-              <NavLink 
-                to="/retenciones" 
-                className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-                data-tooltip="Retenciones"
-              >
-                <span className="icon">📋</span>
-                <span className="label">Retenciones</span>
-              </NavLink>
-            </li>
-          )}
-
-          {/* Inventario: Emisor y Gerente */}
-          {user && (user.role === 'emisor' || user.role === 'gerente') && (
-            <>
-              <li className="nav-title">INVENTARIO</li>
-              <li className="nav-item">
-                <NavLink to="/inventario/bodegas" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} data-tooltip="Bodegas">
-                  <span className="icon">🏬</span>
-                  <span className="label">Bodegas</span>
-                </NavLink>
-              </li>
-              {user.role === 'emisor' && (<li className="nav-item">
-                  <NavLink to="/inventario/categorias" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} data-tooltip="Categorías">
-                      <span className="icon">🏷️</span>
-                      <span className="label">Categorías</span>
-                  </NavLink>
-              </li>)}
-
-              <li className="nav-item">
-                <NavLink to="/inventario/productos" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} data-tooltip="Productos">
-                  <span className="icon">📦</span>
-                  <span className="label">Productos</span>
-                </NavLink>
-              </li>
-              <li className="nav-item">
-                <NavLink to="/inventario/movimientos" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} data-tooltip="Movimientos">
-                  <span className="icon">🔄</span>
-                  <span className="label">Movimientos</span>
-                </NavLink>
-              </li>
-              <li className="nav-item">
-                <NavLink to="/inventario/existencias" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} data-tooltip="Existencias">
-                  <span className="icon">📦</span>
-                  <span className="label">Existencias</span>
-                </NavLink>
-              </li>
-              <li className="nav-item">
-                <NavLink to="/inventario/kardex" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} data-tooltip="Kardex">
-                  <span className="icon">📑</span>
-                  <span className="label">Kardex</span>
-                </NavLink>
-              </li>
-              <li className="nav-item">
-                <NavLink to="/inventario/stock-parametros" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} data-tooltip="Stock Parámetros">
-                  <span className="icon">⚙️</span>
-                  <span className="label">Stock Parámetros</span>
-                </NavLink>
-              </li>
-              <li className="nav-item">
-                <NavLink to="/clientes" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} data-tooltip="Clientes">
-                  <span className="icon">👥</span>
-                  <span className="label">Clientes</span>
-                </NavLink>
-              </li>
-            </>
-          )}
-
-
-
-          {user && ['administrador', 'emisor', 'gerente', 'cajero'].includes(user.role) && (
-            <li className="nav-item"><NavLink to="/facturas" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} data-tooltip="Facturas"><span className="icon">🧾</span><span className="label">Facturas</span></NavLink></li>
-          )}
-          {user?.role === 'cajero' && (
-            <li className="nav-item"><NavLink to="/pos" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} data-tooltip="Punto de Venta"><span className="icon">🏪</span><span className="label">Punto de Venta</span></NavLink></li>
-          )}
-          {user?.role === 'emisor' && (
-            <li className="nav-item"><NavLink to="/firma" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} data-tooltip="Firma electrónica"><span className="icon">🔐</span><span className="label">Firma electrónica</span></NavLink></li>
-          )}
-        </ul>
+      {menuOpen && <button type="button" className="sidebar-backdrop" aria-label="Cerrar menú lateral"
+        onClick={() => { setMenuOpen(false); menuToggle.current?.focus(); }} />}
+      <nav id="main-sidebar" aria-label="Menú principal" className={`sidebar ${menuOpen ? 'open' : ''}`}
+        onKeyDown={event => {
+          if (event.key === 'Escape') {
+            event.preventDefault();
+            setMenuOpen(false);
+            menuToggle.current?.focus();
+          }
+        }}>
+        <SidebarMenu />
       </nav>
 
       {/* top bar right: user name and logout */}

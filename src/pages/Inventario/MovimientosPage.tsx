@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { getKardex } from '../../services/inventoryService';
 import { TransferenciaForm } from '../../components/inventory/TransferenciaForm';
 import { AjusteForm } from '../../components/inventory/AjusteForm';
@@ -10,7 +11,15 @@ import { useUser } from '../../contexts/userContext';
 export default function MovimientosPage() {
     const { user } = useUser();
     const emisorId = (user as any)?.emisor_id || '';
-    const [activeTab, setActiveTab] = useState<'transferencia' | 'ajuste' | 'inicial' | 'reacondicionar' | 'mermas'>('ajuste');
+    const [searchParams, setSearchParams] = useSearchParams();
+    const view = searchParams.get('vista');
+    const activeTab: string = view === 'inventario-inicial' ? 'inicial' : 'ajuste';
+    const adjustmentType = view === 'ajuste-negativo' ? 'AJUSTE_NEGATIVO' : 'AJUSTE_POSITIVO';
+    const selectView = (nextView: string) => setSearchParams(previous => {
+        const next = new URLSearchParams(previous);
+        next.set('vista', nextView);
+        return next;
+    });
     const [recentKardex, setRecentKardex] = useState<any[]>([]);
     const [loadingKardex, setLoadingKardex] = useState(true);
 
@@ -54,7 +63,7 @@ export default function MovimientosPage() {
             <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', backgroundColor: '#e2e8f0', padding: '6px', borderRadius: '14px', width: 'fit-content', flexWrap: 'wrap' }}>
 
                 <button
-                    onClick={() => setActiveTab('ajuste')}
+                    onClick={() => selectView(adjustmentType === 'AJUSTE_NEGATIVO' ? 'ajuste-negativo' : 'ajuste-positivo')}
                     style={{
                         padding: '10px 20px', borderRadius: '10px', fontSize: '0.9rem', fontWeight: 600, border: 'none', cursor: 'pointer', transition: 'all 0.2s',
                         backgroundColor: activeTab === 'ajuste' ? 'white' : 'transparent',
@@ -65,7 +74,7 @@ export default function MovimientosPage() {
                     ⚙️ Ajustes Manuales
                 </button>
                 <button
-                    onClick={() => setActiveTab('inicial')}
+                    onClick={() => selectView('inventario-inicial')}
                     style={{
                         padding: '10px 20px', borderRadius: '10px', fontSize: '0.9rem', fontWeight: 600, border: 'none', cursor: 'pointer', transition: 'all 0.2s',
                         backgroundColor: activeTab === 'inicial' ? 'white' : 'transparent',
@@ -81,7 +90,9 @@ export default function MovimientosPage() {
             
             <div>
                 {activeTab === 'transferencia' && <TransferenciaForm emisorId={emisorId} onSuccess={loadRecentKardex} />}
-                {activeTab === 'ajuste' && <AjusteForm emisorId={emisorId} onSuccess={loadRecentKardex} />}
+                {activeTab === 'ajuste' && <AjusteForm emisorId={emisorId} onSuccess={loadRecentKardex}
+                    tipoInicial={adjustmentType}
+                    onTipoChange={tipo => selectView(tipo === 'AJUSTE_NEGATIVO' ? 'ajuste-negativo' : 'ajuste-positivo')} />}
                 {activeTab === 'inicial' && <InventarioInicialForm emisorId={emisorId} onSuccess={loadRecentKardex} />}
                 {activeTab === 'reacondicionar' && <ReacondicionarForm emisorId={emisorId} onSuccess={loadRecentKardex} />}
                         {activeTab === 'mermas' && <EnvioMermasForm emisorId={emisorId} onSuccess={loadRecentKardex} />}
