@@ -620,7 +620,7 @@ const Usuarios: React.FC = () => {
                 href={`/emisores/${row.emisor_id}`}
                 onClick={(e) => {
                   e.preventDefault();
-                  window.open(`/emisores/${row.emisor_id}`, '_blank');
+                  window.open(`/emisores/${row.emisor_id}`, '_blank', 'noopener,noreferrer');
                 }}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -661,7 +661,7 @@ const Usuarios: React.FC = () => {
                           href={`/emisores/${row.emisor_id}/establecimientos/${est.id}`}
                           onClick={(e) => {
                             e.preventDefault();
-                            window.open(`/emisores/${row.emisor_id}/establecimientos/${est.id}`, '_blank');
+                            window.open(`/emisores/${row.emisor_id}/establecimientos/${est.id}`, '_blank', 'noopener,noreferrer');
                           }}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -692,7 +692,7 @@ const Usuarios: React.FC = () => {
                           href={`/emisores/${row.emisor_id}/establecimientos/${est.id}`}
                           onClick={(e) => {
                             e.preventDefault();
-                            window.open(`/emisores/${row.emisor_id}/establecimientos/${est.id}`, '_blank');
+                            window.open(`/emisores/${row.emisor_id}/establecimientos/${est.id}`, '_blank', 'noopener,noreferrer');
                           }}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -709,7 +709,7 @@ const Usuarios: React.FC = () => {
                           href={`/emisores/${row.emisor_id}/establecimientos/${est.id}/puntos/${p.id}`}
                           onClick={(e) => {
                             e.preventDefault();
-                            window.open(`/emisores/${row.emisor_id}/establecimientos/${est.id}/puntos/${p.id}`, '_blank');
+                            window.open(`/emisores/${row.emisor_id}/establecimientos/${est.id}/puntos/${p.id}`, '_blank', 'noopener,noreferrer');
                           }}
                           target="_blank"
                           rel="noopener noreferrer"

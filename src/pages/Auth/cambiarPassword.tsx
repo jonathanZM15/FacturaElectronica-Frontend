@@ -5,7 +5,7 @@ import './cambiarPassword.css';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useUser } from '../../contexts/userContext';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import { auth } from '../../services/api';
+import { auth, API_URL } from '../../services/api';
 import { useNotification } from '../../contexts/NotificationContext';
 
 type Props = {
@@ -17,7 +17,7 @@ function useQuery() {
 }
 
 // Regex: al menos una minúscula, una mayúscula, un dígito y un carácter especial, mínimo 8
-const passwordRules = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+const passwordRules = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,72}$/;
 
 const CambiarPassword: React.FC<Props> = ({ onSubmit }) => {
   const query = useQuery();
@@ -54,10 +54,13 @@ const CambiarPassword: React.FC<Props> = ({ onSubmit }) => {
   const validate = () => {
     const errs: Record<string,string> = {};
     if (!passwordRules.test(password)) {
-      errs.password = 'La contraseña debe tener mínimo 8 caracteres, incluyendo mayúscula, minúscula, número y carácter especial.';
+      errs.password = 'La contraseña debe tener entre 8 y 72 caracteres, incluyendo mayúscula, minúscula, número y carácter especial.';
     }
     if (password !== passwordConfirmation) {
       errs.password_confirmation = 'Las contraseñas no coinciden.';
+    }
+    if (new Blob([password]).size > 72 || password.includes('\0')) {
+      errs.password = 'La contraseña supera el límite permitido; usa hasta 72 caracteres simples y evita caracteres nulos.';
     }
     return errs;
   };
@@ -77,10 +80,7 @@ const CambiarPassword: React.FC<Props> = ({ onSubmit }) => {
     }
     setLoading(true);
     try {
-      const apiBase = process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000';
-      const url = apiBase + '/api/password-reset';
-      console.log('[CambiarPassword] Enviando POST a:', url);
-      console.log('[CambiarPassword] Datos:', { email: emailState, token, password: '***', password_confirmation: '***' });
+      const url = API_URL + '/api/password-reset';
       
       const res = await fetch(url, {
         method: 'POST',
@@ -96,7 +96,6 @@ const CambiarPassword: React.FC<Props> = ({ onSubmit }) => {
         }),
       });
       
-      console.log('[CambiarPassword] Respuesta status:', res.status);
 
       // Manejo robusto: si la respuesta no es JSON (por ejemplo HTML de error), leer texto
       const contentType = res.headers.get('content-type') || '';
@@ -104,9 +103,8 @@ const CambiarPassword: React.FC<Props> = ({ onSubmit }) => {
       if (contentType.includes('application/json')) {
         json = await res.json();
       } else {
-        const text = await res.text();
-        json = { message: text.substring(0, 1000) };
-        console.debug('[CambiarPassword] response text (non-json):', text.substring(0, 2000));
+        await res.text();
+        json = { message: 'El servidor no pudo procesar la solicitud. Inténtalo nuevamente.' };
       }
 
       if (res.ok) {

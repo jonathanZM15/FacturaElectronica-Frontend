@@ -48,7 +48,7 @@ export const usuariosApi = {
   },
 
   // Solicitar cambio de email
-  requestEmailChange(id: number | string, newEmail: string) {
-    return api.post(`/api/usuarios/${id}/request-email-change`, { new_email: newEmail });
+  requestEmailChange(id: number | string, newEmail: string, currentPassword: string) {
+    return api.post(`/api/usuarios/${id}/request-email-change`, { new_email: newEmail, current_password: currentPassword });
   },
 };

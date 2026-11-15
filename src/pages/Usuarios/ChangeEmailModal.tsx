@@ -14,7 +14,8 @@ const ChangeEmailModal: React.FC<Props> = ({ isOpen, user, onClose, onSuccess })
   const { show } = useNotification();
   const [newEmail, setNewEmail] = useState('');
   const [confirmEmail, setConfirmEmail] = useState('');
-  const [errors, setErrors] = useState<{ newEmail?: string; confirmEmail?: string; general?: string }>({});
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [errors, setErrors] = useState<{ newEmail?: string; confirmEmail?: string; currentPassword?: string; general?: string }>({});
   const [loading, setLoading] = useState(false);
 
   const validateEmails = (): boolean => {
@@ -46,6 +47,7 @@ const ChangeEmailModal: React.FC<Props> = ({ isOpen, user, onClose, onSuccess })
       newErrors.confirmEmail = 'Los correos no coinciden';
     }
 
+    if (!currentPassword) newErrors.currentPassword = 'Ingresa tu contraseña actual para autorizar el cambio';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -55,7 +57,7 @@ const ChangeEmailModal: React.FC<Props> = ({ isOpen, user, onClose, onSuccess })
 
     setLoading(true);
     try {
-      await usuariosApi.requestEmailChange(user.id, newEmail.trim());
+      await usuariosApi.requestEmailChange(user.id, newEmail.trim(), currentPassword);
       show({
         title: '✅ Cambio de Correo',
         message: `Se enviaron los correos de confirmación a ${user.email} y ${newEmail.trim()}.`,
@@ -63,6 +65,7 @@ const ChangeEmailModal: React.FC<Props> = ({ isOpen, user, onClose, onSuccess })
       });
       setNewEmail('');
       setConfirmEmail('');
+      setCurrentPassword('');
       setErrors({});
       setLoading(false);
       onSuccess();
@@ -76,6 +79,7 @@ const ChangeEmailModal: React.FC<Props> = ({ isOpen, user, onClose, onSuccess })
   const handleClose = () => {
     setNewEmail('');
     setConfirmEmail('');
+    setCurrentPassword('');
     setErrors({});
     onClose();
   };
@@ -123,6 +127,14 @@ const ChangeEmailModal: React.FC<Props> = ({ isOpen, user, onClose, onSuccess })
                 </div>
               )}
 
+              <div style={{ marginBottom: '14px' }}>
+                <label htmlFor="email-change-password">Tu contraseña actual</label>
+                <input id="email-change-password" type="password" autoComplete="current-password"
+                  value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)}
+                  style={{ width: '100%', padding: '9px 11px', boxSizing: 'border-box' }} />
+                {errors.currentPassword && <p role="alert">{errors.currentPassword}</p>}
+                <small>Confirma la contraseña de tu propia cuenta para autorizar esta operación.</small>
+              </div>
               {/* Nuevo correo */}
               <div style={{ marginBottom: '14px' }}>
                 <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600', color: '#1e293b', fontSize: '12px' }}>

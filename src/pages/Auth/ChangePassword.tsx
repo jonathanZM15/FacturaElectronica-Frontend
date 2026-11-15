@@ -12,7 +12,7 @@ function useQuery() {
 }
 
 // Regex: al menos una minúscula, una mayúscula, un dígito y un carácter especial, mínimo 8
-const passwordRules = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+const passwordRules = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,72}$/;
 
 const ChangePassword: React.FC = () => {
   const query = useQuery();
@@ -36,7 +36,7 @@ const ChangePassword: React.FC = () => {
     // ─── REDIRECCIÓN A APP MÓVIL (Deep Link) ───
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     if (isMobile && token) {
-      window.location.href = `facturatesis://change-password?token=${token}`;
+      window.location.href = `facturatesis://change-password?token=${encodeURIComponent(token)}`;
     }
     // ───────────────────────────────────────────
   }, [token]);
@@ -51,7 +51,7 @@ const ChangePassword: React.FC = () => {
     if (!password) {
       errs.password = 'La contraseña es requerida.';
     } else if (!passwordRules.test(password)) {
-      errs.password = 'La contraseña debe tener mínimo 8 caracteres, incluyendo mayúscula, minúscula, número y carácter especial.';
+      errs.password = 'La contraseña debe tener entre 8 y 72 caracteres, incluyendo mayúscula, minúscula, número y carácter especial.';
     }
     
     if (!passwordConfirmation) {
@@ -60,6 +60,9 @@ const ChangePassword: React.FC = () => {
       errs.password_confirmation = 'Las contraseñas no coinciden.';
     }
     
+    if (new Blob([password]).size > 72 || password.includes('\0')) {
+      errs.password = 'La contraseña supera el límite permitido; usa hasta 72 caracteres simples y evita caracteres nulos.';
+    }
     return errs;
   };
 

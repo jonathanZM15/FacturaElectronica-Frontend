@@ -1,18 +1,22 @@
 import axios from 'axios';
 
 // Endpoint paths already include /api. Accept legacy environment values as well.
-const API_URL = (process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000').trim().replace(/\/+$/, '').replace(/\/api$/i, '');
+export const API_URL = (process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000').trim().replace(/\/+$/, '').replace(/\/api$/i, '');
 
 const api = axios.create({
   baseURL: API_URL,
 });
 
-// Attach token from localStorage if present
+// Enviar credenciales únicamente al origen de nuestra API.
 api.interceptors.request.use((config) => {
   const token = sessionStorage.getItem('authToken');
   if (config.headers) {
-    if (token) {
+    const target = new URL(config.url || '', config.baseURL || window.location.origin);
+    const trusted = new URL(API_URL, window.location.origin);
+    if (token && target.origin === trusted.origin) {
       config.headers.Authorization = `Bearer ${token}`;
+    } else {
+      delete config.headers.Authorization;
     }
     config.headers.Accept = 'application/json';
   }

@@ -37,7 +37,7 @@ const VerifyEmail: React.FC = () => {
       // Si el usuario abre este enlace desde un celular, redirigir a la app nativa
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       if (isMobile && token) {
-        window.location.href = `facturatesis://verify-email?token=${token}`;
+        window.location.href = `facturatesis://verify-email?token=${encodeURIComponent(token)}`;
         // Damos un tiempo para que el OS intente abrir la app. 
         // Si no la tiene instalada, el flujo web continuará normalmente después de 2 segundos.
         await new Promise(resolve => setTimeout(resolve, 2000));

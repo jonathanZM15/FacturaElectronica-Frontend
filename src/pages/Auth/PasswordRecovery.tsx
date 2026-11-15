@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../../services/api';
+import { API_URL } from '../../services/api';
 import { useNotification } from '../../contexts/NotificationContext';
 import logo from '../../assets/maximofactura.png';
 import bgAsset from '../../assets/factura-inicio.png';
@@ -49,8 +49,7 @@ const PasswordRecovery: React.FC = () => {
     }
 
     try {
-      const apiBase = process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000';
-      const response = await fetch(apiBase + '/api/password-recovery', {
+      const response = await fetch(API_URL + '/api/password-recovery', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -64,8 +63,8 @@ const PasswordRecovery: React.FC = () => {
       // CASO 1: ÉXITO - Correo enviado
       if (response.ok) {
         show({ 
-          title: 'Correo enviado', 
-          message: `Se ha enviado un enlace de recuperación a ${email}. Por favor revisa tu bandeja de entrada y carpeta de spam. El enlace expirará en 60 minutos.`, 
+          title: 'Solicitud recibida',
+          message: 'Si existe una cuenta con ese correo, recibirás un enlace de recuperación. Revisa tu bandeja de entrada y la carpeta de spam. El enlace expirará en 60 minutos.',
           type: 'success' 
         }, 5000);
         
