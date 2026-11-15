@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Bodega, Producto, AjustePayload, TipoProducto, TipoControlInventario, MotivoMovimiento } from '../../types/inventory';
 import { getBodegas, getProductos, ajustarStock, getExistenciasLotes, getExistenciasSeries, getStockEnBodega } from '../../services/inventoryService';
 import { MotivoSelect } from './MotivoSelect';
@@ -47,7 +47,7 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
     const [lotesDisponibles, setLotesDisponibles] = useState<Record<number, any[]>>({});
     const [seriesDisponibles, setSeriesDisponibles] = useState<Record<number, any[]>>({});
 
-    const loadFormData = async () => {
+    const loadFormData = useCallback(async () => {
         setLoadingData(true);
         try {
             const [bData, pData] = await Promise.all([
@@ -63,11 +63,11 @@ export const AjusteForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
         } finally {
             setLoadingData(false);
         }
-    };
+    }, [emisorId]);
 
     useEffect(() => {
         loadFormData();
-    }, [emisorId]);
+    }, [loadFormData]);
 
     // Cargar existencias de lotes o series si es ajuste negativo y hay bodega seleccionada
     const fetchExistenciasProducto = async (prodId: number) => {

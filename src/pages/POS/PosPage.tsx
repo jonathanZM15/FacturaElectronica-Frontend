@@ -43,6 +43,7 @@ export default function PosPage() {
       return null;
     }
   });
+  const [editingPending, setEditingPending] = useState(false);
   const sending = useRef(false);
   const point = (turno as any)?.punto_emision || turno?.puntoEmision;
   const availableWarehouses = warehouses.filter(w => Number(w.establecimiento_id) === Number(point?.establecimiento_id) && w.permite_venta && ['VENTA', 'ALMACEN'].includes(w.tipo));
@@ -68,7 +69,7 @@ export default function PosPage() {
 
   const changeItem = (id: number, changes: any) => setCart(items => items.map(item => item.id === id ? { ...item, ...changes } : item));
 
-  const verificarOperacion = async (opId: string) => {
+  const verificarOperacion = async (opId: string, review = false) => {
     if (!opId || busy) return;
     setBusy(true); setError(''); setMessage('');
     try {
@@ -76,6 +77,7 @@ export default function PosPage() {
       if (res.data?.encontrada) {
         clearPending();
         setPending(null);
+        setEditingPending(false);
         setCart([]);
         setShowCobro(false);
         setMessage(`Operación recuperada con éxito. Comprobante ${res.data.secuencial_formateado}. Estado SRI: ${res.data.estado_sri}.`);
@@ -83,7 +85,22 @@ export default function PosPage() {
       }
     } catch (e: any) {
       if (e.response?.status === 404) {
-        setMessage('La operación no figura en el sistema todavía. Puedes reintentar el envío con seguridad.');
+        if (review && pending?.detalles?.length) {
+          setCart(pending.detalles.map((detail: any) => {
+            const product = products.find(p => Number(p.id) === Number(detail.producto_id));
+            return {
+              ...(product || { id: detail.producto_id, nombre: `Producto no disponible ${detail.producto_id}`, tipo: 'FISICO', tipo_control_inventario: 'CANTIDAD', impuesto: { id: detail.impuesto?.tipo_impuesto_id } }),
+              precio_unitario: Number(product?.[`precio_${product.precio_por_defecto || 1}`] ?? product?.precio_1 ?? detail.precio_unitario),
+              qty: Number(detail.cantidad), lotes: detail.lotes || [], series: detail.series || [],
+            };
+          }));
+          setWarehouseId(pending.bodega_id ? String(pending.bodega_id) : '');
+          setEditingPending(true);
+          setShowCobro(false);
+          setMessage('Revisa los datos y vuelve a cobrar. Se conservará el mismo envío para evitar una segunda venta.');
+        } else {
+          setMessage('La operación no figura todavía. Se conserva el mismo envío para que puedas reintentarlo o revisar sus datos.');
+        }
       } else {
         setError(e.response?.data?.message || 'No se pudo consultar la operación en este momento.');
       }
@@ -99,23 +116,17 @@ export default function PosPage() {
     try {
       const form = new FormData(); form.append('payload', JSON.stringify(payload));
       const res = await facturacion.emitir(form);
-      clearPending(); setPending(null); setCart([]); setShowCobro(false);
+      clearPending(); setPending(null); setEditingPending(false); setCart([]); setShowCobro(false);
       const repetidaMsg = res.data?.repetida ? ' (Operación previa recuperada sin duplicar)' : '';
       setMessage(`Venta confirmada${repetidaMsg}. Comprobante ${res.data.secuencial_formateado}. Estado SRI: ${res.data.estado_sri}. La autorización se consulta en Facturas.`);
       await load();
     } catch (e: any) {
-      const status = e.response?.status;
       const details = Object.values(e.response?.data?.errors || {}).flat().join(' ');
       setError(details || e.response?.data?.message || 'No se pudo confirmar la respuesta. Reintenta el mismo envío para evitar duplicados.');
-      // P13: Solo descartar la operación si fue rechazo previo al registro en base de datos (HTTP 422).
-      // Ante 401 (sesión expirada), 403 o pérdida de conexión de red, CONSERVAR la operación y datos en localStorage
-      // para permitir reintentar con el mismo operacion_id una vez recuperada la sesión o red.
-      if (status === 422) {
-        clearPending();
-        setPending(null);
-      } else {
-        setShowCobro(false);
-      }
+      // Even a 422 may follow a committed request whose response was lost.
+      // Only a successful confirmation or recovery clears this operation.
+      setEditingPending(false);
+      setShowCobro(false);
     } finally { sending.current = false; setBusy(false); }
   };
 
@@ -132,6 +143,7 @@ export default function PosPage() {
         <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
           <button onClick={() => send(pending)}>Reintentar el mismo envío</button>
           <button type="button" className="v1-secondary" onClick={() => verificarOperacion(pending.operacion_id)}>Verificar si ya se registró</button>
+          {!!pending.detalles?.length && <button type="button" disabled={loading} className="v1-secondary" onClick={() => verificarOperacion(pending.operacion_id, true)}>Revisar datos de este envío</button>}
           <Link to="/facturas" className="v1-button v1-secondary" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>Consultar facturas</Link>
         </div>
       </div>
@@ -154,7 +166,7 @@ export default function PosPage() {
         finally { setBusy(false); }
       }}>Cerrar mi caja</button></div>
       {!configured && <div className="v1-notice">El Emisor debe configurar la firma electrónica de la empresa antes de confirmar ventas.</div>}
-      <fieldset disabled={busy || !!pending} style={{ border: 0, padding: 0, margin: 0 }}>
+      <fieldset disabled={busy || (!!pending && !editingPending)} style={{ border: 0, padding: 0, margin: 0 }}>
       <div className="v1-grid"><section className="v1-card"><h2>Productos</h2><label>Buscar producto<input value={search} onChange={e => setSearch(e.target.value)} /></label><div className="v1-products">
         {products.filter(p => `${p.codigo} ${p.nombre}`.toLowerCase().includes(search.toLowerCase())).map(p => {
           const price = Number(p[`precio_${p.precio_por_defecto || 1}`] ?? p.precio_1);
@@ -178,9 +190,9 @@ export default function PosPage() {
         <button disabled={!cart.length || cart.some(i => !Number.isFinite(i.qty) || i.qty <= 0) || (cart.some(i => i.tipo === 'FISICO' && i.tipo_control_inventario !== 'SIN_CONTROL') && !warehouseId)} onClick={() => setShowCobro(true)}>Cobrar</button>
       </section></div></fieldset>
     </>}
-    <CobroModal isOpen={showCobro} busy={busy} onClose={() => setShowCobro(false)} total={totals.total} emisorId={emisorId} onConfirm={async data => {
+    <CobroModal isOpen={showCobro} busy={busy} initialSale={editingPending ? pending : undefined} onClose={() => setShowCobro(false)} total={totals.total} emisorId={emisorId} onConfirm={async data => {
       if (!turno || !point) { setError('No hay un turno y punto válidos.'); return; }
-      await send({ operacion_id: window.crypto.randomUUID(), emisor_id: Number(emisorId), establecimiento_id: Number(point.establecimiento_id), punto_emision_id: turno.punto_emision_id, pos_turno_id: turno.id, bodega_id: warehouseId ? Number(warehouseId) : null, cliente: data.cliente,
+      await send({ operacion_id: pending?.operacion_id || window.crypto.randomUUID(), emisor_id: Number(emisorId), establecimiento_id: Number(point.establecimiento_id), punto_emision_id: turno.punto_emision_id, pos_turno_id: turno.id, bodega_id: warehouseId ? Number(warehouseId) : null, cliente: data.cliente,
         detalles: cart.map(item => ({ producto_id: item.id, cantidad: item.qty, precio_unitario: item.precio_unitario, descuento: 0, impuesto: { tipo_impuesto_id: item.impuesto.id }, lotes: item.lotes, series: item.series })),
         pagos: [{ forma_pago: data.formaPago, total: totals.total, ...(data.efectivo !== undefined ? { efectivo_recibido: data.efectivo } : {}) }], informacion_adicional: [{ nombre: 'Cajero', valor: `Turno POS ${turno.id}` }],
       });

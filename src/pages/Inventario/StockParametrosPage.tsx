@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useUser } from '../../contexts/userContext';
 import { getBodegas, getProductos, getStockParametros, saveStockParametro, deleteStockParametro } from '../../services/inventoryService';
 import { Bodega, Producto, BaseComparacionStock, StockParametro } from '../../types/inventory';
@@ -30,13 +30,7 @@ export default function StockParametrosPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 10;
 
-    useEffect(() => {
-        if (emisorId) {
-            loadData();
-        }
-    }, [emisorId]);
-
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         setLoading(true);
         try {
             const [paramsData, prodData, bodData] = await Promise.all([
@@ -56,7 +50,9 @@ export default function StockParametrosPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [emisorId]);
+
+    useEffect(() => { if (emisorId) loadData(); }, [emisorId, loadData]);
 
     const handleSave = async () => {
         if (!productoId || !bodegaId) {

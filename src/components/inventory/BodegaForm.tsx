@@ -1,6 +1,6 @@
 import { useUser } from '../../contexts/userContext';
 import { can } from '../../utils/permissions';
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { TipoBodega, Bodega } from '../../types/inventory';
 import { getBodegas, createBodega, updateBodega, deleteBodega } from '../../services/inventoryService';
@@ -66,7 +66,7 @@ export const BodegaForm: React.FC<BodegaFormProps> = ({ emisorId, onSuccess }) =
         return bodegas.slice(start, start + ITEMS_PER_PAGE);
     }, [bodegas, currentPage]);
 
-    const loadBodegas = async () => {
+    const loadBodegas = useCallback(async () => {
         try {
             const data = await getBodegas(emisorId);
             setBodegas(data);
@@ -75,9 +75,9 @@ export const BodegaForm: React.FC<BodegaFormProps> = ({ emisorId, onSuccess }) =
         } finally {
             setLoadingTable(false);
         }
-    };
+    }, [emisorId]);
 
-    useEffect(() => { loadBodegas(); }, [emisorId]);
+    useEffect(() => { loadBodegas(); }, [loadBodegas]);
 
     // Close dropdowns on outside click
     useEffect(() => {

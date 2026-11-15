@@ -1,5 +1,5 @@
 import { can } from '../../utils/permissions';
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useUser } from '../../contexts/userContext';
 import { clientesService } from '../../services/api';
 import { Cliente, ClienteFormData, TipoIdentificacion } from '../../types/cliente';
@@ -41,7 +41,10 @@ export default function ClientesPage() {
   const [deletingCliente, setDeletingCliente] = useState<Cliente | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const fetchClientes = async () => {
+  const fetchId = useRef(0);
+  const invalidateFetch = useCallback(() => { fetchId.current++; }, []);
+  const fetchClientes = useCallback(async () => {
+    const request = ++fetchId.current;
     try {
       setLoading(true);
       setErrorMsg('');
@@ -50,21 +53,21 @@ export default function ClientesPage() {
       if (tipoFilter) params.tipo_identificacion = tipoFilter;
 
       const res = await clientesService.list(emisorId, params);
-      setClientes(res.data.data || []);
+      if (request === fetchId.current) setClientes(res.data.data || []);
     } catch (err: any) {
       console.error(err);
-      setErrorMsg('Error al cargar la lista de clientes.');
+      if (request === fetchId.current) setErrorMsg('Error al cargar la lista de clientes.');
     } finally {
-      setLoading(false);
+      if (request === fetchId.current) setLoading(false);
     }
-  };
+  }, [emisorId, search, tipoFilter]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchClientes();
     }, 250);
-    return () => clearTimeout(timer);
-  }, [emisorId, search, tipoFilter]);
+    return () => { clearTimeout(timer); invalidateFetch(); };
+  }, [fetchClientes, invalidateFetch]);
 
   // Paginación
   const totalPages = Math.max(1, Math.ceil(clientes.length / ITEMS_PER_PAGE));
@@ -129,7 +132,7 @@ export default function ClientesPage() {
       if (id.length < 13) return { valid: false, msg: `Faltan ${13 - id.length} dígitos` };
       if (id.length > 13) return { valid: false, msg: 'RUC debe tener 13 dígitos' };
       const ok = validarRucEcuador(id);
-      return { valid: ok, msg: ok ? '✓ RUC ecuatoriano válido' : '✗ RUC no cumple algoritmo del SRI' };
+      return { valid: ok, msg: ok ? 'Formato de RUC correcto; registro sujeto a verificación del SRI' : 'El RUC debe contener 13 dígitos y no ser consumidor final' };
     }
 
     if (formData.tipo_identificacion === 'CONSUMIDOR_FINAL') {

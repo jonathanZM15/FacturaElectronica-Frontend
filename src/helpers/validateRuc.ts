@@ -1,12 +1,12 @@
 /**
- * Valida identificación ecuatoriana (Cédula y RUC) según normativa oficial del SRI / Registro Civil
- * y en concordancia exacta con App\Services\EcuadorIdentificationValidator en el Backend.
+ * Checks identification format. A RUC format check does not establish SRI registration.
+ * Corporate and foreign-person RUCs have no universal checksum requirement.
  */
 
 export function validateCedulaEcuador(input: string): boolean {
   if (!input) return false;
-  const cedula = input.replace(/\D/g, '');
-  if (cedula.length !== 10) return false;
+  const cedula = input.trim();
+  if (!/^[0-9]{10}$/.test(cedula)) return false;
 
   const province = parseInt(cedula.substring(0, 2), 10);
   if ((province < 1 || province > 24) && province !== 30) return false;
@@ -73,36 +73,18 @@ export function validateRucSociedadPublica(ruc: string): boolean {
 
 export function validateRucEcuador(input: string, allowCedula: boolean = false): boolean {
   if (!input) return false;
-  const ruc = input.replace(/\D/g, '');
+  const ruc = input.trim();
 
   if (allowCedula && ruc.length === 10) {
     return validateCedulaEcuador(ruc);
   }
 
-  if (ruc.length !== 13) return false;
+  return /^[0-9]{13}$/.test(ruc) && ruc !== '0000000000000' && ruc !== '9999999999999';
+}
 
-  const province = parseInt(ruc.substring(0, 2), 10);
-  if ((province < 1 || province > 24) && province !== 30) return false;
-
-  const thirdDigit = parseInt(ruc.charAt(2), 10);
-
-  // Persona natural (tercer dígito 0-5)
-  if (thirdDigit >= 0 && thirdDigit <= 5) {
-    if (!validateCedulaEcuador(ruc.substring(0, 10))) return false;
-    return ruc.substring(10, 13) === '001';
-  }
-
-  // Sociedad pública (tercer dígito 6)
-  if (thirdDigit === 6) {
-    return validateRucSociedadPublica(ruc);
-  }
-
-  // Sociedad privada / Extranjeros sin cédula (tercer dígito 9)
-  if (thirdDigit === 9) {
-    return validateRucSociedadPrivada(ruc);
-  }
-
-  return false;
+export function normalizeClientIdentificationType(tipo: string): string {
+  const value = tipo.toUpperCase().trim();
+  return ({ '04': 'RUC', '05': 'CEDULA', '06': 'PASAPORTE', '07': 'CONSUMIDOR_FINAL', '08': 'IDENTIFICACION_EXTERIOR', EXTERIOR: 'IDENTIFICACION_EXTERIOR' } as Record<string, string>)[value] || value;
 }
 
 export function getTipoRuc(ruc: string): string {
@@ -129,13 +111,13 @@ export function validateClientIdentification(
   totalVenta?: number
 ): { valid: boolean; message?: string } {
   const cleanId = id.trim();
-  const normalizedTipo = tipo.toUpperCase().trim();
+  const normalizedTipo = normalizeClientIdentificationType(tipo);
 
   if (!cleanId) {
     return { valid: false, message: 'La identificación es requerida.' };
   }
 
-  if (normalizedTipo === 'CONSUMIDOR_FINAL' || cleanId === '9999999999999') {
+  if (normalizedTipo === 'CONSUMIDOR_FINAL') {
     if (cleanId !== '9999999999999') {
       return { valid: false, message: 'Consumidor Final debe ser 9999999999999.' };
     }
@@ -163,14 +145,14 @@ export function validateClientIdentification(
       return { valid: false, message: `El RUC debe tener 13 dígitos (actual: ${cleanId.length}).` };
     }
     if (!validateRucEcuador(cleanId)) {
-      return { valid: false, message: 'RUC no válido según las reglas del SRI.' };
+      return { valid: false, message: 'El RUC debe contener 13 dígitos; la identificación de consumidor final no es un RUC.' };
     }
     return { valid: true };
   }
 
   if (normalizedTipo === 'PASAPORTE' || normalizedTipo === 'IDENTIFICACION_EXTERIOR') {
-    if (cleanId.length > 13) {
-      return { valid: false, message: 'Máximo 13 caracteres para esta identificación.' };
+    if (cleanId.length > 20) {
+      return { valid: false, message: 'Máximo 20 caracteres para esta identificación.' };
     }
     if (!/^[A-Za-z0-9._-]+$/.test(cleanId)) {
       return { valid: false, message: 'Caracteres no permitidos en el documento.' };

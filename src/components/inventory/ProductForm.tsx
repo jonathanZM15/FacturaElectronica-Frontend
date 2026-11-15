@@ -1,7 +1,7 @@
 import api from '../../services/api';
 import { useUser } from '../../contexts/userContext';
 import { can } from '../../utils/permissions';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
     Producto, TipoProducto, TipoControlInventario, TipoEntrega, 
     TipoBodegaSalida, Bodega, Categoria 
@@ -88,7 +88,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ emisorId, onSuccess })
         }
     };
 
-    const loadProductos = async () => {
+    const loadProductos = useCallback(async () => {
         setLoadingTable(true);
         try {
             const data = await getProductos(emisorId);
@@ -98,13 +98,13 @@ export const ProductForm: React.FC<ProductFormProps> = ({ emisorId, onSuccess })
         } finally {
             setLoadingTable(false);
         }
-    };
+    }, [emisorId]);
 
     useEffect(() => {
         getBodegas(emisorId).then(data => setBodegas(data)).catch(console.error);
         getCategorias(emisorId).then(data => setCategorias(data)).catch(console.error);
         loadProductos();
-    }, [emisorId]);
+    }, [emisorId, loadProductos]);
 
     useEffect(() => {
         if (producto.tipo === TipoProducto.SERVICIO) {

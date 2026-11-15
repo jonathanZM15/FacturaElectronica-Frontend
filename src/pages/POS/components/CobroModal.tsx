@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { clientesService } from '../../../services/api';
-import { validateClientIdentification } from '../../../helpers/validateRuc';
+import { normalizeClientIdentificationType, validateClientIdentification } from '../../../helpers/validateRuc';
 
 interface Props {
   isOpen: boolean;
@@ -9,9 +9,10 @@ interface Props {
   total: number;
   emisorId: number | string;
   busy: boolean;
+  initialSale?: any;
 }
 
-export default function CobroModal({ isOpen, onClose, onConfirm, total, emisorId, busy }: Props) {
+export default function CobroModal({ isOpen, onClose, onConfirm, total, emisorId, busy, initialSale }: Props) {
   const [identificacion, setIdentificacion] = useState('9999999999999');
   const [cliente, setCliente] = useState<any>({});
   const [formaPago, setFormaPago] = useState('01');
@@ -22,7 +23,7 @@ export default function CobroModal({ isOpen, onClose, onConfirm, total, emisorId
 
   const esMayor50 = total > 50.00;
 
-  const handleClienteNotFound = (idToInit: string) => {
+  const handleClienteNotFound = useCallback((idToInit: string) => {
     if (idToInit === '9999999999999') {
       if (esMayor50) {
         setMessage('Por disposición del SRI, en facturas superiores a $50.00 no se admite Consumidor Final.');
@@ -33,7 +34,7 @@ export default function CobroModal({ isOpen, onClose, onConfirm, total, emisorId
         tipo_identificacion: 'CONSUMIDOR_FINAL',
         razon_social: 'CONSUMIDOR FINAL',
         direccion: 'S/N',
-        email: 'consumidor@final.com',
+        email: '',
         telefono: '',
       });
     } else {
@@ -48,9 +49,9 @@ export default function CobroModal({ isOpen, onClose, onConfirm, total, emisorId
       });
       setMessage('Cliente no registrado previamente. Completa sus datos fiscales para guardarlo al confirmar.');
     }
-  };
+  }, [esMayor50]);
 
-  const buscar = async (id: string) => {
+  const buscar = useCallback(async (id: string) => {
     const current = ++requestId.current;
     const cleanId = id.trim();
     if (!cleanId) return;
@@ -74,7 +75,7 @@ export default function CobroModal({ isOpen, onClose, onConfirm, total, emisorId
             setMessage('Por disposición del SRI, en facturas superiores a $50.00 no se admite Consumidor Final.');
             setCliente({});
           } else {
-            setCliente(found);
+            setCliente({ ...found, tipo_identificacion: normalizeClientIdentificationType(found.tipo_identificacion || ''), ...(found.identificacion === '9999999999999' ? { email: '', telefono: '' } : {}) });
           }
         } else {
           handleClienteNotFound(cleanId);
@@ -90,12 +91,19 @@ export default function CobroModal({ isOpen, onClose, onConfirm, total, emisorId
     } finally {
       if (current === requestId.current) setSearching(false);
     }
-  };
+  }, [emisorId, esMayor50, handleClienteNotFound]);
 
   useEffect(() => {
     if (isOpen) {
+      setSearching(false);
       setEfectivo('');
-      if (total > 50.00) {
+      setFormaPago(initialSale?.pagos?.[0]?.forma_pago || '01');
+      if (initialSale?.cliente) {
+        setIdentificacion(initialSale.cliente.identificacion);
+        setCliente({ ...initialSale.cliente, tipo_identificacion: normalizeClientIdentificationType(initialSale.cliente.tipo_identificacion || '') });
+        setEfectivo(String(initialSale.pagos?.[0]?.efectivo_recibido ?? ''));
+        setMessage('Revisa los datos del envío pendiente antes de confirmar.');
+      } else if (total > 50.00) {
         setIdentificacion('');
         setCliente({});
         setMessage('Venta superior a $50.00: Por normativa del SRI es obligatorio identificar al cliente.');
@@ -109,8 +117,7 @@ export default function CobroModal({ isOpen, onClose, onConfirm, total, emisorId
     return () => {
       reqRef.current++;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, emisorId, total]);
+  }, [isOpen, total, initialSale, buscar]);
 
   if (!isOpen) return null;
 
@@ -177,6 +184,7 @@ export default function CobroModal({ isOpen, onClose, onConfirm, total, emisorId
                 placeholder={esMayor50 ? 'Cédula, RUC o Pasaporte' : '9999999999999'}
                 onChange={e => {
                   requestId.current++;
+                  setSearching(false);
                   setIdentificacion(e.target.value);
                   setCliente({});
                   setMessage('');
@@ -223,7 +231,7 @@ export default function CobroModal({ isOpen, onClose, onConfirm, total, emisorId
                   Dirección
                   <input
                     required
-                    maxLength={500}
+                    maxLength={300}
                     value={cliente.direccion || ''}
                     onChange={e => update('direccion', e.target.value)}
                   />

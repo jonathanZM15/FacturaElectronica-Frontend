@@ -32,7 +32,7 @@ export default function FacturasPage() {
   const openCorrection = (row: any) => {
     setCorrectingRow(row);
     setClientForm({
-      tipo_identificacion: row.cliente_tipo_identificacion || '05',
+      tipo_identificacion: ({ CEDULA: '05', RUC: '04', PASAPORTE: '06', CONSUMIDOR_FINAL: '07', IDENTIFICACION_EXTERIOR: '08' } as Record<string, string>)[row.cliente_tipo_identificacion] || row.cliente_tipo_identificacion || '05',
       identificacion: row.cliente_identificacion || '',
       razon_social: row.cliente_razon_social || '',
       direccion: row.cliente_direccion || '',
@@ -93,9 +93,9 @@ export default function FacturasPage() {
     <div className="v1-table-scroll"><table><thead><tr><th>Número</th><th>Fecha</th><th>Cliente</th><th>Total</th><th>Estado SRI</th><th>Acciones</th></tr></thead><tbody>
       {rows.map(row => <tr key={row.id}><td>{row.numero_documento}</td><td>{row.fecha_emision}</td><td>{row.cliente_razon_social}</td><td>${Number(row.total).toFixed(2)}</td><td>{row.estado_sri}{row.email_estado && row.email_estado !== 'PENDIENTE' && <small style={{ display: 'block', color: row.email_estado === 'ENVIADO' ? '#059669' : '#dc2626' }}>Correo: {row.email_estado}</small>}</td><td><div className="v1-actions">
         <button onClick={async () => { try { setDetail((await facturacion.estado(row.id)).data); } catch { setError('No se pudo consultar el estado.'); } }}>Ver estado</button>
-        {row.estado_sri === 'AUTORIZADO' && <><button onClick={() => download(row, 'pdf')}>PDF</button><button onClick={() => download(row, 'xml')}>XML</button><button disabled={busy} onClick={async () => { setBusy(true); setError(''); setMessage(''); try { const res = await facturacion.reenviarEmail(row.id); setMessage(res.data.message); await load(); } catch (e: any) { setError(e.response?.data?.message || 'No se pudo programar el envío de correo.'); } finally { setBusy(false); } }} style={{ backgroundColor: '#2563eb', borderColor: '#2563eb' }}>Reenviar correo</button></>}
-        {can(user, 'comprobantes.retry') && ['BORRADOR', 'FIRMADO', 'ENVIADO', 'RECIBIDA', 'ERROR_ENVIO', 'ERROR_FIRMA', 'ERROR_AUTORIZACION', 'ERROR_SISTEMA'].includes(row.estado_sri) && <button disabled={busy} onClick={async () => { setBusy(true); setError(''); setMessage(''); try { const res = await facturacion.reintentar(row.id); setMessage(res.data.message); await load(); } catch (e: any) { setError(e.response?.data?.message || 'No se pudo programar el reintento.'); } finally { setBusy(false); } }}>{['RECIBIDA', 'ENVIADO'].includes(row.estado_sri) ? 'Consultar SRI' : 'Reintentar procesamiento'}</button>}
-        {can(user, 'comprobantes.retry') && ['DEVUELTA', 'NO_AUTORIZADO'].includes(row.estado_sri) && <button disabled={busy} onClick={() => openCorrection(row)} style={{ backgroundColor: '#c2410c', borderColor: '#c2410c' }}>Corregir datos fiscales</button>}
+        {row.estado_sri === 'AUTORIZADO' && <><button onClick={() => download(row, 'pdf')}>PDF</button><button onClick={() => download(row, 'xml')}>XML</button>{can(user, 'comprobantes.email') && <button disabled={busy} onClick={async () => { setBusy(true); setError(''); setMessage(''); try { const res = await facturacion.reenviarEmail(row.id); setMessage(res.data.message); await load(); } catch (e: any) { setError(e.response?.data?.message || 'No se pudo programar el envío de correo.'); } finally { setBusy(false); } }} style={{ backgroundColor: '#2563eb', borderColor: '#2563eb' }}>Reenviar correo</button>}</>}
+        {can(user, 'comprobantes.retry') && ['BORRADOR', 'PROCESANDO', 'FIRMADO', 'ENVIADO', 'RECIBIDA', 'ERROR_ENVIO', 'ERROR_FIRMA', 'ERROR_AUTORIZACION', 'ERROR_SISTEMA'].includes(row.estado_sri) && <button disabled={busy} onClick={async () => { setBusy(true); setError(''); setMessage(''); try { const res = await facturacion.reintentar(row.id); setMessage(res.data.message); await load(); } catch (e: any) { setError(e.response?.data?.message || 'No se pudo programar el reintento.'); } finally { setBusy(false); } }}>{['RECIBIDA', 'ENVIADO'].includes(row.estado_sri) ? 'Consultar SRI' : 'Reintentar procesamiento'}</button>}
+        {can(user, 'comprobantes.correct') && ['DEVUELTA', 'NO_AUTORIZADO'].includes(row.estado_sri) && <button disabled={busy} onClick={() => openCorrection(row)} style={{ backgroundColor: '#c2410c', borderColor: '#c2410c' }}>Corregir datos fiscales</button>}
       </div></td></tr>)}
       {!rows.length && <tr><td colSpan={6}>{busy ? 'Consultando…' : 'Sin resultados para los filtros seleccionados.'}</td></tr>}
     </tbody></table></div>
@@ -106,7 +106,7 @@ export default function FacturasPage() {
         <div className="v1-dialog">
           <h2>Corregir datos fiscales · Factura {correctingRow.numero_documento}</h2>
           <p className="v1-notice">
-            <strong>Normativa SRI (P06):</strong> Esta corrección fiscal permite regenerar la factura devuelta o no autorizada <strong>sin duplicar cobros ni generar movimientos de inventario</strong>.
+            Esta corrección modifica los datos fiscales de esta factura devuelta o no autorizada, conservando el cobro y el movimiento de inventario originales.
           </p>
           {correctingRow.ultimo_error_sri && (
             <p className="v1-notice v1-error">
@@ -147,6 +147,7 @@ export default function FacturasPage() {
               Dirección
               <input
                 value={clientForm.direccion}
+                maxLength={300}
                 onChange={e => setClientForm({ ...clientForm, direccion: e.target.value })}
                 required
               />

@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000';
+// Endpoint paths already include /api. Accept legacy environment values as well.
+const API_URL = (process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000').trim().replace(/\/+$/, '').replace(/\/api$/i, '');
 
 const api = axios.create({
   baseURL: API_URL,

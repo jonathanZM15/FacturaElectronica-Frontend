@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useUser } from '../../contexts/userContext';
 import { getCategorias, createCategoria, updateCategoria, deleteCategoria } from '../../services/inventoryService';
@@ -43,7 +43,7 @@ export default function CategoriasPage() {
         return categorias.slice(start, start + ITEMS_PER_PAGE);
     }, [categorias, currentPage]);
 
-    const loadCategorias = async () => {
+    const loadCategorias = useCallback(async () => {
         try {
             const data = await getCategorias(emisorId);
             setCategorias(data);
@@ -52,9 +52,9 @@ export default function CategoriasPage() {
         } finally {
             setLoadingTable(false);
         }
-    };
+    }, [emisorId]);
 
-    useEffect(() => { loadCategorias(); }, [emisorId]);
+    useEffect(() => { loadCategorias(); }, [loadCategorias]);
 
     const isDuplicate = (name: string, excludeId?: number) => {
         const normalized = name.trim().toLowerCase();
