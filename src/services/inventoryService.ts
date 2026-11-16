@@ -65,11 +65,27 @@ export const getProductos = async (emisorId: string | number, forceRefresh = fal
         return productosCache[key].data;
     }
     const generation = inventoryGeneration;
-    const response = await api.get(`${BASE_INVENTORY_URL}/${emisorId}/productos`);
+    const response = await api.get(`${BASE_INVENTORY_URL}/${emisorId}/productos`, { params: { vista: 'selector' } });
     const d = response.data;
     const result = Array.isArray(d) ? d : (Array.isArray(d?.data) ? d.data : []);
     if (generation === inventoryGeneration) productosCache[key] = { data: result, timestamp: now };
     return result;
+};
+
+export interface ProductosPage {
+    data: Producto[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+}
+
+export const getProductosPage = async (
+    emisorId: string | number,
+    params: { page: number; per_page: number; search?: string }
+): Promise<ProductosPage> => {
+    const response = await api.get<ProductosPage>(`${BASE_INVENTORY_URL}/${emisorId}/productos`, { params });
+    return response.data;
 };
 
 export const createProducto = async (emisorId: string | number, data: Partial<Producto>): Promise<Producto> => {

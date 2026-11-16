@@ -1,12 +1,12 @@
 import api from '../../services/api';
 import { useUser } from '../../contexts/userContext';
 import { can } from '../../utils/permissions';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
     Producto, TipoProducto, TipoControlInventario, TipoEntrega, 
     TipoBodegaSalida, Bodega, Categoria 
 } from '../../types/inventory';
-import { createProducto, updateProducto, deleteProducto, getBodegas, getCategorias, getProductos } from '../../services/inventoryService';
+import { createProducto, updateProducto, deleteProducto, getBodegas, getCategorias, getProductosPage } from '../../services/inventoryService';
 
 interface ProductFormProps {
     emisorId: number | string;
@@ -42,6 +42,12 @@ export const ProductForm: React.FC<ProductFormProps> = ({ emisorId, onSuccess })
     const [updating, setUpdating] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
+    const [totalProducts, setTotalProducts] = useState(0);
+    const [search, setSearch] = useState('');
+    const [query, setQuery] = useState('');
+    const [tableError, setTableError] = useState('');
+    const productRequest = useRef(0);
+    const cancelProductRequests = useCallback(() => { productRequest.current++; }, []);
     const ITEMS_PER_PAGE = 10;
 
     const [producto, setProducto] = useState<Partial<Producto>>({
@@ -89,22 +95,44 @@ export const ProductForm: React.FC<ProductFormProps> = ({ emisorId, onSuccess })
     };
 
     const loadProductos = useCallback(async () => {
+        const request = ++productRequest.current;
         setLoadingTable(true);
+        setTableError('');
         try {
-            const data = await getProductos(emisorId);
-            setProductosList(data);
-        } catch (error) {
-            console.error('Error cargando productos:', error);
+            const result = await getProductosPage(emisorId, { page: currentPage, per_page: ITEMS_PER_PAGE, search: query });
+            if (request !== productRequest.current) return;
+            setTotalProducts(result.total);
+            if (currentPage > result.last_page) {
+                setCurrentPage(Math.max(1, result.last_page));
+                return;
+            }
+            setProductosList(result.data);
+        } catch {
+            if (request !== productRequest.current) return;
+            setProductosList([]);
+            setTableError('No se pudieron cargar los productos. Intenta nuevamente.');
         } finally {
-            setLoadingTable(false);
+            if (request === productRequest.current) setLoadingTable(false);
         }
+    }, [emisorId, currentPage, query]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+        setSearch('');
+        setQuery('');
+        setProductosList([]);
+        setTotalProducts(0);
     }, [emisorId]);
 
     useEffect(() => {
         getBodegas(emisorId).then(data => setBodegas(data)).catch(console.error);
         getCategorias(emisorId).then(data => setCategorias(data)).catch(console.error);
+    }, [emisorId]);
+
+    useEffect(() => {
         loadProductos();
-    }, [emisorId, loadProductos]);
+        return cancelProductRequests;
+    }, [loadProductos, cancelProductRequests]);
 
     useEffect(() => {
         if (producto.tipo === TipoProducto.SERVICIO) {
@@ -550,6 +578,16 @@ export const ProductForm: React.FC<ProductFormProps> = ({ emisorId, onSuccess })
                     <h2 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
                         <span>📋</span> Productos Registrados
                     </h2>
+                    <form onSubmit={e => {
+                        e.preventDefault();
+                        const nextQuery = search.trim();
+                        if (currentPage === 1 && nextQuery === query) loadProductos();
+                        else { setCurrentPage(1); setQuery(nextQuery); }
+                    }} style={{ display: 'flex', gap: '8px', marginTop: '16px', flexWrap: 'wrap' }}>
+                        <input type="search" aria-label="Buscar productos" placeholder="Buscar por código, código auxiliar o nombre..." maxLength={150} value={search} onChange={e => setSearch(e.target.value)} style={{ ...inputStyle, flex: '1 1 240px', width: 'auto' }} />
+                        <button type="submit" style={{ ...inputStyle, width: 'auto', cursor: 'pointer' }}>Buscar</button>
+                    </form>
+                    {tableError && <div role="alert" style={{ marginTop: '12px', color: '#b91c1c' }}>{tableError} <button type="button" onClick={loadProductos}>Reintentar</button></div>}
                 </div>
 
                 <div style={{ overflowX: 'auto' }}>
@@ -576,18 +614,16 @@ export const ProductForm: React.FC<ProductFormProps> = ({ emisorId, onSuccess })
                                 <tr>
                                     <td colSpan={6} style={{ padding: '60px 32px', textAlign: 'center', color: '#94a3b8' }}>
                                         <div style={{ fontSize: '3rem', marginBottom: '12px' }}>📦</div>
-                                        <div style={{ fontWeight: 600, color: '#475569', fontSize: '1.1rem' }}>No hay productos registrados aún</div>
-                                        <div style={{ fontSize: '0.9rem', marginTop: '6px' }}>Crea tu primer producto usando el formulario de arriba</div>
+                                        <div style={{ fontWeight: 600, color: '#475569', fontSize: '1.1rem' }}>{tableError ? 'Listado no disponible' : query ? 'No hay productos que coincidan con la búsqueda' : 'No hay productos registrados aún'}</div>
+                                        {!query && !tableError && <div style={{ fontSize: '0.9rem', marginTop: '6px' }}>Crea tu primer producto usando el formulario de arriba</div>}
                                     </td>
                                 </tr>
                             ) : (
                                 (() => {
-                                    const totalPages = Math.ceil(productosList.length / ITEMS_PER_PAGE) || 1;
-                                    const paginatedProductos = productosList.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
-                                    return paginatedProductos.map((prod, idx) => (
+                                    return productosList.map((prod, idx) => (
                                         <tr 
                                             key={prod.id} 
-                                            style={{ borderBottom: idx < paginatedProductos.length - 1 ? '1px solid #f1f5f9' : 'none', transition: 'background-color 0.2s ease', backgroundColor: 'white' }}
+                                            style={{ borderBottom: idx < productosList.length - 1 ? '1px solid #f1f5f9' : 'none', transition: 'background-color 0.2s ease', backgroundColor: 'white' }}
                                             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
                                             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
                                         >
@@ -659,23 +695,23 @@ export const ProductForm: React.FC<ProductFormProps> = ({ emisorId, onSuccess })
 
                 {/* Paginación */}
                 {(() => {
-                    const totalPages = Math.ceil(productosList.length / ITEMS_PER_PAGE) || 1;
+                    const totalPages = Math.ceil(totalProducts / ITEMS_PER_PAGE) || 1;
                     return totalPages > 1 && (
                         <div style={{ padding: '16px 32px', borderTop: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                             <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
-                                Mostrando {((currentPage - 1) * ITEMS_PER_PAGE) + 1} a {Math.min(currentPage * ITEMS_PER_PAGE, productosList.length)} de {productosList.length} productos
+                                Mostrando {((currentPage - 1) * ITEMS_PER_PAGE) + 1} a {Math.min((currentPage - 1) * ITEMS_PER_PAGE + productosList.length, totalProducts)} de {totalProducts} productos
                             </span>
                             <div style={{ display: 'flex', gap: '8px' }}>
                                 <button 
                                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
-                                    disabled={currentPage === 1}
+                                    disabled={loadingTable || currentPage === 1}
                                     style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', backgroundColor: currentPage === 1 ? '#f8fafc' : 'white', color: currentPage === 1 ? '#cbd5e1' : '#475569', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', fontSize: '0.85rem', fontWeight: 500, transition: 'all 0.2s' }}
                                 >
                                     Anterior
                                 </button>
                                 <button 
                                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
-                                    disabled={currentPage === totalPages}
+                                    disabled={loadingTable || currentPage === totalPages}
                                     style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', backgroundColor: currentPage === totalPages ? '#f8fafc' : 'white', color: currentPage === totalPages ? '#cbd5e1' : '#475569', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', fontSize: '0.85rem', fontWeight: 500, transition: 'all 0.2s' }}
                                 >
                                     Siguiente

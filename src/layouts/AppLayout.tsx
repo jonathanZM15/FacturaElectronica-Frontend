@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import Navbar from '../components/Navbar/Navbar';
 import './AppLayout.css';
 import { useSidebar } from '../contexts/SidebarContext';
+import RouteLoadingBoundary from '../components/RouteLoadingBoundary';
 
 const AppLayout: React.FC = () => {
   const { menuOpen } = useSidebar();
@@ -11,7 +12,7 @@ const AppLayout: React.FC = () => {
     <>
       <Navbar />
       <main className={`app-content ${!menuOpen ? 'sidebar-closed' : ''}`}>
-        <Outlet />
+        <RouteLoadingBoundary><Outlet /></RouteLoadingBoundary>
       </main>
     </>
   );

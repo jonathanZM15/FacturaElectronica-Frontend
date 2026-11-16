@@ -55,7 +55,7 @@ export default function PosPage() {
     try {
       const [active, p, prod, b, signature] = await Promise.all([
         posApi.getActiveTurno(emisorId), api.get(`/api/emisores/${emisorId}/puntos-emision`),
-        api.get(`/api/emisores/${emisorId}/productos`), api.get(`/api/emisores/${emisorId}/bodegas`), api.get(`/api/emisores/${emisorId}/firma`),
+        api.get(`/api/emisores/${emisorId}/productos`, { params: { vista: 'selector' } }), api.get(`/api/emisores/${emisorId}/bodegas`), api.get(`/api/emisores/${emisorId}/firma`),
       ]);
       setTurno(active); setPoints(p.data.data || []); setProducts((prod.data.data || []).filter((v: any) => v.permite_venta && !v.uso_interno)); setWarehouses(b.data.data || []); setConfigured(signature.data.configured);
       const activePoint = (active as any)?.punto_emision || active?.puntoEmision;

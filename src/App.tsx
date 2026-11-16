@@ -1,42 +1,44 @@
-import FacturasPage from './pages/Facturas/FacturasPage';
-import FirmaPage from './pages/Firma/FirmaPage';
-import ModuloPendiente from './pages/ModuloPendiente';
 import React from 'react';
+import RouteLoadingBoundary from './components/RouteLoadingBoundary';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 import Login from './pages/Auth/Login';
-import PasswordRecovery from './pages/Auth/PasswordRecovery';
 import CambiarPassword from './pages/Auth/cambiarPassword';
-import VerifyEmail from './pages/Auth/VerifyEmail';
-import ConfirmEmailChange from './pages/Auth/ConfirmEmailChange';
-import ChangePassword from './pages/Auth/ChangePassword';
 import { auth } from './services/api';
 import { UserProvider, useUser } from './contexts/userContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { SidebarProvider } from './contexts/SidebarContext';
 
 import AppLayout from './layouts/AppLayout';
-import Emisores from './pages/Emisores/Emisores';
-import EmisorInfo from './pages/Emisores/EmisorInfo';
-import EstablecimientoInfo from './pages/Establecimientos/EstablecimientoInfo';
-import EstablecimientoEditInfo from './pages/Establecimientos/EstablecimientoEditInfo';
-import PuntoEmisionInfo from './pages/PuntosEmision/PuntoEmisionInfo';
-import Usuarios from './pages/Usuarios/Usuarios';
-import Planes from './pages/Planes/Planes';
-import TiposImpuesto from './pages/TiposImpuesto/TiposImpuesto';
-import TiposRetencion from './pages/TiposRetencion/TiposRetencion';
-import PosPage from './pages/POS/PosPage';
 
-import Blank from './pages/Dashboard/Blank';
 
-import BodegasPage from './pages/Inventario/BodegasPage';
-import ProductosPage from './pages/Inventario/ProductosPage';
-import MovimientosPage from './pages/Inventario/MovimientosPage';
-import KardexPage from './pages/Inventario/KardexPage';
-import CategoriasPage from './pages/Inventario/CategoriasPage';
-import StockParametrosPage from './pages/Inventario/StockParametrosPage';
-import ExistenciasPage from './pages/Inventario/ExistenciasPage';
-import ClientesPage from './pages/Clientes/ClientesPage';
+
+
+const FacturasPage = React.lazy(() => import('./pages/Facturas/FacturasPage'));
+const FirmaPage = React.lazy(() => import('./pages/Firma/FirmaPage'));
+const ModuloPendiente = React.lazy(() => import('./pages/ModuloPendiente'));
+const PasswordRecovery = React.lazy(() => import('./pages/Auth/PasswordRecovery'));
+const VerifyEmail = React.lazy(() => import('./pages/Auth/VerifyEmail'));
+const ConfirmEmailChange = React.lazy(() => import('./pages/Auth/ConfirmEmailChange'));
+const ChangePassword = React.lazy(() => import('./pages/Auth/ChangePassword'));
+const Emisores = React.lazy(() => import('./pages/Emisores/Emisores'));
+const EmisorInfo = React.lazy(() => import('./pages/Emisores/EmisorInfo'));
+const EstablecimientoEditInfo = React.lazy(() => import('./pages/Establecimientos/EstablecimientoEditInfo'));
+const PuntoEmisionInfo = React.lazy(() => import('./pages/PuntosEmision/PuntoEmisionInfo'));
+const Usuarios = React.lazy(() => import('./pages/Usuarios/Usuarios'));
+const Planes = React.lazy(() => import('./pages/Planes/Planes'));
+const TiposImpuesto = React.lazy(() => import('./pages/TiposImpuesto/TiposImpuesto'));
+const TiposRetencion = React.lazy(() => import('./pages/TiposRetencion/TiposRetencion'));
+const PosPage = React.lazy(() => import('./pages/POS/PosPage'));
+const Blank = React.lazy(() => import('./pages/Dashboard/Blank'));
+const BodegasPage = React.lazy(() => import('./pages/Inventario/BodegasPage'));
+const ProductosPage = React.lazy(() => import('./pages/Inventario/ProductosPage'));
+const MovimientosPage = React.lazy(() => import('./pages/Inventario/MovimientosPage'));
+const KardexPage = React.lazy(() => import('./pages/Inventario/KardexPage'));
+const CategoriasPage = React.lazy(() => import('./pages/Inventario/CategoriasPage'));
+const StockParametrosPage = React.lazy(() => import('./pages/Inventario/StockParametrosPage'));
+const ExistenciasPage = React.lazy(() => import('./pages/Inventario/ExistenciasPage'));
+const ClientesPage = React.lazy(() => import('./pages/Clientes/ClientesPage'));
 
 const ChangePasswordAuthed: React.FC = () => {
   const { logout } = useUser();
@@ -53,6 +55,7 @@ function App() {
       <NotificationProvider>
         <UserProvider>
           <SidebarProvider>
+            <RouteLoadingBoundary>
             <Routes>
               {/* Públicas */}
               <Route path="/" element={<Login />} />
@@ -135,6 +138,7 @@ function App() {
 
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
+            </RouteLoadingBoundary>
           </SidebarProvider>
         </UserProvider>
       </NotificationProvider>
