@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useEffectEvent } from 'react';
 import { comprasApi, Compra } from '../../services/comprasApi';
 import { emisoresApi } from '../../services/emisoresApi';
 
 const HistorialComprasPage: React.FC = () => {
-  const [emisores, setEmisores] = useState<any[]>([]);
+  const [, setEmisores] = useState<any[]>([]);
   const [emisorId, setEmisorId] = useState('');
   
   const [compras, setCompras] = useState<Compra[]>([]);
@@ -23,8 +23,9 @@ const HistorialComprasPage: React.FC = () => {
     });
   }, []);
 
+  const loadForCompany = useEffectEvent(() => fetchCompras());
   useEffect(() => {
-    if (emisorId) fetchCompras();
+    if (emisorId) loadForCompany();
   }, [emisorId]);
 
   const fetchCompras = async () => {

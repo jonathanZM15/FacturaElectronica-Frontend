@@ -19,95 +19,14 @@ import '../Usuarios/UsuarioDeleteModalModern.css';
 import './EstablecimientoDetail.css';
 import './EstablecimientosTab.css';
 
-const EstablecimientoEditInfo: React.FC = () => {
-  const { id, estId } = useParams();
-  const navigate = useNavigate();
-  const { show } = useNotification();
-  const { user } = useUser();
-  const role = user?.role?.toLowerCase?.() ?? '';
-  const isLimitedRole = role === 'gerente' || role === 'cajero';
-  const [loading, setLoading] = React.useState(false);
-  const [est, setEst] = React.useState<any | null>(null);
-  const [company, setCompany] = React.useState<any | null>(null);
-  const [openEdit, setOpenEdit] = React.useState(false);
-  const [actionsOpen, setActionsOpen] = React.useState(false);
-  const [codigoEditable, setCodigoEditable] = React.useState(true);
-  
-  // Image viewer states
-  const [viewerOpen, setViewerOpen] = React.useState(false);
-  const [viewerImage, setViewerImage] = React.useState<string | null>(null);
-  
-  // Delete modal states
-  const [deleteOpen, setDeleteOpen] = React.useState(false);
-  const [deletePasswordOpen, setDeletePasswordOpen] = React.useState(false);
-  const [deletePassword, setDeletePassword] = React.useState('');
-  const [deleteError, setDeleteError] = React.useState<string | null>(null);
-  const [deleteLoading, setDeleteLoading] = React.useState(false);
+type SeqOp = 'gte' | 'lte' | 'eq';
 
-  // Punto emisión modal states
-  const [puntoFormOpen, setPuntoFormOpen] = React.useState(false);
-  const [selectedPunto, setSelectedPunto] = React.useState<PuntoEmision | null>(null);
 
-  // Punto emisión delete states
-  const [puntoDeleteOpen, setPuntoDeleteOpen] = React.useState(false);
-  const [puntoDeletePassword, setPuntoDeletePassword] = React.useState('');
-  const [puntoDeleteError, setPuntoDeleteError] = React.useState<string | null>(null);
-  const [puntoDeleteLoading, setPuntoDeleteLoading] = React.useState(false);
+type SeqFilter = { op: SeqOp; value: string };
 
-  // Usuario detail modal states
-  const [userDetailOpen, setUserDetailOpen] = React.useState(false);
-  const [selectedUserDetail, setSelectedUserDetail] = React.useState<any | null>(null);
-  const [userDetailLoading, setUserDetailLoading] = React.useState(false);
-  const [puntoToDelete, setPuntoToDelete] = React.useState<PuntoEmision | null>(null);
+const isValidDate = (d: Date) => !Number.isNaN(d.getTime());
 
-  // Filtros combinables para puntos de emisión
-  type SeqOp = 'gte' | 'lte' | 'eq';
-  type SeqFilter = { op: SeqOp; value: string };
-  type PuntoFilters = {
-    codigo: string;
-    nombre: string;
-    estado_operatividad: '' | 'ACTIVO' | 'DESACTIVADO';
-    estado_disponibilidad: '' | 'LIBRE' | 'OCUPADO';
-    usuario: string;
-    secuencial_factura: SeqFilter;
-    secuencial_liquidacion_compra: SeqFilter;
-    secuencial_nota_credito: SeqFilter;
-    secuencial_nota_debito: SeqFilter;
-    secuencial_guia_remision: SeqFilter;
-    secuencial_retencion: SeqFilter;
-    secuencial_proforma: SeqFilter;
-    fecha_creacion_desde: string;
-    fecha_creacion_hasta: string;
-    fecha_actualizacion_desde: string;
-    fecha_actualizacion_hasta: string;
-  };
-
-  const DEFAULT_SEQ_FILTER: SeqFilter = { op: 'eq', value: '' };
-  const DEFAULT_PUNTO_FILTERS: PuntoFilters = {
-    codigo: '',
-    nombre: '',
-    estado_operatividad: '',
-    estado_disponibilidad: '',
-    usuario: '',
-    secuencial_factura: { ...DEFAULT_SEQ_FILTER },
-    secuencial_liquidacion_compra: { ...DEFAULT_SEQ_FILTER },
-    secuencial_nota_credito: { ...DEFAULT_SEQ_FILTER },
-    secuencial_nota_debito: { ...DEFAULT_SEQ_FILTER },
-    secuencial_guia_remision: { ...DEFAULT_SEQ_FILTER },
-    secuencial_retencion: { ...DEFAULT_SEQ_FILTER },
-    secuencial_proforma: { ...DEFAULT_SEQ_FILTER },
-    fecha_creacion_desde: '',
-    fecha_creacion_hasta: '',
-    fecha_actualizacion_desde: '',
-    fecha_actualizacion_hasta: ''
-  };
-
-  const [puntoFiltersOpen, setPuntoFiltersOpen] = React.useState(false);
-  const [puntoFilters, setPuntoFilters] = React.useState<PuntoFilters>(DEFAULT_PUNTO_FILTERS);
-
-  const isValidDate = (d: Date) => !Number.isNaN(d.getTime());
-
-  const parseDateSafe = (value: any): Date | null => {
+const parseDateSafe = (value: any): Date | null => {
     if (value === undefined || value === null) return null;
     if (value instanceof Date) return isValidDate(value) ? value : null;
 
@@ -152,31 +71,34 @@ const EstablecimientoEditInfo: React.FC = () => {
     return isValidDate(fallback) ? fallback : null;
   };
 
-  const formatDate = (dateStr: string) => {
+const formatDate = (dateStr: string) => {
     const dt = parseDateSafe(dateStr);
     if (!dt) return '';
     return dt.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
 
-  const normalizeText = (v: any) => String(v ?? '').toLowerCase().trim();
-  const parseIntSafe = (v: any) => {
+const normalizeText = (v: any) => String(v ?? '').toLowerCase().trim();
+
+const parseIntSafe = (v: any) => {
     const n = Number.parseInt(String(v ?? ''), 10);
     return Number.isFinite(n) ? n : null;
   };
-  const dateStart = (ymd: string) => {
+
+const dateStart = (ymd: string) => {
     const dt = parseDateSafe(ymd);
     if (!dt) return new Date(Number.NaN);
     dt.setHours(0, 0, 0, 0);
     return dt;
   };
-  const dateEnd = (ymd: string) => {
+
+const dateEnd = (ymd: string) => {
     const dt = parseDateSafe(ymd);
     if (!dt) return new Date(Number.NaN);
     dt.setHours(23, 59, 59, 999);
     return dt;
   };
 
-  const matchesSeqFilter = (rawValue: any, filter: SeqFilter) => {
+const matchesSeqFilter = (rawValue: any, filter: SeqFilter) => {
     if (!filter.value) return true;
     const val = parseIntSafe(rawValue);
     const cmp = parseIntSafe(filter.value);
@@ -185,6 +107,150 @@ const EstablecimientoEditInfo: React.FC = () => {
     if (filter.op === 'gte') return val >= cmp;
     return val <= cmp;
   };
+
+type PuntoCol =
+    | 'codigo'
+    | 'nombre'
+    | 'estado_operatividad'
+    | 'estado_disponibilidad'
+    | 'usuario'
+    | 'secuencial_factura'
+    | 'secuencial_liquidacion_compra'
+    | 'secuencial_nota_credito'
+    | 'secuencial_nota_debito'
+    | 'secuencial_guia_remision'
+    | 'secuencial_retencion'
+    | 'secuencial_proforma'
+    | 'created_at'
+    | 'updated_at';
+
+const getPuntoSortValue = (p: any, col: PuntoCol) => {
+    const userLabel = (() => {
+      if (!p?.user) return '';
+      const roleValue = (p.user?.role?.value ?? p.user?.role ?? '').toString().toUpperCase();
+      const username = (p.user?.username ?? '').toString().toUpperCase();
+      const nombres = (p.user?.nombres ?? '').toString().toUpperCase();
+      const apellidos = (p.user?.apellidos ?? '').toString().toUpperCase();
+      return `${roleValue} – ${username} – ${nombres} – ${apellidos}`.trim();
+    })();
+
+    switch (col) {
+      case 'codigo':
+        return p?.codigo ?? '';
+      case 'nombre':
+        return p?.nombre ?? '';
+      case 'estado_operatividad':
+        return p?.estado ?? '';
+      case 'estado_disponibilidad':
+        return p?.estado_disponibilidad ?? '';
+      case 'usuario':
+        return userLabel;
+      case 'secuencial_factura':
+        return p?.secuencial_factura ?? p?.secuencial ?? '';
+      case 'secuencial_liquidacion_compra':
+        return p?.secuencial_liquidacion_compra ?? '';
+      case 'secuencial_nota_credito':
+        return p?.secuencial_nota_credito ?? '';
+      case 'secuencial_nota_debito':
+        return p?.secuencial_nota_debito ?? '';
+      case 'secuencial_guia_remision':
+        return p?.secuencial_guia_remision ?? '';
+      case 'secuencial_retencion':
+        return p?.secuencial_retencion ?? '';
+      case 'secuencial_proforma':
+        return p?.secuencial_proforma ?? '';
+      case 'created_at':
+        return parseDateSafe(p?.created_at)?.getTime() ?? null;
+      case 'updated_at':
+        return parseDateSafe(p?.updated_at)?.getTime() ?? null;
+      default:
+        return '';
+    }
+  };
+
+
+const EstablecimientoEditInfo: React.FC = () => {
+  const { id, estId } = useParams();
+  const navigate = useNavigate();
+  const { show } = useNotification();
+  const { user } = useUser();
+  const role = user?.role?.toLowerCase?.() ?? '';
+  const isLimitedRole = role === 'gerente' || role === 'cajero';
+  const [loading, setLoading] = React.useState(false);
+  const [est, setEst] = React.useState<any | null>(null);
+  const [company, setCompany] = React.useState<any | null>(null);
+  const [openEdit, setOpenEdit] = React.useState(false);
+  const [actionsOpen, setActionsOpen] = React.useState(false);
+  const [codigoEditable, setCodigoEditable] = React.useState(true);
+  
+  // Image viewer states
+  const [viewerOpen, setViewerOpen] = React.useState(false);
+  const [viewerImage, setViewerImage] = React.useState<string | null>(null);
+  
+  // Delete modal states
+  const [deleteOpen, setDeleteOpen] = React.useState(false);
+  const [deletePasswordOpen, setDeletePasswordOpen] = React.useState(false);
+  const [deletePassword, setDeletePassword] = React.useState('');
+  const [deleteError, setDeleteError] = React.useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = React.useState(false);
+
+  // Punto emisión modal states
+  const [puntoFormOpen, setPuntoFormOpen] = React.useState(false);
+  const [selectedPunto, setSelectedPunto] = React.useState<PuntoEmision | null>(null);
+
+  // Punto emisión delete states
+  const [puntoDeleteOpen, setPuntoDeleteOpen] = React.useState(false);
+
+  // Usuario detail modal states
+  const [userDetailOpen, setUserDetailOpen] = React.useState(false);
+  const [selectedUserDetail, setSelectedUserDetail] = React.useState<any | null>(null);
+  const [userDetailLoading, setUserDetailLoading] = React.useState(false);
+  const [puntoToDelete, setPuntoToDelete] = React.useState<PuntoEmision | null>(null);
+
+  // Filtros combinables para puntos de emisión
+
+
+  type PuntoFilters = {
+    codigo: string;
+    nombre: string;
+    estado_operatividad: '' | 'ACTIVO' | 'DESACTIVADO';
+    estado_disponibilidad: '' | 'LIBRE' | 'OCUPADO';
+    usuario: string;
+    secuencial_factura: SeqFilter;
+    secuencial_liquidacion_compra: SeqFilter;
+    secuencial_nota_credito: SeqFilter;
+    secuencial_nota_debito: SeqFilter;
+    secuencial_guia_remision: SeqFilter;
+    secuencial_retencion: SeqFilter;
+    secuencial_proforma: SeqFilter;
+    fecha_creacion_desde: string;
+    fecha_creacion_hasta: string;
+    fecha_actualizacion_desde: string;
+    fecha_actualizacion_hasta: string;
+  };
+
+  const DEFAULT_SEQ_FILTER: SeqFilter = { op: 'eq', value: '' };
+  const DEFAULT_PUNTO_FILTERS: PuntoFilters = {
+    codigo: '',
+    nombre: '',
+    estado_operatividad: '',
+    estado_disponibilidad: '',
+    usuario: '',
+    secuencial_factura: { ...DEFAULT_SEQ_FILTER },
+    secuencial_liquidacion_compra: { ...DEFAULT_SEQ_FILTER },
+    secuencial_nota_credito: { ...DEFAULT_SEQ_FILTER },
+    secuencial_nota_debito: { ...DEFAULT_SEQ_FILTER },
+    secuencial_guia_remision: { ...DEFAULT_SEQ_FILTER },
+    secuencial_retencion: { ...DEFAULT_SEQ_FILTER },
+    secuencial_proforma: { ...DEFAULT_SEQ_FILTER },
+    fecha_creacion_desde: '',
+    fecha_creacion_hasta: '',
+    fecha_actualizacion_desde: '',
+    fecha_actualizacion_hasta: ''
+  };
+
+  const [puntoFiltersOpen, setPuntoFiltersOpen] = React.useState(false);
+  const [puntoFilters, setPuntoFilters] = React.useState<PuntoFilters>(DEFAULT_PUNTO_FILTERS);
 
   const activePuntoFiltersCount = React.useMemo(() => {
     const seqCount = [
@@ -292,21 +358,7 @@ const EstablecimientoEditInfo: React.FC = () => {
   }, [est?.puntos_emision, puntoFilters]);
 
   // Ordenamiento y paginación sobre resultados filtrados
-  type PuntoCol =
-    | 'codigo'
-    | 'nombre'
-    | 'estado_operatividad'
-    | 'estado_disponibilidad'
-    | 'usuario'
-    | 'secuencial_factura'
-    | 'secuencial_liquidacion_compra'
-    | 'secuencial_nota_credito'
-    | 'secuencial_nota_debito'
-    | 'secuencial_guia_remision'
-    | 'secuencial_retencion'
-    | 'secuencial_proforma'
-    | 'created_at'
-    | 'updated_at';
+
 
   const [sortByPunto, setSortByPunto] = React.useState<PuntoCol>('created_at');
   const [sortDirPunto, setSortDirPunto] = React.useState<'asc' | 'desc'>('desc');
@@ -329,50 +381,6 @@ const EstablecimientoEditInfo: React.FC = () => {
     setSortDirPunto('desc');
     setPagePunto(1);
   }, [activePuntoFiltersCount, puntoFilters]);
-
-  const getPuntoSortValue = (p: any, col: PuntoCol) => {
-    const userLabel = (() => {
-      if (!p?.user) return '';
-      const roleValue = (p.user?.role?.value ?? p.user?.role ?? '').toString().toUpperCase();
-      const username = (p.user?.username ?? '').toString().toUpperCase();
-      const nombres = (p.user?.nombres ?? '').toString().toUpperCase();
-      const apellidos = (p.user?.apellidos ?? '').toString().toUpperCase();
-      return `${roleValue} – ${username} – ${nombres} – ${apellidos}`.trim();
-    })();
-
-    switch (col) {
-      case 'codigo':
-        return p?.codigo ?? '';
-      case 'nombre':
-        return p?.nombre ?? '';
-      case 'estado_operatividad':
-        return p?.estado ?? '';
-      case 'estado_disponibilidad':
-        return p?.estado_disponibilidad ?? '';
-      case 'usuario':
-        return userLabel;
-      case 'secuencial_factura':
-        return p?.secuencial_factura ?? p?.secuencial ?? '';
-      case 'secuencial_liquidacion_compra':
-        return p?.secuencial_liquidacion_compra ?? '';
-      case 'secuencial_nota_credito':
-        return p?.secuencial_nota_credito ?? '';
-      case 'secuencial_nota_debito':
-        return p?.secuencial_nota_debito ?? '';
-      case 'secuencial_guia_remision':
-        return p?.secuencial_guia_remision ?? '';
-      case 'secuencial_retencion':
-        return p?.secuencial_retencion ?? '';
-      case 'secuencial_proforma':
-        return p?.secuencial_proforma ?? '';
-      case 'created_at':
-        return parseDateSafe(p?.created_at)?.getTime() ?? null;
-      case 'updated_at':
-        return parseDateSafe(p?.updated_at)?.getTime() ?? null;
-      default:
-        return '';
-    }
-  };
 
   const sortedPuntos = React.useMemo(() => {
     const data = [...filteredPuntos];
@@ -760,18 +768,17 @@ const EstablecimientoEditInfo: React.FC = () => {
                   <>
                     <span style={{ fontWeight: 600 }}>{est.created_by_info.role}</span>
                     {' - '}
-                    <a 
-                      href="#" 
+                    <button type="button"
                       onClick={(e) => { 
                         e.preventDefault(); 
                         if (est.created_by_info?.id) {
                           handleOpenUserDetail(est.created_by_info.id);
                         }
                       }}
-                      style={{ color: '#1b4ab4', fontWeight: 600, textDecoration: 'underline', cursor: 'pointer' }}
+                      style={{ border: 0, padding: 0, background: 'none', fontFamily: 'inherit', fontSize: 'inherit', color: '#1b4ab4', fontWeight: 600, textDecoration: 'underline', cursor: 'pointer' }}
                     >
                       {est.created_by_info.username}
-                    </a>
+                    </button>
                     {' - '}
                     <span>{est.created_by_info.nombres} {est.created_by_info.apellidos}</span>
                   </>
@@ -786,18 +793,17 @@ const EstablecimientoEditInfo: React.FC = () => {
                   <>
                     <span style={{ fontWeight: 600 }}>{est.updated_by_info.role}</span>
                     {' - '}
-                    <a 
-                      href="#" 
+                    <button type="button"
                       onClick={(e) => { 
                         e.preventDefault(); 
                         if (est.updated_by_info?.id) {
                           handleOpenUserDetail(est.updated_by_info.id);
                         }
                       }}
-                      style={{ color: '#1b4ab4', fontWeight: 600, textDecoration: 'underline', cursor: 'pointer' }}
+                      style={{ border: 0, padding: 0, background: 'none', fontFamily: 'inherit', fontSize: 'inherit', color: '#1b4ab4', fontWeight: 600, textDecoration: 'underline', cursor: 'pointer' }}
                     >
                       {est.updated_by_info.username}
-                    </a>
+                    </button>
                     {' - '}
                     <span>{est.updated_by_info.nombres} {est.updated_by_info.apellidos}</span>
                   </>
@@ -861,15 +867,14 @@ const EstablecimientoEditInfo: React.FC = () => {
                           {roleDisplay}
                         </span>
                         <span style={{ color: '#64748b', margin: '0 8px' }}>–</span>
-                        <a 
-                          href="#" 
+                        <button type="button"
                           onClick={(e) => { 
                             e.preventDefault(); 
                             if (gerente.id) {
                               handleOpenUserDetail(gerente.id);
                             }
                           }}
-                          style={{ 
+                          style={{ border: 0, padding: 0, background: 'none', fontFamily: 'inherit', fontSize: 'inherit',
                             color: '#1b4ab4', 
                             fontWeight: 600, 
                             textDecoration: 'underline', 
@@ -877,7 +882,7 @@ const EstablecimientoEditInfo: React.FC = () => {
                           }}
                         >
                           {gerente.username || '-'}
-                        </a>
+                        </button>
                         <span style={{ color: '#64748b', margin: '0 8px' }}>–</span>
                         <span style={{ color: '#334155' }}>
                           {gerente.nombres || ''} {gerente.apellidos || ''}
@@ -1270,13 +1275,12 @@ const EstablecimientoEditInfo: React.FC = () => {
                             <span>
                               <span style={{ fontWeight: 600 }}>{roleValue}</span>
                               {' – '}
-                              <a
-                                href="#"
+                              <button type="button"
                                 onClick={(e) => {
                                   e.preventDefault();
                                   handleOpenUserDetail(punto.user.id);
                                 }}
-                                style={{
+                                style={{ border: 0, padding: 0, background: 'none', fontFamily: 'inherit', fontSize: 'inherit',
                                   color: '#1b4ab4',
                                   fontWeight: 600,
                                   textDecoration: 'underline',
@@ -1285,7 +1289,7 @@ const EstablecimientoEditInfo: React.FC = () => {
                                 title="Ver usuario"
                               >
                                 {username}
-                              </a>
+                              </button>
                               {' – '}
                               <span>{nombres}</span>
                               {' – '}

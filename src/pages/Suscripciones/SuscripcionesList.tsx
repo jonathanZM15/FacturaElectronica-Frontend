@@ -119,7 +119,7 @@ const SuscripcionesList: React.FC<Props> = ({ emisorId }) => {
     suscripcionesApi.evaluarEstados(emisorId).catch(err => {
       console.warn('Error evaluando estados:', err);
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [emisorId]);
 
   // Cargar suscripciones
@@ -240,17 +240,7 @@ const SuscripcionesList: React.FC<Props> = ({ emisorId }) => {
   };
 
   // Formatear fecha y hora
-  const formatDateTime = (dateString?: string) => {
-    if (!dateString) return '-';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('es-EC', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
+
 
   // Formatear monto
   const formatMonto = (monto?: number) => {
@@ -262,53 +252,16 @@ const SuscripcionesList: React.FC<Props> = ({ emisorId }) => {
   };
 
   // Formatear plan como: NOMBRE - PERIODO - COMPROBANTES C - $PRECIO
-  const formatPlan = (suscripcion: Suscripcion) => {
-    if (!suscripcion.plan) return '-';
-    const { nombre, periodo, cantidad_comprobantes, precio } = suscripcion.plan;
-    const precioNum = typeof precio === 'number' ? precio : parseFloat(precio) || 0;
-    return `${nombre?.toUpperCase() || '-'} - ${periodo?.toUpperCase() || '-'} - ${cantidad_comprobantes || 0} C - $${precioNum.toFixed(2)}`;
-  };
+
 
   // Formatear usuario registrador: ROL – USERNAME – NOMBRES – APELLIDOS
-  const formatUsuarioRegistrador = (suscripcion: Suscripcion) => {
-    if (!suscripcion.createdBy) return '-';
-    const { role, username, nombres, apellidos } = suscripcion.createdBy;
-    return `${role.toUpperCase()} – ${username.toUpperCase()} – ${nombres.toUpperCase()} ${apellidos.toUpperCase()}`;
-  };
+
 
   // Obtener color del badge según estado de suscripción
-  const getEstadoSuscripcionBadgeClass = (estado: string) => {
-    switch (estado) {
-      case 'Vigente':
-        return 'badge-success';
-      case 'Suspendido':
-      case 'Caducado':
-      case 'Sin comprobantes':
-        return 'badge-danger';
-      case 'Pendiente':
-      case 'Programado':
-        return 'badge-warning';
-      case 'Proximo a caducar':
-      case 'Pocos comprobantes':
-      case 'Proximo a caducar y con pocos comprobantes':
-        return 'badge-info';
-      default:
-        return 'badge-secondary';
-    }
-  };
+
 
   // Obtener color del badge según estado de comisión
-  const getEstadoComisionBadgeClass = (estado?: string) => {
-    switch (estado) {
-      case 'Pagada':
-        return 'badge-success';
-      case 'Pendiente':
-        return 'badge-warning';
-      case 'Sin comision':
-      default:
-        return 'badge-secondary';
-    }
-  };
+
 
   // Manejar edición
   const handleEdit = (suscripcion: Suscripcion) => {

@@ -5,7 +5,7 @@ import api, { facturacion } from '../../services/api';
 import { posApi, PosTurno } from '../../services/posApi';
 import CobroModal from './components/CobroModal';
 import StockSelection from './StockSelection';
-import { cartTotals } from './cartTotals';
+import { cartLineBase, cartTotals, formatUnitPrice } from './cartTotals';
 import '../../styles/v1.css';
 
 export default function PosPage() {
@@ -177,14 +177,14 @@ export default function PosPage() {
             }
             const tracked = ['LOTE', 'SERIE'].includes(p.tipo_control_inventario);
             setCart(items => [...items, { ...p, precio_unitario: price, qty: tracked ? 0 : 1, lotes: [], series: [] }]);
-          }}>{p.nombre}<small>{p.codigo} — ${Number.isFinite(price) ? price.toFixed(2) : '—'} sin IVA</small>{!p.impuesto && <small>Impuesto sin configurar</small>}</button>;
+          }}>{p.nombre}<small>{p.codigo} — ${Number.isFinite(price) ? formatUnitPrice(price) : '—'} sin IVA</small>{!p.impuesto && <small>Impuesto sin configurar</small>}</button>;
         })}
       </div></section><section className="v1-card"><h2>Venta actual</h2>
         <label>Bodega de salida<select value={warehouseId} onChange={e => { setWarehouseId(e.target.value); setCart(items => items.map(item => ['LOTE', 'SERIE'].includes(item.tipo_control_inventario) ? { ...item, qty: 0, lotes: [], series: [] } : item)); }}><option value="">Seleccionar bodega</option>{availableWarehouses.map(w => <option key={w.id} value={w.id}>{w.codigo} — {w.nombre}</option>)}</select></label>
         {!cart.length && <p>Selecciona productos para la venta.</p>}
-        {cart.map(item => <div className="v1-cart-item" key={item.id}><strong>{item.nombre}</strong><p>${item.precio_unitario.toFixed(2)} sin IVA</p>
+        {cart.map(item => <div className="v1-cart-item" key={item.id}><strong>{item.nombre}</strong><p>${formatUnitPrice(item.precio_unitario)} sin IVA</p>
           {['LOTE', 'SERIE'].includes(item.tipo_control_inventario) ? <StockSelection emisorId={emisorId} bodegaId={warehouseId} item={item} onChange={changes => changeItem(item.id, changes)} /> : <label>Cantidad de {item.nombre}<input type="number" min="0.000001" step="0.000001" value={item.qty} onChange={e => changeItem(item.id, { qty: Number(e.target.value) })} /></label>}
-          <p>Cantidad: {item.qty} — Base ${(item.precio_unitario * item.qty).toFixed(2)}</p><button className="v1-secondary" onClick={() => setCart(items => items.filter(i => i.id !== item.id))}>Quitar {item.nombre}</button>
+          <p>Cantidad: {item.qty} — Base ${cartLineBase(item).toFixed(2)}</p><button className="v1-secondary" onClick={() => setCart(items => items.filter(i => i.id !== item.id))}>Quitar {item.nombre}</button>
         </div>)}
         <p>Subtotal ${totals.subtotal.toFixed(2)} · IVA ${totals.iva.toFixed(2)}</p><p className="v1-total">Total ${totals.total.toFixed(2)}</p>
         <button disabled={!cart.length || cart.some(i => !Number.isFinite(i.qty) || i.qty <= 0) || (cart.some(i => i.tipo === 'FISICO' && i.tipo_control_inventario !== 'SIN_CONTROL') && !warehouseId)} onClick={() => setShowCobro(true)}>Cobrar</button>

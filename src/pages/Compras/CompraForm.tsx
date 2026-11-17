@@ -35,7 +35,7 @@ const CompraForm: React.FC<CompraFormProps> = ({ tipoIngreso }) => {
   const [fechaEmision, setFechaEmision] = useState(new Date().toISOString().split('T')[0]);
   const [numeroComprobante, setNumeroComprobante] = useState('');
   const [claveAcceso, setClaveAcceso] = useState('');
-  const [observaciones, setObservaciones] = useState('');
+
   const [detalles, setDetalles] = useState<Detalle[]>([]);
 
   useEffect(() => {

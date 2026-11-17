@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import logo from '../../assets/maximofactura.png';
-import api from '../../services/api';
+
 import bgAsset from '../../assets/factura-inicio.png';
 import './auth.css';
 import { AuthCredentials } from '../../types/interfaces';
@@ -10,8 +10,9 @@ import whatsappIcon from '../../assets/icon-whatsapp.jpeg';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
 // Constantes de límites
-const USERNAME_MAX_LENGTH = 40;
-const PASSWORD_MAX_LENGTH = 30; 
+// Match the login API limits. New passwords keep their separate 72-byte policy.
+const USERNAME_MAX_LENGTH = 255;
+const PASSWORD_MAX_LENGTH = 1024;
 
 const Login: React.FC = () => {
   const [creds, setCreds] = useState<AuthCredentials>({ username: '', password: '' });

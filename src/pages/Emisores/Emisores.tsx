@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import './Emisores.css';
 import '../Usuarios/UsuarioDeleteModalModern.css';
@@ -280,29 +280,11 @@ const Emisores: React.FC = () => {
   type FilterField = 'ruc'|'razon_social'|'estado'|'tipo_plan'|'cantidad_creados_gt'|'cantidad_restantes_lt'|'nombre_comercial'|'direccion_matriz'|'regimen_tributario'|'obligado_contabilidad'|'contribuyente_especial'|'agente_retencion'|'codigo_artesano'|'tipo_persona'|'ambiente'|'tipo_emision'|'registrador';
   const [activeFilter, setActiveFilter] = React.useState<FilterField | null>(null);
   const [filterValue, setFilterValue] = React.useState<string>('');
-  const [estado, setEstado] = React.useState('ACTIVO');
+  const [, setEstado] = React.useState('ACTIVO');
   const [q, setQ] = React.useState('');
 
   // Pretty labels to show consistent "Buscando por ..." caption like the Estado filter design
-  const filterLabels: Record<FilterField, string> = {
-    ruc: 'RUC',
-    razon_social: 'Razón Social',
-    estado: 'Estado',
-    tipo_plan: 'Plan de suscripción vigente',
-    cantidad_creados_gt: 'Cantidad de Comprobantes Creados',
-    cantidad_restantes_lt: 'Cantidad de Comprobantes Restantes',
-    nombre_comercial: 'Nombre Comercial',
-    direccion_matriz: 'Dirección Matriz',
-    regimen_tributario: 'Régimen Tributario',
-    obligado_contabilidad: 'Obligado a llevar contabilidad',
-    contribuyente_especial: 'Contribuyente Especial',
-    agente_retencion: 'Agente de Retención',
-    codigo_artesano: 'Código Artesano',
-    tipo_persona: 'Tipo de Persona',
-    ambiente: 'Ambiente',
-    tipo_emision: 'Tipo de Emisión',
-    registrador: 'Nombre del Registrador',
-  };
+
   const [desde, setDesde] = React.useState<string>('');
   const [hasta, setHasta] = React.useState<string>('');
   const [error, setError] = React.useState<string | null>(null);
@@ -321,10 +303,10 @@ const Emisores: React.FC = () => {
   const [deletingWithHistory, setDeletingWithHistory] = React.useState(false);
   const [historyPreparedOpen, setHistoryPreparedOpen] = React.useState(false);
   const [backupUrl, setBackupUrl] = React.useState<string | null>(null);
-  const [dateOpen, setDateOpen] = React.useState(false);
-  const dateRef = React.useRef<HTMLDivElement | null>(null);
+  const [dateOpen] = React.useState(false);
+
   const desdeInputRef = React.useRef<HTMLInputElement | null>(null);
-  const hastaInputRef = React.useRef<HTMLInputElement | null>(null);
+
 
   // Collapsible filters panel
   const [filtersOpen, setFiltersOpen] = React.useState(false);
@@ -447,7 +429,7 @@ const Emisores: React.FC = () => {
     filterUpdatedTo,
   ]);
 
-  const clearAllFilters = React.useCallback(() => {
+  const clearAllFilters = () => {
     setFilterRuc('');
     setFilterRazonSocial('');
     setFilterEstado('ACTIVO');
@@ -490,7 +472,7 @@ const Emisores: React.FC = () => {
     setCurrentPage(1);
     // Reload immediately with default params (only estado=ACTIVO)
     loadClean();
-  }, []);
+  };
 
   // Pagination states
   const [currentPage, setCurrentPage] = React.useState(1);
@@ -548,14 +530,6 @@ const Emisores: React.FC = () => {
     [show]
   );
 
-  const formatDate = React.useCallback((iso: string) => {
-    if (!iso) return '';
-    // Expecting yyyy-mm-dd
-    const [y, m, d] = iso.split('-');
-    if (!y || !m || !d) return iso;
-    return `${d}/${m}/${y}`;
-  }, []);
-
   const formatPlanDateIso = React.useCallback((value?: string | null) => {
     if (!value) return '-';
     const date = new Date(value);
@@ -563,7 +537,7 @@ const Emisores: React.FC = () => {
       return date.toISOString().slice(0, 10);
     }
     // Try to normalize values like dd/mm/yyyy
-    const parts = value.split(/[\/\-]/); // split by / or -
+    const parts = value.split(/[/-]/); // split by / or -
     if (parts.length === 3) {
       let [a, b, c] = parts;
       if (a.length === 4) {
@@ -802,7 +776,7 @@ const Emisores: React.FC = () => {
       const date = new Date(value);
       if (!Number.isNaN(date.getTime())) return date.toISOString().slice(0, 10);
       const text = String(value);
-      const parts = text.split(/[\/\-]/);
+      const parts = text.split(/[/-]/);
       if (parts.length === 3) {
         let [a, b, c] = parts;
         if (a.length === 4) return `${a}-${b.padStart(2, '0')}-${c.padStart(2, '0')}`;

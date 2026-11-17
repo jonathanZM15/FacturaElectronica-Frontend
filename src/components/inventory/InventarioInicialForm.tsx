@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Bodega, Producto, TipoProducto, TipoControlInventario, MotivoMovimiento } from '../../types/inventory';
 import { getBodegas, getProductos, inventarioInicial } from '../../services/inventoryService';
 import { MotivoSelect } from './MotivoSelect';
@@ -41,7 +41,7 @@ export const InventarioInicialForm: React.FC<Props> = ({ emisorId, onSuccess }) 
         { producto_id: '', cantidad: 1, costo_unitario: '', lotes: [{ numero_lote: '', cantidad: 1 }], series: [{ numero_serie: '' }] }
     ]);
 
-    const loadFormData = async () => {
+    const loadFormData = useCallback(async () => {
         setLoadingData(true);
         try {
             const [bData, pData] = await Promise.all([
@@ -57,11 +57,11 @@ export const InventarioInicialForm: React.FC<Props> = ({ emisorId, onSuccess }) 
         } finally {
             setLoadingData(false);
         }
-    };
+    }, [emisorId]);
 
     useEffect(() => {
         loadFormData();
-    }, [emisorId]);
+    }, [loadFormData]);
 
     const handleProductoChange = (index: number, prodId: number | '') => {
         const newDetalles = [...detalles];

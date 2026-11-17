@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useEffectEvent } from 'react';
 import { proveedoresApi, Proveedor } from '../../services/proveedoresApi';
 import { emisoresApi } from '../../services/emisoresApi';
 
@@ -22,8 +22,9 @@ const ProveedoresPage: React.FC<{isEmbedded?: boolean}> = ({ isEmbedded }) => {
     });
   }, []);
 
+  const loadForCompany = useEffectEvent(() => fetchItems());
   useEffect(() => {
-    if (emisorId) fetchItems();
+    if (emisorId) loadForCompany();
   }, [emisorId]);
 
   const fetchItems = async (q = search) => {

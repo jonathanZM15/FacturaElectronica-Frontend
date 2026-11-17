@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Bodega, Producto, TipoBodega, TipoProducto, TipoControlInventario, MotivoMovimiento } from '../../types/inventory';
 import { getBodegas, getProductos, enviarMermas, getExistenciasLotes, getExistenciasSeries } from '../../services/inventoryService';
 import { MotivoSelect } from './MotivoSelect';
@@ -45,7 +45,7 @@ export const EnvioMermasForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
     const [lotesDisponibles, setLotesDisponibles] = useState<Record<number, any[]>>({});
     const [seriesDisponibles, setSeriesDisponibles] = useState<Record<number, any[]>>({});
 
-    const loadFormData = async () => {
+    const loadFormData = useCallback(async () => {
         setLoadingData(true);
         try {
             const [bData, pData] = await Promise.all([
@@ -61,11 +61,11 @@ export const EnvioMermasForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
         } finally {
             setLoadingData(false);
         }
-    };
+    }, [emisorId]);
 
     useEffect(() => {
         loadFormData();
-    }, [emisorId]);
+    }, [loadFormData]);
 
     const bodegasMermas = bodegas.filter(b => b.tipo === TipoBodega.MERMAS);
     const bodegasNormales = bodegas.filter(b => b.tipo !== TipoBodega.MERMAS && b.tipo !== TipoBodega.TRANSITO);

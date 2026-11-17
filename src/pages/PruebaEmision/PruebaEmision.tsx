@@ -343,8 +343,6 @@ const PruebaEmisionComprobante: React.FC = () => {
 
   /* Emisor seleccionado (objeto completo) */
   const emisorSel = emisores.find(e => String(e.id) === emisorSelId) ?? null;
-  const establecimientoSel = establecimientos.find(e => String(e.id) === establecimientoSelId) ?? null;
-  const puntoSel = puntos.find(e => String(e.id) === puntoSelId) ?? null;
 
   /* Payload para la factura de prueba */
   const buildPayload = () => ({

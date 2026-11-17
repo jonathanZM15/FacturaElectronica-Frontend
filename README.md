@@ -12,20 +12,20 @@ Aplicación web SPA (Single Page Application) que proporciona una interfaz intui
 - 📄 Emisión y consulta de facturas electrónicas
 - 💰 Gestión de retenciones
 - 📧 Verificación de email y cambio de contraseña
-- 📊 Dashboard con estadísticas
+- 📊 Acceso al dashboard administrativo (indicadores pendientes)
 
 ## 🛠️ Tecnologías
 
 - **React** ^19.2.0
-- **TypeScript** ^4.9.5
-- **React Router DOM** ^6.30.1 (Navegación)
+- **TypeScript** ~5.9.3
+- **React Router DOM** ^7.18.5 (Navegación)
 - **Axios** ^1.12.2 (Cliente HTTP)
 - **CSS3** con diseño moderno (Glass morphism, animaciones)
 
 ## 📦 Requisitos Previos
 
-- Node.js >= 16.x
-- NPM >= 8.x
+- Node.js >= 22.12.0
+- NPM compatible con Node 22 o 24
 
 ## 🚀 Instalación
 
@@ -37,7 +37,7 @@ Aplicación web SPA (Single Page Application) que proporciona una interfaz intui
 
 2. **Instalar dependencias**
    ```bash
-   npm install
+   npm ci
    ```
 
 3. **Configurar la URL del API**
@@ -95,7 +95,9 @@ src/
 |---------|-------------|
 | `npm start` | Inicia el servidor de desarrollo |
 | `npm run build` | Genera build de producción |
-| `npm run eject` | Expone la configuración de CRA |
+| `npm run typecheck` | Comprueba los tipos de TypeScript |
+| `npm run lint` | Revisa el código sin admitir advertencias |
+| `npm run preview` | Previsualiza el build localmente |
 
 ## 🔧 Build para Producción
 
@@ -116,7 +118,7 @@ Asegúrate de que el backend esté corriendo antes de usar el frontend.
 
 1. Usuario ingresa credenciales en Login
 2. Backend valida y retorna token (Sanctum)
-3. Token se almacena en localStorage
+3. Token se almacena en sessionStorage
 4. Todas las peticiones incluyen el token
 5. Rutas protegidas según rol de usuario
 
@@ -127,3 +129,11 @@ Este proyecto está bajo la Licencia MIT.
 ## 👥 Autores
 
 Desarrollado para **Máximo Facturas**
+
+## Compilación y revisión de la primera versión
+
+El proyecto utiliza Vite 8. La configuración pública `REACT_APP_API_URL` se conserva. `npm run build` verifica TypeScript y ESLint antes de compilar, y falla si hay errores o advertencias de lint. El resultado sigue en `build/`, sin mapas de código fuente. El servidor estático debe devolver `index.html` para las rutas de la SPA.
+
+`npm start` sirve el desarrollo únicamente en localhost:3000. No usar este servidor como hosting público. La política CSP restrictiva se conserva en producción; el modo de desarrollo permite la instrumentación de React Fast Refresh. El backend debe permitir en CORS el origen local exacto.
+
+Se actualizaron React Router y las herramientas de compilación para retirar dependencias vulnerables de Create React App. No se cambiaron las rutas ni la matriz de permisos. Los archivos, configuraciones y dependencias exclusivos de las pruebas no forman parte de esta entrega. Los resultados de la validación se conservan en el informe local de la primera versión.

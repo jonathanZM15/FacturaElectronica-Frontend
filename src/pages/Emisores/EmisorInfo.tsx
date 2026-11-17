@@ -191,7 +191,7 @@ const EmisorInfo: React.FC = () => {
     } catch (e: any) {
       show({ title: 'Error', message: 'No se pudo cargar la información del emisor', type: 'error' });
     } finally { setLoading(false); }
-  }, [id]);
+  }, [id, show]);
 
   const [establecimientosForStats, setEstablecimientosForStats] = React.useState<any[]>([]);
 
@@ -246,7 +246,7 @@ const EmisorInfo: React.FC = () => {
       console.error('❌ Error cargando establecimientos:', e);
       setEstablecimientos([]);
     }
-  }, [user, isLimitedRole, role]);
+  }, [user, isLimitedRole]);
 
   const loadEstablecimientosForStats = React.useCallback(async (companyId?: number | string) => {
     if (!companyId) return;

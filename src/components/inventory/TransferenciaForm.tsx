@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Bodega, Producto, TransferenciaPayload, TipoBodega, TipoProducto, TipoControlInventario, MotivoMovimiento } from '../../types/inventory';
 import { getBodegas, getProductos, transferirStock, getExistenciasLotes, getExistenciasSeries } from '../../services/inventoryService';
 import { MotivoSelect } from './MotivoSelect';
@@ -48,7 +48,7 @@ export const TransferenciaForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
     const destinoBodega = bodegas.find(b => b.id === Number(destinoId));
     const isMermas = Boolean(destinoBodega && (destinoBodega.tipo === TipoBodega.MERMAS || (destinoBodega.tipo as any) === 'MERMAS'));
 
-    const loadFormData = async () => {
+    const loadFormData = useCallback(async () => {
         setLoadingData(true);
         try {
             const [bData, pData] = await Promise.all([
@@ -64,11 +64,11 @@ export const TransferenciaForm: React.FC<Props> = ({ emisorId, onSuccess }) => {
         } finally {
             setLoadingData(false);
         }
-    };
+    }, [emisorId]);
 
     useEffect(() => {
         loadFormData();
-    }, [emisorId]);
+    }, [loadFormData]);
 
     // Consultar existencias de lotes o series en la bodega de origen
     const fetchExistenciasOrigen = async (prodId: number, bOrigenId: number | '') => {

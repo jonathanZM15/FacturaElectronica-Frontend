@@ -5,15 +5,7 @@ import { useUser } from '../../contexts/userContext';
 import { User } from '../../types/user';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import SortArrow from '../../components/SortArrow';
-import {
-  navigateToEstablecimiento,
-  navigateToPuntoEmision,
-  openUsuarioDetail,
-  formatEstablecimientoInfo,
-  formatPuntoEmisionInfo,
-  formatCreadorInfo,
-  shouldShowCreador
-} from '../../helpers/navigation';
+import { navigateToEstablecimiento, navigateToPuntoEmision, shouldShowCreador } from '../../helpers/navigation';
 import './EmisorUsuariosListModern.css';
 
 interface EmisorUsuariosListProps {

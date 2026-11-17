@@ -4,7 +4,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 import Login from './pages/Auth/Login';
 import CambiarPassword from './pages/Auth/cambiarPassword';
-import { auth } from './services/api';
 import { UserProvider, useUser } from './contexts/userContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { SidebarProvider } from './contexts/SidebarContext';
@@ -40,14 +39,7 @@ const StockParametrosPage = React.lazy(() => import('./pages/Inventario/StockPar
 const ExistenciasPage = React.lazy(() => import('./pages/Inventario/ExistenciasPage'));
 const ClientesPage = React.lazy(() => import('./pages/Clientes/ClientesPage'));
 
-const ChangePasswordAuthed: React.FC = () => {
-  const { logout } = useUser();
-  const handleSubmit = async (newPassword: string) => {
-    await auth.cambiarPassword('', newPassword);
-    await logout();
-  };
-  return <CambiarPassword onSubmit={handleSubmit} />;
-};
+
 
 function App() {
   return (

@@ -158,7 +158,7 @@ const NotaDebitoPage: React.FC = () => {
     puntosEmisionApi.list(Number(emisorSelId), Number(estSelId)).then(r =>
       setPuntos(r.data?.data ?? r.data ?? [])
     );
-  }, [estSelId]);
+  }, [emisorSelId, estSelId]);
 
   /* ── Cargar facturas autorizadas cuando el emisor está seleccionado ── */
   useEffect(() => {

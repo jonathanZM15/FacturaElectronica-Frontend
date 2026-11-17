@@ -70,7 +70,7 @@ const Usuarios: React.FC = () => {
   const normalizeRole = React.useCallback((role: unknown) => String(role ?? '').trim().toLowerCase(), []);
   const [currentPage, setCurrentPage] = React.useState(1);
   const [itemsPerPage, setItemsPerPage] = React.useState(10);
-  const [searchQuery, setSearchQuery] = React.useState('');
+  const [searchQuery] = React.useState('');
   const { show } = useNotification();
   const { user: currentUser } = useUser();
   const [emisorInfoById, setEmisorInfoById] = React.useState<Record<string, { ruc?: string; razon_social?: string }>>({});
@@ -205,7 +205,7 @@ const Usuarios: React.FC = () => {
     show({ title: 'Error', message: msg, type: 'error' });
   }, [usuariosError, show]);
 
-  const users = usuariosResponse?.data ?? [];
+  const users = React.useMemo(() => usuariosResponse?.data ?? [], [usuariosResponse?.data]);
   const totalItems = usuariosResponse?.meta?.total ?? 0;
 
   const hasActiveSearchOrFilters = React.useMemo(() => {

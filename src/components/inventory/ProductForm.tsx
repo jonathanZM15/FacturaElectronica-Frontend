@@ -32,7 +32,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ emisorId, onSuccess })
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
-    const [bodegas, setBodegas] = useState<Bodega[]>([]);
+    const [, setBodegas] = useState<Bodega[]>([]);
     const [categorias, setCategorias] = useState<Categoria[]>([]);
     const [productosList, setProductosList] = useState<Producto[]>([]);
     const [loadingTable, setLoadingTable] = useState(true);
@@ -305,11 +305,11 @@ export const ProductForm: React.FC<ProductFormProps> = ({ emisorId, onSuccess })
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
                             <div>
                                 <label style={labelStyle}>Código <span style={{ color: '#ef4444' }}>*</span></label>
-                                <input type="text" required value={producto.codigo || ''} onChange={e => handleChange('codigo', e.target.value)} style={inputStyle} onFocus={(e) => { e.target.style.borderColor = '#6366f1'; e.target.style.boxShadow = '0 0 0 4px rgba(99, 102, 241, 0.1)'; }} onBlur={(e) => { e.target.style.borderColor = '#cbd5e1'; e.target.style.boxShadow = 'inset 0 1px 2px rgba(0,0,0,0.02)'; }} />
+                                <input type="text" required maxLength={25} value={producto.codigo || ''} onChange={e => handleChange('codigo', e.target.value)} style={inputStyle} onFocus={(e) => { e.target.style.borderColor = '#6366f1'; e.target.style.boxShadow = '0 0 0 4px rgba(99, 102, 241, 0.1)'; }} onBlur={(e) => { e.target.style.borderColor = '#cbd5e1'; e.target.style.boxShadow = 'inset 0 1px 2px rgba(0,0,0,0.02)'; }} />
                             </div>
                             <div>
                                 <label style={labelStyle}>Código Auxiliar</label>
-                                <input type="text" value={producto.codigo_auxiliar || ''} onChange={e => handleChange('codigo_auxiliar', e.target.value)} style={inputStyle} onFocus={(e) => { e.target.style.borderColor = '#6366f1'; e.target.style.boxShadow = '0 0 0 4px rgba(99, 102, 241, 0.1)'; }} onBlur={(e) => { e.target.style.borderColor = '#cbd5e1'; e.target.style.boxShadow = 'inset 0 1px 2px rgba(0,0,0,0.02)'; }} />
+                                <input type="text" maxLength={25} value={producto.codigo_auxiliar || ''} onChange={e => handleChange('codigo_auxiliar', e.target.value)} style={inputStyle} onFocus={(e) => { e.target.style.borderColor = '#6366f1'; e.target.style.boxShadow = '0 0 0 4px rgba(99, 102, 241, 0.1)'; }} onBlur={(e) => { e.target.style.borderColor = '#cbd5e1'; e.target.style.boxShadow = 'inset 0 1px 2px rgba(0,0,0,0.02)'; }} />
                             </div>
                             <div style={{ gridColumn: '1 / -1' }}>
                                 <label style={labelStyle}>Nombre del Producto <span style={{ color: '#ef4444' }}>*</span></label>
@@ -746,6 +746,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({ emisorId, onSuccess })
                                         type="text" 
                                         required 
                                         style={inputStyle} 
+                                        maxLength={25}
                                         value={editModalProduct.codigo}
                                         onChange={(e) => setEditModalProduct({...editModalProduct, codigo: e.target.value})}
                                     />

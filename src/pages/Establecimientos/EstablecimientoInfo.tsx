@@ -17,6 +17,93 @@ import SortArrow from '../../components/SortArrow';
 import '../Usuarios/UsuarioDeleteModalModern.css';
 import './EstablecimientosTab.css';
 
+type SeqOp = 'gte' | 'lte' | 'eq';
+
+
+type SeqFilter = { op: SeqOp; value: string };
+
+const normalizeText = (v: any) => String(v ?? '').toLowerCase().trim();
+
+const parseIntSafe = (v: any) => {
+    const n = Number.parseInt(String(v ?? ''), 10);
+    return Number.isFinite(n) ? n : null;
+  };
+
+const dateStart = (ymd: string) => new Date(`${ymd}T00:00:00`);
+
+const dateEnd = (ymd: string) => new Date(`${ymd}T23:59:59.999`);
+
+const matchesSeqFilter = (rawValue: any, filter: SeqFilter) => {
+    if (!filter.value) return true;
+    const val = parseIntSafe(rawValue);
+    const cmp = parseIntSafe(filter.value);
+    if (val === null || cmp === null) return false;
+    if (filter.op === 'eq') return val === cmp;
+    if (filter.op === 'gte') return val >= cmp;
+    return val <= cmp;
+  };
+
+type PuntoCol =
+    | 'codigo'
+    | 'nombre'
+    | 'estado_operatividad'
+    | 'estado_disponibilidad'
+    | 'usuario'
+    | 'secuencial_factura'
+    | 'secuencial_liquidacion_compra'
+    | 'secuencial_nota_credito'
+    | 'secuencial_nota_debito'
+    | 'secuencial_guia_remision'
+    | 'secuencial_retencion'
+    | 'secuencial_proforma'
+    | 'created_at'
+    | 'updated_at';
+
+const getPuntoSortValue = (p: any, col: PuntoCol) => {
+    const userLabel = (() => {
+      if (!p?.user) return '';
+      const roleValue = (p.user?.role?.value ?? p.user?.role ?? '').toString().toUpperCase();
+      const username = (p.user?.username ?? '').toString().toUpperCase();
+      const nombres = (p.user?.nombres ?? '').toString().toUpperCase();
+      const apellidos = (p.user?.apellidos ?? '').toString().toUpperCase();
+      return `${roleValue} – ${username} – ${nombres} – ${apellidos}`.trim();
+    })();
+
+    switch (col) {
+      case 'codigo':
+        return p?.codigo ?? '';
+      case 'nombre':
+        return p?.nombre ?? '';
+      case 'estado_operatividad':
+        return p?.estado ?? '';
+      case 'estado_disponibilidad':
+        return p?.estado_disponibilidad ?? '';
+      case 'usuario':
+        return userLabel;
+      case 'secuencial_factura':
+        return p?.secuencial_factura ?? p?.secuencial ?? '';
+      case 'secuencial_liquidacion_compra':
+        return p?.secuencial_liquidacion_compra ?? '';
+      case 'secuencial_nota_credito':
+        return p?.secuencial_nota_credito ?? '';
+      case 'secuencial_nota_debito':
+        return p?.secuencial_nota_debito ?? '';
+      case 'secuencial_guia_remision':
+        return p?.secuencial_guia_remision ?? '';
+      case 'secuencial_retencion':
+        return p?.secuencial_retencion ?? '';
+      case 'secuencial_proforma':
+        return p?.secuencial_proforma ?? '';
+      case 'created_at':
+        return p?.created_at ? new Date(p.created_at).getTime() : null;
+      case 'updated_at':
+        return p?.updated_at ? new Date(p.updated_at).getTime() : null;
+      default:
+        return '';
+    }
+  };
+
+
 const EstablecimientoInfo: React.FC = () => {
   const { id, estId } = useParams();
   const navigate = useNavigate();
@@ -54,9 +141,9 @@ const EstablecimientoInfo: React.FC = () => {
 
   // Punto emisión delete states
   const [puntoDeleteOpen, setPuntoDeleteOpen] = React.useState(false);
-  const [puntoDeletePassword, setPuntoDeletePassword] = React.useState('');
-  const [puntoDeleteError, setPuntoDeleteError] = React.useState<string | null>(null);
-  const [puntoDeleteLoading, setPuntoDeleteLoading] = React.useState(false);
+  const [, setPuntoDeletePassword] = React.useState('');
+  const [, setPuntoDeleteError] = React.useState<string | null>(null);
+
   const [puntoToDelete, setPuntoToDelete] = React.useState<PuntoEmision | null>(null);
 
   // Image viewer states
@@ -75,8 +162,8 @@ const EstablecimientoInfo: React.FC = () => {
   const isLimitedRole = role === 'gerente' || role === 'cajero' || (role === 'emisor' && userPuntosIds.length > 0);
 
   // Filtros combinables para puntos de emisión (igual a establecimientos)
-  type SeqOp = 'gte' | 'lte' | 'eq';
-  type SeqFilter = { op: SeqOp; value: string };
+
+
   type PuntoFilters = {
     codigo: string;
     nombre: string;
@@ -118,24 +205,6 @@ const EstablecimientoInfo: React.FC = () => {
 
   const [puntoFiltersOpen, setPuntoFiltersOpen] = React.useState(false);
   const [puntoFilters, setPuntoFilters] = React.useState<PuntoFilters>(DEFAULT_PUNTO_FILTERS);
-
-  const normalizeText = (v: any) => String(v ?? '').toLowerCase().trim();
-  const parseIntSafe = (v: any) => {
-    const n = Number.parseInt(String(v ?? ''), 10);
-    return Number.isFinite(n) ? n : null;
-  };
-  const dateStart = (ymd: string) => new Date(`${ymd}T00:00:00`);
-  const dateEnd = (ymd: string) => new Date(`${ymd}T23:59:59.999`);
-
-  const matchesSeqFilter = (rawValue: any, filter: SeqFilter) => {
-    if (!filter.value) return true;
-    const val = parseIntSafe(rawValue);
-    const cmp = parseIntSafe(filter.value);
-    if (val === null || cmp === null) return false;
-    if (filter.op === 'eq') return val === cmp;
-    if (filter.op === 'gte') return val >= cmp;
-    return val <= cmp;
-  };
 
   const activePuntoFiltersCount = React.useMemo(() => {
     const seqCount = [
@@ -227,21 +296,7 @@ const EstablecimientoInfo: React.FC = () => {
   }, [est?.puntos_emision, puntoFilters]);
 
   // Ordenamiento y paginación sobre resultados filtrados
-  type PuntoCol =
-    | 'codigo'
-    | 'nombre'
-    | 'estado_operatividad'
-    | 'estado_disponibilidad'
-    | 'usuario'
-    | 'secuencial_factura'
-    | 'secuencial_liquidacion_compra'
-    | 'secuencial_nota_credito'
-    | 'secuencial_nota_debito'
-    | 'secuencial_guia_remision'
-    | 'secuencial_retencion'
-    | 'secuencial_proforma'
-    | 'created_at'
-    | 'updated_at';
+
 
   const [sortByPunto, setSortByPunto] = React.useState<PuntoCol>('created_at');
   const [sortDirPunto, setSortDirPunto] = React.useState<'asc' | 'desc'>('desc');
@@ -264,50 +319,6 @@ const EstablecimientoInfo: React.FC = () => {
     setSortDirPunto('desc');
     setPagePunto(1);
   }, [activePuntoFiltersCount, puntoFilters]);
-
-  const getPuntoSortValue = (p: any, col: PuntoCol) => {
-    const userLabel = (() => {
-      if (!p?.user) return '';
-      const roleValue = (p.user?.role?.value ?? p.user?.role ?? '').toString().toUpperCase();
-      const username = (p.user?.username ?? '').toString().toUpperCase();
-      const nombres = (p.user?.nombres ?? '').toString().toUpperCase();
-      const apellidos = (p.user?.apellidos ?? '').toString().toUpperCase();
-      return `${roleValue} – ${username} – ${nombres} – ${apellidos}`.trim();
-    })();
-
-    switch (col) {
-      case 'codigo':
-        return p?.codigo ?? '';
-      case 'nombre':
-        return p?.nombre ?? '';
-      case 'estado_operatividad':
-        return p?.estado ?? '';
-      case 'estado_disponibilidad':
-        return p?.estado_disponibilidad ?? '';
-      case 'usuario':
-        return userLabel;
-      case 'secuencial_factura':
-        return p?.secuencial_factura ?? p?.secuencial ?? '';
-      case 'secuencial_liquidacion_compra':
-        return p?.secuencial_liquidacion_compra ?? '';
-      case 'secuencial_nota_credito':
-        return p?.secuencial_nota_credito ?? '';
-      case 'secuencial_nota_debito':
-        return p?.secuencial_nota_debito ?? '';
-      case 'secuencial_guia_remision':
-        return p?.secuencial_guia_remision ?? '';
-      case 'secuencial_retencion':
-        return p?.secuencial_retencion ?? '';
-      case 'secuencial_proforma':
-        return p?.secuencial_proforma ?? '';
-      case 'created_at':
-        return p?.created_at ? new Date(p.created_at).getTime() : null;
-      case 'updated_at':
-        return p?.updated_at ? new Date(p.updated_at).getTime() : null;
-      default:
-        return '';
-    }
-  };
 
   const sortedPuntos = React.useMemo(() => {
     const data = [...filteredPuntos];
@@ -395,7 +406,7 @@ const EstablecimientoInfo: React.FC = () => {
       } finally { setLoading(false); }
     };
     load();
-  }, [id, estId, show, user]);
+  }, [id, estId, show, user, isLimitedRole, role]);
 
   if (!id || !estId) return <div>Establecimiento no especificado</div>;
 
@@ -912,17 +923,16 @@ const EstablecimientoInfo: React.FC = () => {
                             <span>
                               <span style={{ fontWeight: 600 }}>{roleValue}</span>
                               {' – '}
-                              <a
-                                href="#"
+                              <button type="button"
                                 onClick={(e) => {
                                   e.preventDefault();
                                   handleOpenUserDetail(p.user.id);
                                 }}
-                                style={{ color: '#1b4ab4', fontWeight: 600, textDecoration: 'underline', cursor: 'pointer' }}
+                                style={{ border: 0, padding: 0, background: 'none', fontFamily: 'inherit', fontSize: 'inherit', color: '#1b4ab4', fontWeight: 600, textDecoration: 'underline', cursor: 'pointer' }}
                                 title="Ver usuario"
                               >
                                 {username}
-                              </a>
+                              </button>
                               {' – '}
                               <span>{nombres}</span>
                               {' – '}

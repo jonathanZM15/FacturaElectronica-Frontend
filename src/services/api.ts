@@ -98,8 +98,8 @@ export const facturacion = {
 export const clientesService = {
   list: (emisorId: number | string, params?: Record<string, any>) =>
     api.get(`/api/emisores/${emisorId}/clientes`, { params }),
-  buscar: (emisorId: number | string, identificacion: string) =>
-    api.get(`/api/emisores/${emisorId}/clientes/buscar`, { params: { identificacion } }),
+  buscar: (emisorId: number | string, identificacion: string, tipoIdentificacion?: string) =>
+    api.get(`/api/emisores/${emisorId}/clientes/buscar`, { params: { identificacion, tipo_identificacion: tipoIdentificacion } }),
   get: (emisorId: number | string, id: number) =>
     api.get(`/api/emisores/${emisorId}/clientes/${id}`),
   create: (emisorId: number | string, data: any) =>

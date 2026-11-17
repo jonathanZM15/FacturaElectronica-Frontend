@@ -15,6 +15,7 @@ interface Props {
 export default function CobroModal({ isOpen, onClose, onConfirm, total, emisorId, busy, initialSale }: Props) {
   const [identificacion, setIdentificacion] = useState('9999999999999');
   const [cliente, setCliente] = useState<any>({});
+  const [tipoIdentificacion, setTipoIdentificacion] = useState('CONSUMIDOR_FINAL');
   const [formaPago, setFormaPago] = useState('01');
   const [efectivo, setEfectivo] = useState('');
   const [searching, setSearching] = useState(false);
@@ -23,8 +24,8 @@ export default function CobroModal({ isOpen, onClose, onConfirm, total, emisorId
 
   const esMayor50 = total > 50.00;
 
-  const handleClienteNotFound = useCallback((idToInit: string) => {
-    if (idToInit === '9999999999999') {
+  const handleClienteNotFound = useCallback((idToInit: string, type: string) => {
+    if (idToInit === '9999999999999' && type === 'CONSUMIDOR_FINAL') {
       if (esMayor50) {
         setMessage('Por disposición del SRI, en facturas superiores a $50.00 no se admite Consumidor Final.');
         return;
@@ -38,10 +39,9 @@ export default function CobroModal({ isOpen, onClose, onConfirm, total, emisorId
         telefono: '',
       });
     } else {
-      const guessedTipo = idToInit.length === 13 ? 'RUC' : (idToInit.length === 10 ? 'CEDULA' : 'PASAPORTE');
       setCliente({
         identificacion: idToInit,
-        tipo_identificacion: guessedTipo,
+        tipo_identificacion: type,
         razon_social: '',
         direccion: '',
         email: '',
@@ -51,7 +51,7 @@ export default function CobroModal({ isOpen, onClose, onConfirm, total, emisorId
     }
   }, [esMayor50]);
 
-  const buscar = useCallback(async (id: string) => {
+  const buscar = useCallback(async (id: string, type: string) => {
     const current = ++requestId.current;
     const cleanId = id.trim();
     if (!cleanId) return;
@@ -67,7 +67,7 @@ export default function CobroModal({ isOpen, onClose, onConfirm, total, emisorId
     setCliente({});
 
     try {
-      const res = await clientesService.buscar(emisorId, cleanId);
+      const res = await clientesService.buscar(emisorId, cleanId, type);
       if (current === requestId.current) {
         const found = res.data?.data;
         if (found) {
@@ -78,13 +78,13 @@ export default function CobroModal({ isOpen, onClose, onConfirm, total, emisorId
             setCliente({ ...found, tipo_identificacion: normalizeClientIdentificationType(found.tipo_identificacion || ''), ...(found.identificacion === '9999999999999' ? { email: '', telefono: '' } : {}) });
           }
         } else {
-          handleClienteNotFound(cleanId);
+          handleClienteNotFound(cleanId, type);
         }
       }
     } catch (error: any) {
       if (current !== requestId.current) return;
       if (error.response?.status === 404) {
-        handleClienteNotFound(cleanId);
+        handleClienteNotFound(cleanId, type);
       } else {
         setMessage(error.response?.data?.message || 'No se pudo consultar el cliente. Reintenta la búsqueda.');
       }
@@ -99,18 +99,21 @@ export default function CobroModal({ isOpen, onClose, onConfirm, total, emisorId
       setEfectivo('');
       setFormaPago(initialSale?.pagos?.[0]?.forma_pago || '01');
       if (initialSale?.cliente) {
+        setTipoIdentificacion(normalizeClientIdentificationType(initialSale.cliente.tipo_identificacion || ''));
         setIdentificacion(initialSale.cliente.identificacion);
         setCliente({ ...initialSale.cliente, tipo_identificacion: normalizeClientIdentificationType(initialSale.cliente.tipo_identificacion || '') });
         setEfectivo(String(initialSale.pagos?.[0]?.efectivo_recibido ?? ''));
         setMessage('Revisa los datos del envío pendiente antes de confirmar.');
       } else if (total > 50.00) {
+        setTipoIdentificacion('CEDULA');
         setIdentificacion('');
         setCliente({});
         setMessage('Venta superior a $50.00: Por normativa del SRI es obligatorio identificar al cliente.');
       } else {
+        setTipoIdentificacion('CONSUMIDOR_FINAL');
         setIdentificacion('9999999999999');
         setCliente({});
-        buscar('9999999999999');
+        buscar('9999999999999', 'CONSUMIDOR_FINAL');
       }
     }
     const reqRef = requestId;
@@ -194,20 +197,26 @@ export default function CobroModal({ isOpen, onClose, onConfirm, total, emisorId
             <button
               type="button"
               disabled={searching || !identificacion.trim()}
-              onClick={() => buscar(identificacion)}
+              onClick={() => buscar(identificacion, tipoIdentificacion)}
             >
               Buscar cliente
             </button>
             {searching && <p>Buscando cliente…</p>}
             {message && <p role="status" style={{ color: message.includes('obligatorio') || message.includes('SRI') || message.includes('no se') ? '#b91c1c' : 'inherit' }}>{message}</p>}
 
-            {cliente.identificacion && (
-              <>
                 <label>
                   Tipo de identificación
                   <select
-                    value={cliente.tipo_identificacion || ''}
-                    onChange={e => update('tipo_identificacion', e.target.value)}
+                    value={tipoIdentificacion}
+                    onChange={e => {
+                      const type = e.target.value;
+                      setTipoIdentificacion(type);
+                      setCliente({});
+                      setMessage('');
+                      requestId.current++;
+                      setSearching(false);
+                      if (identificacion.trim()) buscar(identificacion, type);
+                    }}
                   >
                     <option value="CEDULA">Cédula</option>
                     <option value="RUC">RUC</option>
@@ -218,6 +227,8 @@ export default function CobroModal({ isOpen, onClose, onConfirm, total, emisorId
                     </option>
                   </select>
                 </label>
+            {cliente.identificacion && (
+              <>
                 <label>
                   Razón social o nombres
                   <input

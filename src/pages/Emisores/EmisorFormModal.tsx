@@ -1,3 +1,4 @@
+import defaultLogoPath from '../../assets/maximofactura.png';
 import React from 'react';
 import { useUser } from '../../contexts/userContext';
 import { emisoresApi } from '../../services/emisoresApi';
@@ -45,7 +46,7 @@ const EmisorFormModal: React.FC<Props> = (props) => {
   const [existingLogoUrl, setExistingLogoUrl] = React.useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const [loading, setLoading] = React.useState(false);
-  const [emailError, setEmailError] = React.useState<string | null>(null);
+  const [, setEmailError] = React.useState<string | null>(null);
   const [logoError, setLogoError] = React.useState<string | null>(null);
   const [localRucEditable, setLocalRucEditable] = React.useState<boolean>(true);
   const [rucError, setRucError] = React.useState<string | null>(null);
@@ -57,7 +58,6 @@ const EmisorFormModal: React.FC<Props> = (props) => {
 
   const loadSystemLogoFile = async (): Promise<File | null> => {
     try {
-      const defaultLogoPath = require('../../assets/maximofactura.png');
       const response = await fetch(defaultLogoPath);
       const blob = await response.blob();
 
@@ -437,24 +437,6 @@ const EmisorFormModal: React.FC<Props> = (props) => {
   const requiredKeys = React.useMemo(() => new Set<string>([
     'ruc','razon_social','direccion_matriz','regimen_tributario','obligado_contabilidad','contribuyente_especial','agente_retencion','tipo_persona','estado','ambiente','tipo_emision'
   ]), []);
-
-  const isFieldValid = (key: string) => {
-    const val = (v as any)[key];
-    switch (key) {
-      case 'ruc': return !!val && validateRucEcuador(val) && !rucDuplicateError;
-      case 'nombre_comercial': return !!val && typeof val === 'string' && val.trim().length > 0;
-      case 'razon_social': return !!val && typeof val === 'string' && val.trim().length > 0;
-      case 'direccion_matriz': return !!val && typeof val === 'string' && val.trim().length > 0;
-        case 'codigo_artesano': return true; // Optional field, always valid
-      case 'correo_remitente': return !val || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val); // optional: valid if empty or matches pattern
-      case 'ambiente': return !!val;
-      case 'tipo_emision': return !!val;
-      case 'logo': return true; // optional
-      default: return val !== null && val !== undefined && (typeof val !== 'string' || val.trim() !== '');
-    }
-  };
-
-  const isMissing = (key: string) => requiredKeys.has(key) && !isFieldValid(key);
 
   if (!open) return null;
 

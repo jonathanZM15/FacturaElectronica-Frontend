@@ -43,7 +43,7 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
   const [selectedPuntosPorEstablecimiento, setSelectedPuntosPorEstablecimiento] = React.useState<Record<number, number | null>>({});
   const [loading, setLoading] = React.useState(false);
   const [errors, setErrors] = React.useState<Record<string, string>>({});
-  const [checkingCedula, setCheckingCedula] = React.useState(false);
+  const [checkingCedula] = React.useState(false);
   const [checkingEmail, setCheckingEmail] = React.useState(false);
   const [checkingUsername, setCheckingUsername] = React.useState(false);
   const [resendingEmail, setResendingEmail] = React.useState(false);
@@ -94,8 +94,6 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
     return new Set<number>([...idsFromField, ...idsFromObjects]);
   }, [initialData, isEditing, normalizeIdArray]);
 
-  const cedulaCheckTimeoutRef = React.useRef<number | null>(null);
-  const cedulaCheckSeqRef = React.useRef(0);
   const initFormKeyRef = React.useRef<string | null>(null);
 
   const getEstadoEstablecimiento = React.useCallback((est: { estado?: string | null }) => {
@@ -438,7 +436,6 @@ const EmisorUsuarioFormModal: React.FC<EmisorUsuarioFormModalProps> = ({
     nombres,
     resendingEmail,
     role,
-    selectedEstablecimientos.length,
     availableEstablecimientosIds.length,
     username
   ]);

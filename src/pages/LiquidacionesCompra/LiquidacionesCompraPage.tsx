@@ -3,7 +3,7 @@ import { emisoresApi } from '../../services/emisoresApi';
 import { establecimientosApi } from '../../services/establecimientosApi';
 import { puntosEmisionApi } from '../../services/puntosEmisionApi';
 import { facturacion } from '../../services/api';
-import { Loader2, Plus, Trash2, FileText, UploadCloud, UserCheck, Search, Info } from 'lucide-react';
+import { Loader2, Plus, Trash2, FileText, UploadCloud, UserCheck, Info } from 'lucide-react';
 import type { Emisor } from '../../types/emisor';
 
 const LiquidacionesCompraPage: React.FC = () => {
@@ -64,7 +64,7 @@ const LiquidacionesCompraPage: React.FC = () => {
             setPuntos([]);
         }
         setPuntoEmisionId('');
-    }, [establecimientoId]);
+    }, [emisorId, establecimientoId]);
 
     const handleAddItem = () => {
         if (!newItem.descripcion) {
