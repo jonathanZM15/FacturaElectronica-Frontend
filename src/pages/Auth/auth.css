@@ -12,10 +12,12 @@
 }
 
 .auth-card {
-  width: 420px;
+  width: 100%;
+  max-width: 520px;
+  box-sizing: border-box;
   background: rgba(255, 255, 255, 0.98); /* ✨ Fondo semi-transparente más elegante */
   border-radius: 16px; /* ✨ Bordes más redondeados y modernos */
-  padding: 40px 30px 80px 30px;
+  padding: 40px 45px 32px 45px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), /* ✨ Sombra más dramática */
               0 0 0 1px rgba(255, 255, 255, 0.1); /* ✨ Borde sutil brillante */
   position: relative;
@@ -24,22 +26,23 @@
 }
 .auth-logo {
   display: block;
-  margin: 0 auto 30px; /* 💡 Más margen inferior */
-  max-width: 200px;
+  margin: 0 auto 22px; /* 💡 Más margen inferior */
+  max-width: 220px;
 }
 .auth-form {
   display: flex;
   flex-direction: column;
-  gap: 20px; /* 💡 Más espacio entre campos */
+  gap: 18px; /* 💡 Espacio armónico entre campos */
   align-items: center; 
   width: 100%; /* Ocupa el 100% del padding de la tarjeta */
+  box-sizing: border-box;
 }
 
 .auth-title {
   width: 100%;
   text-align: center;
-  margin-bottom: 20px;
-  font-size: 1.2rem;
+  margin-bottom: 22px;
+  font-size: 1.3rem;
   font-weight: 700;
   color: #0d6efd;
 }
@@ -80,23 +83,25 @@
 .field-stack {
   display: flex;
   flex-direction: column;
-  align-items: center; /* Centrar el contenido del stack */
+  align-items: flex-start;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .auth-input-wrapper { 
   position: relative; 
   display: flex; 
   width: 100%; /* El input debe ocupar todo el ancho */
+  box-sizing: border-box;
 }
 
 .auth-input {
-  padding: 12px;
+  box-sizing: border-box;
+  padding: 13px 44px 13px 16px;
   border: 2px solid #e0e0e0; /* ✨ Borde más grueso */
-  border-radius: 8px; /* ✨ Bordes más redondeados */
+  border-radius: 10px; /* ✨ Bordes más redondeados */
   width: 100%;
-  font-size: 16px; 
-  padding-right: 40px;
+  font-size: 15px; 
   transition: all 0.3s ease; /* ✨ Transición suave */
   background: #fafafa; /* ✨ Fondo ligeramente gris */
 }
@@ -112,8 +117,8 @@
 .field-label {
   font-weight: 700; /* 💡 Letra más negrita */
   color: #333; /* 💡 Color oscuro */
-  font-size: 14px;
-  margin-top: 4px; /* Pequeño margen entre el input y el label */
+  font-size: 13.5px;
+  margin-top: 6px; /* Pequeño margen entre el input y el label */
   align-self: flex-start;
 }
 
@@ -124,13 +129,13 @@
   border-radius: 10px; /* ✨ Bordes más redondeados */
   border: none; 
   cursor: pointer; 
-  margin-top: 28px; /* ✨ Reducido de 35px a 28px - espacio entre contraseña y botón */
-  margin-bottom: 16px; /* ✨ Reducido de 20px a 16px - espacio entre botón y footer */
+  margin-top: 18px;
+  margin-bottom: 8px;
   font-size: 0.95rem;
   font-weight: bold;
   letter-spacing: 0.8px; /* ✨ Espaciado entre letras */
   width: auto; /* ✨ CAMBIADO: ancho según contenido */
-  min-width: 200px; /* ✨ Ancho mínimo para que no sea muy pequeño */
+  min-width: 220px; /* ✨ Ancho mínimo para que no sea muy pequeño */
   box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3); /* ✨ Sombra azul */
   transition: all 0.3s ease; /* ✨ Transición suave */
 }
@@ -235,10 +240,10 @@
 .input-error { border-color: #ff4d4f !important; box-shadow: 0 0 0 2px rgba(255, 77, 77, 0.2); }
 
 /* @media para pantallas pequeñas */
-@media (max-width: 500px) {
+@media (max-width: 560px) {
   .auth-card { 
     width: 95%; 
-    padding: 30px 20px; 
+    padding: 32px 22px 26px 22px; 
   }
   .auth-links-footer { 
     flex-direction: row; 
