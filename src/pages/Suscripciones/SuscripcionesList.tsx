@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { suscripcionesApi, Suscripcion, SuscripcionFilters } from '../../services/suscripcionesApi';
 import { emisoresApi } from '../../services/emisoresApi';
 import { usuariosApi } from '../../services/usuariosApi';
+import { usuariosEmisorApi } from '../../services/usuariosEmisorApi';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useUser } from '../../contexts/userContext';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -310,7 +311,7 @@ const SuscripcionesList: React.FC<Props> = ({ emisorId }) => {
   };
 
   const handleOpenUserDetail = useCallback(
-    async (userId: number) => {
+    async (userId: number, fallbackUser?: Suscripcion['createdBy']) => {
       if (!userId) return;
 
       setUserDetailLoading(true);
@@ -318,8 +319,27 @@ const SuscripcionesList: React.FC<Props> = ({ emisorId }) => {
       setSelectedUserDetail(null);
 
       try {
-        const response = await usuariosApi.get(userId);
-        let userData = response.data?.data ?? response.data;
+        let userData: any = null;
+        try {
+          const response = await usuariosEmisorApi.get(emisorId, userId);
+          userData = response.data?.data ?? response.data;
+        } catch {
+          try {
+            const response = await usuariosApi.get(userId);
+            userData = response.data?.data ?? response.data;
+          } catch {
+            if (fallbackUser) {
+              userData = {
+                id: fallbackUser.id,
+                username: fallbackUser.username,
+                nombres: fallbackUser.nombres,
+                apellidos: fallbackUser.apellidos,
+                role: fallbackUser.role,
+                email: fallbackUser.email || '',
+              };
+            }
+          }
+        }
 
         if (userData?.emisor_id) {
           try {
@@ -338,7 +358,12 @@ const SuscripcionesList: React.FC<Props> = ({ emisorId }) => {
           }
         }
 
-        setSelectedUserDetail(userData);
+        if (userData) {
+          setSelectedUserDetail(userData);
+        } else {
+          show({ title: 'Aviso', message: 'No se pudo obtener el detalle completo del usuario', type: 'info' });
+          setUserDetailOpen(false);
+        }
       } catch (err: any) {
         const msg = err?.response?.data?.message || err?.message || 'No se pudo cargar la información del usuario';
         show({ title: 'Error', message: msg, type: 'error' });
@@ -347,7 +372,7 @@ const SuscripcionesList: React.FC<Props> = ({ emisorId }) => {
         setUserDetailLoading(false);
       }
     },
-    [show]
+    [emisorId, show]
   );
 
   // Renderizar archivo (comprobante/factura)
@@ -886,7 +911,7 @@ const SuscripcionesList: React.FC<Props> = ({ emisorId }) => {
                             {suscripcion.createdBy ? (
                               <button
                                 type="button"
-                                onClick={() => handleOpenUserDetail(suscripcion.createdBy!.id)}
+                                onClick={() => handleOpenUserDetail(suscripcion.createdBy!.id, suscripcion.createdBy)}
                                 className="susc-usuario-btn"
                                 title="Ver usuario"
                               >
@@ -929,27 +954,33 @@ const SuscripcionesList: React.FC<Props> = ({ emisorId }) => {
                           {/* Acciones */}
                           <td>
                             <div className="susc-actions">
-                              <button
-                                className="susc-btn-action edit"
-                                onClick={() => handleEdit(suscripcion)}
-                                title="Editar"
-                              >
-                                ✏️
-                              </button>
-                              <button
-                                className="susc-btn-action estado"
-                                onClick={() => handleChangeEstado(suscripcion)}
-                                title="Cambiar Estado"
-                              >
-                                🔄
-                              </button>
-                              <button
-                                className="susc-btn-action delete"
-                                onClick={() => handleDeleteClick(suscripcion)}
-                                title="Eliminar"
-                              >
-                                🗑️
-                              </button>
+                              {canCreate ? (
+                                <>
+                                  <button
+                                    className="susc-btn-action edit"
+                                    onClick={() => handleEdit(suscripcion)}
+                                    title="Editar"
+                                  >
+                                    ✏️
+                                  </button>
+                                  <button
+                                    className="susc-btn-action estado"
+                                    onClick={() => handleChangeEstado(suscripcion)}
+                                    title="Cambiar Estado"
+                                  >
+                                    🔄
+                                  </button>
+                                  <button
+                                    className="susc-btn-action delete"
+                                    onClick={() => handleDeleteClick(suscripcion)}
+                                    title="Eliminar"
+                                  >
+                                    🗑️
+                                  </button>
+                                </>
+                              ) : (
+                                <span style={{ color: '#94a3b8', fontSize: '12px' }}>Solo lectura</span>
+                              )}
                             </div>
                           </td>
                         </tr>
