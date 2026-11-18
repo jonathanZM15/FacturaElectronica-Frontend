@@ -848,37 +848,66 @@ const EmisorUsuariosList: React.FC<EmisorUsuariosListProps> = ({
                       {/* Registro */}
                       <td>
                         <div className="eu-registro-cell">
+                          {/* Fecha de registro */}
+                          {u.created_at ? (
+                            <div className="eu-date-info">
+                              <span className="eu-date-text">
+                                {new Date(u.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
+                              </span>
+                              <span className="eu-date-time">
+                                {new Date(u.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="eu-no-data">—</span>
+                          )}
+
+                          {/* Creador / Registrado por */}
                           {shouldShowCreador(u.created_by_role) && u.created_by_username ? (
-                            <div className="eu-creator-info">
+                            <div className="eu-creator-wrapper">
                               {u.created_by_id && onViewDetail ? (
                                 <button 
-                                  className="eu-creator-link"
+                                  type="button"
+                                  className="eu-creator-pill"
                                   onClick={() => {
-                                    // Intentar obtener el usuario creador como objeto completo
-                                    const creator = usuarios.find(us => us.id === u.created_by_id);
-                                    if (creator) {
-                                      onViewDetail(creator);
-                                    }
+                                    const creator: User = (usuarios.find(us => us.id === u.created_by_id) || {
+                                      id: u.created_by_id,
+                                      username: u.created_by_username,
+                                      email: u.created_by_username || '',
+                                      role: (u.created_by_role?.toLowerCase() || 'administrador') as any,
+                                      nombres: u.created_by_nombres,
+                                      apellidos: u.created_by_apellidos,
+                                    }) as User;
+                                    onViewDetail(creator);
                                   }}
-                                  title={`Ver ${u.created_by_username}`}
+                                  title={`Registrado por: ${u.created_by_role ? (u.created_by_role.charAt(0).toUpperCase() + u.created_by_role.slice(1).toLowerCase()) : 'Admin'} • ${u.created_by_username}`}
                                 >
-                                  <span className="eu-creator-role">{u.created_by_role?.charAt(0).toUpperCase()}{u.created_by_role?.slice(1)}</span>
-                                  <span className="eu-creator-name">{u.created_by_username}</span>
+                                  <span className="eu-creator-pill-icon">👤</span>
+                                  <span className="eu-creator-pill-role">
+                                    {u.created_by_role ? (u.created_by_role.charAt(0).toUpperCase() + u.created_by_role.slice(1).toLowerCase()) : 'Admin'}
+                                  </span>
+                                  <span className="eu-creator-pill-sep">:</span>
+                                  <span className="eu-creator-pill-username">
+                                    {u.created_by_username}
+                                  </span>
                                 </button>
                               ) : (
-                                <div>
-                                  <span className="eu-creator-role">{u.created_by_role?.charAt(0).toUpperCase()}{u.created_by_role?.slice(1)}</span>
-                                  <span className="eu-creator-name">{u.created_by_username}</span>
+                                <div 
+                                  className="eu-creator-pill eu-creator-pill-static"
+                                  title={`Registrado por: ${u.created_by_role ?? 'Usuario'} • ${u.created_by_username}`}
+                                >
+                                  <span className="eu-creator-pill-icon">👤</span>
+                                  <span className="eu-creator-pill-role">
+                                    {u.created_by_role ? (u.created_by_role.charAt(0).toUpperCase() + u.created_by_role.slice(1).toLowerCase()) : 'Admin'}
+                                  </span>
+                                  <span className="eu-creator-pill-sep">:</span>
+                                  <span className="eu-creator-pill-username">
+                                    {u.created_by_username}
+                                  </span>
                                 </div>
                               )}
                             </div>
                           ) : null}
-                          {u.created_at && (
-                            <div className="eu-date-info">
-                              <span>{new Date(u.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
-                              <span className="eu-date-time">{new Date(u.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</span>
-                            </div>
-                          )}
                         </div>
                       </td>
 
