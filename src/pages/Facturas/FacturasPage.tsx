@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { facturacion } from '../../services/api';
 import { useUser } from '../../contexts/userContext';
 import { can } from '../../utils/permissions';
+import FacturaEstadoModal from './FacturaEstadoModal';
 import '../../styles/v1.css';
 
 export default function FacturasPage() {
@@ -17,6 +18,7 @@ export default function FacturasPage() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [detail, setDetail] = useState<any>(null);
+  const [detailRow, setDetailRow] = useState<any>(null);
   const [message, setMessage] = useState('');
   const [correctingRow, setCorrectingRow] = useState<any>(null);
   const [clientForm, setClientForm] = useState({
@@ -84,6 +86,58 @@ export default function FacturasPage() {
       anchor.click(); URL.revokeObjectURL(url);
     } catch { setError(`No se pudo descargar el ${type.toUpperCase()} del comprobante.`); }
   };
+  const handleOpenEstado = async (row: any) => {
+    setDetailRow(row);
+    setBusy(true);
+    setError('');
+    try {
+      const res = await facturacion.estado(row.id);
+      setDetail(res.data);
+    } catch {
+      setError('No se pudo consultar el estado del comprobante.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleReenviarEmail = async (row: any) => {
+    setBusy(true);
+    setError('');
+    setMessage('');
+    try {
+      const res = await facturacion.reenviarEmail(row.id);
+      setMessage(res.data.message);
+      await load();
+      if (detail && detail.comprobante_id === row.id) {
+        const updated = await facturacion.estado(row.id);
+        setDetail(updated.data);
+      }
+    } catch (e: any) {
+      setError(e.response?.data?.message || 'No se pudo programar el envío de correo.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleReintentar = async (row: any) => {
+    setBusy(true);
+    setError('');
+    setMessage('');
+    try {
+      const res = await facturacion.reintentar(row.id);
+      setMessage(res.data.message);
+      await load();
+      if (detail && detail.comprobante_id === row.id) {
+        const updated = await facturacion.estado(row.id);
+        setDetail(updated.data);
+      }
+    } catch (e: any) {
+      setError(e.response?.data?.message || 'No se pudo programar el reintento.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return <div className="v1-page"><h1>Facturas</h1><p>Consulta los comprobantes dentro de tu alcance y su estado real de procesamiento.</p>
     {error && <div className="v1-notice v1-error" role="alert">{error}</div>}{message && <div className="v1-notice" role="status">{message}</div>}
     <form className="v1-actions" onSubmit={e => { e.preventDefault(); setPage(1); setQuery(search); }}><label>Buscar número, cliente o identificación<input value={search} onChange={e => setSearch(e.target.value)} /></label><button disabled={busy}>Buscar</button>
@@ -92,15 +146,32 @@ export default function FacturasPage() {
     </form>
     <div className="v1-table-scroll"><table><thead><tr><th>Número</th><th>Fecha</th><th>Cliente</th><th>Total</th><th>Estado SRI</th><th>Acciones</th></tr></thead><tbody>
       {rows.map(row => <tr key={row.id}><td>{row.numero_documento}</td><td>{row.fecha_emision}</td><td>{row.cliente_razon_social}</td><td>${Number(row.total).toFixed(2)}</td><td>{row.estado_sri}{row.email_estado && row.email_estado !== 'PENDIENTE' && <small style={{ display: 'block', color: row.email_estado === 'ENVIADO' ? '#059669' : '#dc2626' }}>Correo: {row.email_estado}</small>}</td><td><div className="v1-actions">
-        <button onClick={async () => { try { setDetail((await facturacion.estado(row.id)).data); } catch { setError('No se pudo consultar el estado.'); } }}>Ver estado</button>
-        {row.estado_sri === 'AUTORIZADO' && <><button onClick={() => download(row, 'pdf')}>PDF</button><button onClick={() => download(row, 'xml')}>XML</button>{can(user, 'comprobantes.email') && <button disabled={busy} onClick={async () => { setBusy(true); setError(''); setMessage(''); try { const res = await facturacion.reenviarEmail(row.id); setMessage(res.data.message); await load(); } catch (e: any) { setError(e.response?.data?.message || 'No se pudo programar el envío de correo.'); } finally { setBusy(false); } }} style={{ backgroundColor: '#2563eb', borderColor: '#2563eb' }}>Reenviar correo</button>}</>}
-        {can(user, 'comprobantes.retry') && ['BORRADOR', 'PROCESANDO', 'FIRMADO', 'ENVIADO', 'RECIBIDA', 'ERROR_ENVIO', 'ERROR_FIRMA', 'ERROR_AUTORIZACION', 'ERROR_SISTEMA'].includes(row.estado_sri) && <button disabled={busy} onClick={async () => { setBusy(true); setError(''); setMessage(''); try { const res = await facturacion.reintentar(row.id); setMessage(res.data.message); await load(); } catch (e: any) { setError(e.response?.data?.message || 'No se pudo programar el reintento.'); } finally { setBusy(false); } }}>{['RECIBIDA', 'ENVIADO'].includes(row.estado_sri) ? 'Consultar SRI' : 'Reintentar procesamiento'}</button>}
+        <button onClick={() => handleOpenEstado(row)}>Ver estado</button>
+        {row.estado_sri === 'AUTORIZADO' && <><button onClick={() => download(row, 'pdf')}>PDF</button><button onClick={() => download(row, 'xml')}>XML</button>{can(user, 'comprobantes.email') && <button disabled={busy} onClick={() => handleReenviarEmail(row)} style={{ backgroundColor: '#2563eb', borderColor: '#2563eb' }}>Reenviar correo</button>}</>}
+        {can(user, 'comprobantes.retry') && ['BORRADOR', 'PROCESANDO', 'FIRMADO', 'ENVIADO', 'RECIBIDA', 'ERROR_ENVIO', 'ERROR_FIRMA', 'ERROR_AUTORIZACION', 'ERROR_SISTEMA'].includes(row.estado_sri) && <button disabled={busy} onClick={() => handleReintentar(row)}>{['RECIBIDA', 'ENVIADO'].includes(row.estado_sri) ? 'Consultar SRI' : 'Reintentar procesamiento'}</button>}
         {can(user, 'comprobantes.correct') && ['DEVUELTA', 'NO_AUTORIZADO'].includes(row.estado_sri) && <button disabled={busy} onClick={() => openCorrection(row)} style={{ backgroundColor: '#c2410c', borderColor: '#c2410c' }}>Corregir datos fiscales</button>}
       </div></td></tr>)}
       {!rows.length && <tr><td colSpan={6}>{busy ? 'Consultando…' : 'Sin resultados para los filtros seleccionados.'}</td></tr>}
     </tbody></table></div>
     <div className="v1-actions"><button disabled={busy || page <= 1} onClick={() => setPage(p => p - 1)}>Anterior</button><span>Página {page} de {pages}</span><button disabled={busy || page >= pages} onClick={() => setPage(p => p + 1)}>Siguiente</button></div>
-    {detail && <section className="v1-card"><div className="v1-actions"><h2>Estado del comprobante {detail.comprobante_id}</h2><button onClick={() => setDetail(null)}>Cerrar detalle</button></div><p>Estado SRI: <strong>{detail.estado_sri}</strong></p><p style={{ overflowWrap: 'anywhere' }}>Clave de acceso: {detail.clave_acceso || 'Pendiente de generación'}</p><p>Autorización: {detail.numero_autorizacion || 'No confirmada'}</p><p>Entrega por correo: <strong>{detail.email_estado || 'PENDIENTE'}</strong>{detail.email_enviado_en ? ` (Enviado: ${detail.email_enviado_en})` : ''}{detail.email_intentos ? ` · ${detail.email_intentos} intento(s)` : ''}</p>{detail.email_error && <p className="v1-notice v1-error">Error entrega correo: {detail.email_error}</p>}{detail.ultimo_error_sri && <p className="v1-notice v1-error">{detail.ultimo_error_sri}</p>}<ul>{(detail.logs || []).map((log: any) => <li key={log.id}>{log.created_at} · {log.estado}: {log.mensaje}</li>)}</ul></section>}
+    
+    <FacturaEstadoModal
+      open={!!detail}
+      onClose={() => {
+        setDetail(null);
+        setDetailRow(null);
+      }}
+      detail={detail}
+      row={detailRow}
+      onOpenCorrection={openCorrection}
+      onRetry={handleReintentar}
+      onDownload={download}
+      onReenviarEmail={handleReenviarEmail}
+      canRetry={can(user, 'comprobantes.retry')}
+      canCorrect={can(user, 'comprobantes.correct')}
+      canEmail={can(user, 'comprobantes.email')}
+      busy={busy}
+    />
     {correctingRow && (
       <div className="v1-dialog-backdrop">
         <div className="v1-dialog">
