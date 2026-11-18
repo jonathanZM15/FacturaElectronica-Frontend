@@ -885,14 +885,9 @@ const Emisores: React.FC = () => {
             className="btn-nuevo" 
             onClick={() => setOpenNew(true)}
             disabled={user?.role === 'gerente' || user?.role === 'emisor' || user?.role === 'cajero'}
-            style={{
-              opacity: (user?.role === 'gerente' || user?.role === 'emisor' || user?.role === 'cajero') ? 0.5 : 1,
-              cursor: (user?.role === 'gerente' || user?.role === 'emisor' || user?.role === 'cajero') ? 'not-allowed' : 'pointer',
-              background: (user?.role === 'gerente' || user?.role === 'emisor' || user?.role === 'cajero') ? 'linear-gradient(135deg, #9ca3af 0%, #6b7280 100%)' : undefined
-            }}
             title={user?.role === 'gerente' ? 'Los gerentes no pueden crear emisores' : user?.role === 'emisor' ? 'Los emisores no pueden crear emisores' : user?.role === 'cajero' ? 'Los cajeros no pueden crear emisores' : 'Crear nuevo emisor'}
           >
-            ✨ Nuevo
+            Nuevo
           </button>
       </div>
 
@@ -1223,7 +1218,7 @@ const Emisores: React.FC = () => {
               <span style={{ fontSize: '14px', color: '#9ca3af', display: 'block' }}>
                 {activeFiltersCount > 0 || (activeFilter && filterValue) || desde || hasta
                   ? 'Intenta con otros criterios de búsqueda o limpia los filtros' 
-                  : 'Haz clic en "✨ Nuevo" para agregar uno'}
+                  : 'Haz clic en "Nuevo" para agregar uno'}
               </span>
             </div>
           </div>
