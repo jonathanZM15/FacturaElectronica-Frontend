@@ -404,7 +404,7 @@
   overflow-x: auto;
   overflow-y: auto;
   max-height: calc(100vh - 400px);
-  min-height: 300px;
+  min-height: auto;
   scrollbar-width: thin;
   scrollbar-color: #fb923c #fff7ed;
 }
