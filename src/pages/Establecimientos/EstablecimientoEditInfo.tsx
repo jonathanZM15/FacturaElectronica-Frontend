@@ -815,85 +815,108 @@ const EstablecimientoEditInfo: React.FC = () => {
 
         {/* Card: Gerentes del establecimiento */}
         <div className="estd-card full-width">
-          <div className="estd-card-header">
-            <div className="estd-card-icon blue">👥</div>
-            <h4>Gerentes del establecimiento</h4>
-          </div>
+          {(() => {
+            // Filtrar usuarios con rol gerente (o todos los asignados)
+            const gerentes = (est?.usuarios || []).filter((u: any) => {
+              const role = typeof u.role === 'string' ? u.role.toLowerCase() : (u.role?.value || u.role || '').toString().toLowerCase();
+              return role === 'gerente' || !role;
+            });
 
-          <div className="estd-card-body">
-            {(() => {
-              // Filtrar solo usuarios con rol gerente
-              const gerentes = (est?.usuarios || []).filter((u: any) => {
-                const role = typeof u.role === 'string' ? u.role.toLowerCase() : (u.role?.value || u.role || '').toString().toLowerCase();
-                return role === 'gerente';
-              });
-
-              if (gerentes.length === 0) {
-                return (
-                  <div style={{ color: '#999', fontStyle: 'italic', textAlign: 'center', padding: '16px' }}>
-                    No hay gerentes asignados a este establecimiento
+            return (
+              <>
+                <div className="estd-card-header estd-gerentes-header">
+                  <div className="estd-gerentes-header-left">
+                    <div className="estd-card-icon indigo">👥</div>
+                    <div>
+                      <h4 className="estd-card-title">Gerentes del establecimiento</h4>
+                      <p className="estd-card-subtitle">
+                        Usuarios administradores con permisos de gestión asignados a esta sucursal
+                      </p>
+                    </div>
                   </div>
-                );
-              }
-
-              return (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {gerentes.map((gerente: any, index: number) => {
-                    const roleDisplay = typeof gerente.role === 'string' 
-                      ? gerente.role.toUpperCase() 
-                      : (gerente.role?.value || gerente.role || '').toString().toUpperCase();
-                    
-                    return (
-                      <div 
-                        key={gerente.id || index} 
-                        style={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          padding: '12px 16px',
-                          backgroundColor: '#f8fafc',
-                          borderRadius: '8px',
-                          border: '1px solid #e2e8f0'
-                        }}
-                      >
-                        <span style={{ 
-                          fontWeight: 600, 
-                          color: '#10b981',
-                          backgroundColor: '#d1fae5',
-                          padding: '4px 8px',
-                          borderRadius: '4px',
-                          fontSize: '12px',
-                          marginRight: '12px'
-                        }}>
-                          {roleDisplay}
-                        </span>
-                        <span style={{ color: '#64748b', margin: '0 8px' }}>–</span>
-                        <button type="button"
-                          onClick={(e) => { 
-                            e.preventDefault(); 
-                            if (gerente.id) {
-                              handleOpenUserDetail(gerente.id);
-                            }
-                          }}
-                          style={{ border: 0, padding: 0, background: 'none', fontFamily: 'inherit', fontSize: 'inherit',
-                            color: '#1b4ab4', 
-                            fontWeight: 600, 
-                            textDecoration: 'underline', 
-                            cursor: 'pointer' 
-                          }}
-                        >
-                          {gerente.username || '-'}
-                        </button>
-                        <span style={{ color: '#64748b', margin: '0 8px' }}>–</span>
-                        <span style={{ color: '#334155' }}>
-                          {gerente.nombres || ''} {gerente.apellidos || ''}
-                        </span>
-                      </div>
-                    );
-                  })}
+                  {gerentes.length > 0 && (
+                    <span className="estd-gerentes-count-badge">
+                      {gerentes.length} {gerentes.length === 1 ? 'gerente asociado' : 'gerentes asociados'}
+                    </span>
+                  )}
                 </div>
-              );
-            })()}
-          </div>
+
+                <div className="estd-card-body">
+                  {gerentes.length === 0 ? (
+                    <div className="estd-gerentes-empty">
+                      <div className="estd-gerentes-empty-icon">👥</div>
+                      <div className="estd-gerentes-empty-title">No hay gerentes asignados</div>
+                      <div className="estd-gerentes-empty-sub">
+                        Este establecimiento no tiene usuarios administradores vinculados actualmente.
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="estd-gerentes-grid">
+                      {gerentes.map((gerente: any, index: number) => {
+                        const fullName = `${gerente.nombres || ''} ${gerente.apellidos || ''}`.trim();
+                        const username = String(gerente.username || 'gerente').toUpperCase();
+                        const roleDisplay = typeof gerente.role === 'string' 
+                          ? gerente.role.toUpperCase() 
+                          : (gerente.role?.value || gerente.role || 'GERENTE').toString().toUpperCase();
+
+                        return (
+                          <div 
+                            key={gerente.id || index} 
+                            className="estd-gerente-card"
+                            onClick={() => {
+                              if (gerente.id) handleOpenUserDetail(gerente.id);
+                            }}
+                            title={`Ver detalles de ${username}`}
+                          >
+                            <div className="estd-gerente-card-top">
+                              <div className="estd-gerente-avatar">
+                                <span>👤</span>
+                              </div>
+                              <div className="estd-gerente-top-info">
+                                <span className="estd-gerente-username">{username}</span>
+                                <span className="estd-gerente-role-tag">{roleDisplay}</span>
+                              </div>
+                            </div>
+
+                            <div className="estd-gerente-card-body">
+                              <div className="estd-gerente-name-row">
+                                <span className="estd-gerente-name-label">Nombre:</span>
+                                <span className="estd-gerente-name-val">
+                                  {fullName || 'Sin nombre registrado'}
+                                </span>
+                              </div>
+                              {gerente.email && (
+                                <div className="estd-gerente-email-row">
+                                  <span className="estd-gerente-email-icon">✉️</span>
+                                  <span className="estd-gerente-email-val">{gerente.email}</span>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="estd-gerente-card-footer">
+                              <button 
+                                type="button"
+                                className="estd-gerente-action-btn"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (gerente.id) handleOpenUserDetail(gerente.id);
+                                }}
+                              >
+                                Ver detalles
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                  <polyline points="9 18 15 12 9 6"></polyline>
+                                </svg>
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </>
+            );
+          })()}
         </div>
       </div>
 
