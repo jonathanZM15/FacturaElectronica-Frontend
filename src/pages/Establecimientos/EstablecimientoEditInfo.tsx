@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { establecimientosApi } from '../../services/establecimientosApi';
 import { emisoresApi } from '../../services/emisoresApi';
 import { usuariosApi } from '../../services/usuariosApi';
+import { usuariosEmisorApi } from '../../services/usuariosEmisorApi';
 import EstablishmentFormModal from './EstablishmentFormModal';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useUser } from '../../contexts/userContext';
@@ -494,19 +495,52 @@ const EstablecimientoEditInfo: React.FC = () => {
   };
 
   // Función para abrir el modal de detalle de usuario
-  const handleOpenUserDetail = async (userId: number) => {
+  const handleOpenUserDetail = async (target: number | any) => {
+    const userId = typeof target === 'object' ? target?.id : target;
+    if (!userId) {
+      show({ title: 'Error', message: 'Usuario no válido', type: 'error' });
+      return;
+    }
+
     setUserDetailLoading(true);
     setUserDetailOpen(true);
-    try {
-      const response = await usuariosApi.get(userId);
-      let userData = response.data?.data ?? response.data;
 
-      if (
-        company &&
-        userData?.emisor_id != null &&
-        company?.id != null &&
-        String(userData.emisor_id) === String(company.id)
-      ) {
+    const emisorId = id || company?.id || est?.emisor_id;
+    let userData: any = null;
+    let shouldAttachCompany = false;
+
+    try {
+      // 1) Intentar endpoint de usuarios del emisor si tenemos emisorId (permite a emisores, gerentes y cajeros ver el detalle)
+      if (emisorId) {
+        try {
+          const response = await usuariosEmisorApi.get(emisorId, userId);
+          userData = response.data?.data ?? response.data;
+          shouldAttachCompany = true;
+        } catch {
+          // 2) Fallback al endpoint global (por si es admin o distribuidor)
+          const response = await usuariosApi.get(userId);
+          userData = response.data?.data ?? response.data;
+          if (company && userData?.emisor_id != null && String(userData.emisor_id) === String(company.id)) {
+            shouldAttachCompany = true;
+          }
+        }
+      } else {
+        const response = await usuariosApi.get(userId);
+        userData = response.data?.data ?? response.data;
+        if (company && userData?.emisor_id != null && String(userData.emisor_id) === String(company.id)) {
+          shouldAttachCompany = true;
+        }
+      }
+
+      if (shouldAttachCompany && company) {
+        userData = {
+          ...userData,
+          emisor_id: company.id,
+          emisor_ruc: company.ruc,
+          emisor_razon_social: company.razon_social,
+          emisor_estado: company.estado,
+        };
+      } else if (company && userData?.emisor_id != null && String(userData.emisor_id) === String(company.id)) {
         userData = {
           ...userData,
           emisor_ruc: company.ruc,
@@ -514,10 +548,22 @@ const EstablecimientoEditInfo: React.FC = () => {
           emisor_estado: company.estado,
         };
       }
+
       setSelectedUserDetail(userData);
     } catch (e: any) {
-      show({ title: 'Error', message: 'No se pudo cargar la información del usuario', type: 'error' });
-      setUserDetailOpen(false);
+      // Si ambos endpoints fallaron por permisos pero tenemos datos del objeto en memoria
+      if (typeof target === 'object' && (target.username || target.nombres)) {
+        setSelectedUserDetail({
+          ...target,
+          emisor_ruc: company?.ruc,
+          emisor_razon_social: company?.razon_social,
+          emisor_estado: company?.estado,
+        });
+      } else {
+        console.error('Error al cargar detalle del usuario:', e);
+        show({ title: 'Error', message: 'No se pudo cargar la información del usuario', type: 'error' });
+        setUserDetailOpen(false);
+      }
     } finally {
       setUserDetailLoading(false);
     }
@@ -772,7 +818,7 @@ const EstablecimientoEditInfo: React.FC = () => {
                       onClick={(e) => { 
                         e.preventDefault(); 
                         if (est.created_by_info?.id) {
-                          handleOpenUserDetail(est.created_by_info.id);
+                          handleOpenUserDetail(est.created_by_info);
                         }
                       }}
                       style={{ border: 0, padding: 0, background: 'none', fontFamily: 'inherit', fontSize: 'inherit', color: '#1b4ab4', fontWeight: 600, textDecoration: 'underline', cursor: 'pointer' }}
@@ -797,7 +843,7 @@ const EstablecimientoEditInfo: React.FC = () => {
                       onClick={(e) => { 
                         e.preventDefault(); 
                         if (est.updated_by_info?.id) {
-                          handleOpenUserDetail(est.updated_by_info.id);
+                          handleOpenUserDetail(est.updated_by_info);
                         }
                       }}
                       style={{ border: 0, padding: 0, background: 'none', fontFamily: 'inherit', fontSize: 'inherit', color: '#1b4ab4', fontWeight: 600, textDecoration: 'underline', cursor: 'pointer' }}
@@ -864,7 +910,7 @@ const EstablecimientoEditInfo: React.FC = () => {
                             key={gerente.id || index} 
                             className="estd-gerente-card"
                             onClick={() => {
-                              if (gerente.id) handleOpenUserDetail(gerente.id);
+                              if (gerente.id) handleOpenUserDetail(gerente);
                             }}
                             title={`Ver detalles de ${username}`}
                           >
@@ -899,7 +945,7 @@ const EstablecimientoEditInfo: React.FC = () => {
                                 className="estd-gerente-action-btn"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  if (gerente.id) handleOpenUserDetail(gerente.id);
+                                  if (gerente.id) handleOpenUserDetail(gerente);
                                 }}
                               >
                                 Ver detalles
@@ -1301,7 +1347,7 @@ const EstablecimientoEditInfo: React.FC = () => {
                               <button type="button"
                                 onClick={(e) => {
                                   e.preventDefault();
-                                  handleOpenUserDetail(punto.user.id);
+                                  handleOpenUserDetail(punto.user);
                                 }}
                                 style={{ border: 0, padding: 0, background: 'none', fontFamily: 'inherit', fontSize: 'inherit',
                                   color: '#1b4ab4',
