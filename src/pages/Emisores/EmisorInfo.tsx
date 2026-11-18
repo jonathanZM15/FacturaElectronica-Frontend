@@ -1543,41 +1543,60 @@ const EmisorInfo: React.FC = () => {
                           {/* Usuarios Gerentes Asociados */}
                           <td>
                             {est.usuarios && est.usuarios.length > 0 ? (
-                              <div className="est-usuarios-list">
-                                {est.usuarios.slice(0, 3).map((usr: any, idx: number) => (
-                                  <div key={usr?.id ?? idx} className="est-usuario-item">
-                                    <span className="est-usuario-name">
-                                      {String(usr?.role ?? '—').trim().toUpperCase()} –{' '}
-                                      {usr?.id ? (
-                                        <button
-                                          type="button"
-                                          className="est-usuario-link"
-                                          title="Ver usuario"
-                                          onClick={() => handleOpenUserDetail(usr)}
-                                          style={{
-                                            background: 'none',
-                                            border: 'none',
-                                            padding: 0,
-                                            font: 'inherit',
-                                          }}
-                                        >
-                                          {String(usr?.username ?? '—').trim().toUpperCase()}
-                                        </button>
-                                      ) : (
-                                        <span className="est-usuario-link">
-                                          {String(usr?.username ?? '—').trim().toUpperCase()}
-                                        </span>
-                                      )}
-                                      {' '}– {String(usr?.nombres ?? '—').trim().toUpperCase()} – {String(usr?.apellidos ?? '—').trim().toUpperCase()}
+                              <div className="est-gerentes-cell">
+                                <button
+                                  type="button"
+                                  className="est-gerente-chip"
+                                  onClick={() => handleOpenUserDetail(est.usuarios[0])}
+                                  title={`Ver detalles de: ${est.usuarios[0]?.username ?? 'Gerente'}`}
+                                >
+                                  <span className="est-gerente-chip-avatar">👤</span>
+                                  <span className="est-gerente-chip-name">
+                                    {String(est.usuarios[0]?.username ?? `${est.usuarios[0]?.nombres ?? ''} ${est.usuarios[0]?.apellidos ?? ''}`.trim() ?? 'Gerente').toUpperCase()}
+                                  </span>
+                                </button>
+
+                                {est.usuarios.length > 1 && (
+                                  <div className="est-gerentes-more-wrapper">
+                                    <span className="est-gerentes-more-tag" title="Pasa el cursor para ver todos los gerentes">
+                                      +{est.usuarios.length - 1} más
                                     </span>
+                                    <div className="est-gerentes-dropdown">
+                                      <div className="est-gerentes-dropdown-header">
+                                        Gerentes Asociados ({est.usuarios.length})
+                                      </div>
+                                      <div className="est-gerentes-dropdown-list">
+                                        {est.usuarios.map((usr: any, idx: number) => {
+                                          const fullName = `${usr?.nombres ?? ''} ${usr?.apellidos ?? ''}`.trim();
+                                          return (
+                                            <button
+                                              key={usr?.id ?? idx}
+                                              type="button"
+                                              className="est-gerente-dropdown-item"
+                                              onClick={() => handleOpenUserDetail(usr)}
+                                              title="Ver detalles del usuario"
+                                            >
+                                              <span className="est-gerente-dropdown-icon">👤</span>
+                                              <div className="est-gerente-dropdown-text">
+                                                <span className="est-gerente-dropdown-username">
+                                                  {String(usr?.username ?? '—').toUpperCase()}
+                                                </span>
+                                                {fullName && (
+                                                  <span className="est-gerente-dropdown-fullname">
+                                                    {fullName}
+                                                  </span>
+                                                )}
+                                              </div>
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
                                   </div>
-                                ))}
-                                {est.usuarios.length > 3 && (
-                                  <span style={{ fontSize: 12, color: '#6b7280' }}>+{est.usuarios.length - 3} más</span>
                                 )}
                               </div>
                             ) : (
-                              <span style={{ color: '#9ca3af' }}>Sin usuarios</span>
+                              <span style={{ color: '#9ca3af', fontSize: '13px' }}>Sin gerentes</span>
                             )}
                           </td>
                           {/* Acciones */}
