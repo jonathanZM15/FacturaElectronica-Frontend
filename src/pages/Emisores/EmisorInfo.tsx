@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import { emisoresApi } from '../../services/emisoresApi';
 import EmisorFormModal from './EmisorFormModal';
@@ -73,6 +74,76 @@ const EmisorInfo: React.FC = () => {
   const [refreshUsers, setRefreshUsers] = React.useState(0);
   const isLimitedRole = role === 'gerente' || role === 'cajero';
   const [distributorCreator, setDistributorCreator] = React.useState<User | null>(null);
+
+  // Popover flotante para gerentes asociados (Portal para evitar cualquier clipping por overflow de tabla)
+  const [gerentesPopover, setGerentesPopover] = React.useState<{
+    top: number;
+    left: number;
+    users: any[];
+    placement: 'bottom' | 'top';
+  } | null>(null);
+  const popoverTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  // Modal para ver lista completa de gerentes asociados
+  const [gerentesModalEst, setGerentesModalEst] = React.useState<any | null>(null);
+
+  const handleMouseEnterMoreGerentes = (e: React.MouseEvent<HTMLElement>, usuarios: any[]) => {
+    if (popoverTimerRef.current) {
+      clearTimeout(popoverTimerRef.current);
+      popoverTimerRef.current = null;
+    }
+    const rect = e.currentTarget.getBoundingClientRect();
+    const popoverWidth = 260;
+    const estimatedHeight = Math.min(260, 48 + usuarios.length * 48);
+
+    let placement: 'bottom' | 'top' = 'bottom';
+    let top = rect.bottom + 8;
+
+    if (top + estimatedHeight > window.innerHeight && rect.top > estimatedHeight + 10) {
+      top = rect.top - estimatedHeight - 8;
+      placement = 'top';
+    }
+
+    let left = rect.left;
+    if (left + popoverWidth > window.innerWidth - 12) {
+      left = Math.max(12, window.innerWidth - popoverWidth - 12);
+    }
+
+    setGerentesPopover({
+      top,
+      left,
+      users: usuarios,
+      placement,
+    });
+  };
+
+  const handleMouseLeaveMoreGerentes = () => {
+    popoverTimerRef.current = setTimeout(() => {
+      setGerentesPopover(null);
+    }, 250);
+  };
+
+  const handlePopoverMouseEnter = () => {
+    if (popoverTimerRef.current) {
+      clearTimeout(popoverTimerRef.current);
+      popoverTimerRef.current = null;
+    }
+  };
+
+  const handlePopoverMouseLeave = () => {
+    setGerentesPopover(null);
+  };
+
+  React.useEffect(() => {
+    if (!gerentesPopover) return;
+    const handleDismiss = () => setGerentesPopover(null);
+    window.addEventListener('scroll', handleDismiss, true);
+    window.addEventListener('resize', handleDismiss);
+    return () => {
+      window.removeEventListener('scroll', handleDismiss, true);
+      window.removeEventListener('resize', handleDismiss);
+    };
+  }, [gerentesPopover]);
   
   // Estado para modal de detalle de usuario
   const [selectedUserDetail, setSelectedUserDetail] = React.useState<User | null>(null);
@@ -1557,41 +1628,22 @@ const EmisorInfo: React.FC = () => {
                                 </button>
 
                                 {est.usuarios.length > 1 && (
-                                  <div className="est-gerentes-more-wrapper">
-                                    <span className="est-gerentes-more-tag" title="Pasa el cursor para ver todos los gerentes">
+                                  <div 
+                                    className="est-gerentes-more-wrapper"
+                                    onMouseEnter={(e) => handleMouseEnterMoreGerentes(e, est.usuarios)}
+                                    onMouseLeave={handleMouseLeaveMoreGerentes}
+                                  >
+                                    <button
+                                      type="button"
+                                      className="est-gerentes-more-tag"
+                                      onClick={() => {
+                                        setGerentesPopover(null);
+                                        setGerentesModalEst(est);
+                                      }}
+                                      title={est.usuarios.slice(1).map((u: any) => `${u?.username || 'Gerente'}: ${u?.nombres || ''} ${u?.apellidos || ''}`.trim()).join('\n')}
+                                    >
                                       +{est.usuarios.length - 1} más
-                                    </span>
-                                    <div className="est-gerentes-dropdown">
-                                      <div className="est-gerentes-dropdown-header">
-                                        Gerentes Asociados ({est.usuarios.length})
-                                      </div>
-                                      <div className="est-gerentes-dropdown-list">
-                                        {est.usuarios.map((usr: any, idx: number) => {
-                                          const fullName = `${usr?.nombres ?? ''} ${usr?.apellidos ?? ''}`.trim();
-                                          return (
-                                            <button
-                                              key={usr?.id ?? idx}
-                                              type="button"
-                                              className="est-gerente-dropdown-item"
-                                              onClick={() => handleOpenUserDetail(usr)}
-                                              title="Ver detalles del usuario"
-                                            >
-                                              <span className="est-gerente-dropdown-icon">👤</span>
-                                              <div className="est-gerente-dropdown-text">
-                                                <span className="est-gerente-dropdown-username">
-                                                  {String(usr?.username ?? '—').toUpperCase()}
-                                                </span>
-                                                {fullName && (
-                                                  <span className="est-gerente-dropdown-fullname">
-                                                    {fullName}
-                                                  </span>
-                                                )}
-                                              </div>
-                                            </button>
-                                          );
-                                        })}
-                                      </div>
-                                    </div>
+                                    </button>
                                   </div>
                                 )}
                               </div>
@@ -2101,6 +2153,129 @@ const EmisorInfo: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Popover flotante para gerentes asociados (Portal para evitar recorte por overflow de tabla) */}
+      {gerentesPopover && createPortal(
+        <div
+          className={`est-gerentes-floating-popover est-popover-${gerentesPopover.placement}`}
+          style={{
+            position: 'fixed',
+            top: `${gerentesPopover.top}px`,
+            left: `${gerentesPopover.left}px`,
+            zIndex: 99999,
+          }}
+          onMouseEnter={handlePopoverMouseEnter}
+          onMouseLeave={handlePopoverMouseLeave}
+        >
+          <div className="est-gerentes-dropdown-header">
+            <span>Gerentes Asociados ({gerentesPopover.users.length})</span>
+          </div>
+          <div className="est-gerentes-dropdown-list">
+            {gerentesPopover.users.map((usr: any, idx: number) => {
+              const fullName = `${usr?.nombres ?? ''} ${usr?.apellidos ?? ''}`.trim();
+              return (
+                <button
+                  key={usr?.id ?? idx}
+                  type="button"
+                  className="est-gerente-dropdown-item"
+                  onClick={() => {
+                    setGerentesPopover(null);
+                    handleOpenUserDetail(usr);
+                  }}
+                  title="Ver detalles del usuario"
+                >
+                  <span className="est-gerente-dropdown-icon">👤</span>
+                  <div className="est-gerente-dropdown-text">
+                    <span className="est-gerente-dropdown-username">
+                      {String(usr?.username ?? '—').toUpperCase()}
+                    </span>
+                    {fullName && (
+                      <span className="est-gerente-dropdown-fullname">
+                        {fullName}
+                      </span>
+                    )}
+                  </div>
+                  <span className="est-gerente-dropdown-arrow">›</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Modal para ver todos los gerentes asociados de un establecimiento */}
+      {gerentesModalEst && createPortal(
+        <div className="est-modal-backdrop" onClick={() => setGerentesModalEst(null)}>
+          <div className="est-modal-container" onClick={(e) => e.stopPropagation()}>
+            <div className="est-modal-header">
+              <div className="est-modal-header-icon">👥</div>
+              <div>
+                <h3 className="est-modal-title">
+                  Gerentes Asociados
+                </h3>
+                <p className="est-modal-subtitle">
+                  Establecimiento {gerentesModalEst.codigo || ''} {gerentesModalEst.nombre ? `• ${gerentesModalEst.nombre}` : ''}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="est-modal-close-btn"
+                onClick={() => setGerentesModalEst(null)}
+                title="Cerrar"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="est-modal-body">
+              <div className="est-gerentes-modal-list">
+                {gerentesModalEst.usuarios?.map((usr: any, idx: number) => {
+                  const fullName = `${usr?.nombres ?? ''} ${usr?.apellidos ?? ''}`.trim();
+                  return (
+                    <div key={usr?.id ?? idx} className="est-gerente-modal-card">
+                      <div className="est-gerente-modal-card-avatar">👤</div>
+                      <div className="est-gerente-modal-card-info">
+                        <div className="est-gerente-modal-card-username">
+                          {String(usr?.username ?? '—').toUpperCase()}
+                        </div>
+                        {fullName && (
+                          <div className="est-gerente-modal-card-name">{fullName}</div>
+                        )}
+                        {usr?.email && (
+                          <div className="est-gerente-modal-card-email">{usr.email}</div>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        className="est-gerente-modal-card-action"
+                        onClick={() => {
+                          setGerentesModalEst(null);
+                          handleOpenUserDetail(usr);
+                        }}
+                        title="Ver detalles completos"
+                      >
+                        Ver detalles
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="est-modal-footer">
+              <button
+                type="button"
+                className="est-modal-btn-cancel"
+                onClick={() => setGerentesModalEst(null)}
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
 
       <ImageViewerModal open={viewerOpen} imageUrl={viewerImage} onClose={() => setViewerOpen(false)} />

@@ -454,7 +454,7 @@
   overflow-x: auto;
   overflow-y: auto;
   max-height: calc(100vh - 450px);
-  min-height: 300px;
+  min-height: auto;
   scrollbar-width: thin;
   scrollbar-color: #667eea #f1f5f9;
   position: relative;
@@ -464,6 +464,7 @@
 .est-table-wrapper.est-table-wrapper--empty {
   overflow: hidden;
   scrollbar-width: none;
+  min-height: 280px;
 }
 
 .est-table-wrapper.est-table-wrapper--empty::-webkit-scrollbar {
@@ -877,6 +878,23 @@
   transition: all 0.2s ease;
 }
 
+.est-gerentes-more-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 8px;
+  background: #ede9fe;
+  color: #6d28d9;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid rgba(109, 40, 217, 0.2);
+  transition: all 0.2s ease;
+  user-select: none;
+  font-family: inherit;
+}
+
 .est-gerentes-more-tag:hover {
   background: linear-gradient(135deg, #ddd6fe 0%, #c4b5fd 100%);
   color: #5b21b6;
@@ -884,89 +902,312 @@
   box-shadow: 0 2px 8px rgba(109, 40, 217, 0.2);
 }
 
-.est-gerentes-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  margin-top: 6px;
+/* Floating Popover (portal fuera del scroll de tabla) */
+.est-gerentes-floating-popover {
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  border-radius: 14px;
+  box-shadow: 0 14px 30px -4px rgba(0, 0, 0, 0.18), 0 8px 12px -6px rgba(0, 0, 0, 0.1);
   padding: 8px;
-  min-width: 240px;
-  z-index: 50;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(4px);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  pointer-events: none;
+  min-width: 250px;
+  max-width: 320px;
+  pointer-events: auto;
+  animation: estPopoverFadeIn 0.16s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.est-gerentes-more-wrapper:hover .est-gerentes-dropdown,
-.est-gerentes-dropdown:hover {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-  pointer-events: auto;
+@keyframes estPopoverFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .est-gerentes-dropdown-header {
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  color: #64748b;
-  padding: 4px 8px 8px 8px;
+  color: #6366f1;
+  padding: 6px 10px;
   border-bottom: 1px solid #f1f5f9;
   margin-bottom: 4px;
+  letter-spacing: 0.5px;
 }
 
 .est-gerentes-dropdown-list {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  max-height: 200px;
+  gap: 3px;
+  max-height: 240px;
   overflow-y: auto;
 }
 
 .est-gerente-dropdown-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
-  border-radius: 8px;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
   border: none;
   background: transparent;
   width: 100%;
   text-align: left;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: all 0.15s ease;
 }
 
 .est-gerente-dropdown-item:hover {
-  background: #f8fafc;
+  background: #f5f3ff;
 }
 
 .est-gerente-dropdown-icon {
-  font-size: 14px;
+  font-size: 16px;
   color: #6366f1;
+  flex-shrink: 0;
 }
 
 .est-gerente-dropdown-text {
   display: flex;
   flex-direction: column;
-  line-height: 1.2;
+  line-height: 1.25;
+  flex: 1;
+  min-width: 0;
 }
 
 .est-gerente-dropdown-username {
   font-size: 12px;
   font-weight: 700;
   color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .est-gerente-dropdown-fullname {
   font-size: 11px;
   color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.est-gerente-dropdown-arrow {
+  font-size: 16px;
+  color: #a5b4fc;
+  margin-left: auto;
+  font-weight: bold;
+}
+
+/* Modal de Gerentes Asociados */
+.est-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  padding: 16px;
+  animation: estModalFadeIn 0.2s ease-out;
+}
+
+@keyframes estModalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.est-modal-container {
+  background: #ffffff;
+  border-radius: 20px;
+  max-width: 520px;
+  width: 100%;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  animation: estModalScaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  max-height: 85vh;
+}
+
+@keyframes estModalScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.est-modal-header {
+  padding: 20px 24px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  position: relative;
+}
+
+.est-modal-header-icon {
+  font-size: 24px;
+  background: #ede9fe;
+  color: #6366f1;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+}
+
+.est-modal-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.est-modal-subtitle {
+  margin: 2px 0 0 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.est-modal-close-btn {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  color: #94a3b8;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+
+.est-modal-close-btn:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.est-modal-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+}
+
+.est-gerentes-modal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.est-gerente-modal-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  transition: all 0.15s ease;
+}
+
+.est-gerente-modal-card:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.est-gerente-modal-card-avatar {
+  font-size: 20px;
+  background: #ede9fe;
+  color: #6366f1;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.est-gerente-modal-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.est-gerente-modal-card-username {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.est-gerente-modal-card-name {
+  font-size: 12px;
+  color: #475569;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.est-gerente-modal-card-email {
+  font-size: 11px;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.est-gerente-modal-card-action {
+  padding: 6px 14px;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.est-gerente-modal-card-action:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.35);
+}
+
+.est-modal-footer {
+  padding: 14px 24px;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.est-modal-btn-cancel {
+  padding: 8px 18px;
+  background: #ffffff;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.est-modal-btn-cancel:hover {
+  background: #f1f5f9;
+  color: #1e293b;
 }
 
 /* Usuarios asociados legado */
