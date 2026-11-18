@@ -122,139 +122,150 @@ export default function FacturaEstadoModal({
             )}
           </div>
 
-          {/* Tarjeta 1: Datos de Autorización SRI */}
-          <div className="fem-card">
-            <div className="fem-card-header">
-              <span>🏛️</span>
-              <h3>Datos de Autorización del SRI</h3>
-            </div>
-            <div className="fem-grid-2">
-              <div className="fem-info-item">
-                <span className="fem-info-label">N° de Autorización</span>
-                <span className="fem-info-val" style={{ fontFamily: 'monospace', fontWeight: 600 }}>
-                  {detail.numero_autorizacion || 'No confirmada'}
-                </span>
-              </div>
-              <div className="fem-info-item">
-                <span className="fem-info-label">Fecha de Autorización</span>
-                <span className="fem-info-val">
-                  {detail.fecha_autorizacion || detail.autorizado_en ? formatDateTime(detail.fecha_autorizacion || detail.autorizado_en) : 'Pendiente'}
-                </span>
-              </div>
-            </div>
-
-            <div className="fem-info-item" style={{ marginTop: '12px' }}>
-              <span className="fem-info-label">Clave de Acceso (49 dígitos)</span>
-              {detail.clave_acceso ? (
-                <div className="fem-access-key-box">
-                  <span className="fem-key-code">{detail.clave_acceso}</span>
-                  <button
-                    type="button"
-                    className={`fem-btn-copy ${copiedKey ? 'copied' : ''}`}
-                    onClick={handleCopyKey}
-                    title="Copiar clave de acceso al portapapeles"
-                  >
-                    {copiedKey ? '✓ Copiado' : '📋 Copiar'}
-                  </button>
+          {/* Grid de 2 Columnas para ver todo sin scroll */}
+          <div className="fem-columns-grid">
+            {/* Columna Izquierda: Autorización y Correo */}
+            <div className="fem-col">
+              {/* Tarjeta 1: Datos de Autorización SRI */}
+              <div className="fem-card">
+                <div className="fem-card-header">
+                  <span>🏛️</span>
+                  <h3>Datos de Autorización SRI</h3>
                 </div>
-              ) : (
-                <span className="fem-info-val" style={{ color: '#94a3b8' }}>
-                  Pendiente de generación
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Tarjeta 2: Notificación por Correo */}
-          <div className="fem-card">
-            <div className="fem-card-header">
-              <span>✉️</span>
-              <h3>Entrega por Correo Electrónico</h3>
-            </div>
-            <div className="fem-grid-2">
-              <div className="fem-info-item">
-                <span className="fem-info-label">Estado de Entrega</span>
-                <span className={`fem-badge ${getEmailBadgeClass()}`}>
-                  {detail.email_estado || 'PENDIENTE'}
-                </span>
-              </div>
-              <div className="fem-info-item">
-                <span className="fem-info-label">Intentos Realizados</span>
-                <span className="fem-info-val">
-                  {detail.email_intentos !== undefined && detail.email_intentos !== null
-                    ? `${detail.email_intentos} intento(s)`
-                    : '0 intentos'}
-                </span>
-              </div>
-              {row?.cliente_email && (
-                <div className="fem-info-item">
-                  <span className="fem-info-label">Correo Destino</span>
-                  <span className="fem-info-val" style={{ color: '#2563eb' }}>
-                    {row.cliente_email}
-                  </span>
+                <div className="fem-grid-2">
+                  <div className="fem-info-item">
+                    <span className="fem-info-label">N° de Autorización</span>
+                    <span className="fem-info-val fem-mono">
+                      {detail.numero_autorizacion || 'No confirmada'}
+                    </span>
+                  </div>
+                  <div className="fem-info-item">
+                    <span className="fem-info-label">Fecha Autorización</span>
+                    <span className="fem-info-val">
+                      {detail.fecha_autorizacion || detail.autorizado_en
+                        ? formatDateTime(detail.fecha_autorizacion || detail.autorizado_en)
+                        : 'Pendiente'}
+                    </span>
+                  </div>
                 </div>
-              )}
-              {detail.email_enviado_en && (
-                <div className="fem-info-item">
-                  <span className="fem-info-label">Fecha de Envío</span>
-                  <span className="fem-info-val">
-                    {formatDateTime(detail.email_enviado_en)}
-                  </span>
-                </div>
-              )}
-            </div>
 
-            {detail.email_error && (
-              <div className="fem-error-banner" style={{ marginTop: '10px' }}>
-                <div className="fem-error-title">⚠️ Error en el envío del correo</div>
-                <p className="fem-error-desc">{detail.email_error}</p>
-              </div>
-            )}
-          </div>
-
-          {/* Tarjeta 3: Motivo / Error reportado por el SRI (si existe) */}
-          {detail.ultimo_error_sri && (
-            <div className="fem-card" style={{ borderColor: '#fca5a5' }}>
-              <div className="fem-card-header">
-                <span>⚠️</span>
-                <h3 style={{ color: '#991b1b' }}>Motivo reportado por el SRI</h3>
-              </div>
-              <div className="fem-error-banner">
-                <p className="fem-error-desc">{detail.ultimo_error_sri}</p>
-              </div>
-            </div>
-          )}
-
-          {/* Tarjeta 4: Historial de eventos / Logs */}
-          <div className="fem-card">
-            <div className="fem-card-header">
-              <span>🕒</span>
-              <h3>Historial de Procesamiento</h3>
-            </div>
-            {detail.logs && detail.logs.length > 0 ? (
-              <div className="fem-timeline">
-                {detail.logs.map((log: any) => {
-                  const isError = log.estado?.includes('ERROR') || log.mensaje?.toLowerCase().includes('error');
-                  const isSuccess = log.estado === 'AUTORIZADO' || log.estado === 'RECIBIDA';
-                  return (
-                    <div className="fem-timeline-item" key={log.id}>
-                      <div className={`fem-timeline-dot ${isError ? 'error' : isSuccess ? 'success' : ''}`} />
-                      <div className="fem-timeline-content">
-                        <div className="fem-timeline-meta">
-                          <span className="fem-timeline-time">{formatDateTime(log.created_at)}</span>
-                          <span className="fem-timeline-tag">{log.estado}</span>
-                        </div>
-                        <p className="fem-timeline-msg">{log.mensaje}</p>
-                      </div>
+                <div className="fem-info-item" style={{ marginTop: '8px' }}>
+                  <span className="fem-info-label">Clave de Acceso (49 dígitos)</span>
+                  {detail.clave_acceso ? (
+                    <div className="fem-access-key-box">
+                      <span className="fem-key-code">{detail.clave_acceso}</span>
+                      <button
+                        type="button"
+                        className={`fem-btn-copy ${copiedKey ? 'copied' : ''}`}
+                        onClick={handleCopyKey}
+                        title="Copiar clave de acceso al portapapeles"
+                      >
+                        {copiedKey ? '✓ Copiado' : '📋 Copiar'}
+                      </button>
                     </div>
-                  );
-                })}
+                  ) : (
+                    <span className="fem-info-val" style={{ color: '#94a3b8' }}>
+                      Pendiente de generación
+                    </span>
+                  )}
+                </div>
               </div>
-            ) : (
-              <p style={{ margin: '6px 0 0', fontSize: '13px', color: '#94a3b8' }}>
-                No hay registros de eventos detallados para este comprobante.
-              </p>
-            )}
+
+              {/* Tarjeta 2: Notificación por Correo */}
+              <div className="fem-card">
+                <div className="fem-card-header">
+                  <span>✉️</span>
+                  <h3>Entrega por Correo Electrónico</h3>
+                </div>
+                <div className="fem-grid-2">
+                  <div className="fem-info-item">
+                    <span className="fem-info-label">Estado Entrega</span>
+                    <span className={`fem-badge ${getEmailBadgeClass()}`}>
+                      {detail.email_estado || 'PENDIENTE'}
+                    </span>
+                  </div>
+                  <div className="fem-info-item">
+                    <span className="fem-info-label">Intentos</span>
+                    <span className="fem-info-val">
+                      {detail.email_intentos !== undefined && detail.email_intentos !== null
+                        ? `${detail.email_intentos} intento(s)`
+                        : '0 intentos'}
+                    </span>
+                  </div>
+                  {row?.cliente_email && (
+                    <div className="fem-info-item">
+                      <span className="fem-info-label">Correo Destino</span>
+                      <span className="fem-info-val" style={{ color: '#2563eb', wordBreak: 'break-all' }}>
+                        {row.cliente_email}
+                      </span>
+                    </div>
+                  )}
+                  {detail.email_enviado_en && (
+                    <div className="fem-info-item">
+                      <span className="fem-info-label">Fecha de Envío</span>
+                      <span className="fem-info-val">
+                        {formatDateTime(detail.email_enviado_en)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {detail.email_error && (
+                  <div className="fem-error-banner" style={{ marginTop: '8px' }}>
+                    <div className="fem-error-title">⚠️ Error entrega correo</div>
+                    <p className="fem-error-desc">{detail.email_error}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Columna Derecha: Motivo SRI y Trazabilidad */}
+            <div className="fem-col">
+              {/* Tarjeta 3: Motivo / Error reportado por el SRI (si existe) */}
+              {detail.ultimo_error_sri && (
+                <div className="fem-card" style={{ borderColor: '#fca5a5' }}>
+                  <div className="fem-card-header">
+                    <span>⚠️</span>
+                    <h3 style={{ color: '#991b1b' }}>Motivo reportado por el SRI</h3>
+                  </div>
+                  <div className="fem-error-banner">
+                    <p className="fem-error-desc">{detail.ultimo_error_sri}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Tarjeta 4: Historial de eventos / Logs */}
+              <div className="fem-card" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <div className="fem-card-header">
+                  <span>🕒</span>
+                  <h3>Historial de Procesamiento</h3>
+                </div>
+                {detail.logs && detail.logs.length > 0 ? (
+                  <div className="fem-timeline">
+                    {detail.logs.map((log: any) => {
+                      const isError = log.estado?.includes('ERROR') || log.mensaje?.toLowerCase().includes('error');
+                      const isSuccess = log.estado === 'AUTORIZADO' || log.estado === 'RECIBIDA';
+                      return (
+                        <div className="fem-timeline-item" key={log.id}>
+                          <div className={`fem-timeline-dot ${isError ? 'error' : isSuccess ? 'success' : ''}`} />
+                          <div className="fem-timeline-content">
+                            <div className="fem-timeline-meta">
+                              <span className="fem-timeline-time">{formatDateTime(log.created_at)}</span>
+                              <span className="fem-timeline-tag">{log.estado}</span>
+                            </div>
+                            <p className="fem-timeline-msg">{log.mensaje}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#94a3b8' }}>
+                    No hay eventos registrados para este comprobante.
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
